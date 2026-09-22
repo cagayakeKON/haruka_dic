@@ -91,9 +91,15 @@ class ResultGates(unittest.TestCase):
                 _report: dev.Report, name: str, arguments: Sequence[str], **_kwargs: object
             ) -> str:
                 if name == "uv":
-                    (Path(arguments[-1]) / "openapi.json").write_text(
-                        '{"version":2}\n', encoding="utf-8"
+                    outputs = (
+                        ("manifest.json", "openapi.json", "samples.json")
+                        if "tools.export_compatibility" in arguments
+                        else ("openapi.json",)
                     )
+                    for output in outputs:
+                        (Path(arguments[-1]) / output).write_text(
+                            '{"version":2}\n', encoding="utf-8"
+                        )
                 return ""
 
             with (
@@ -106,6 +112,17 @@ class ResultGates(unittest.TestCase):
                 self.assertEqual(target.read_text(encoding="utf-8"), '{"version":1}\n')
                 dev.codegen(dev.Report("codegen", "write"), write=True)
                 self.assertEqual(target.read_text(encoding="utf-8"), '{"version":2}\n')
+                fixtures = root / "tools/codegen/dart-api/fixtures"
+                self.assertEqual(
+                    {path.name for path in fixtures.iterdir()},
+                    {"manifest.json", "openapi.json", "samples.json"},
+                )
+                dev.codegen(dev.Report("codegen", "check"), write=False)
+                (fixtures / "samples.json").unlink()
+                with self.assertRaisesRegex(dev.DevError, "compatibility fixture drift"):
+                    dev.codegen(dev.Report("codegen", "check"), write=False)
+                self.assertFalse((fixtures / "samples.json").exists())
+                dev.codegen(dev.Report("codegen", "write"), write=True)
                 (root / "contracts/unmanaged.txt").write_text("keep", encoding="utf-8")
                 with self.assertRaisesRegex(dev.DevError, "Unknown"):
                     dev.codegen(dev.Report("codegen", "write"), write=True)

@@ -189,7 +189,7 @@ retryable 表示在当前动作协议下允许自动重试，不是“HTTP 5xx �
 1. 每条 JSON 路由显式声明具体 `response_model`、成功 HTTP 状态、稳定 operation_id，以及可能发生的 ErrorResponse 状态集合；公共 helper 合并通用 401/403/422/500，公共路由按实际情况裁剪，资源路由补 404/409 等。
 2. 同时替换 OpenAPI 中框架默认 HTTPValidationError/422 定义，确保运行响应与生成文档都是统一错误；路由清单检查禁止返回未具体化的泛型或默认裸字典。
 3. 普通成功路由返回 Pydantic 信封模型，让声明的响应模型参与校验；不直接 JSONResponse 绕开验证。统一错误处理器先构造 ErrorResponse，再用 `model_dump(mode="json")` 交给 JSONResponse，不能二次 JSON 编码。
-4. UUID、UTC 时间和 Decimal 按 API 总则序列化；DTO 显式映射允许字段，不能以 from_attributes 暴露整份 ORM 模型。模型正确不代表权限正确，仍需服务的 scope/动作校验。
+4. UUID、UTC 时间和 Decimal 按 API 总则序列化；Decimal 字段使用公共 `CanonicalDecimal`，输入只接受精确 Decimal 或十进制字符串（可含指数），拒绝 JSON number、NaN 和 Infinity，输出固定十进制字符串、不使用指数形式、不经浮点转换。输入与输出 schema 分别描述接受格式和规范格式，Dart 按字符串保留精度。DTO 显式映射允许字段，不能以 from_attributes 暴露整份 ORM 模型。模型正确不代表权限正确，仍需服务的 scope/动作校验。
 5. 二进制、CSV、SSE、204、HEAD/304 显式声明 response class、媒体类型和空体行为；Cookie/Header 由路由的 Response 参数或统一安全适配层设置，不放进 data。
 6. Flutter 在统一 ApiClient 解码一次，业务页面只接收类型化 data 或失败对象；非 JSON 网关错误、空体和未知错误码走安全兜底。新增可选响应字段允许旧客户端忽略，不把服务端 extra=forbid 当成旧客户端必须拒绝新字段。
 

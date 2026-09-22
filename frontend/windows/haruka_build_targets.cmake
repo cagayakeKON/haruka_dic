@@ -1,4 +1,4 @@
-# GENERATED from config/build_targets.json; sha256:fe6d618744a7df12c7a6defc4a8809e3b82697291e382439de29f8c9298582d3. Do not edit.
+# GENERATED from config/build_targets.json; sha256:7295f55862a95aa43d491e0026318261f40c6d071f1f198202b02ae4d0d18414. Do not edit.
 if(",${DART_DEFINES}," MATCHES ",SEFSVUtBX0VOVj1wcm9kdWN0aW9u,")
   set(BINARY_NAME "haruka")
   set(HARUKA_APP_ID "haruka.dictionary")

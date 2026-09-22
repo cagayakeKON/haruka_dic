@@ -6,7 +6,7 @@
       "display_name": "Haruka Dev",
       "instance_id": "haruka-local-dev",
       "api_base_url": "http://127.0.0.1:8000",
-      "allowed_api_base_urls": ["http://127.0.0.1:8000", "http://localhost:8000", "http://10.0.2.2:8000"]
+      "allowed_api_base_urls": ["http://127.0.0.1:8000", "http://localhost:8000", "http://10.0.2.2:8000", "http://127.0.0.1:18080", "http://localhost:18080", "http://10.0.2.2:18080"]
     },
     "production": {
       "display_name": "Haruka",
@@ -21,8 +21,8 @@
       "production": {"application_id": "app.haruka.dictionary", "flavor": "production", "default_api_base_url": null}
     },
     "windows": {
-      "dev": {"application_id": "haruka.dictionary.dev", "binary_name": "haruka"},
-      "production": {"application_id": "haruka.dictionary", "binary_name": "haruka"}
+      "dev": {"application_id": "haruka.dictionary.dev", "binary_name": "haruka", "installer_id": "haruka.dictionary.dev", "product_directory": "Haruka Dev", "credential_service": "haruka.dictionary.dev"},
+      "production": {"application_id": "haruka.dictionary", "binary_name": "haruka", "installer_id": "haruka.dictionary", "product_directory": "Haruka", "credential_service": "haruka.dictionary"}
     },
     "web": {
       "dev": {"origin": "http://localhost:5173", "admin_routes": true},

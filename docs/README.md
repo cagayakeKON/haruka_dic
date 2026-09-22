@@ -64,6 +64,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [基础设施切片](delivery/reviews/2026-09-22-scaffold-infrastructure.md)：真实客户端生命周期、隔离Compose、正常日志采集、运行与维护账号边界。
 
 - [数据库与受控初始化](delivery/reviews/2026-09-22-b0-identity.md)：基础表/字典、迁移锁、幂等种子、首管理员与动态readiness。
+- [前端契约与控件](delivery/reviews/2026-09-22-b0-frontend.md)：Dio/DTO、Python到Dart兼容样本、三端控件原型与真实健康页联调；完整平台矩阵仍待收口。
 
 ## 5. 维护规则
 

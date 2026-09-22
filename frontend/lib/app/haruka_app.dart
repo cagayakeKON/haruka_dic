@@ -4,6 +4,7 @@ import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/config/app_config.dart';
+import '../core/api/api_client.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
 import '../shared/identified.dart';
@@ -13,7 +14,7 @@ import 'home_page.dart';
 import 'platform_routes.dart';
 import 'status_page.dart';
 
-GoRouter createRouter(AppConfig config, {String? initialLocation}) => GoRouter(
+GoRouter createRouter(AppConfig config, ApiClient api, {String? initialLocation}) => GoRouter(
   initialLocation: initialLocation,
   routes: [
     GoRoute(
@@ -26,7 +27,7 @@ GoRouter createRouter(AppConfig config, {String? initialLocation}) => GoRouter(
       builder: (context, state) => AppShell(
         config: config,
         location: state.uri.path,
-        child: EnvironmentPage(config: config),
+        child: EnvironmentPage(config: config, api: api),
       ),
     ),
     ...platformRoutes(),
@@ -59,10 +60,11 @@ ThemeData appTheme() => ThemeData(
 );
 
 class HarukaApp extends StatefulWidget {
-  const HarukaApp({required this.config, this.initialLocation, super.key});
+  const HarukaApp({required this.config, this.initialLocation, this.api, super.key});
 
   final AppConfig config;
   final String? initialLocation;
+  final ApiClient? api;
 
   @override
   State<HarukaApp> createState() => _HarukaAppState();
@@ -70,18 +72,21 @@ class HarukaApp extends StatefulWidget {
 
 class _HarukaAppState extends State<HarukaApp> {
   late final GoRouter _router;
+  late final ApiClient _api;
   SemanticsHandle? _semantics;
 
   @override
   void initState() {
     super.initState();
-    _router = createRouter(widget.config, initialLocation: widget.initialLocation);
+    _api = widget.api ?? ApiClient(widget.config);
+    _router = createRouter(widget.config, _api, initialLocation: widget.initialLocation);
     if (kIsWeb) _semantics = SemanticsBinding.instance.ensureSemantics();
   }
 
   @override
   void dispose() {
     _router.dispose();
+    if (widget.api == null) _api.close();
     _semantics?.dispose();
     super.dispose();
   }

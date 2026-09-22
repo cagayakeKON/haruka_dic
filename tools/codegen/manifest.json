@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "B0-identity-foundation",
+  "scope": "B0-contracts-and-identity",
   "backend_outputs": [
     "openapi.json",
     "errors.json",
@@ -68,10 +68,33 @@
         "frontend/windows/flutter/generated_plugins.cmake"
       ],
       "ownership": "frontend"
+    },
+    {
+      "source": [
+        "contracts/errors.json",
+        "contracts/openapi.json",
+        "tools/codegen/dart-api/transition.json"
+      ],
+      "generator": "frontend/tool/generate.py",
+      "output": [
+        "frontend/lib/generated/api_catalog.dart"
+      ],
+      "ownership": "frontend"
     }
   ],
   "dart_api": {
-    "status": "not-adopted",
-    "reason": "No business client yet; generator compatibility samples remain a B0 gate."
+    "status": "centralized-handwritten-transition",
+    "evaluation": "tools/codegen/dart-api/transition.json",
+    "reason": "dart-dio 7.25.0 generates invalid unions; full Python/Dart compatibility samples required through B1; lock long-term generator before B2",
+    "source": [
+      "backend/tests/support/api_compatibility.py",
+      "backend/app/schemas/scalars.py"
+    ],
+    "generator": "backend/tools/export_compatibility.py",
+    "output": [
+      "tools/codegen/dart-api/fixtures/openapi.json",
+      "tools/codegen/dart-api/fixtures/samples.json",
+      "tools/codegen/dart-api/fixtures/manifest.json"
+    ]
   }
 }

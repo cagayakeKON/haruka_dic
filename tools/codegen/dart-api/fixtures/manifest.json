@@ -1,0 +1,10 @@
+{
+  "generated_by": "python -m tools.export_compatibility --output <directory>",
+  "schema_version": 1,
+  "sha256": {
+    "openapi.json": "34c8f290bc5d9615bb2a7855e4caf8590a1e2dc0fc6f562fe84d5952ca6ddfea",
+    "samples.json": "82400283e8d0abfe2570bd1e68ff069f6facd9d08fc899bad79c5da333b32eec"
+  },
+  "source": "backend/tests/support/api_compatibility.py",
+  "test_only": true
+}

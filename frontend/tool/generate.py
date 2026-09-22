@@ -22,6 +22,7 @@ OUTPUTS = (
     "lib/generated/l10n/app_localizations.dart",
     "lib/generated/l10n/app_localizations_zh.dart",
     "windows/haruka_build_targets.cmake",
+    "lib/generated/api_catalog.dart",
 )
 
 
@@ -169,7 +170,63 @@ def run(command: list[str], directory: Path) -> None:
     subprocess.run([resolved, *command[1:]], cwd=directory, check=True)  # noqa: S603
 
 
+def validate_reviewed_schemas(schemas: dict[str, object], digest: object) -> None:
+    actual_digest = hashlib.sha256(
+        json.dumps(schemas, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    if digest != actual_digest:
+        raise ValueError("API schemas changed: review handwritten DTOs and compatibility tests")
+
+
+def validate_error_catalog(
+    catalog: dict[str, object], locales: dict[str, object]
+) -> tuple[list[str], list[str]]:
+    error_codes: list[str] = []
+    translations: list[str] = []
+    for category in ("errors", "field_errors"):
+        records = catalog[category]
+        if not is_json_list(records):
+            raise ValueError("Expected catalog entries")
+        for item in records:
+            record = json_object(item)
+            code = required_string(record["code"])
+            key = "api" + "".join(part.title() for part in code.lower().split("_"))
+            required_string(locales.get(key))
+            if json_object(record["message_args"]):
+                raise ValueError("Parameterized errors require reviewed Dart adapters")
+            metadata = json_object(locales.get("@" + key, {}))
+            if metadata.get("placeholders", {}) != {}:
+                raise ValueError("Unexpected ARB error placeholders")
+            if category == "errors":
+                error_codes.append(code)
+            translations.append(f"    {json.dumps(code)} => strings.{key},")
+    return error_codes, translations
+
+
 def generate(directory: Path) -> None:
+    reviewed = json_object(
+        json.loads((ROOT.parent / "tools/codegen/dart-api/transition.json").read_text("utf-8"))
+    )
+    openapi = json_object(json.loads((ROOT.parent / "contracts/openapi.json").read_text("utf-8")))
+    schemas = json_object(json_object(openapi["components"])["schemas"])
+    validate_reviewed_schemas(schemas, reviewed.get("reviewed_schemas_sha256"))
+    catalog = json_object(json.loads((ROOT.parent / "contracts/errors.json").read_text("utf-8")))
+    locales = json_object(json.loads((ROOT / "lib/l10n/app_zh.arb").read_text("utf-8")))
+    error_codes, translations = validate_error_catalog(catalog, locales)
+    digest = hashlib.sha256(json.dumps(catalog, sort_keys=True).encode()).hexdigest()
+    emit(
+        directory,
+        OUTPUTS[5],
+        f"// GENERATED from contracts/errors.json; sha256:{digest}. Do not edit.\n"
+        "import 'l10n/app_localizations.dart';\n"
+        "abstract final class ApiCatalog {\n"
+        + "  static const errorCodes = <String>{"
+        + ", ".join(json.dumps(code) for code in sorted(error_codes))
+        + "};\n"
+        + "  static String message(AppLocalizations strings, String code) => switch (code) {\n"
+        + "\n".join(translations)
+        + "\n    _ => strings.apiUnknownError,\n  };\n}\n",
+    )
     ids = validate_ids(read_registry(ROOT / "config/ui_test_ids.json"))
     declarations = "\n".join(
         f"  static const {key} = {json.dumps(value)};" for key, value in sorted(ids.items())

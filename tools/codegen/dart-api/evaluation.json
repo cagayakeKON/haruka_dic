@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "generator": "openapi-generator-cli",
+  "version": "7.25.0",
+  "url": "https://repo.maven.apache.org/maven2/org/openapitools/openapi-generator-cli/7.25.0/openapi-generator-cli-7.25.0.jar",
+  "sha256": "41ce4f6b07f196676439d710759fa1ced7a08066d06ff1bf314681470289efae",
+  "minimum_java": 11,
+  "evaluated_java": "21.0.5",
+  "status": "rejected-prototype",
+  "adopted_solution": "handwritten-dto-transition-through-B1",
+  "decision_deadline": "before-B2",
+  "properties": {
+    "pubName": "haruka",
+    "pubLibrary": "haruka_api",
+    "sourceFolder": "generated/api",
+    "serializationLibrary": "json_serializable",
+    "useOptional": true,
+    "enumUnknownDefaultCase": true,
+    "legacyDiscriminatorBehavior": false,
+    "hideGenerationTimestamp": true
+  }
+}

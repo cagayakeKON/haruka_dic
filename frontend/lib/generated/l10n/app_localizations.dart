@@ -161,7 +161,7 @@ abstract class AppLocalizations {
   /// No description provided for @environmentDescription.
   ///
   /// In zh, this message translates to:
-  /// **'当前应用只展示公开构建配置，尚未连接服务或保存个人数据。'**
+  /// **'查看公开构建配置，并检查当前服务是否已就绪。'**
   String get environmentDescription;
 
   /// No description provided for @environmentLabel.
@@ -241,6 +241,234 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'环境、实例或服务地址不符合构建要求，请检查公开构建配置后重新启动。'**
   String get configurationDescription;
+
+  /// No description provided for @apiAccessExpired.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录凭据已过期'**
+  String get apiAccessExpired;
+
+  /// No description provided for @apiAuthLoginFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录失败'**
+  String get apiAuthLoginFailed;
+
+  /// No description provided for @apiAuthRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先登录'**
+  String get apiAuthRequired;
+
+  /// No description provided for @apiBadRequest.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求格式有误'**
+  String get apiBadRequest;
+
+  /// No description provided for @apiCapabilityUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂不支持所选能力'**
+  String get apiCapabilityUnsupported;
+
+  /// No description provided for @apiCsrfFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求验证失败'**
+  String get apiCsrfFailed;
+
+  /// No description provided for @apiDependencyError.
+  ///
+  /// In zh, this message translates to:
+  /// **'依赖服务响应异常'**
+  String get apiDependencyError;
+
+  /// No description provided for @apiDependencyTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'依赖服务响应超时'**
+  String get apiDependencyTimeout;
+
+  /// No description provided for @apiExternalResultUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'外部操作结果待确认'**
+  String get apiExternalResultUnknown;
+
+  /// No description provided for @apiIdempotencyConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'重复请求内容不一致'**
+  String get apiIdempotencyConflict;
+
+  /// No description provided for @apiInputInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入信息有误'**
+  String get apiInputInvalid;
+
+  /// No description provided for @apiInternalError.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务暂时无法完成请求'**
+  String get apiInternalError;
+
+  /// No description provided for @apiKeyRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请配置自己的模型凭据'**
+  String get apiKeyRequired;
+
+  /// No description provided for @apiMediaTypeUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'不支持此内容类型'**
+  String get apiMediaTypeUnsupported;
+
+  /// No description provided for @apiMethodNotAllowed.
+  ///
+  /// In zh, this message translates to:
+  /// **'不支持此请求方法'**
+  String get apiMethodNotAllowed;
+
+  /// No description provided for @apiPayloadTooLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求内容过大'**
+  String get apiPayloadTooLarge;
+
+  /// No description provided for @apiPermissionDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有操作权限'**
+  String get apiPermissionDenied;
+
+  /// No description provided for @apiQuotaExceeded.
+  ///
+  /// In zh, this message translates to:
+  /// **'已达到使用额度'**
+  String get apiQuotaExceeded;
+
+  /// No description provided for @apiRateLimited.
+  ///
+  /// In zh, this message translates to:
+  /// **'操作过于频繁'**
+  String get apiRateLimited;
+
+  /// No description provided for @apiRefreshSuperseded.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录凭据已由另一请求更新'**
+  String get apiRefreshSuperseded;
+
+  /// No description provided for @apiResourceExpired.
+  ///
+  /// In zh, this message translates to:
+  /// **'资源已过期'**
+  String get apiResourceExpired;
+
+  /// No description provided for @apiResourceNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到资源'**
+  String get apiResourceNotFound;
+
+  /// No description provided for @apiRevisionConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'内容已更新，请重新加载'**
+  String get apiRevisionConflict;
+
+  /// No description provided for @apiServiceUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务尚未就绪'**
+  String get apiServiceUnavailable;
+
+  /// No description provided for @apiSessionInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录已失效'**
+  String get apiSessionInvalid;
+
+  /// No description provided for @apiSessionRevoked.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录已失效'**
+  String get apiSessionRevoked;
+
+  /// No description provided for @apiStateConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前状态不支持此操作'**
+  String get apiStateConflict;
+
+  /// No description provided for @apiValidationFormat.
+  ///
+  /// In zh, this message translates to:
+  /// **'信息格式有误'**
+  String get apiValidationFormat;
+
+  /// No description provided for @apiValidationInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入信息有误'**
+  String get apiValidationInvalid;
+
+  /// No description provided for @apiValidationOutOfRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'数值超出允许范围'**
+  String get apiValidationOutOfRange;
+
+  /// No description provided for @apiValidationRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写必填信息'**
+  String get apiValidationRequired;
+
+  /// No description provided for @apiValidationTooLong.
+  ///
+  /// In zh, this message translates to:
+  /// **'内容超过允许长度'**
+  String get apiValidationTooLong;
+
+  /// No description provided for @apiValidationType.
+  ///
+  /// In zh, this message translates to:
+  /// **'信息类型有误'**
+  String get apiValidationType;
+
+  /// No description provided for @apiValidationUnknownField.
+  ///
+  /// In zh, this message translates to:
+  /// **'包含不支持的字段'**
+  String get apiValidationUnknownField;
+
+  /// No description provided for @checkConnection.
+  ///
+  /// In zh, this message translates to:
+  /// **'检查服务连接'**
+  String get checkConnection;
+
+  /// No description provided for @checkingConnection.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在检查…'**
+  String get checkingConnection;
+
+  /// No description provided for @connectionReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务已就绪'**
+  String get connectionReady;
+
+  /// No description provided for @apiUnknownError.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法完成请求，请稍后重试。'**
+  String get apiUnknownError;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -1,0 +1,278 @@
+{
+  "conflict": {
+    "error": {
+      "code": "REVISION_CONFLICT",
+      "details": {
+        "current_revision": 7,
+        "kind": "revision_conflict"
+      },
+      "field_errors": [],
+      "message": "内容已更新，请重新加载",
+      "message_args": {},
+      "retryable": false
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "decimal_boundaries": [
+    {
+      "input": "1E+3",
+      "output": {
+        "data": {
+          "card": {
+            "kind": "text",
+            "text": "日本語 / English"
+          },
+          "created_at": "2026-09-22T01:02:03.123456Z",
+          "exact_amount": "1000",
+          "nullable_optional": null,
+          "resource_id": "018f1234-5678-7123-8123-123456789abc",
+          "status": "complete"
+        },
+        "meta": {
+          "request_id": "018f1234-1234-7123-8123-123456789abc"
+        }
+      }
+    },
+    {
+      "input": "1E-7",
+      "output": {
+        "data": {
+          "card": {
+            "kind": "text",
+            "text": "日本語 / English"
+          },
+          "created_at": "2026-09-22T01:02:03.123456Z",
+          "exact_amount": "0.0000001",
+          "nullable_optional": null,
+          "resource_id": "018f1234-5678-7123-8123-123456789abc",
+          "status": "complete"
+        },
+        "meta": {
+          "request_id": "018f1234-1234-7123-8123-123456789abc"
+        }
+      }
+    },
+    {
+      "input": "-1E-7",
+      "output": {
+        "data": {
+          "card": {
+            "kind": "text",
+            "text": "日本語 / English"
+          },
+          "created_at": "2026-09-22T01:02:03.123456Z",
+          "exact_amount": "-0.0000001",
+          "nullable_optional": null,
+          "resource_id": "018f1234-5678-7123-8123-123456789abc",
+          "status": "complete"
+        },
+        "meta": {
+          "request_id": "018f1234-1234-7123-8123-123456789abc"
+        }
+      }
+    },
+    {
+      "input": "0E-10",
+      "output": {
+        "data": {
+          "card": {
+            "kind": "text",
+            "text": "日本語 / English"
+          },
+          "created_at": "2026-09-22T01:02:03.123456Z",
+          "exact_amount": "0.0000000000",
+          "nullable_optional": null,
+          "resource_id": "018f1234-5678-7123-8123-123456789abc",
+          "status": "complete"
+        },
+        "meta": {
+          "request_id": "018f1234-1234-7123-8123-123456789abc"
+        }
+      }
+    },
+    {
+      "input": "-0.00",
+      "output": {
+        "data": {
+          "card": {
+            "kind": "text",
+            "text": "日本語 / English"
+          },
+          "created_at": "2026-09-22T01:02:03.123456Z",
+          "exact_amount": "-0.00",
+          "nullable_optional": null,
+          "resource_id": "018f1234-5678-7123-8123-123456789abc",
+          "status": "complete"
+        },
+        "meta": {
+          "request_id": "018f1234-1234-7123-8123-123456789abc"
+        }
+      }
+    },
+    {
+      "input": "12345678901234567890.123456789",
+      "output": {
+        "data": {
+          "card": {
+            "kind": "text",
+            "text": "日本語 / English"
+          },
+          "created_at": "2026-09-22T01:02:03.123456Z",
+          "exact_amount": "12345678901234567890.123456789",
+          "nullable_optional": null,
+          "resource_id": "018f1234-5678-7123-8123-123456789abc",
+          "status": "complete"
+        },
+        "meta": {
+          "request_id": "018f1234-1234-7123-8123-123456789abc"
+        }
+      }
+    }
+  ],
+  "error": {
+    "error": {
+      "code": "INPUT_INVALID",
+      "details": null,
+      "field_errors": [
+        {
+          "code": "VALIDATION_TOO_LONG",
+          "message": "内容超过允许长度",
+          "message_args": {
+            "limit": 10,
+            "unit": "characters"
+          },
+          "path": [
+            "items",
+            0,
+            "text"
+          ],
+          "source": "body"
+        }
+      ],
+      "message": "输入信息有误",
+      "message_args": {},
+      "retryable": false
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "page": {
+    "data": [
+      {
+        "card": {
+          "kind": "text",
+          "text": "日本語 / English"
+        },
+        "created_at": "2026-09-22T01:02:03.123456Z",
+        "exact_amount": "12345678901234567890.123456789",
+        "nullable_optional": null,
+        "resource_id": "018f1234-5678-7123-8123-123456789abc",
+        "status": "complete"
+      },
+      {
+        "card": {
+          "choices": [
+            "A",
+            "B"
+          ],
+          "kind": "choice"
+        },
+        "created_at": "2026-09-22T01:02:03.123456Z",
+        "exact_amount": "12345678901234567890.123456789",
+        "nullable_optional": "present",
+        "resource_id": "018f1234-5678-7123-8123-123456789abc",
+        "status": "complete"
+      }
+    ],
+    "meta": {
+      "has_more": true,
+      "next_cursor": "cursor-2",
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "schema_version": 1,
+  "success_missing": {
+    "data": {
+      "card": {
+        "kind": "text",
+        "text": "日本語 / English"
+      },
+      "created_at": "2026-09-22T01:02:03.123456Z",
+      "exact_amount": "12345678901234567890.123456789",
+      "resource_id": "018f1234-5678-7123-8123-123456789abc",
+      "status": "complete"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "success_null": {
+    "data": {
+      "card": {
+        "kind": "text",
+        "text": "日本語 / English"
+      },
+      "created_at": "2026-09-22T01:02:03.123456Z",
+      "exact_amount": "12345678901234567890.123456789",
+      "nullable_optional": null,
+      "resource_id": "018f1234-5678-7123-8123-123456789abc",
+      "status": "complete"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "success_value": {
+    "data": {
+      "card": {
+        "choices": [
+          "A",
+          "B"
+        ],
+        "kind": "choice"
+      },
+      "created_at": "2026-09-22T01:02:03.123456Z",
+      "exact_amount": "12345678901234567890.123456789",
+      "nullable_optional": "present",
+      "resource_id": "018f1234-5678-7123-8123-123456789abc",
+      "status": "complete"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "transports": {
+    "binary": {
+      "bytes": [
+        104,
+        97,
+        114,
+        117,
+        107,
+        97
+      ],
+      "status": 200
+    },
+    "empty": {
+      "body": "",
+      "status": 204
+    },
+    "upload": {
+      "media_type": "application/octet-stream",
+      "method": "PUT"
+    }
+  },
+  "unknown_enum": {
+    "card": {
+      "kind": "text",
+      "text": "日本語 / English"
+    },
+    "created_at": "2026-09-22T01:02:03.123456Z",
+    "exact_amount": "12345678901234567890.123456789",
+    "resource_id": "018f1234-5678-7123-8123-123456789abc",
+    "status": "future_status"
+  }
+}

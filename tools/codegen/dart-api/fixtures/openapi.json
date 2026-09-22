@@ -1,0 +1,667 @@
+{
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RevisionConflictDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field_errors": {
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "title": "Field Errors",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "message_args": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Message Args",
+            "type": "object"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ApiError",
+        "type": "object"
+      },
+      "ChoiceCard": {
+        "additionalProperties": false,
+        "properties": {
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "kind": {
+            "const": "choice",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "choices"
+        ],
+        "title": "ChoiceCard",
+        "type": "object"
+      },
+      "CompatibilityRead-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "card": {
+            "discriminator": {
+              "mapping": {
+                "choice": "#/components/schemas/ChoiceCard",
+                "text": "#/components/schemas/TextCard"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextCard"
+              },
+              {
+                "$ref": "#/components/schemas/ChoiceCard"
+              }
+            ],
+            "title": "Card"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "exact_amount": {
+            "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+            "title": "Exact Amount",
+            "type": "string"
+          },
+          "nullable_optional": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nullable Optional"
+          },
+          "resource_id": {
+            "format": "uuid",
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "complete"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id",
+          "created_at",
+          "exact_amount",
+          "status",
+          "card"
+        ],
+        "title": "CompatibilityRead",
+        "type": "object"
+      },
+      "CompatibilityRead-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "card": {
+            "discriminator": {
+              "mapping": {
+                "choice": "#/components/schemas/ChoiceCard",
+                "text": "#/components/schemas/TextCard"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextCard"
+              },
+              {
+                "$ref": "#/components/schemas/ChoiceCard"
+              }
+            ],
+            "title": "Card"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "exact_amount": {
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+            "title": "Exact Amount",
+            "type": "string"
+          },
+          "nullable_optional": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nullable Optional"
+          },
+          "resource_id": {
+            "format": "uuid",
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "complete"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id",
+          "created_at",
+          "exact_amount",
+          "status",
+          "card"
+        ],
+        "title": "CompatibilityRead",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "enum": [
+          "BAD_REQUEST",
+          "INPUT_INVALID",
+          "AUTH_REQUIRED",
+          "AUTH_LOGIN_FAILED",
+          "ACCESS_EXPIRED",
+          "SESSION_REVOKED",
+          "SESSION_INVALID",
+          "PERMISSION_DENIED",
+          "CSRF_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "REVISION_CONFLICT",
+          "IDEMPOTENCY_CONFLICT",
+          "STATE_CONFLICT",
+          "KEY_REQUIRED",
+          "REFRESH_SUPERSEDED",
+          "RESOURCE_EXPIRED",
+          "PAYLOAD_TOO_LARGE",
+          "MEDIA_TYPE_UNSUPPORTED",
+          "CAPABILITY_UNSUPPORTED",
+          "RATE_LIMITED",
+          "QUOTA_EXCEEDED",
+          "INTERNAL_ERROR",
+          "DEPENDENCY_ERROR",
+          "SERVICE_UNAVAILABLE",
+          "DEPENDENCY_TIMEOUT",
+          "EXTERNAL_RESULT_UNKNOWN"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "FieldError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/FieldErrorCode"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "message_args": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Message Args",
+            "type": "object"
+          },
+          "path": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Path",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "body",
+              "query",
+              "path",
+              "header",
+              "cookie"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "path",
+          "code",
+          "message"
+        ],
+        "title": "FieldError",
+        "type": "object"
+      },
+      "FieldErrorCode": {
+        "enum": [
+          "VALIDATION_REQUIRED",
+          "VALIDATION_TYPE",
+          "VALIDATION_FORMAT",
+          "VALIDATION_TOO_LONG",
+          "VALIDATION_OUT_OF_RANGE",
+          "VALIDATION_UNKNOWN_FIELD",
+          "VALIDATION_INVALID"
+        ],
+        "title": "FieldErrorCode",
+        "type": "string"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "PageMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "next_cursor",
+          "has_more"
+        ],
+        "title": "PageMeta",
+        "type": "object"
+      },
+      "PageResponse_CompatibilityRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CompatibilityRead-Output"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "PageResponse[CompatibilityRead]",
+        "type": "object"
+      },
+      "ResponseMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "ResponseMeta",
+        "type": "object"
+      },
+      "RevisionConflictDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "current_revision": {
+            "minimum": 0.0,
+            "title": "Current Revision",
+            "type": "integer"
+          },
+          "kind": {
+            "const": "revision_conflict",
+            "default": "revision_conflict",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_revision"
+        ],
+        "title": "RevisionConflictDetails",
+        "type": "object"
+      },
+      "SuccessResponse_CompatibilityRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CompatibilityRead-Output"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[CompatibilityRead]",
+        "type": "object"
+      },
+      "TextCard": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "text",
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "TextCard",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Haruka test-only Dart compatibility",
+    "version": "1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/samples/binary": {
+      "get": {
+        "operationId": "binary_sample_samples_binary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Binary Sample"
+      }
+    },
+    "/samples/decimal": {
+      "post": {
+        "operationId": "decimal_sample_samples_decimal_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompatibilityRead-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_CompatibilityRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decimal Sample"
+      }
+    },
+    "/samples/empty": {
+      "delete": {
+        "operationId": "empty_sample_samples_empty_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Empty Sample"
+      }
+    },
+    "/samples/error": {
+      "get": {
+        "operationId": "error_sample_samples_error_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Error Sample"
+      }
+    },
+    "/samples/page": {
+      "get": {
+        "operationId": "page_sample_samples_page_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponse_CompatibilityRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Page Sample"
+      }
+    },
+    "/samples/read": {
+      "get": {
+        "operationId": "read_sample_samples_read_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_CompatibilityRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Sample"
+      }
+    },
+    "/samples/upload": {
+      "put": {
+        "operationId": "upload_sample_samples_upload_put",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Upload Sample"
+      }
+    }
+  }
+}

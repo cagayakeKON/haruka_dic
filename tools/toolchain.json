@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "B0-foundation",
+  "scope": "B0",
   "python": "3.13.6",
   "uv": "0.12.17",
   "flutter": {
@@ -41,11 +41,25 @@
   "markdownlint_cli2": "0.23.3",
   "ci": {
     "provider": null,
-    "status": "not_selected_or_executed"
+    "reference_provider": "GitHub Actions",
+    "status": "reference_workflows_created_not_remotely_executed"
+  },
+  "browser_testing": {
+    "playwright": "1.63.0",
+    "chromium": "153.0.8010.12",
+    "typescript": "5.9.3",
+    "eslint": "10.11.0",
+    "prettier": "3.9.8",
+    "lockfile": "tools/e2e/package-lock.json"
+  },
+  "dart_api": {
+    "evaluated_generator": "openapi-generator-cli 7.25.0 dart-dio",
+    "status": "centralized_handwritten_transition_B0_B1",
+    "decision": "tools/codegen/dart-api/transition.json"
   },
   "pending": [
     "Production container image digests",
-    "Dart API generator prototype and locked long-term choice",
+    "Locked long-term Dart API generator before B2",
     "Android device and Windows installer acceptance"
   ],
   "development_images": {

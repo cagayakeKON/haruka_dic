@@ -8,7 +8,17 @@
     "environmentPage": "client.shell.environment.page",
     "homeNavigation": "client.shell.navigation.home",
     "homePage": "client.shell.home.page",
-    "notFoundPage": "client.shell.not_found.page"
+    "notFoundPage": "client.shell.not_found.page",
+    "checkConnection": "client.shell.environment.check",
+    "connectionStatus": "client.shell.environment.status",
+    "fixturePage": "client.fixture.controls.page",
+    "fixtureInput": "client.fixture.controls.input",
+    "fixtureSubmit": "client.fixture.controls.submit",
+    "fixtureDialog": "client.fixture.controls.dialog",
+    "fixtureConfirm": "client.fixture.controls.confirm",
+    "fixtureList": "client.fixture.controls.list",
+    "fixtureLastRow": "client.fixture.controls.last",
+    "fixtureNavigate": "client.fixture.controls.navigate"
   },
   "templates": {}
 }

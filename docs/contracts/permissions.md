@@ -14,10 +14,10 @@
 | --- | --- | --- |
 | client.login | 学习端登录、身份续期、access快照/已登录遥测 | 不授予其他业务动作 |
 | client.material.list/read | 书库列表/搜索；材料元数据、小说/课本版本内容与出处读取 | read校验类型/文件用途与来源；list无原文，试卷正文/题面/答案另走exam权限与专用DTO |
-| client.material.import | 上传或复用本人原文件建立所选类型的新材料 | 确定性解析；复用源需material.read，exam源另需exam.read+exam.edit完整原件资格；目标exam另需exam.import，AI分析另验analyze |
+| client.material.import | 上传或复用本人原文件建立所选类型的新材料 | 确定性提取；复用源需material.read，exam源另需exam.read+exam.edit完整原件资格；目标exam另需exam.import，视觉OCR/进一步AI分析另验analyze |
 | client.material.update | 改标题等允许的元数据字段，不接受类型修改 | read、expected_revision；另类型重新处理使用import动作，不由update授权 |
-| client.material.reparse | 重新确定性解析 | read；新版本不覆盖旧引用；AI另验analyze |
-| client.material.analyze | 所选类型的AI结构建议、语义补充与抽取 | read、本人Key、预算、明确用户意图；允许收费，不能改变material_type；试卷同时按exam实际动作校验 |
+| client.material.reparse | 重解析/重识别并生成新内容版本 | read；新版本不覆盖旧引用；视觉OCR另验analyze，试卷完整原件按exam校对范围检查 |
+| client.material.analyze | 所选类型的视觉OCR、AI结构建议、语义补充与抽取 | read、本人相应能力Key、预算、分别明确阶段意图；允许收费，不能改变material_type；试卷同时按exam实际动作校验 |
 | client.material.delete | 从书库移除材料 | read；tombstone/引用保留，不删除成绩/收藏 |
 | client.reading.progress.update | 小说当前位置/最远进度、课本最近单元位置 | material.read；仅novel/textbook，无该权限仍能只读；考试进度使用场次动作 |
 | client.bookmark.read/create/delete | 阅读书签列表/创建/删除 | material.read；本人记录 |

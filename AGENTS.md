@@ -30,6 +30,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 
 - Flutter：Windows、Web、Android；Python 前后端分离。
 - 导入材料只适配小说、课本、试卷；material_type唯一，三类分别处理、建模和使用专属页面/controller，仅复用基础能力。文件格式单独定范围，不保留“其他/混合/文章/笔记”类型或跨类型皮肤切换；选错类型需显式创建新材料重新处理，保留旧记录。
+- OCR统一使用用户配置的视觉模型，经过Pydantic AI与统一任务/预算/日志入口；不建立或静默回退传统OCR。文件渲染/可用文本层直接提取仍是确定性处理，三类专用校验保持独立，详见[视觉OCR](docs/architecture/vision-recognition.md)。
 - 应用内 Agent 框架已确定为 Pydantic AI；使用 Pydantic 业务输出模型，不另建 LangChain/LangGraph Agent 执行路径。
 - 支持导入时选择试卷模式、整卷作答、交卷后 AI 判断/评分；试卷首版文件格式范围仍待明确，不能将推荐的 PDF/OCR 优先级当作已确认。
 - 多用户注册登录，资料、学习记录、任务、缓存与模型 Key 按用户隔离。

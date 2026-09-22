@@ -55,7 +55,8 @@ flowchart TD
 | 数据访问 | SQLAlchemy 2 Async、asyncpg、Alembic | PostgreSQL 查询、服务事务及受控迁移 |
 | 持久任务 | Kafka、confluent-kafka、独立 Python Worker/Outbox | 投递、阶段恢复、重试/取消和死信；不用 API 进程内后台任务替代持久执行 |
 | 缓存与存储 | Redis、MinIO S3 API | 会话材料/限流/通知与私有原书/附件/音频；对象发布和回收以数据契约为准 |
-| 格式提取与专用处理 | Markdown 优先 markdown-it-py；EPUB 按包目录/spine 提取；之后分别交小说/课本/试卷处理器和专用页面 | 共用源块/出处，不共用业务阅读器；高保真/竖排、分词及获准PDF/OCR库按样本确定，范围见三类材料契约 |
+| 格式提取与专用处理 | Markdown 优先 markdown-it-py；EPUB 按包目录/spine 提取；之后分别交小说/课本/试卷处理器和专用页面 | 共用源块/出处，不共用业务阅读器；高保真/竖排、分词及获准PDF文本提取/渲染库按样本确定 |
+| OCR | [统一视觉模型识别](vision-recognition.md)，Pydantic AI使用本人视觉配置；页图准备与类型校验分开 | 用户已确认不走传统OCR；默认模型待验证，格式范围不自动扩大，文本层直接提取不算OCR |
 | Agent / 结构化结果 | Pydantic AI、对应 Provider、Pydantic 业务模型 | 类型化工具、依赖注入、结构化输出、限额；结构正确仍需出处与业务校验 |
 | TTS | HTTPX + Gemini/OpenRouter 独立音频适配器 | 区分 speech 字节流与生成接口音频协议，按真实格式处理；具体模型、声音、分句语调/停顿/等待和请求量需验证 |
 | 日志 | structlog + 标准 logging → Alloy → Loki → Grafana | 前端接收、API/Worker、AI/TTS、SQL 访问与数据库引擎日志共用平台 |

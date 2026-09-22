@@ -10,6 +10,8 @@ Flutter用户端Windows/Web/Android；Python前后端分离；复用MyHome基础
 
 同日进一步确认：导入材料只适配小说、课本、试卷，各自独立处理及使用体验。文件格式仍单独按原优先级和OPEN-01管理；类型拆分不等于确认所有PDF/TXT/OCR进入P0。
 
+OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用基础；PDF文本提取/渲染可本地完成，不引入传统OCR或静默回退。具体模型仍待OPEN-04验证，格式范围仍按OPEN-01及产品优先级。
+
 ## 2. 当前实现建议
 
 | ID | 选择与理由 | 验证/变更条件 |
@@ -29,6 +31,7 @@ Flutter用户端Windows/Web/Android；Python前后端分离；复用MyHome基础
 | DEC-13 | UI Test ID前端JSON单源生成Dart并供Playwright读取；测试数据分资产/场景/执行实例 | 见[测试数据](../engineering/testing/data.md)；按执行身份隔离，工厂不代做目标动作，秘密另传，清理先处理在途写入 |
 | DEC-14 | 用户确认无物理外键和公共创建/更新时间；工程采用共享表+ScopeContext、事务内逻辑关系校验及共同父行锁，不启用首版RLS | [数据库规范](../engineering/database.md) 的DB验收：UTC带时区、所有写入时间路径、实际PG关联/删除竞争；不宣称DB自动阻止任意SQL跨用户 |
 | DEC-15 | 三类分别处理/建模/展示为用户已确认；设计采用唯一material_type、专用处理器/manifest/controller，选错类型显式创建新材料重新处理 | [三类材料契约](../contracts/material-types.md) TYPE及NOV/TBK/考试验收；保留原文件/出处基础能力，禁止类型换皮与通用接口泄露考试答案；当前未实现 |
+| DEC-16 | 用户确认OCR统一视觉模型；Pydantic AI固定类型化调用，原件/页图准备与三类专用结果校验分开 | [视觉OCR](../architecture/vision-recognition.md) OCR-01～OCR-05按功能/获准格式验收；个人Key/预算、转写版本、定位粒度与失败恢复须验证，不走传统OCR后备 |
 
 ## 3. 决策导航与变更
 

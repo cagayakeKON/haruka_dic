@@ -18,6 +18,8 @@
 | quote / prefix / suffix | 选区及前后文快照，用于显示和重绑校验；不单凭相同文字跨材料匹配 |
 | source_title / node_title | 显示用标题快照，标题不参与身份和归属判断 |
 
+视觉OCR来源遵循 [识别合同](../architecture/vision-recognition.md)：original_locator保存应用确定的源页/裁切区及坐标变换；模型候选字框未经验证不能成为精确原图锚点。source_method=vision的转写块保存其识别版本，字符偏移指向该已发布规范文本；无可靠字框时只回跳源页/区域，重识别不改旧版含义。
+
 Flutter 的 UTF-16 code unit 索引在平台适配层转换为协议偏移，Python 不直接接受未声明单位的客户端整数。文本渲染与 canonical_text 有显式映射：行折叠/换行不改变存储文本；ruby 的基础文字参与原文选区，注音作为独立注释，不混入基础字符串索引。使用字素边界进行人类可见选区，服务端验证 scalar 边界与 quote 一致；组合字符和 emoji 不允许被截成无意义半段。实现时需同时验证索引与字素规则，不能把“Unicode 字符”当作 Dart/Python 相同的索引单位。
 
 选区支持 token、phrase、sentence、excerpt。建议摘录上限为 500 个 scalar value 或 5 句，先到为准；超限要求缩小，不静默截断。英文可按词边界，日文/中文使用语种规则/分词适配并允许扩展选区；代码块、表格等无法形成连续句子的内容仍保留块范围，不捏造 sentence_id。前端把选区引用传给服务端，由服务端重取正文；手工输入明确标记无材料来源。

@@ -62,7 +62,7 @@ Web 推荐固定同源部署，显示当前服务地址和连接状态；不在�
 | 配置组 | 字段/交互 | 生效逻辑 |
 | --- | --- | --- |
 | 文本 | provider、credential_id、model_id、解释语言/详细程度 | 下一个新 run 使用新 settings_revision；活动 run 保持其冻结模型参数，凭据有效性仍逐付费步骤检查 |
-| 视觉 | provider/模型/credential、目标语和释义语言默认 | 用于拍照/获准 OCR 任务；不因能传图片就声称可可靠解析整卷 |
+| 视觉 | provider/模型/credential、目标语和释义语言默认 | [统一OCR/拍照识别](../architecture/vision-recognition.md)使用此配置，无传统OCR自动后备；缺Key时扫描内容待识别，模型图像支持不等于整卷质量通过 |
 | TTS | provider/模型/credential、按语言声音、实际支持的合成参数 | 新请求使用新合成键；已缓存旧声音仍标识其配置，不假装已切换 |
 | 语言 | P0 界面 zh-Hans；母语、target_languages、active_target_language | 激活语言须属于已选目标语；切换刷新诊断/练习范围，不改旧记录语言、不删除历史 |
 | 时区 | IANA 时区标识，初始取设备建议并允许用户确认修改 | 用于日期展示与诊断窗口；后端校验，历史仍存 UTC，不改变考试截止或会话期限 |

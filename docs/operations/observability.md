@@ -166,7 +166,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 ### Pydantic AI 与 TTS
 
-- AgentService 记录 run 开始、完成、失败、取消、预算耗尽；模型适配层记录每次真实请求及 attempt；工具适配层记录工具开始/结果/校验失败。普通解释、视觉识词、生成题、评分、诊断和后台批处理均必须经过这些入口。
+- AgentService 记录 run 开始、完成、失败、取消、预算耗尽；模型适配层记录每次真实请求及 attempt；工具适配层记录工具开始/结果/校验失败。普通解释、视觉OCR/识词、生成题、评分、诊断和后台批处理均必须经过这些入口。视觉识别允许阶段/页与区域计数/结果复用状态，不记录页图、base64或转写正文；模型自报置信度不作为成功或内容完整性的权威依据。
 - 记录 ai_run_id、model_call_id、tool_call_id、provider、请求/实际模型、提示模板版本、状态、耗时、首内容等待、重试和供应商返回的用量。供应商请求 ID 只有在确认不含秘密时才保存。
 - Token/字符/音频用量缺失时标记 unknown，不记作 0；费用如为估算需记录价格版本/币种，并明确非最终账单。看板按模型请求统计用量，run 的汇总字段不能再次相加；每次重试费用独立观察。
 - Pydantic AI 提供基于 OpenTelemetry 的 instrumentation，可以不用 Logfire 服务；采用时关闭内容捕获，例如 include_content=False，并用字段白名单适配日志。官方说明见 [Pydantic AI 观测接入](https://pydantic.dev/docs/ai/integrations/logfire/)。原始 Prompt、回复、工具入参/结果、音频和图片不写入日志，异常消息也要防止回显这些内容。

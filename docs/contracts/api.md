@@ -40,13 +40,13 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET me/access、admin/me/access | 最小user_id/instance_id/audience/session_ref、account_status、authz_version、权限/范围、nav、flags | 对应login；不要求profile.read，session_ref不是认证凭据，不返回全体用户策略 |
 | GET/PATCH users/me、settings | 资料/学习/模型选择；revision | profile.read/update；拒绝身份/权限敏感字段 |
 | GET/POST/PATCH/DELETE provider-credentials；POST {id}/test | 掩码/增删轮换；受限能力测试 | credential.read/manage/test；永不GET明文 |
-| POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/AI阶段选择；新文件上传意图，或按三类材料契约复用本人源文件重新处理 | material.import、目标试卷组合权限；复用另验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
+| POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/requested_stages；视觉OCR与进一步AI分析分别明确范围/预算；新上传或本人源文件重新处理 | material.import、目标试卷组合权限；视觉OCR另验analyze；复用验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |
 | GET materials、materials/{id}、materials/{id}/revisions；PATCH/DELETE materials/{id} | 三类筛选、共用元数据/状态与版本摘要；改标题/删除，不返回正文/答案、不允许PATCH类型 | material.list/read/update/delete；类型分派以三类材料契约为准 |
 | GET novels/{material_id}/revisions/{revision_id}/manifest、chapters/{node_id} | NovelManifest、小说章节原文与语言标注引用 | material.read、type=novel、同库/版本/节点校验 |
 | GET textbooks/{material_id}/revisions/{revision_id}/manifest、lessons/{node_id} | TextbookManifest、单元内容/词表和已授权练习引用；不夹带题目答案/评分依据 | material.read、type=textbook；练习详情/作答仍另验practice动作 |
 | POST sources/resolve | 授权解析出处，返回三类之一及专用目标引用 | 当前源业务read与同库/版本检查；考试按考试投影规则，不由自报locator获得权限 |
-| POST materials/{id}/reparse、materials/{id}/analysis | 新确定性版本；明确AI分析 | reparse/analyze分离；expected_revision/幂等 |
+| POST materials/{id}/reparse、materials/{id}/analysis | reparse发布新内容版本；analysis可首次视觉转写尚无发布版本的源，或仅分析已发布正文 | 按[视觉OCR](../architecture/vision-recognition.md)明确阶段/页计划；首次OCR复核原import/read/analyze，已发布后视觉补识别/重识别需reparse+analyze；expected_revision/幂等/原件资格 |
 | GET/PUT materials/{id}/progress；GET/POST/DELETE bookmarks | 小说位置/最远位置、课本单元位置、书签；不承载考试进度 | material.read与progress/bookmark动作；只接受novel/textbook |
 | GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind/词句/笔记/标签/状态/出处快照 | collection对应动作；标签关系本人范围 |
 | POST collections/merge | 明确目标/来源条目和合并策略，expected_revision | collection.read/update/delete；只在本人范围合并，不静默删除来源 |

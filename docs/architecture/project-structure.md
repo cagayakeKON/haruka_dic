@@ -142,6 +142,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | 登录/注册/会话 | account、core/auth | AuthService、User/AuthSession/Challenge | 邮件、安全撤销通知 |
 | 两端 RBAC/管理 | core/access、admin | AuthorizationService、AdminUser/PolicyService | 缓存通知、审计投递 |
 | 材料公共能力 | library | MaterialImport/MaterialService、共用出处/阅读位置服务 | 不可变文件、格式提取、类型分派、清理 |
+| 视觉OCR基础能力 | 各消费feature的任务/质量页 | VisionRecognitionService、本人ModelFactory、页/区域识别记录 | Pydantic AI视觉调用、页批次恢复；类型输出/就绪仍由各模块负责 |
 | 小说 | novels | NovelProcessing/NovelReadingService、小说manifest/章节与标注引用 | 小说结构、分句/分词及语言标注 |
 | 课本 | textbooks | TextbookProcessing/TextbookStudyService、单元/角色及Exercise引用 | 单元分析、词表/习题关联；评分复用Practice公开服务 |
 | 收藏/照片/CSV | collections | Collection/PhotoWord/CsvService | 识词、CSV 分批 |
@@ -155,6 +156,8 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 名称是设计职责，不强制每行都拆成多个类。接口依赖必须显式注入，不能运行时导入相邻 MyHome 工作目录。
 
 小说/课本/试卷在 api/routes、schemas、services、domain、repositories 中按 novels/textbooks/exams 分组；adapters/parsers 按 markdown/epub 及获准后的 pdf/txt 划分。格式适配器返回源结构，类型处理器返回各自领域产物，Worker handler 显式分派；不建立万能 MaterialProcessor 加一套通用阅读 DTO，也不因此拆微服务或提前生成空文件。
+
+[视觉OCR](vision-recognition.md)在services负责页计划/授权/预算/提交编排，ai负责类型化视觉调用与各业务识别配置，adapters只负责图像预处理/PDF渲染；不增加传统OCR引擎目录或独立部署服务。页面识别稿不是领域ready，仍由小说/课本/试卷各自校验后发布。
 
 ## 5. 契约、配置与生成文件
 

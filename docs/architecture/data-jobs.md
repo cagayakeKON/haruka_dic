@@ -28,6 +28,7 @@
 | VocabularyLearningState/ReviewSchedule/EffectiveLearningEvidence | item/learning_revision/skill、有效成绩证据、mastery与调度版本 | [词汇学习](vocabulary-learning.md)只从有效证据派生；客户端/CSV不得写mastery，重评按原时间重放不重复累计 |
 | ReviewOpportunity/DailyLearningBudget/NewWordReservation | 当前学习机会/辅助曝光、owner学习日与条目唯一额度预留 | 跨本/设备共享机会与预留；领取原子占额、接受作答即消费，pending不释放，取消/日边界按协议处理 |
 | Exercise/PracticeSession/Attempt/GradeRun | 冻结题目与依据、答案、提交幂等键、评分代次 | 同一提交不重复 Attempt；规则/AI 成绩有来源；有效成绩与历史分开 |
+| PracticeSelectionSnapshot/PracticePlan | 本人规范化词本/时间/记忆条件、as_of/时区、候选与版本、顺序/数量、expiry；计划purpose=generate/review | [出题筛选](../modules/vocabulary-practice.md#按单词本时间和记忆情况生成)中预览计数/明细同一快照，确认短事务重验后与Job/Outbox提交；生成不占学习机会/日额度，实际学习计划才领取 |
 | ExamPaper/Version/Item/GradingBasis | 题面/题序/分值与依据版本 | ready 版本不可变；题面 DTO 不含答案/rubric |
 | ExamSession/Response/GradeRun | 固定版本、deadline、edit_epoch、response_revision、grade_generation | 保存/交卷在场次行锁内；单题答案唯一；提交后不可修改 |
 | LearnerContribution/Profile | source_kind + session/attempt + item 的唯一贡献键、effective_grade_id | 重评替换贡献不追加重复错误；needs_review 不进入正式统计 |
@@ -63,6 +64,7 @@
 | 角色/菜单/策略管理 | 范围检查、预期revision、修改、版本、审计、Outbox | 快照预热/通知/Loki投递 |
 | 上传完成/导入 | UploadIntent状态、FileObject验证引用、Material/Job/Outbox | 文件内容解析、AI、对象读取 |
 | 收藏/CSV批次 | 权限/归属/版本/幂等、业务记录、批次游标 | 下一批处理、日志转发 |
+| 条件出题确认 | 本人快照/所选来源版本与权限、幂等、不可变生成计划、Job/Outbox | 模型生成；Worker不重查动态筛选补词，开始练习另行绑定当前机会/额度 |
 | 考试保存/交卷 | 场次锁、权限/截止/edit_epoch、最终答案、锁卷、唯一评分请求/Outbox | AI批改与客户端推送 |
 | 评分发布 | run/代次验证、有效成绩指针、学习贡献替换、汇总状态 | 派生诊断/通知，不重复累计 |
 | 删除材料 | tombstone/generation、拒绝新引用、取消意图/Outbox | MinIO延迟回收、缓存清理 |

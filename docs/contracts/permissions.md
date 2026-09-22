@@ -28,10 +28,10 @@
 | client.vocabulary.csv.export | 导出本人单词CSV | collection.read；含wordbooks列或按本筛选另需vocabulary_notebook.read，缺时可明确选择仅单词内容；无需Key |
 | client.vocabulary.csv.import | 预览/确认/分批导入 | collection.create；比较/匹配/跳过已有记录需collection.read，合并另需collection.update；选择v2词本列需notebook.read/update，建新本另需create；无read只能明确直接新增且不比较/恢复既有词本；不从status导入掌握，无需Key |
 | client.vocabulary.photo.import | 照片识词及预览 | 新视觉调用要求Key/预算；确认新增需collection.create，读取/补空合并既有记录另需collection.read/update，按所选动作组合检查 |
-| client.practice.read | 题目/会话/本人历史成绩读取 | 提交前DTO不提前返回答案 |
+| client.practice.read | 题目/会话/本人历史成绩、本人出题条件预览 | 预览需实际来源read，按本另需notebook.read；不要求Key/generate，不调用模型或领取学习额度；提交前DTO不提前返回答案，主动展开辅助仍按曝光规则 |
 | client.practice.start | 用已有题开始普通练习/词本复习计划 | practice.read、来源read，按本选题另需notebook.read；新词预留日额度，不自动出新题收费 |
 | client.practice.answer | 保存/提交回答、规则判分、受控提示/揭示、结束已有练习 | practice.read、本人活动场次；服务端记录辅助/不会/跳过，新AI判分另验grade.request；不授予直接改掌握权限 |
-| client.practice.generate | 从收藏/错题等生成新题 | 对应来源read、Key/预算；不由start隐含授予 |
+| client.practice.generate | 从收藏/词本条件/错题等生成新题 | practice.read、对应来源read；按本另需notebook.read，确认本人未过期/未冲突快照、Key/预算；不由start隐含授予，Worker各付费阶段及发布重验 |
 | client.practice.grade.request | 主观AI判分/显式重评 | practice.read、已提交答案、Key/预算；规则判分不要求此收费权限 |
 | client.practice.review.request | 个人成绩标记待审/异议 | practice.read；不直接改分，人工覆盖P1另行注册权限 |
 | client.diagnosis.read/generate | 查看/生成薄弱点报告 | generate还需practice.read等实际数据权限、Key/预算；数据不足要说明 |

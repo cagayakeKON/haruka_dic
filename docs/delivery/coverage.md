@@ -12,6 +12,7 @@
 | [小说：预处理与连续阅读](../modules/novels.md) | [材料类型](../contracts/material-types.md)、[出处](../contracts/content-locator.md) | NOV；章序/段落/对话、分句分词、专用阅读和标注降级 |
 | [课本：单元结构与学习](../modules/textbooks.md) | [材料类型](../contracts/material-types.md)、[普通练习](../modules/vocabulary-practice.md) | TBK；内容角色/词表/题目关联、单元位置、逐题反馈与独立状态 |
 | [学习：收藏、照片、练习、评分和诊断](../modules/vocabulary-practice.md) | [权限](../contracts/permissions.md)、[数据与任务](../architecture/data-jobs.md) | COL/PHOTO/PRA/DIAG；重复与来源、规则/AI评分、有效贡献 |
+| [按单词本/时间/记忆生成练习](../modules/vocabulary-practice.md#按单词本时间和记忆情况生成) | [学习状态](../architecture/vocabulary-learning.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md) | PGEN-01～PGEN-06；筛选组合/时间空值、稳定预览与确认、词数不足、撤权/版本/幂等、生成与学习分离；阶段4验收 |
 | [多单词本与每日学习](../modules/vocabulary-notebooks.md) | [学习证据/掌握/调度](../architecture/vocabulary-learning.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-10、VL-01～VL-10；多对多归属、删本/删词、跨本去重、自动掌握、日额度/辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |
 | [单词CSV入口](../modules/vocabulary-practice.md) | [CSV唯一协议](../contracts/vocabulary-csv.md) | 原CSV清单；全部逻辑记录导出、v2词本归属与v1兼容、快照不恢复学习证据、预览/分批/重复策略、公式转义、跨账号往返 |
 | [考试：导入、校对、答题、交卷与成绩](../modules/exams.md) | [API](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[出处](../contracts/content-locator.md) | 原考试清单及DAT；冻结版本、草稿/截止/锁卷、评分恢复与重评 |

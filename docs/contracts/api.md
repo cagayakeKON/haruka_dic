@@ -59,7 +59,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST photo-word-imports；GET {id} | 一张图/语言→候选词预览，尚不写收藏 | photo.import；识别可能收费，不能冒充整卷OCR |
 | POST photo-word-imports/{id}/confirm | 明确新增/补空合并/排除行后确认 | photo.import；新增再验collection.create；读取/合并既有记录另验collection.read/update，缺任一所选动作权限整次确认拒绝 |
 | PATCH/DELETE photo-word-imports/{id} | 修正/丢弃尚未确认的候选预览 | 本人photo.import；已确认的Collection独立编辑，不回滚已提交记录 |
-| POST practice-sessions、practice-generations；GET practice-sessions/{id} | 已有题开始与生成新题分离，返回冻结会话/Job | practice.start/generate/read |
+| POST practice-selection-previews；GET practice-selection-previews/{id} | 按[生成条件](../modules/vocabulary-practice.md#按单词本时间和记忆情况生成)接收词本/时间/记忆/题型/题量，返回本人selection_id/revision/expiry、冻结计数及分页预览 | practice.read+实际来源read；按本需notebook.read，不要求Key/generate，不生成题/占学习额度；计数和明细都不泄露无权项 |
+| POST practice-sessions、practice-generations；GET practice-sessions/{id} | 已有题开始与生成新题分离，返回冻结会话/Job；按词本/全词库条件生成须提交selection_id+expected_revision，不接受客户端自报候选/掌握值 | practice.start/generate/read及当前来源权限；生成确认重验快照并持久purpose=generate计划/Job；词汇开始作答再绑定purpose=review的机会和日额度 |
 | GET practice-generations/{id}；GET mistakes | 已受理生成状态/题目；本人有效错题列表 | practice.read及来源权限，失权结果不因知道Job ID可读 |
 | POST practice-sessions/{id}/answers、finish；GET attempts/{id} | 答案版本/提交；结束/成绩读取；response_kind区分answer/dont_know/skip | practice.answer/read；answer/dont_know按冻结规则形成Attempt，skip仅记录跳过，不以空答案造零分；服务端判状态 |
 | POST practice-sessions/{id}/items/{item_id}/assistances | 受控hint/reveal；记录该题及同目标机会的曝光顺序，才返回允许提示 | practice.answer/read与本人活动场次；不同session/设备不能擦除同机会已辅助事实，考试不复用此入口 |

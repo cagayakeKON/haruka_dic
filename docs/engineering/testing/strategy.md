@@ -157,6 +157,7 @@ def override_dependency(
 | SPEECH | 私有缓存隔离与global_word标准词音共享、多读音/声音差异、倍速不重新合成、合并/取消/过期链接、实际 PCM/封装/Content-Type、无 Key 与不支持声音 | 适配器 + 三端实际播放；实际发音质量不由可解码/Fake替代 |
 | LEARNING_CACHE | 未收藏的词/句/卡片/TTS持久保存；同词异境与无材料输入不串；清本机/Redis后恢复；模型/Key变更、并发乱序、存储失败/配额/GC和离线租期；全局词音不泄漏私人关系/Job、取消不换Key、删贡献者不删成品 | [LC-01～LC-10](../../architecture/learning-cache.md)；键/版本单测、Fake调用计数与真实PG/对象/任务集成、三端副本与账号切换；只读命中不得新增模型调用 |
 | PRACTICE | 可靠客观题不调用 AI；主观失败不计零分；错题/统计幂等；无依据诊断不虚构事实 | 规则/Fake + API 主路径 |
+| PRACTICE_SELECTION | PGEN筛选AND/OR、成员时间/空值/时区、有效记忆投影、固定随机/计数、确认竞态/撤权与无隐式扩词；生成不占学习额度 | 纯条件/时钟规则 + 真实PG快照/事务与Fake生成；控件只验条件保持/失效和明确确认 |
 | EXAM | 题面 DTO 无答案/rubric；冻结版本；revision/编辑代次；截止/保存/交卷并发；缺 Key、逐题失败、重评历史/统计去重 | 真并发 DB/Worker + 三端 release |
 | CSV | 当前用户全部单词、协议往返/可逆转义、映射预览、重复确认、混入他人 ID、导出与实际保存区分 | 规则/API + 三端文件选择保存 |
 | JOB | 业务与 Outbox 原子；消息重复、领取租约过期、提交后进程退出、取消竞争、DLQ 恢复；结果不重复写入 | 真实 DB/Kafka/Worker 进程 |

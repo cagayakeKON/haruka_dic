@@ -28,9 +28,9 @@ const ICONS = {
 const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.book}</svg>`;
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 const state = {
-  books: structuredClone(DEMO_BOOKS), collections: structuredClone(INITIAL_COLLECTIONS),
+  books: structuredClone(DEMO_BOOKS), collections: structuredClone(VOCABULARY_DEMO),
   page: "library", query: "", filter: "全部材料", language: "全部语言", view: "grid", sort: "default",
-  collectionQuery: "", collectionFilter: "全部词句", bookId: "cafe", chapter: 0,
+  bookId: "cafe", chapter: 0,
   explanation: null, fontSize: 18, focus: false, importMode: "material", nextId: 1
 };
 const main = document.querySelector("#main");
@@ -49,24 +49,24 @@ function toast(message) {
 }
 
 function renderNavigation() {
-  const active = state.page === "reader" ? "library" : state.page;
+  const active = state.page === "reader" ? "library" : notebookPages.has(state.page) ? "collections" : state.page;
   const desktopNavigation = document.querySelector("#navigation");
   const phoneNavigation = document.querySelector("#mobile-navigation");
   if (isMobile()) {
     desktopNavigation.innerHTML = "";
     phoneNavigation.innerHTML = [
       ["library", "book", "书库", "我的书库"],
-      ["collections", "bookmark", "收藏", "词句收藏"]
+      ["collections", "bookmark", "单词本", "单词本"]
     ].map(([route, symbol, label, accessibleLabel]) => `<a class="m-nav-item ${route === active ? "active" : ""}" href="#${route}" aria-label="${accessibleLabel}" ${route === active ? 'aria-current="page"' : ""}><span class="m-nav-icon">${icon(symbol)}</span><span>${label}</span></a>`).join("") +
-      `<button class="m-nav-item" data-action="planned" data-feature="practice" aria-label="学习练习，查看规划"><span class="m-nav-icon">${icon("practice")}</span><span>练习</span></button><button class="m-nav-item" data-action="planned" data-feature="agent" aria-label="AI 助手，查看规划"><span class="m-nav-icon">${icon("spark")}</span><span>助手</span></button>`;
+      `<button class="m-nav-item" data-action="nb-plan" aria-label="开始词汇复习"><span class="m-nav-icon">${icon("practice")}</span><span>练习</span></button><button class="m-nav-item" data-action="planned" data-feature="agent" aria-label="AI 助手，查看规划"><span class="m-nav-icon">${icon("spark")}</span><span>助手</span></button>`;
     return;
   }
   phoneNavigation.innerHTML = "";
   document.querySelector("#navigation").innerHTML = [
     ["library", "book", "我的书库", state.books.length],
-    ["collections", "bookmark", "词句收藏", state.collections.length]
+    ["collections", "bookmark", "单词本", state.collections.length]
   ].map(([route, symbol, label, count]) => `<a class="nav-item ${route === active ? "active" : ""}" href="#${route}" aria-label="${label}" title="${label}" ${route === active ? 'aria-current="page"' : ""}>${icon(symbol)}<span>${label}</span><span class="nav-count">${String(count).padStart(2, "0")}</span></a>`).join("") +
-    `<button class="nav-item" data-action="planned" data-feature="practice" aria-label="学习练习，查看规划" title="学习练习 · 规划中">${icon("practice")}<span>学习练习</span><span class="soon">稍后</span></button>
+    `<button class="nav-item" data-action="nb-plan" aria-label="开始词汇复习" title="词汇复习">${icon("practice")}<span>词汇复习</span></button>
      <button class="nav-item" data-action="planned" data-feature="agent" aria-label="AI 助手，查看规划" title="AI 助手 · 规划中">${icon("spark")}<span>AI 助手</span><span class="soon">稍后</span></button>`;
 }
 
@@ -167,26 +167,12 @@ function closeExplanation() {
   if (explanationTrigger?.isConnected) explanationTrigger.focus({ preventScroll: true });
 }
 
-function renderCollections() {
-  if (isMobile()) { renderMobileCollections(); return; }
-  main.innerHTML = `<section class="editorial-heading"><div><p class="eyebrow">WORDS WORTH KEEPING</p><h1>词句收藏<span class="heading-dot">。</span></h1><p class="heading-description">让偶然遇见的词，成为表达的一部分。</p></div><div class="heading-right"><p class="collection-count"><strong>${String(state.collections.length).padStart(2, "0")}</strong> 条收藏</p></div></section><section aria-label="收藏词句"><div class="library-toolbar"><div class="filter-tabs" aria-label="收藏筛选">${["全部词句", "未掌握", "已掌握"].map((type) => `<button class="filter-tab ${state.collectionFilter === type ? "active" : ""}" data-action="collection-filter" data-value="${type}" aria-pressed="${state.collectionFilter === type}">${type}</button>`).join("")}</div>${searchBox("collection-search", "搜索词句或释义…", state.collectionQuery)}</div><div id="collection-list" class="collection-grid"></div></section>`;
-  renderCollectionList();
-}
-function renderCollectionList() {
-  const entries = state.collections.filter((entry) => (state.collectionFilter === "全部词句" || (state.collectionFilter === "已掌握" ? entry.mastered : !entry.mastered)) && `${entry.text} ${DICTIONARY[entry.text].meaning}`.toLowerCase().includes(state.collectionQuery.trim().toLowerCase()));
-  if (isMobile()) { renderMobileCollectionList(entries); return; }
-  document.querySelector("#collection-list").innerHTML = entries.length ? entries.map((entry) => {
-    const info = DICTIONARY[entry.text];
-    const book = bookById(entry.bookId);
-    return `<article class="vocab-card"><div class="vocab-top"><span>${book.language} / ${info.kind}</span>${icon("bookmark")}</div><h2>${escapeHtml(entry.text)}</h2><p class="pronunciation">${escapeHtml(info.reading)}</p><p class="meaning">${escapeHtml(info.meaning)}</p><a href="#source/${entry.id}" class="source-link" aria-label="回到 ${escapeHtml(entry.text)} 的原文">${icon("link")}${escapeHtml(book.title)} · 第 ${entry.chapter + 1} 章</a><div class="vocab-bottom"><button class="mastery ${entry.mastered ? "is-mastered" : ""}" data-action="mastery" data-id="${entry.id}" aria-pressed="${entry.mastered}">${icon("check")}${entry.mastered ? "已掌握" : "标记已掌握"}</button><button class="icon-button" data-action="remove" data-id="${entry.id}" aria-label="移除收藏 ${escapeHtml(entry.text)}">${icon("trash")}</button></div></article>`;
-  }).join("") : `<div class="empty-state">${icon("bookmark")}<h2>这里还没有词句</h2><p>试试其他筛选，或去书里发现一个新词。</p><a class="secondary" href="#library">去书库看看 ${icon("arrow")}</a></div>`;
-}
-
 function openDialog(title, body, kind = "info") {
   if (!dialog.open) dialogTrigger = document.activeElement;
+  if (kind !== "nb-members") notebookState.readingEntry = null;
   dialog.dataset.kind = kind;
   dialog.classList.toggle("mobile-sheet", isMobile());
-  dialog.innerHTML = `<div class="dialog-heading"><h2 id="dialog-title" tabindex="-1">${title}</h2><button class="icon-button" data-action="close-dialog" aria-label="关闭弹窗">${icon("close")}</button></div>${body}`;
+  dialog.innerHTML = `<div class="dialog-heading"><h2 id="dialog-title" tabindex="-1">${escapeHtml(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="关闭弹窗">${icon("close")}</button></div>${body}`;
   if (!dialog.open) dialog.showModal();
   document.body.classList.add("dialog-open");
   dialog.querySelector("#dialog-title").focus();
@@ -211,11 +197,11 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action]");
   if (!button || button.disabled) return;
   const { action, value, id } = button.dataset;
+  if (action.startsWith("nb-") && handleNotebookAction(action, button)) return;
   if (action.startsWith("mobile-") && handleMobileAction(action, button, event)) return;
   if (action === "filter") { state.filter = value; setFilterButtons(action, value); renderBookList(); }
   else if (action === "view") { state.view = value; setFilterButtons(action, value); renderBookList(); }
   else if (action === "reset-filters") { state.query = ""; state.filter = "全部材料"; state.language = "全部语言"; renderLibrary(); document.querySelector("#library-search").focus(); }
-  else if (action === "collection-filter") { state.collectionFilter = value; setFilterButtons(action, value); renderCollectionList(); }
   else if (action === "import") { state.importMode = "material"; renderImport(); }
   else if (action === "import-mode") { state.importMode = value; renderImport(); dialog.querySelector(`[data-value="${value}"]`).focus(); }
   else if (action === "confirm-import") {
@@ -243,13 +229,7 @@ document.addEventListener("click", (event) => {
     if (!isMobile()) { const panel = document.querySelector("#explanation"); panel.tabIndex = -1; panel.focus({ preventScroll: true }); }
   }
   else if (action === "close-explanation") closeExplanation();
-  else if (action === "save-word") {
-    if (!state.explanation || isSaved(state.explanation)) return;
-    state.collections.unshift({ ...state.explanation, id: `saved-${state.nextId++}`, mastered: false });
-    renderNavigation(); renderExplanation();
-    (isMobile() ? dialog.querySelector('[data-action="close-dialog"]') : document.querySelector('[data-action="close-explanation"]')).focus({ preventScroll: true });
-    toast("已收藏这个词，并保留原文出处。");
-  }
+  else if (action === "save-word") beginNotebookSave();
   else if (action === "font") {
     state.fontSize = state.fontSize >= 22 ? 16 : state.fontSize + 2;
     document.body.style.setProperty("--reading-size", `${state.fontSize}px`); toast(`阅读字号：${state.fontSize} px`);
@@ -263,21 +243,7 @@ document.addEventListener("click", (event) => {
     const next = state.chapter + Number(button.dataset.offset);
     if (next >= 0 && next < bookById(state.bookId).chapters.length) location.hash = `reader/${state.bookId}/${next}`;
   }
-  else if (action === "mastery") {
-    const entry = state.collections.find((item) => item.id === id); if (!entry) return;
-    entry.mastered = !entry.mastered; renderCollectionList();
-    const replacement = main.querySelector(`[data-action="mastery"][data-id="${id}"]`);
-    (replacement || main.querySelector('[data-action="collection-filter"].active')).focus({ preventScroll: true });
-    toast(entry.mastered ? "已标记为掌握。" : "已移回待学习词句。");
-  }
-  else if (action === "remove") {
-    const entry = state.collections.find((item) => item.id === id); if (!entry) return;
-    openDialog("移除这个词？", `<p class="dialog-description">将「${escapeHtml(entry.text)}」从本次示例收藏中移除。原文会保留，你可以再次收藏。</p><div class="dialog-actions"><button class="secondary" data-action="close-dialog">保留</button><button class="primary" data-action="confirm-remove" data-id="${id}">确认移除</button></div>`);
-  }
-  else if (action === "confirm-remove") {
-    state.collections = state.collections.filter((entry) => entry.id !== id); dialog.close(); renderNavigation(); renderCollections();
-    document.querySelector("#collection-search").focus(); toast("已从本次收藏中移除。");
-  }
+
 });
 
 function showExamInfo() {
@@ -286,7 +252,6 @@ function showExamInfo() {
 
 document.addEventListener("input", (event) => {
   if (event.target.id === "library-search") { state.query = event.target.value; renderBookList(); }
-  if (event.target.id === "collection-search") { state.collectionQuery = event.target.value; renderCollectionList(); }
 });
 document.addEventListener("change", (event) => {
   if (event.target.id === "language-filter") { state.language = event.target.value; renderBookList(); }
@@ -296,13 +261,17 @@ document.addEventListener("change", (event) => {
 dialog.addEventListener("close", () => {
   if (dialog.open) return;
   document.body.classList.remove("dialog-open");
+  notebookState.readingEntry = null;
   if (dialog.dataset.kind === "word") state.explanation = null;
   if (dialogTrigger?.isConnected) dialogTrigger.focus({ preventScroll: true });
 });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !dialog.open && state.explanation && state.page === "reader") closeExplanation(); });
 
 function route() {
+  notebookState.readingEntry = null;
   const parts = location.hash.slice(1).split("/");
+  if (handleNotebookRoute(parts)) return;
+  document.body.classList.remove("nb-selecting");
   const source = parts[0] === "source" ? state.collections.find((entry) => entry.id === parts[1]) : null;
   let book = parts[0] === "reader" ? bookById(parts[1]) : source ? bookById(source.bookId) : null;
   if (book && !book.chapters.length) book = null;
@@ -315,7 +284,7 @@ function route() {
     const requested = source ? source.chapter : Number(parts[2]);
     state.chapter = Number.isInteger(requested) && requested >= 0 && requested < book.chapters.length ? requested : 0;
     renderReader();
-  } else if (state.page === "collections") renderCollections();
+  } else if (state.page === "collections") renderNotebooksHome();
   else renderLibrary();
   renderNavigation();
   const title = state.page === "reader" ? book.title : state.page === "collections" ? "词句收藏" : "书库";
@@ -371,14 +340,17 @@ function reflowLayout() {
     if (!modeChanged && layoutWidth === window.innerWidth) return;
     const anchor = readingAnchor;
     if (modeChanged) {
-      if (dialog.open) dialog.close();
-      state.explanation = null; state.focus = false;
+      const keepForm = dialog.open && dialog.dataset.kind.startsWith("nb-");
+      if (dialog.open && !keepForm) dialog.close();
+      if (keepForm) dialog.classList.toggle("mobile-sheet", isMobile());
+      if (!keepForm) state.explanation = null;
+      state.focus = false;
       document.body.classList.remove("focus-mode");
       if (state.page === "reader") renderReader();
-      else if (state.page === "collections") renderCollections();
+      else if (notebookPages.has(state.page)) refreshNotebookPage();
       else renderLibrary();
       renderNavigation();
-      main.focus({ preventScroll: true });
+      if (!keepForm) main.focus({ preventScroll: true });
     }
     renderedMobile = isMobile(); layoutWidth = window.innerWidth;
     if (state.page === "reader") restoreReadingAnchor(anchor);

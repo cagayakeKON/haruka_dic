@@ -50,8 +50,3 @@ const DICTIONARY = {
   "穏やか": { reading: "おだやか", kind: "形容动词", meaning: "平静的；温和的。", detail: "可以形容天气、气氛或人的性情。文中的「穏やかな時間」指宁静而舒适的时光。", example: "穏やかな時間が流れている。", translation: "宁静的时光缓缓流淌。" },
   "window": { reading: "/ˈwɪndoʊ/", kind: "名词", meaning: "窗；窗户。", detail: "这里指厨房的窗户。open the window 表示「打开窗户」。", example: "I open the kitchen window.", translation: "我打开厨房的窗户。" }
 };
-
-const INITIAL_COLLECTIONS = [
-  { id: "seed-calm", text: "穏やか", bookId: "cafe", chapter: 0, paragraph: 4, mastered: false },
-  { id: "seed-window", text: "window", bookId: "morning", chapter: 0, paragraph: 0, mastered: false }
-];

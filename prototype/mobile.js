@@ -55,26 +55,6 @@ function renderMobileExplanation() {
   openDialog("词句释义", `<div class="m-word-heading"><div><h3>${escapeHtml(entry.text)}</h3><p class="pronunciation">${escapeHtml(info.reading)}</p></div><span class="word-type">${info.kind}</span></div><p class="m-word-meaning">${escapeHtml(info.meaning)}</p><div class="m-word-example"><span>在这句话里</span><p>${escapeHtml(sentence)}</p>${sentence === info.example ? `<small>${escapeHtml(info.translation)}</small>` : ""}</div><details class="m-word-details"><summary>词语用法</summary><p>${escapeHtml(info.detail)}</p></details><p class="m-word-source">第 ${entry.chapter + 1} 章 · 预置词条示例</p><div class="dialog-actions m-word-actions"><button class="secondary" data-action="close-dialog">返回原文</button><button class="primary" data-action="save-word" ${saved ? "disabled" : ""}>${icon(saved ? "check" : "bookmark")}${saved ? "已加入收藏" : "收藏这个词"}</button></div>`, "word");
 }
 
-function renderMobileCollections() {
-  const mastered = state.collections.filter((entry) => entry.mastered).length;
-  main.innerHTML = `${mobileHeader()}<section class="m-page-heading m-collection-heading"><div><p class="m-eyebrow">WORDS TO KEEP</p><h1>词句收藏<span class="m-total">${state.collections.length}</span></h1><p>每一次遇见，都留下一点收获。</p></div></section><div class="m-collection-summary"><span><strong>${state.collections.length - mastered}</strong> 待掌握</span><i></i><span><strong>${mastered}</strong> 已掌握</span>${icon("bookmark")}</div><section aria-label="收藏词句"><div class="m-collection-tools">${searchBox("collection-search", "搜索词句或释义", state.collectionQuery)}<div class="m-segmented" aria-label="收藏筛选">${["全部词句", "未掌握", "已掌握"].map((type) => `<button class="filter-tab ${state.collectionFilter === type ? "active" : ""}" data-action="collection-filter" data-value="${type}" aria-pressed="${state.collectionFilter === type}">${type}</button>`).join("")}</div></div><div id="collection-list" class="m-collection-list"></div></section>`;
-  renderCollectionList();
-}
-
-function renderMobileCollectionList(entries) {
-  document.querySelector("#collection-list").innerHTML = entries.length ? entries.map((entry) => {
-    const info = DICTIONARY[entry.text];
-    const book = bookById(entry.bookId);
-    return `<article class="m-vocab-card"><div class="m-vocab-top"><span>${book.language} · ${info.kind}</span><button class="icon-button" data-action="mobile-word-menu" data-id="${entry.id}" aria-label="${escapeHtml(entry.text)}的更多操作">${icon("more")}</button></div><h2>${escapeHtml(entry.text)}</h2><p class="pronunciation">${escapeHtml(info.reading)}</p><p class="meaning">${escapeHtml(info.meaning)}</p><p class="m-vocab-context">${escapeHtml(sourceSentence(entry))}</p><div class="m-vocab-actions"><a href="#source/${entry.id}" aria-label="回到 ${escapeHtml(entry.text)} 的原文">${icon("link")}查看原文</a><button class="mastery ${entry.mastered ? "is-mastered" : ""}" data-action="mastery" data-id="${entry.id}" aria-pressed="${entry.mastered}">${icon("check")}${entry.mastered ? "已掌握" : "标记已掌握"}</button></div></article>`;
-  }).join("") : `<div class="empty-state">${icon("bookmark")}<h2>这里还没有词句</h2><p>换个筛选，或去书里遇见一个新词。</p><a class="secondary" href="#library">去书库看看 ${icon("arrow")}</a></div>`;
-  const summary = main.querySelector(".m-collection-summary");
-  if (summary) {
-    const mastered = state.collections.filter((entry) => entry.mastered).length;
-    summary.querySelectorAll("strong")[0].textContent = state.collections.length - mastered;
-    summary.querySelectorAll("strong")[1].textContent = mastered;
-  }
-}
-
 function handleMobileAction(action, button, event) {
   if (action === "mobile-filters") showMobileFilters();
   else if (action === "mobile-apply-filters") {
@@ -99,10 +79,6 @@ function handleMobileAction(action, button, event) {
     dialog.querySelector("#font-value").innerHTML = `${state.fontSize}<small>px</small>`;
     dialog.querySelector('[data-offset="-2"]').disabled = state.fontSize <= 16;
     dialog.querySelector('[data-offset="2"]').disabled = state.fontSize >= 22;
-  }
-  else if (action === "mobile-word-menu") {
-    const entry = state.collections.find((item) => item.id === button.dataset.id);
-    if (entry) openDialog(escapeHtml(entry.text), `<p class="m-sheet-subtitle">${escapeHtml(bookById(entry.bookId).title)} · 第 ${entry.chapter + 1} 章</p><div class="m-word-menu"><a href="#source/${entry.id}">${icon("link")}回到原文${icon("chevron")}</a><button data-action="remove" data-id="${entry.id}">${icon("trash")}移除收藏${icon("chevron")}</button></div>`, "word-menu");
   }
   else return false;
   return true;

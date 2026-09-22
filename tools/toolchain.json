@@ -34,7 +34,12 @@
   "windows": {
     "visual_studio": "17.9.34616.47",
     "sdk": "10.0.19041.0",
-    "runtime_acceptance": "Windows host: shell integration 2 passed; installer and full B0 pending"
+    "runtime_acceptance": "Windows host: shell/control integration verified; MSI identity prototype verified; full B0 pending",
+    "installer_prototype": {
+      "format": "per-user MSI",
+      "toolchain_lock": "tools/packaging/windows/toolchain.json",
+      "status": "identity_probe_verified_actual_Flutter_installer_not_released"
+    }
   },
   "docker": "29.5.2",
   "docker_compose": "5.1.4",
@@ -60,7 +65,7 @@
   "pending": [
     "Production container image digests",
     "Locked long-term Dart API generator before B2",
-    "Android device and Windows installer acceptance"
+    "Android real-device/native plugin and signed release distribution acceptance"
   ],
   "development_images": {
     "postgres": "postgres:18@sha256:8ff36f3c66371cba71d20ceedccfc3de9669a68737607888c4ef0af93abe8e39",

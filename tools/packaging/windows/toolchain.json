@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "wix": {
+    "version": "5.0.2",
+    "package_url": "https://api.nuget.org/v3-flatcontainer/wix/5.0.2/wix.5.0.2.nupkg",
+    "package_sha256": "f30ef0c74e2a986126539c5780be93ac24e8136eaf723b1937b26272703ae173",
+    "author_certificate_sha256": "0db368bc1a5a9e19cc9e036b490b7c4a4d3dfb941c0781b4f22f218be0b54986",
+    "source": "https://www.nuget.org/packages/wix/5.0.2",
+    "dependencies": "none; tool payload is bundled in this signed NuGet package"
+  },
+  "dotnet_sdk": "8.0.200",
+  "dotnet_runtime": "6.0.36",
+  "license": "MS-RL; prototype only, production toolchain approval remains open",
+  "install_scope": "workspace-local tool-path only",
+  "package_mode": "per-user MSI, unsigned identity prototype"
+}

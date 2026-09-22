@@ -899,6 +899,12 @@ def check(report: Report, stage: str) -> None:
 def codegen(report: Report, *, write: bool) -> None:
     doctor(report, "backend")
     doctor(report, "web")
+    run(
+        report,
+        "uv",
+        ["run", "--locked", "python", "-m", "tools.check_registries"],
+        cwd=ROOT / "backend",
+    )
     require_files(["tools/codegen/manifest.json", "frontend/tool/generate.py"])
     manifest = json_object(
         json.loads((ROOT / "tools/codegen/manifest.json").read_text(encoding="utf-8"))

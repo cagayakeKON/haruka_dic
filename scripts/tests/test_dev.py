@@ -90,6 +90,8 @@ class ResultGates(unittest.TestCase):
             def export(
                 _report: dev.Report, name: str, arguments: Sequence[str], **_kwargs: object
             ) -> str:
+                if "tools.check_registries" in arguments:
+                    return ""
                 if name == "uv":
                     outputs = (
                         ("manifest.json", "openapi.json", "samples.json")

@@ -59,7 +59,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST practice-sessions/{id}/answers、finish；GET attempts/{id} | 答案版本/提交；结束/成绩读取 | practice.answer/read；服务端判状态 |
 | POST attempts/{id}/grading-runs、review-requests | 付费评分/重评、个人异议标记 | grade.request/review.request；不能写任意分数 |
 | GET/POST diagnoses；GET diagnoses/{id} | 报告列表/详情/生成，数据范围与统计窗口 | diagnosis.read/generate+来源read |
-| POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 选区/上下文引用→run/事件；完整结果/卡片反馈 | ai.explain/feedback；Agent卡片需agent.read；生成新结果与读取已有缓存分开 |
+| POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
+| POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新付费另验Key/预算；显式再解析使用expected_lookup_revision取得新查阅代次 |
 | GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；run引用与流 | agent.read/use/delete，每工具独立授权 |
 | POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→Job或已有音频 | speech.generate/play及来源read |
 | POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 纯缓存查询、合成状态、音频传输 | resolve/play不收费、不要求Key；新生成只走requests且需generate |

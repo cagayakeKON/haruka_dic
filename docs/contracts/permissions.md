@@ -32,7 +32,7 @@
 | client.practice.grade.request | 主观AI判分/显式重评 | practice.read、已提交答案、Key/预算；规则判分不要求此收费权限 |
 | client.practice.review.request | 个人成绩标记待审/异议 | practice.read；不直接改分，人工覆盖P1另行注册权限 |
 | client.diagnosis.read/generate | 查看/生成薄弱点报告 | generate还需practice.read等实际数据权限、Key/预算；数据不足要说明 |
-| client.ai.explain | 词句解释及本人完整缓存结果 | 来源read；仅新外部调用要求Key/预算，缓存命中不收费；不能作为任意工具操作许可 |
+| client.ai.explain | 词句解释、只读resolve、本人完整缓存结果与书内已查索引 | 实际来源read，批量索引逐项按业务状态裁剪；仅新外部调用要求Key/预算，缓存命中不收费；不能作为任意工具操作许可 |
 | client.ai.feedback | 对本人解释结果提交反馈 | 该结果当前可读，不授权读取他人内容 |
 | client.agent.read/use/delete | 历史对话；创建空会话/新一轮；删除对话 | use需read；空会话不收费，新run需Key/预算；工具再验具体业务权限；delete不删除已收藏的独立结果 |
 | client.speech.generate | 创建TTS合成请求 | 实际来源read，仅新调用要求Key/预算；缓存命中不收费，无Key也可复用已有音频 |

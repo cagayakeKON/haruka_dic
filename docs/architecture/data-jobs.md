@@ -29,6 +29,7 @@
 | ExamSession/Response/GradeRun | 固定版本、deadline、edit_epoch、response_revision、grade_generation | 保存/交卷在场次行锁内；单题答案唯一；提交后不可修改 |
 | LearnerContribution/Profile | source_kind + session/attempt + item 的唯一贡献键、effective_grade_id | 重评替换贡献不追加重复错误；needs_review 不进入正式统计 |
 | AgentThread/Message/AiRun/Card | owner、SDK/协议/模型/Prompt版本、run状态、结果引用 | 单线程轮次占用/版本校验；消息与可收藏卡片的提交状态分离 |
+| Explanation/SourceResultBinding/MaterialLearningIndex/LearningLookupState/GenerationSlot | 完整结果、源/语境/用途、查阅键/严格生成键；LookupState维护跨配置的选用run/effective/代次 | 成功后同事务建历史绑定，通过共同查阅代次才更新当前索引；不同语境不误用，严格键slot只合并调用；已有结果不依赖Redis或本机存续 |
 | AudioAsset/Segment/Manifest | owner、内容/声音/模型/参数摘要、格式、对象与句子引用 | 用户内去重；实际格式与Content-Type匹配；未完成产物不播放 |
 | ProviderCredential/Settings | owner、provider、密文、credential_version、encryption_key_version、row revision；模型能力选择在Settings | 用户换Key/撤销更新credential_version，主密钥重加密只更新encryption_key_version，二者不混用；DTO只返回掩码 |
 | Job/JobStage/ExternalCall | actor/owner/audience、权限引用、输入版本、阶段、租约、预算 | 状态CAS、阶段幂等、调用结果不确定单独记录 |
@@ -122,6 +123,8 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 收藏保留已存词句/笔记/出处快照，原文回跳显示不可用；已开始考试、已提交答卷、Attempt保留必要不可变题面/评分依据和私有题图引用以支持复盘。删除操作明确说明：移除书库原资料，已生成的个人收藏/考试记录仍保留。不是用户数据“彻底抹除”的实现，也不提供跨账号恢复。
 
 原文件/历史revision不被永久无条件保留：只有仍被活跃场次/成绩/收藏必要回跳策略或在途安全处理引用的对象才retain；没有引用的对象进入延迟GC候选。首版推荐7天宽限，物理回收前按同一父行锁/代次协议再次检查tombstone、实际逻辑引用、generation和任务租约，不能把过期引用计数当删除依据，也不依赖数据库级联删除。GC权限只针对明确对象键与Haruka Bucket。MinIO删除失败重试，不在一个SQL事务中假装对象和数据库原子删除。
+
+单词/句子解释和TTS的已提交版本、书内索引与来源绑定也是权威业务引用，完整规则见 [学习结果缓存](learning-cache.md)。有效业务引用期间不按短TTL/LRU淘汰付费结果；原书删除后仅书属引用可解除，独立收藏/历史业务必要引用仍按各自授权保留，旧版/在途发布也纳入共同父行锁检查。仅清理本机或Redis不触发服务端GC，临时未发布/失效孤立对象与成功结果分开处理。
 
 未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他同账号资源引用的对象；不跨用户内容去重。数据库迁移和运维恢复步骤见 [部署与恢复](../operations/deployment-recovery.md)，保留参数见 [运行配置](../operations/configuration.md)，不属于用户单词CSV功能。
 

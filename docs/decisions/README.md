@@ -12,6 +12,8 @@ Flutter用户端Windows/Web/Android；Python前后端分离；复用MyHome基础
 
 OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用基础；PDF文本提取/渲染可本地完成，不引入传统OCR或静默回退。具体模型仍待OPEN-04验证，格式范围仍按OPEN-01及产品优先级。
 
+用户进一步要求查过的单词、AI解析、句子和TTS都缓存。设计采用服务端持久结果与书内来源索引、可淘汰的Redis/本机副本，未收藏也保存；同词不同语境分开，配置更新不自动丢旧结果或重新收费。
+
 ## 2. 当前实现建议
 
 | ID | 选择与理由 | 验证/变更条件 |
@@ -32,6 +34,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | DEC-14 | 用户确认无物理外键和公共创建/更新时间；工程采用共享表+ScopeContext、事务内逻辑关系校验及共同父行锁，不启用首版RLS | [数据库规范](../engineering/database.md) 的DB验收：UTC带时区、所有写入时间路径、实际PG关联/删除竞争；不宣称DB自动阻止任意SQL跨用户 |
 | DEC-15 | 三类分别处理/建模/展示为用户已确认；设计采用唯一material_type、专用处理器/manifest/controller，选错类型显式创建新材料重新处理 | [三类材料契约](../contracts/material-types.md) TYPE及NOV/TBK/考试验收；保留原文件/出处基础能力，禁止类型换皮与通用接口泄露考试答案；当前未实现 |
 | DEC-16 | 用户确认OCR统一视觉模型；Pydantic AI固定类型化调用，原件/页图准备与三类专用结果校验分开 | [视觉OCR](../architecture/vision-recognition.md) OCR-01～OCR-05按功能/获准格式验收；个人Key/预算、转写版本、定位粒度与失败恢复须验证，不走传统OCR后备 |
+| DEC-17 | 查词/句子/AI解析/TTS成功结果必须缓存；设计以PG/MinIO持久保存为基础，书内语境索引、查阅/生成键分离，Redis/Flutter只作副本 | [学习结果缓存](../architecture/learning-cache.md) LC验收；TTL/本机清理不丢已付费结果，并发/改配置/权限/GC须验证；缓存业务未实现 |
 
 ## 3. 决策导航与变更
 

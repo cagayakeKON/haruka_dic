@@ -202,6 +202,69 @@ class OwnedProcessChecks(unittest.TestCase):
 
 
 class DevelopmentDiagnostics(unittest.TestCase):
+    def test_platform_probe_allows_closed_connection_rebind(self) -> None:
+        if os.name == "nt":
+            # Windows keeps its existing exclusive-address policy; the actual
+            # TIME_WAIT rebind acceptance below belongs to the POSIX platform.
+            with patch("scripts.development.socket.socket") as factory:
+                candidate = factory.return_value.__enter__.return_value
+                development.require_free_port(18080)
+            candidate.setsockopt.assert_called_once_with(
+                socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1
+            )
+            candidate.bind.assert_called_once_with(("127.0.0.1", 18080))
+            candidate.listen.assert_not_called()
+            return
+        with socket.socket() as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(1)
+            port = listener.getsockname()[1]
+            with socket.create_connection(("127.0.0.1", port), timeout=2) as client:
+                peer, _ = listener.accept()
+                with peer:
+                    peer.sendall(b"proof")
+                self.assertEqual(client.recv(5), b"proof")
+                self.assertEqual(client.recv(1), b"")
+        # Observe TIME_WAIT itself, so a race or an unused socket cannot satisfy
+        # the rebind regression without reproducing the relevant kernel state.
+        address = f"0100007F:{port:04X}"
+
+        def in_time_wait() -> bool:
+            lines = Path("/proc/net/tcp").read_text(encoding="ascii").splitlines()[1:]
+            return any(
+                row[1] == address and row[3] == "06" for row in (line.split() for line in lines)
+            )
+
+        wait_until(in_time_wait)
+        development.require_free_port(port)
+        with socket.socket() as restarted:
+            restarted.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            restarted.bind(("127.0.0.1", port))
+            restarted.listen(1)
+
+    def test_live_reusable_listener_is_rejected_and_remains_reachable(self) -> None:
+        with socket.socket() as holder:
+            holder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            holder.bind(("127.0.0.1", 0))
+            holder.listen(1)
+            port = holder.getsockname()[1]
+            with self.assertRaisesRegex(development.DevelopmentError, "occupied or unavailable"):
+                development.require_free_port(port)
+            with socket.create_connection(("127.0.0.1", port), timeout=2):
+                peer, _ = holder.accept()
+                peer.close()
+
+    def test_unlistened_exclusive_bind_is_rejected(self) -> None:
+        with socket.socket() as holder:
+            if os.name == "nt":
+                holder.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            holder.bind(("127.0.0.1", 0))
+            port = holder.getsockname()[1]
+            with self.assertRaisesRegex(development.DevelopmentError, "occupied or unavailable"):
+                development.require_free_port(port)
+            self.assertEqual(holder.getsockname()[1], port)
+
     def test_doctor_missing_environment_refuses_without_installing(self) -> None:
         with tempfile.TemporaryDirectory() as temporary, patch.dict(os.environ, {}, clear=True):
             root = Path(temporary)

@@ -24,7 +24,7 @@ backend/.venv/Scripts/python.exe dev/ci/run.py --commit $commit --image $imageId
 执行范围固定如下，首次失败立即退出并保留失败报告；新尝试必须使用新目录，不能覆盖前次失败：
 
 - backend/docs/web 的 doctor 与 bootstrap，各 bootstrap 两次；锁、用户配置和最终 Git tracked diff 必须保持不变。实际调用 docs check 和两次 codegen check。
-- 固定 [执行矩阵](execution_matrix.json) 的 31 项开发命令/进程测试与 36 项后端生命周期用例。缺节点、额外节点、skip/xfail 或失败不能通过；不重复质量门禁 32 项。
+- 固定 [执行矩阵](execution_matrix.json) 的 34 项开发命令/进程测试与 36 项后端生命周期用例。缺节点、额外节点、skip/xfail 或失败不能通过；不重复质量门禁 32 项。
 - 缺 SDK、缺运行锁、缺必需脚本、构建版本/哈希不符、运行锁漂移、无效配置、占用端口与不可达服务失败样本。
 - 空缓存 hash 锁定构建的详细日志，editable 安装和实际包清单；正式分发验证脚本在 checkout 外安装 wheel、读取 sdist 资源并启动四个正式入口。
 - core/jobs 的真实 API 与 Flutter Web 启动各两轮，检查结构化子进程结果、端口释放及 bridge 无遗留连接；API/Worker/Outbox 分别通过真实 SIGTERM 有界退出。Worker/Outbox 只验证生命周期，业务 handler 仍属于 B2。

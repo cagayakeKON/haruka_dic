@@ -20,6 +20,29 @@ from run import mount, validate_docker_context
 
 
 class RunnerChecks(unittest.TestCase):
+    def test_runtime_lock_drift_requires_actual_locked_diagnostic(self) -> None:
+        report: dict[str, object] = {
+            "result": "failed",
+            "records": [
+                {
+                    "name": "uv",
+                    "status": "failed",
+                    "exit_code": 1,
+                    "arguments": ["sync", "--locked", "--group", "dev"],
+                },
+                {"name": "result", "status": "failed", "reason": "uv failed with exit code 1"},
+            ],
+        }
+        require_failure_evidence(
+            "runtime-lock-drift",
+            report,
+            "The lockfile at `uv.lock` needs to be updated, but `--locked` was provided.",
+        )
+        with self.assertRaises(RuntimeError):
+            require_failure_evidence(
+                "runtime-lock-drift", report, "No solution found: unavailable offline cache"
+            )
+
     def test_same_exit_with_wrong_or_missing_diagnostic_never_passes(self) -> None:
         name = "missing-required-script"
         report: dict[str, object] = {

@@ -87,7 +87,9 @@ def junit(path: Path, expected: list[str]) -> int:
 def free_ports() -> None:
     for port in (18080, 5173):
         with socket.socket() as candidate:
+            candidate.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             candidate.bind(("127.0.0.1", port))
+            candidate.listen(1)
 
 
 def api_ready() -> bool:
@@ -113,7 +115,7 @@ FAILURE_REASONS = {
     "missing-required-script": "Required files are missing: dev/infra.py",
     "builder-version-drift": "Backend builder or uv requirement differs from tools/toolchain.json",
     "missing-build-hash": "Build constraint lacks an exact version or a SHA-256 hash",
-    "runtime-lock-drift": "uv failed with exit code 2",
+    "runtime-lock-drift": "uv failed with exit code 1",
     "missing-flutter": "Missing Flutter SDK; install the exact revision in tools/toolchain.json",
     "invalid-config": "Development configuration must target the declared dev/test instance",
     "occupied-port": "Loopback port 18080 is occupied or unavailable; stop its owner explicitly or use another declared target",
@@ -135,7 +137,7 @@ def require_failure_evidence(name: str, report: dict[str, object], output: str) 
         if not any(
             record.get("name") == "uv"
             and record.get("status") == "failed"
-            and record.get("exit_code") == 2
+            and record.get("exit_code") == 1
             and record.get("arguments") == ["sync", "--locked", "--group", "dev"]
             for record in records
         ):
@@ -268,7 +270,12 @@ class Run:
                     arguments = ("infra", "init")
                 elif name == "runtime-lock-drift":
                     arguments = ("bootstrap", "--scope", "backend")
-                self.negative(name, *arguments, environment={**os.environ, "UV_OFFLINE": "true"})
+                # Re-resolving an intentionally changed project needs index metadata;
+                # a locked sync downloads wheels without warming that metadata cache.
+                environment = dict(os.environ)
+                if mutation != "runtime":
+                    environment["UV_OFFLINE"] = "true"
+                self.negative(name, *arguments, environment=environment)
             finally:
                 path.write_bytes(original)
         environment = {**os.environ, "PATH": "/usr/local/bin:/usr/bin:/bin"}

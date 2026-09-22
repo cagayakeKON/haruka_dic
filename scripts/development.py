@@ -121,12 +121,20 @@ def read_public_config(path: Path) -> DevelopmentConfig:
 
 
 def require_free_port(port: int) -> None:
-    """Probe only; never terminate a port holder or enable socket reuse."""
+    """Probe service-compatible binding without terminating or sharing port holders."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as candidate:
             if os.name == "nt":
                 candidate.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            else:
+                # Match service rebinding after orderly shutdown. SO_REUSEADDR
+                # permits TIME_WAIT reuse, but never shares an active listener.
+                candidate.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             candidate.bind(("127.0.0.1", port))
+            if os.name != "nt":
+                # A bind alone can coexist with another reusable unlistened bind;
+                # listen exercises the same exclusivity boundary as the service.
+                candidate.listen(1)
     except OSError as error:
         if isinstance(error, PermissionError):
             raise DevelopmentError(

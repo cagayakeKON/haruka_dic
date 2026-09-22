@@ -13,13 +13,13 @@
 | 权限代码 | 页面/接口动作 | 附加依赖和付费含义 |
 | --- | --- | --- |
 | client.login | 学习端登录、身份续期、access快照/已登录遥测 | 不授予其他业务动作 |
-| client.material.list/read | 书库列表/搜索；材料、版本、章节、出处/题图读取 | read校验文件用途与来源；list元数据不含原文 |
-| client.material.import | 上传并建立学习材料 | 确定性解析；AI分析另验analyze |
-| client.material.update | 改类型/标题等允许字段 | read、expected_revision；改成试卷另验exam.import |
+| client.material.list/read | 书库列表/搜索；材料元数据、小说/课本版本内容与出处读取 | read校验类型/文件用途与来源；list无原文，试卷正文/题面/答案另走exam权限与专用DTO |
+| client.material.import | 上传或复用本人原文件建立所选类型的新材料 | 确定性解析；复用源需material.read，exam源另需exam.read+exam.edit完整原件资格；目标exam另需exam.import，AI分析另验analyze |
+| client.material.update | 改标题等允许的元数据字段，不接受类型修改 | read、expected_revision；另类型重新处理使用import动作，不由update授权 |
 | client.material.reparse | 重新确定性解析 | read；新版本不覆盖旧引用；AI另验analyze |
-| client.material.analyze | AI分类、语义补充与抽取 | read、本人Key、预算、明确用户意图；允许收费 |
+| client.material.analyze | 所选类型的AI结构建议、语义补充与抽取 | read、本人Key、预算、明确用户意图；允许收费，不能改变material_type；试卷同时按exam实际动作校验 |
 | client.material.delete | 从书库移除材料 | read；tombstone/引用保留，不删除成绩/收藏 |
-| client.reading.progress.update | 更新当前位置/最远进度 | material.read；无该权限仍能只读 |
+| client.reading.progress.update | 小说当前位置/最远进度、课本最近单元位置 | material.read；仅novel/textbook，无该权限仍能只读；考试进度使用场次动作 |
 | client.bookmark.read/create/delete | 阅读书签列表/创建/删除 | material.read；本人记录 |
 | client.collection.read/create/update/delete | 收藏列表、笔记、标签关系与状态 | create引用来源时校验来源read；update/delete需read；标签管理不跨本人收藏 |
 | client.vocabulary.csv.export | 导出本人单词CSV | collection.read；无需Key |
@@ -38,7 +38,7 @@
 | client.speech.generate | 创建TTS合成请求 | 实际来源read，仅新调用要求Key/预算；缓存命中不收费，无Key也可复用已有音频 |
 | client.speech.play | 读取音频清单、播放/本人缓存下载 | 实际来源可读且音频有效；无需重新合成权限或Key |
 | client.exam.list/read | 试卷列表/版本题面 | read控制专用题面与状态，答案有独立DTO |
-| client.exam.import/edit | 创建试卷/题目校对/版本确认 | import复用上传需material.import；AI结构化另验material.analyze；edit需exam.read |
+| client.exam.import/edit | 创建试卷/题目校对/版本确认 | import复用上传需material.import；AI结构化另验material.analyze；edit需exam.read；在本人校对范围使用完整原件另需material.read，普通题面read不授予含答案原件的复用/下载 |
 | client.exam_session.start/read/save/submit | 开考、恢复/答题卡、存草稿、交卷 | start需exam.read；save/submit需session.read与活动状态/edit_epoch；submit不隐含收费批改 |
 | client.exam_grade.request/read/regrade | 请求批改、成绩、显式重评 | request/regrade需session.read及已提交答案；需要AI时Key/预算，交卷并批改需同时submit+request |
 | client.profile.read/update | 本人资料/学习偏好/设置 | update校验字段；不允许改角色/状态/登录邮箱 |

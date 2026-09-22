@@ -19,9 +19,11 @@
 | User/Library/StudyProfile | email_normalized、status、安全 epoch、authz_version；Library.owner | 邮箱唯一、每用户一个 Library；初始化同事务；登录身份与学习偏好分离 |
 | AuthSession/AuthChallenge | user、audience、绝对期限、epoch、撤销/消费状态、purpose、摘要 | 会话/挑战不得跨用户/受众/用途；PG 撤销先于任何缓存失效通知 |
 | Role/权限关系/Revision | 见 RBAC | 继承 DAG、合法范围、唯一绑定、版本、授予边界、最后管理员约束 |
-| Material/Revision/StructureNode/ContentBlock/Sentence | 当前版本指针、状态、delete_generation、父子树、原文/定位 | revision 不可变；同库引用；节点不能跨版本拼接；AI 候选不能覆盖原文 |
+| Material/Revision/StructureNode/ContentBlock | 固定material_type、当前版本指针、状态、delete_generation、源结构/原文/定位 | revision 不可变；同库引用；节点不能跨版本拼接；AI 不覆盖原文/类型，共用内容不直接构成万能阅读器 |
+| NovelManifest/Chapter、TextbookManifest/Unit/Lesson | 各自的内容版本、领域节点、源块/课本Exercise引用与质量状态 | 两套专用产物，只引用匹配类型/版本/所有者的来源；试卷使用下方独立Exam聚合 |
+| LinguisticAnalysis/Sentence/Token | 内容版本、分析/规则/词典版本、语言、原文span | 派生标注不改canonical_text；新切句不能静默改变旧sentence_id的含义 |
 | FileObject/UploadIntent | owner、临时staging_key、独占final_key、用途、最终摘要/实际大小、状态、到期 | 客户端仅写临时对象；后端固定不可变final对象并验证后才发布；完成幂等 |
-| CollectionItem/Tag/Bookmark/ReadingProgress | kind、词/笔记、出处快照、current_position、max_progress、revision | 标签关系同库；进度当前与最远分离；删除材料后收藏文本仍存在 |
+| CollectionItem/Tag/Bookmark/ReadingProgress | kind、词/笔记、出处快照、current_position、小说max_progress、revision | 标签关系同库；小说当前/最远分离，课本位置不表示完成度，考试进度另存；删除材料后收藏文本仍存在 |
 | Exercise/PracticeSession/Attempt/GradeRun | 冻结题目与依据、答案、提交幂等键、评分代次 | 同一提交不重复 Attempt；规则/AI 成绩有来源；有效成绩与历史分开 |
 | ExamPaper/Version/Item/GradingBasis | 题面/题序/分值与依据版本 | ready 版本不可变；题面 DTO 不含答案/rubric |
 | ExamSession/Response/GradeRun | 固定版本、deadline、edit_epoch、response_revision、grade_generation | 保存/交卷在场次行锁内；单题答案唯一；提交后不可修改 |
@@ -40,7 +42,7 @@
 以下保留产品逻辑模型中的跨功能关系，不复制模块 DTO，也不把字段示意当最终 DDL：
 
 - User 拥有私有 Library，StudyProfile 是该用户的学习偏好；界面 locale、母语与 target_languages 分开。LearnerProfile 按学习者与目标语派生词汇、语法和技能统计，并保留更新时间/事实版本；修改语言偏好不改写原 Attempt 或删除历史。设置字段和诊断口径分别见 [设置](../modules/settings.md)、[收藏与练习](../modules/vocabulary-practice.md)。
-- Material 的来源格式、导入模式、内容类型、语言与导入报告分开；MaterialRevision 下的 StructureNode、ContentBlock、Sentence 组成版本化结构，Sentence 关联原文 span 与语言。物理原文件和结构内容分离；重新解析产生新版本，收藏尽力重绑失败时保留快照，不因重解析丢失已存学习记录。保留/删除期限仍按第 7 节处理。
+- Material 的来源格式、唯一业务类型 material_type、语言与导入报告分开。MaterialRevision 保留不可变源结构/ContentBlock，各类型独立编排 NovelManifest、TextbookManifest 或 ExamPaperVersion；语言分析版本中的 Sentence/Token 引用原文 span。类型固定、另类型重新处理及内容/标注版本边界唯一维护在 [三类材料契约](../contracts/material-types.md)。重新解析失败不切当前版本，收藏重绑失败保留快照；保留/删除期限仍按第 7 节处理。
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
 - CollectionItem 维护 kind、词句/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词允许为空，不能伪造材料出处。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
 - Exercise 区分 extracted/generated，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至 CollectionItem、Attempt 或 ContentBlock，引用由服务事务校验同库归属及版本/状态。Attempt 关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。

@@ -25,7 +25,9 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 | 模块 | 负责的用户行为 | 主要公共依赖 |
 | --- | --- | --- |
 | [账号](modules/accounts.md) | 注册、登录、会话恢复、改密/退出 | [认证](architecture/authentication.md)、[授权](architecture/authorization.md) |
-| [材料与阅读](modules/materials-reading.md) | 导入、书库、教材、选区、进度与书签 | [出处协议](contracts/content-locator.md)、[数据与任务](architecture/data-jobs.md) |
+| [材料公共能力](modules/materials-reading.md) | 导入、书库、共用出处/位置/书签操作 | [三类材料](contracts/material-types.md)、[出处协议](contracts/content-locator.md)、[数据与任务](architecture/data-jobs.md) |
+| [小说](modules/novels.md) | 章节/语言预处理、连续阅读与选词 | [三类材料](contracts/material-types.md)、[出处](contracts/content-locator.md) |
+| [课本](modules/textbooks.md) | 单元/内容角色、词表、课文与逐题练习 | [三类材料](contracts/material-types.md)、[普通练习](modules/vocabulary-practice.md) |
 | [收藏与练习](modules/vocabulary-practice.md) | 词表、CSV/照片、练习、评分、错题与诊断 | [CSV](contracts/vocabulary-csv.md)、[API](contracts/api.md) |
 | [考试](modules/exams.md) | 试卷校对、整卷答题、保存/交卷、成绩与重评 | [数据与任务](architecture/data-jobs.md)、[出处](contracts/content-locator.md) |
 | [AI与朗读](modules/ai-speech.md) | 解释、对话、卡片、TTS与播放 | [Agent运行层](architecture/agent-runtime.md)、[API事件](contracts/api.md) |

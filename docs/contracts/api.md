@@ -32,7 +32,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 | 资源/方法 | 关键输入/返回与业务动作 | 权限/规范 |
 | --- | --- | --- |
-| GET meta；GET model-capabilities | 公共instance_id/兼容版本；已登录者模型/声音/格式能力 | meta不带凭据探测；能力目录是client登录基础只读，不含Key/管理字段 |
+| GET meta；GET model-capabilities | 公共instance_id/兼容版本/材料类型与格式能力；已登录者模型/声音/输出格式能力 | meta不带凭据探测；模型能力目录是client登录基础只读，不含Key/管理字段；能力支持不代表个人获权 |
 | GET auth/policy；POST auth/register/login | 安全公共策略；邮箱/密码；业务会话或受限continuation | 账号流程；注册不接受角色/状态 |
 | GET auth/csrf | 当前Web会话绑定的CSRF值 | 同源Cookie身份，不能当业务访问Token |
 | POST auth/refresh/logout/password；GET auth/sessions；POST auth/sessions/{id}/revoke | 原生轮换/Web续期；本人退出/改密/会话治理 | 本人身份基础例外；同audience下验证 |
@@ -40,12 +40,14 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET me/access、admin/me/access | 最小user_id/instance_id/audience/session_ref、account_status、authz_version、权限/范围、nav、flags | 对应login；不要求profile.read，session_ref不是认证凭据，不返回全体用户策略 |
 | GET/PATCH users/me、settings | 资料/学习/模型选择；revision | profile.read/update；拒绝身份/权限敏感字段 |
 | GET/POST/PATCH/DELETE provider-credentials；POST {id}/test | 掩码/增删轮换；受限能力测试 | credential.read/manage/test；永不GET明文 |
-| POST material-imports；POST uploads/{id}/complete | 模式/格式/用途/大小摘要/AI阶段选择；上传意图/已受理材料Job | material.import、试卷组合权限；完整校验对象才受理 |
+| POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/AI阶段选择；新文件上传意图，或按三类材料契约复用本人源文件重新处理 | material.import、目标试卷组合权限；复用另验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |
-| GET materials、materials/{id}/revisions/chapters；PATCH/DELETE materials/{id} | 筛选/详情/版本；改类型/删除 | material.list/read/update/delete |
-| GET materials/{id}/revisions/{revision_id}/chapters/{node_id}；POST sources/resolve | 明确版本内容；出处定位解析 | 当前源业务read与同库/版本检查，不由自报locator获得权限 |
+| GET materials、materials/{id}、materials/{id}/revisions；PATCH/DELETE materials/{id} | 三类筛选、共用元数据/状态与版本摘要；改标题/删除，不返回正文/答案、不允许PATCH类型 | material.list/read/update/delete；类型分派以三类材料契约为准 |
+| GET novels/{material_id}/revisions/{revision_id}/manifest、chapters/{node_id} | NovelManifest、小说章节原文与语言标注引用 | material.read、type=novel、同库/版本/节点校验 |
+| GET textbooks/{material_id}/revisions/{revision_id}/manifest、lessons/{node_id} | TextbookManifest、单元内容/词表和已授权练习引用；不夹带题目答案/评分依据 | material.read、type=textbook；练习详情/作答仍另验practice动作 |
+| POST sources/resolve | 授权解析出处，返回三类之一及专用目标引用 | 当前源业务read与同库/版本检查；考试按考试投影规则，不由自报locator获得权限 |
 | POST materials/{id}/reparse、materials/{id}/analysis | 新确定性版本；明确AI分析 | reparse/analyze分离；expected_revision/幂等 |
-| GET/PUT materials/{id}/progress；GET/POST/DELETE bookmarks | 当前位置/最远位置、书签定位 | material.read与progress/bookmark动作 |
+| GET/PUT materials/{id}/progress；GET/POST/DELETE bookmarks | 小说位置/最远位置、课本单元位置、书签；不承载考试进度 | material.read与progress/bookmark动作；只接受novel/textbook |
 | GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind/词句/笔记/标签/状态/出处快照 | collection对应动作；标签关系本人范围 |
 | POST collections/merge | 明确目标/来源条目和合并策略，expected_revision | collection.read/update/delete；只在本人范围合并，不静默删除来源 |
 | GET collections/words/export；POST vocabulary-csv/previews；POST {id}/commit | 流式CSV、映射/预览/确认/游标 | CSV组合权限；既有记录比较/跳过需collection.read，合并再需update；无read只明确直接新增、不返回旧词表信息 |
@@ -61,7 +63,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；run引用与流 | agent.read/use/delete，每工具独立授权 |
 | POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→Job或已有音频 | speech.generate/play及来源read |
 | POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 纯缓存查询、合成状态、音频传输 | resolve/play不收费、不要求Key；新生成只走requests且需generate |
-| GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从材料准备/校对/冻结 | exam动作+实际AI分析/导入权限 |
+| GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从exam材料准备/校对/冻结；不能直接把novel/textbook当试卷 | exam动作+实际AI分析/导入权限；其他类型先显式重新处理 |
 | POST exams/{id}/sessions；GET exam-sessions/{id}；POST {id}/takeover | 开考/恢复/显式编辑端接管 | exam_session.start/read/save、edit_epoch |
 | PUT exam-sessions/{id}/responses；POST {id}/submit | response_revision/edit_epoch；最后答案与submit_reason | save/submit；服务端时间/锁卷 |
 | POST exam-sessions/{id}/grading-runs；GET {id}/results | 初次批改或新generation重评；部分/有效成绩 | exam_grade.request/regrade/read |
@@ -72,7 +74,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | admin/users、roles、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作 | 管理工作流和admin对应动作、revision/审计 |
 | admin/sessions、resource-metadata、jobs、audit-events、diagnostics | 限定元数据查询、撤销/安全运维 | 不返回私有内容/Key、不接受任意LogQL |
 
-管理登录/续期/退出/本人安全流程用admin/auth镜像路径，固定admin受众；业务修改用户状态/角色/权限使用独立子资源，不能把通用PATCH映射任意ORM列。最终具体路由表在工程PR中从此契约展开并接受路由保护枚举检查。
+三类内容接口的语义和字段边界见 [三类材料契约](material-types.md)，各专用路径由对应模块 schema 定义，不用大一统阅读 DTO。`model-capabilities` 只负责模型能力，材料支持组合随公共 `meta` 能力段返回，不携带私有数据或个人授权；UI 不用硬编码扩展名表越过后端检查。管理登录/续期/退出/本人安全流程用admin/auth镜像路径，固定admin受众；业务修改用户状态/角色/权限使用独立子资源，不能把通用PATCH映射任意ORM列。最终具体路由表在工程PR中从此契约展开并接受路由保护枚举检查。
 
 ## 4. 文件与流式事件
 

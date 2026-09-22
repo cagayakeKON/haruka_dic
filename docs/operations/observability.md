@@ -114,8 +114,9 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 | 启动/页面 | app.started、screen.viewed、app.lifecycle.changed | 平台、版本、screen_name、启动/加载耗时 |
 | 账号 | auth.register.submitted、auth.login.result、auth.logout.completed、auth.session.revoked | client/admin 受众、成功/失败类别、传输方式；不含邮箱、密码或令牌 |
 | RBAC / 管理 | access.snapshot.updated、authz.denied、admin.change.committed、admin.change.rejected | 权限代码、目标类型/ID、版本、影响数量、安全状态差异；成功变更以服务端审计事务为准，覆盖用户/角色/继承/菜单/策略 |
-| 材料 | material.import.requested、material.import.completed、material.import.failed | 格式、大小区间、阶段、耗时、错误分类；服务端确认导入结果 |
+| 材料 | material.import.requested、material.import.completed、material.import.failed | material_type枚举、格式、大小区间、阶段、耗时、错误分类；服务端确认导入结果，不能将原文件接受当作三类全部ready |
 | 阅读 | reading.chapter.opened、reading.session.ended、source.navigation.result | 材料/章节引用、有效前台阅读时长、回跳结果；不收集逐字选区或逐帧滚动 |
+| 课本 | textbook.lesson.opened | 受控材料/版本/Lesson引用、内容角色、结果与耗时；不含课文/词表/题目正文；作答计数复用practice事实，不另累计 |
 | 解释/收藏 | explanation.requested、explanation.completed、collection.saved | 内容类别、语言、引用、耗时；不记录原词句、笔记或解释正文 |
 | TTS/播放 | speech.requested、speech.generated、speech.cache.hit、playback.started、playback.failed | 模型/声音、缓存结果、首音频耗时、时长、平台错误 |
 | 练习 | practice.started、answer.submitted、answer.scored、practice.completed | 题型、来源、题数、规则/AI 评分方式；答案与学习事实留在业务库 |

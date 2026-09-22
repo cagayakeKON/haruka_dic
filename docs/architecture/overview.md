@@ -55,7 +55,7 @@ flowchart TD
 | 数据访问 | SQLAlchemy 2 Async、asyncpg、Alembic | PostgreSQL 查询、服务事务及受控迁移 |
 | 持久任务 | Kafka、confluent-kafka、独立 Python Worker/Outbox | 投递、阶段恢复、重试/取消和死信；不用 API 进程内后台任务替代持久执行 |
 | 缓存与存储 | Redis、MinIO S3 API | 会话材料/限流/通知与私有原书/附件/音频；对象发布和回收以数据契约为准 |
-| 材料解析与阅读 | Markdown 优先 markdown-it-py；EPUB 按包目录/spine 解析；Flutter 内容块方案优先原型 | 保留图片、基础结构和必要注音；高保真/竖排引擎、日语分词及获准 PDF/OCR 库按样本与已确认范围决定 |
+| 格式提取与专用处理 | Markdown 优先 markdown-it-py；EPUB 按包目录/spine 提取；之后分别交小说/课本/试卷处理器和专用页面 | 共用源块/出处，不共用业务阅读器；高保真/竖排、分词及获准PDF/OCR库按样本确定，范围见三类材料契约 |
 | Agent / 结构化结果 | Pydantic AI、对应 Provider、Pydantic 业务模型 | 类型化工具、依赖注入、结构化输出、限额；结构正确仍需出处与业务校验 |
 | TTS | HTTPX + Gemini/OpenRouter 独立音频适配器 | 区分 speech 字节流与生成接口音频协议，按真实格式处理；具体模型、声音、分句语调/停顿/等待和请求量需验证 |
 | 日志 | structlog + 标准 logging → Alloy → Loki → Grafana | 前端接收、API/Worker、AI/TTS、SQL 访问与数据库引擎日志共用平台 |
@@ -107,7 +107,7 @@ Web 与 API 优先同源，原始文件和媒体地址须从三端可达；MinIO
 
 ## 7. 继续阅读与验证依据
 
-功能流程分别见 [账号](../modules/accounts.md)、[材料与阅读](../modules/materials-reading.md)、[收藏与练习](../modules/vocabulary-practice.md)、[考试](../modules/exams.md)、[AI 与朗读](../modules/ai-speech.md)、[管理后台](../modules/admin.md) 和 [设置](../modules/settings.md)。它们维护操作/异常/平台体验；公共协议由架构和 contracts 维护。
+功能流程分别见 [账号](../modules/accounts.md)、[材料公共能力](../modules/materials-reading.md)、[小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[收藏与练习](../modules/vocabulary-practice.md)、[考试](../modules/exams.md)、[AI 与朗读](../modules/ai-speech.md)、[管理后台](../modules/admin.md) 和 [设置](../modules/settings.md)。它们维护操作/异常/平台体验；公共协议由架构和 contracts 维护，类型/格式及专用边界见 [三类材料](../contracts/material-types.md)。
 
 工程目录和依赖方向见 [项目结构](project-structure.md)，B0/B1/B2 及完整交付证据见 [路线图](../delivery/roadmap.md) 和 [交付验收](../delivery/acceptance.md)。Flutter/Python 应用仍未实现；HTML 视觉原型不计作应用、平台或供应商验收。
 

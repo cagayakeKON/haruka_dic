@@ -7,7 +7,9 @@
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |
 | --- | --- | --- |
 | [账号：注册、登录、恢复与会话](../modules/accounts.md) | [认证](../architecture/authentication.md)、[API](../contracts/api.md)、[授权](../architecture/authorization.md) | ACC；三端与管理Web、注册竞争、会话撤销与账号切换 |
-| [材料：上传、书库、阅读和教材](../modules/materials-reading.md) | [出处](../contracts/content-locator.md)、[数据与任务](../architecture/data-jobs.md) | MAT/READ；不可变上传、Unicode、来源回跳、进度/书签 |
+| [材料公共能力：上传、书库与出处操作](../modules/materials-reading.md) | [三类材料](../contracts/material-types.md)、[出处](../contracts/content-locator.md)、[数据与任务](../architecture/data-jobs.md) | MAT/READ/TYPE；不可变上传、类型/格式独立、专用分派、版本/位置/书签 |
+| [小说：预处理与连续阅读](../modules/novels.md) | [材料类型](../contracts/material-types.md)、[出处](../contracts/content-locator.md) | NOV；章序/段落/对话、分句分词、专用阅读和标注降级 |
+| [课本：单元结构与学习](../modules/textbooks.md) | [材料类型](../contracts/material-types.md)、[普通练习](../modules/vocabulary-practice.md) | TBK；内容角色/词表/题目关联、单元位置、逐题反馈与独立状态 |
 | [学习：收藏、照片、练习、评分和诊断](../modules/vocabulary-practice.md) | [权限](../contracts/permissions.md)、[数据与任务](../architecture/data-jobs.md) | COL/PHOTO/PRA/DIAG；重复与来源、规则/AI评分、有效贡献 |
 | [单词CSV入口](../modules/vocabulary-practice.md) | [CSV唯一协议](../contracts/vocabulary-csv.md) | 原CSV清单；全部逻辑记录导出、预览/分批/重复策略、公式转义、跨账号往返 |
 | [考试：导入、校对、答题、交卷与成绩](../modules/exams.md) | [API](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[出处](../contracts/content-locator.md) | 原考试清单及DAT；冻结版本、草稿/截止/锁卷、评分恢复与重评 |

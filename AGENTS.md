@@ -17,7 +17,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 | 产品/功能 | [产品总览](docs/product/overview.md)、对应modules规格、[功能与验收追踪](docs/delivery/coverage.md) |
 | 身份、页面、业务动作与数据 | [认证](docs/architecture/authentication.md)、[RBAC](docs/architecture/authorization.md)、[权限目录](docs/contracts/permissions.md)、[API](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) |
 | 建表、ORM、逻辑关联、数据隔离与迁移 | [数据库规范](docs/engineering/database.md)、相关数据/认证设计；按DB验收证明已实现范围 |
-| 阅读、选区、导入、CSV或考试 | 对应模块，以及[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)、[考试](docs/modules/exams.md)所涉及的契约 |
+| 阅读、选区、导入、CSV或考试 | 对应[小说](docs/modules/novels.md)/[课本](docs/modules/textbooks.md)/[考试](docs/modules/exams.md)模块，以及[三类材料](docs/contracts/material-types.md)、[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)所涉及的契约 |
 | Agent、卡片、会话、AI或TTS | [Agent运行层](docs/architecture/agent-runtime.md)、[AI与朗读模块](docs/modules/ai-speech.md) |
 | 编码、初始化或构建 | [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[脚手架](docs/engineering/scaffold.md)、[B0/B1/B2](docs/delivery/milestones/scaffold.md) |
 | 后端接口、模块、返回/异常与多语言 | [后端开发手册](docs/engineering/backend.md)、[统一返回契约](docs/contracts/api-responses.md)、相关API/权限/数据设计 |
@@ -29,6 +29,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 ## 已确认的产品边界
 
 - Flutter：Windows、Web、Android；Python 前后端分离。
+- 导入材料只适配小说、课本、试卷；material_type唯一，三类分别处理、建模和使用专属页面/controller，仅复用基础能力。文件格式单独定范围，不保留“其他/混合/文章/笔记”类型或跨类型皮肤切换；选错类型需显式创建新材料重新处理，保留旧记录。
 - 应用内 Agent 框架已确定为 Pydantic AI；使用 Pydantic 业务输出模型，不另建 LangChain/LangGraph Agent 执行路径。
 - 支持导入时选择试卷模式、整卷作答、交卷后 AI 判断/评分；试卷首版文件格式范围仍待明确，不能将推荐的 PDF/OCR 优先级当作已确认。
 - 多用户注册登录，资料、学习记录、任务、缓存与模型 Key 按用户隔离。

@@ -24,7 +24,7 @@ haruka_dic/
       app/                          App、启动恢复、路由、主题、两端布局
       core/                         auth、access、network、telemetry、storage、layout、platform
       features/
-        account/ library/ reader/ collections/ practice/ exams/
+        account/ library/ novels/ textbooks/ collections/ practice/ exams/
         agent/ speech/ settings/ admin/
       shared/                       通用组件与纯展示模型；无业务越权入口
       generated/                    按版本生成的 API DTO/客户端、UI Test ID与本地化输出
@@ -90,20 +90,22 @@ frontend/lib/
   app/                            路由、全局壳与账号/受众作用域
   core/layout/adaptive_policy.dart  可用空间分类和公共适配策略；阈值单一来源
   core/platform/                  类型化能力接口与条件选择/插件适配
-  features/reader/
-    application/reader_controller.dart  共享状态/业务动作，生命周期在layout分支以上
-    domain/                       纯阅读规则与业务类型
+  features/novels/
+    application/novel_reader_controller.dart  同一小说的共享状态/动作，生命周期在layout分支以上
+    domain/                       小说阅读规则与业务类型
     data/                         API/缓存仓储
     presentation/
-      reader_page.dart            路由页面协调与布局选择
-      layouts/reader_compact.dart  紧凑/触控优先结构
-      layouts/reader_expanded.dart 宽屏结构
+      novel_reader_page.dart      小说路由页面协调与布局选择
+      layouts/novel_compact.dart  紧凑/触控优先结构
+      layouts/novel_expanded.dart 宽屏结构
       widgets/                    本功能可复用的小组件
 ~~~
 
 platform实现按实际能力拆文件，例如files、audio、secure_storage；Web与原生依赖通过条件导入/独立bootstrap隔离，Android/Windows的插件缺口才增加必要宿主代码。compact/expanded表示空间结构，不能与Android/Windows硬绑定；medium默认复用紧凑布局，只有验证后才增加第三种结构。
 
 两个layout消费同一controller的状态/动作，不互相import对方页面，也不复制repository或直接调用平台插件。page级视图协调器可保存跨layout的焦点/滚动恢复信息，domain/controller不持有Widget、BuildContext或界面控制器。账号切换释放整个私有feature作用域；窗口重排不创建新业务会话。
+
+这个共享只限同一业务类型内的布局。`novels`、`textbooks`、`exams` 分别实现 NovelReaderController、TextbookStudyController、ExamSessionController；`library` 只维护公共入口/元数据并按类型分派。共用文本选区、词条、题型等小组件，不互相导入专用页面或复制/合并彼此状态机，类型合同见 [三类材料](../contracts/material-types.md)。
 
 ## 3. Python 内部分层
 
@@ -139,7 +141,9 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | --- | --- | --- | --- |
 | 登录/注册/会话 | account、core/auth | AuthService、User/AuthSession/Challenge | 邮件、安全撤销通知 |
 | 两端 RBAC/管理 | core/access、admin | AuthorizationService、AdminUser/PolicyService | 缓存通知、审计投递 |
-| 材料/阅读 | library、reader | Material/ReadingService、出处规则 | 文件解析、AI 分析、清理 |
+| 材料公共能力 | library | MaterialImport/MaterialService、共用出处/阅读位置服务 | 不可变文件、格式提取、类型分派、清理 |
+| 小说 | novels | NovelProcessing/NovelReadingService、小说manifest/章节与标注引用 | 小说结构、分句/分词及语言标注 |
+| 课本 | textbooks | TextbookProcessing/TextbookStudyService、单元/角色及Exercise引用 | 单元分析、词表/习题关联；评分复用Practice公开服务 |
 | 收藏/照片/CSV | collections | Collection/PhotoWord/CsvService | 识词、CSV 分批 |
 | 普通练习/诊断 | practice | Practice/Grading/LearnerService | 出题、主观评分、诊断 |
 | 试卷/考试 | exams | ExamPaper/Session/GradeService | 结构抽取、截止扫描、逐题批改 |
@@ -149,6 +153,8 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | 日志 | core/telemetry | TelemetryIngestService | Outbox 审计日志投递 |
 
 名称是设计职责，不强制每行都拆成多个类。接口依赖必须显式注入，不能运行时导入相邻 MyHome 工作目录。
+
+小说/课本/试卷在 api/routes、schemas、services、domain、repositories 中按 novels/textbooks/exams 分组；adapters/parsers 按 markdown/epub 及获准后的 pdf/txt 划分。格式适配器返回源结构，类型处理器返回各自领域产物，Worker handler 显式分派；不建立万能 MaterialProcessor 加一套通用阅读 DTO，也不因此拆微服务或提前生成空文件。
 
 ## 5. 契约、配置与生成文件
 

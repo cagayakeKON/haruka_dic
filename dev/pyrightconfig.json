@@ -1,0 +1,10 @@
+{
+  "include": ["infra.py", "test_infra.py"],
+  "extraPaths": [".."],
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "strict",
+  "reportUnnecessaryTypeIgnoreComment": "error",
+  "reportMatchNotExhaustive": "error",
+  "reportImportCycles": "error",
+  "enableTypeIgnoreComments": false
+}

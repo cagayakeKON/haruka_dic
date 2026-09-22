@@ -1,0 +1,195 @@
+name: haruka-local
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:?run infra init}
+    environment:
+      POSTGRES_USER: haruka_bootstrap
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      TZ: UTC
+    secrets: [postgres_password]
+    ports: ["127.0.0.1:15432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql"]
+    command:
+      - postgres
+      - -c
+      - timezone=UTC
+      - -c
+      - log_statement=none
+      - -c
+      - log_parameter_max_length=0
+      - -c
+      - log_parameter_max_length_on_error=0
+      - -c
+      - log_min_error_statement=panic
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U haruka_bootstrap -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    logging: *logging
+
+  redis:
+    image: ${REDIS_IMAGE:?run infra init}
+    command: [redis-server, /usr/local/etc/redis/redis.conf]
+    volumes:
+      - redis-data:/data
+      - ./.local/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    secrets: [redis_password]
+    ports: ["127.0.0.1:16379:6379"]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$(cat /run/secrets/redis_password)" redis-cli ping | grep -q PONG']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    logging: *logging
+
+  kafka:
+    image: ${KAFKA_IMAGE:?run infra init}
+    hostname: kafka
+    environment:
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:?run infra init}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:19092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://127.0.0.1:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    ports: ["127.0.0.1:19092:19092"]
+    volumes: ["kafka-data:/var/lib/kafka/data"]
+    healthcheck:
+      test: [CMD, /opt/kafka/bin/kafka-topics.sh, --bootstrap-server, kafka:9092, --list]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 15s
+    logging: *logging
+
+  minio:
+    image: ${MINIO_IMAGE:?run infra init}
+    command: [server, /data, --console-address, ":9001"]
+    environment:
+      MINIO_ROOT_USER: haruka_local_root
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_password
+      MINIO_BROWSER_REDIRECT_URL: http://127.0.0.1:19101
+    secrets: [minio_password]
+    ports: ["127.0.0.1:19100:9000", "127.0.0.1:19101:9001"]
+    volumes: ["minio-data:/data"]
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost:9000/minio/health/live]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    logging: *logging
+
+  minio-init:
+    image: ${MINIO_MC_IMAGE:?run infra init}
+    profiles: [provision]
+    entrypoint: [/bin/sh, /provision/minio.sh]
+    environment:
+      MC_CONFIG_DIR: /tmp/mc
+    volumes:
+      - ./provision/minio.sh:/provision/minio.sh:ro
+      - ./.local/minio:/provision/config:ro
+    depends_on:
+      minio:
+        condition: service_healthy
+    logging: *logging
+
+  socket-proxy:
+    image: ${SOCKET_PROXY_IMAGE:?run infra init}
+    entrypoint: [/bin/sh, -ec]
+    command: ['sed ''s/$${BIND_CONFIG}/:2375/g'' /usr/local/etc/haproxy/haproxy.cfg.template > /tmp/haproxy.cfg; exec haproxy -W -db -f /tmp/haproxy.cfg']
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      EVENTS: 1
+      PING: 1
+      VERSION: 1
+      POST: 0
+      LOG_LEVEL: warning
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock:ro"]
+    networks: [logging]
+    read_only: true
+    tmpfs: [/run, /tmp]
+    logging: *logging
+
+  loki:
+    image: ${LOKI_IMAGE:?run infra init}
+    command: [-config.file=/etc/loki/config.yaml]
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    networks: [default, logging]
+    ports: ["127.0.0.1:13100:3100"]
+    logging: *logging
+
+  alloy:
+    image: ${ALLOY_IMAGE:?run infra init}
+    command: [run, --storage.path=/var/lib/alloy/data, /etc/alloy/config.alloy]
+    volumes:
+      - ./observability/config.alloy:/etc/alloy/config.alloy:ro
+      - ./.local/logs:/var/log/haruka:ro
+      - alloy-data:/var/lib/alloy/data
+    networks: [logging]
+    depends_on: [socket-proxy, loki]
+    logging: *logging
+
+  grafana:
+    image: ${GRAFANA_IMAGE:?run infra init}
+    environment:
+      GF_SECURITY_ADMIN_USER: haruka
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    secrets: [grafana_password]
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/datasources.yaml:/etc/grafana/provisioning/datasources/loki.yaml:ro
+    networks: [default, logging]
+    ports: ["127.0.0.1:13000:3000"]
+    depends_on: [loki]
+    logging: *logging
+
+secrets:
+  postgres_password:
+    file: ./.local/secrets/postgres_password
+  redis_password:
+    file: ./.local/secrets/redis_password
+  minio_password:
+    file: ./.local/secrets/minio_password
+  grafana_password:
+    file: ./.local/secrets/grafana_password
+
+networks:
+  default: {}
+  logging:
+    internal: true
+
+volumes:
+  postgres-data: {}
+  redis-data: {}
+  kafka-data: {}
+  minio-data: {}
+  loki-data: {}
+  alloy-data: {}
+  grafana-data: {}

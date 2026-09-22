@@ -1,6 +1,6 @@
 # 运行配置与健康契约
 
-状态：设计基线 v0.2，2026-09-22，未实现、未部署。本篇维护配置来源、隔离、限额、健康与留存参数；有序发布、迁移、故障和恢复步骤统一在 [部署与恢复](deployment-recovery.md)，证据门禁见 [交付验收](../delivery/acceptance.md)。开发步骤见 [开发指南](../engineering/development.md)，MyHome 已调查事实见 [复用方案](myhome-integration.md)。不包含真实连接信息或秘密。
+状态：设计基线 v0.2，2026-09-22；本地dev/test基础设施配置已在 [B0切片](../delivery/reviews/2026-09-22-scaffold-infrastructure.md) 部分实现，生产及完整业务健康尚未实现。本篇维护配置来源、隔离、限额、健康与留存参数；有序发布、迁移、故障和恢复步骤统一在 [部署与恢复](deployment-recovery.md)，证据门禁见 [交付验收](../delivery/acceptance.md)。开发步骤见 [开发指南](../engineering/development.md)，MyHome 已调查事实见 [复用方案](myhome-integration.md)。不包含真实连接信息或秘密。
 
 工程包/正式CLI、开发profile、客户端安装身份与环境构建矩阵由 [脚手架蓝图](../engineering/scaffold.md) 维护；这里的INSTANCE_ID始终指部署实例，不用客户端包名或release替代。
 

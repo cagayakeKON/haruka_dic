@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 | --- | --- |
 | 决策 | Haruka 全部日志和埋点接入 MyHome 的 Alloy → Loki → Grafana |
-| 状态 | Draft v0.3，2026-09-22；新增管理端与 RBAC 审计，尚未实现或部署 |
+| 状态 | Draft v0.3，2026-09-22；dev/本地Alloy/Loki/Grafana及后端/容器日志采集已验证，管理端/RBAC审计与MyHome正式接入尚未实现 |
 | 范围 | Flutter Windows/Web/Android、管理 Web、API、Worker、AI/TTS、数据库、网关与共享基础设施 |
 | 配套 | [架构总览](../architecture/overview.md)、[认证与隔离](../architecture/authentication.md)、[管理后台与 RBAC](../architecture/authorization.md)、[Agent 运行层](../architecture/agent-runtime.md)、[MyHome 复用](myhome-integration.md) |
 
@@ -224,4 +224,4 @@ Haruka 的采集规则不沿用“超过 1 小时即丢弃”的固定 Docker �
 - [ ] 看板不重复累加前后端结果、Agent 汇总与单次模型用量；缺失用量/丢失事件不当作零。
 - [ ] 实测三端到 Grafana 的正常到达延迟（初始目标 15 秒内）、峰值吞吐、磁盘增长与 7 天留存容量，记录最终阈值及告警验证结果。
 
-以上均为待实施验收项。本次仅完善文档，没有创建 SDK、接收路由、看板或部署资源。
+以上完整业务验收仍待实施；[基础设施切片](../delivery/reviews/2026-09-22-scaffold-infrastructure.md) 仅验证本地后端安全JSON及本项目容器日志进入隔离Alloy/Loki，Grafana预置数据源。尚无前端接收路由、业务看板或MyHome生产接入。

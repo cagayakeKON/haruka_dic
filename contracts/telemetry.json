@@ -2,6 +2,8 @@
   "events": [
     "http.completed",
     "http.failed",
+    "infrastructure.connected",
+    "infrastructure.unavailable",
     "library.log",
     "process.started",
     "process.stopped",
@@ -26,5 +28,5 @@
   ],
   "private_payloads": false,
   "schema_version": 1,
-  "scope": "backend-process-shell"
+  "scope": "backend-runtime"
 }

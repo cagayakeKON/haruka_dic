@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-已开始阶段1，建立 [Flutter应用壳](frontend/README.md)、[Python后端包](backend/README.md)、锁文件与统一开发检查入口。本次交付为B0内的首个工程基础切片（B0-foundation）；完整B0的迁移、种子、生成器和门禁仍待完成，B1/B2未实现。实际范围、验证与限制见 [交付记录](docs/delivery/reviews/2026-09-22-scaffold-foundation.md)。
+已开始阶段1，建立 [Flutter应用壳](frontend/README.md)、[Python后端包](backend/README.md)、锁文件与统一开发检查入口。B0已交付基础壳及 [本地基础设施](dev/README.md)：PG、Redis、Kafka、MinIO客户端和独立Compose日志环境；本轮证据见 [基础设施记录](docs/delivery/reviews/2026-09-22-scaffold-infrastructure.md)。完整B0的迁移、种子、生成器和门禁仍待完成，B1/B2未实现；基础壳历史证据见 [首轮记录](docs/delivery/reviews/2026-09-22-scaffold-foundation.md)。
 
 已有独立 [HTML交互原型](prototype/README.md)，采用中性底色、Primary主色与杂志式排版，不设“继续阅读”；它使用内存示例，不代表真实业务已交付。开发命令与工具前提见 [开发指南](docs/engineering/development.md)。
 

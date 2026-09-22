@@ -1,6 +1,21 @@
 # 开发环境与日常操作
 
-状态：2026-09-22，已建立backend/、frontend/、scripts/、tools/及锁文件，当前交付范围为B0-foundation。deploy/、持久依赖、业务流程与CI尚未建立；下面“当前可运行”区仅适用于本切片，其余章节继续维护后续完整实施合同。
+状态：2026-09-22，已建立backend/、frontend/、scripts/、tools/、dev/及锁文件，当前交付包含B0基础壳与基础设施切片。生产deploy/、业务流程与CI尚未建立；下文“当前可运行”区按实际范围执行，其余章节继续维护完整实施合同。
+
+## 当前可运行：基础设施
+
+所有开发Compose和初始化/日志配置统一在 [dev/](../../dev/README.md)。使用本机锁定Python启动独立PG、Redis、Kafka、MinIO和Alloy/Loki/Grafana；只操作haruka-local项目，保留本机其他项目与MyHome环境。
+
+```powershell
+.tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py doctor --scope infra
+.tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py infra up
+.tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py infra status
+.tools/uv/uv.exe run --project backend --locked haruka-api --config dev/.local/backend.env
+```
+
+启动前生成Git忽略的dev/.local/backend.env及test.env；配置中的基础设施开关启用真实连接，不能从其他环境回退。重复up保留已有配置和卷，down也不删卷。端口、凭据位置、镜像摘要与受限账号说明见dev/README。管理连接检查为 `haruka-manage --config dev/.local/backend.env check-infrastructure`，Worker/Outbox使用同一配置的 `--check-startup` 检验生命周期，不领取业务任务。
+
+本轮必要检查使用 `check --stage infrastructure`：脚本和dev安全回归/静态检查、真实服务smoke及后端隔离集成。后端改动另运行直接受影响的unit/contract、Ruff/Pyright；不重复前端三平台测试。带 `--config dev/.local/test.env` 的backend/tools/verify_distribution.py验证仓库外wheel中四个入口真实连接与关闭。实际证据和B0剩余门禁见 [交付记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)。
 
 ## 当前可运行：B0-foundation
 
@@ -18,9 +33,9 @@
 .tools/uv/uv.exe run --project backend --locked haruka-api --config backend/.env.example
 ```
 
-doctor当前只核对工具/工程前提，不证明服务依赖或运行验收。bootstrap按锁安装、保留已有配置，不迁移或生成账号。check的backend/frontend/tooling/docs范围均为局部检查；B0-foundation组合这些实际范围，不签署完整B0，输出报告在忽略目录artifacts/dev。`check --stage B0/B1/B2`及`dev --profile core/jobs`在完整能力交付前明确失败，不能把缺少实现默认为成功。
+普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号。check各scope均为局部检查；B0-foundation仍保留首轮组合，不签署完整B0，报告在忽略目录artifacts/dev。`check --stage B0/B1/B2`及`dev --profile core/jobs`在完整应用编排交付前明确失败；当前基础设施使用infra命令。
 
-前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200，ready在持久依赖接入前返回503；没有账号、权限、任务或模型能力。Worker/Outbox实际运行、manage迁移/种子/管理员均未开放。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
+前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200，ready在schema及业务安全接线完成前返回503；基础设施连通不等于业务就绪。没有账号、权限、任务或模型能力。Worker/Outbox业务运行、manage迁移/种子/管理员均未开放。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
 
 制品安装检查可用锁定Python运行`backend/tools/verify_distribution.py --uv .tools/uv/uv.exe`，执行干净缓存wheel/sdist构建、运行依赖单独安装、独立工作目录CLI/生命周期与错误构建哈希拒绝。它不执行PG迁移或真实模型调用。实测、review和仍欠缺的B0门禁统一见 [交付记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。
 
@@ -67,7 +82,7 @@ doctor当前只核对工具/工程前提，不证明服务依赖或运行验收�
 | 数据与队列 | 独立 PostgreSQL、Redis、Kafka、MinIO | 明确版本、健康探针、本次资源命名空间与无生产连接 |
 | 日志 | 本地 JSON stdout 与测试采集路径；集成环境接共享 Alloy/Loki/Grafana | 测试正常/info/异常可查询与秘密哨兵脱敏 |
 
-开发容器建议使用独立 Compose 项目名 haruka-dev，测试使用每次唯一项目名；最终 Compose 文件、服务名和网络布局落地后记录。仅对要调试的服务开放回环地址端口，不暴露 Loki、数据库或对象存储的管理接口给客户端。
+本地Compose固定使用haruka-local，开发与测试使用不同PG数据库/凭据、Redis DB及前缀、私有Bucket；测试对象/key/consumer group含运行随机ID，只清理本次对象。隔离smoke Topic仅保存短期合成记录，当前没有业务Topic。完整业务集成后续按测试规范扩充独立运行资源，不能把本切片当作已具备用户隔离。所有宿主端口仅绑定回环地址。
 
 一次功能开发无需总是启动完整基础设施：纯规则/组件测试使用 fake；数据库/会话/任务/文件功能分别启动它真实依赖的隔离服务。对外供应商默认关闭，测试 Key 只在测试模拟器中使用。
 

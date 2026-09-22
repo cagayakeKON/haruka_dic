@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal, Self, TypedDict, Unpack
 from urllib.parse import urlsplit
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,15 +14,40 @@ class SettingsInput(TypedDict, total=False):
     public_base_url: str
     allowed_origins: tuple[str, ...]
     release: str
+    infrastructure_enabled: bool
+    database_url: SecretStr
+    redis_url: SecretStr
+    resource_namespace: str
+    kafka_bootstrap_servers: str
+    s3_endpoint: str
+    s3_access_key: SecretStr
+    s3_secret_key: SecretStr
+    s3_bucket: str
+    log_file: Path | None
     _env_file: Path | None
     _env_file_encoding: str
 
 
-class Settings(BaseSettings):
-    """Validated public configuration for the development process shell.
+class InfrastructureSettings(BaseModel):
+    """Validated process credentials, never a user or model credential container."""
 
-    Persistent services are not assembled by B0-foundation. Production startup
-    stays closed until the subsequent B0 slices implement those dependencies.
+    model_config = ConfigDict(frozen=True, hide_input_in_errors=True)
+
+    database_url: SecretStr
+    redis_url: SecretStr
+    namespace: str
+    kafka_bootstrap_servers: str
+    s3_endpoint: str
+    s3_access_key: SecretStr
+    s3_secret_key: SecretStr
+    s3_bucket: str
+
+
+class Settings(BaseSettings):
+    """Explicit offline shell or isolated local infrastructure configuration.
+
+    Production remains closed until migration, authentication and deployment
+    safety are implemented. Optional credentials never enter repr or logs.
     """
 
     model_config = SettingsConfigDict(
@@ -34,6 +59,16 @@ class Settings(BaseSettings):
     public_base_url: str
     allowed_origins: tuple[str, ...] = ()
     release: str = Field(default="0.1.0", pattern=r"^[a-zA-Z0-9._-]{1,64}$")
+    infrastructure_enabled: bool = False
+    database_url: SecretStr | None = None
+    redis_url: SecretStr | None = None
+    resource_namespace: str | None = None
+    kafka_bootstrap_servers: str | None = None
+    s3_endpoint: str | None = None
+    s3_access_key: SecretStr | None = None
+    s3_secret_key: SecretStr | None = None
+    s3_bucket: str | None = None
+    log_file: Path | None = None
 
     def __init__(self, **values: Unpack[SettingsInput]) -> None:
         # Settings accepts absent constructor fields because environment/file
@@ -61,7 +96,87 @@ class Settings(BaseSettings):
                 raise ValueError("shell endpoints must be explicit loopback origins")
             # Validate malformed ports even though the origin is never logged.
             _ = parsed.port
+        if self.log_file is not None and not self.log_file.is_absolute():
+            raise ValueError("log file must be an explicit absolute path")
+        if self.infrastructure_enabled:
+            infrastructure = self.infrastructure()
+            database = urlsplit(infrastructure.database_url.get_secret_value())
+            redis = urlsplit(infrastructure.redis_url.get_secret_value())
+            expected_database = "/haruka_dev" if self.app_env == "dev" else "/haruka_test"
+            expected_redis = "/0" if self.app_env == "dev" else "/1"
+            for parsed, scheme, path in (
+                (database, "postgresql+asyncpg", expected_database),
+                (redis, "redis", expected_redis),
+            ):
+                if (
+                    parsed.scheme != scheme
+                    or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}
+                    or not parsed.port
+                    or not parsed.password
+                    or parsed.path != path
+                    or parsed.query
+                    or parsed.fragment
+                ):
+                    raise ValueError("infrastructure target must match the local environment")
+            if not database.username:
+                raise ValueError("a dedicated database account is required")
+            if (
+                infrastructure.namespace != self.instance_id
+                or infrastructure.s3_bucket != self.instance_id
+            ):
+                raise ValueError("resource namespace and bucket must match the instance")
+            endpoint = urlsplit(infrastructure.s3_endpoint)
+            if (
+                endpoint.scheme not in {"http", "https"}
+                or endpoint.hostname not in {"127.0.0.1", "localhost", "::1"}
+                or not endpoint.port
+                or endpoint.username
+                or endpoint.password
+                or endpoint.path not in {"", "/"}
+                or endpoint.query
+                or endpoint.fragment
+            ):
+                raise ValueError("object storage must use a local origin")
+            for broker in infrastructure.kafka_bootstrap_servers.split(","):
+                address = urlsplit(f"//{broker}")
+                if (
+                    address.hostname not in {"127.0.0.1", "localhost", "::1"}
+                    or not address.port
+                    or address.username
+                    or address.password
+                    or address.path
+                    or address.query
+                    or address.fragment
+                ):
+                    raise ValueError("Kafka bootstrap must contain local host:port entries")
         return self
+
+    def infrastructure(self) -> InfrastructureSettings:
+        """Produce a complete typed resource configuration or fail before connecting."""
+        if (
+            not self.infrastructure_enabled
+            or self.database_url is None
+            or self.redis_url is None
+            or self.resource_namespace is None
+            or self.kafka_bootstrap_servers is None
+            or self.s3_endpoint is None
+            or self.s3_access_key is None
+            or self.s3_secret_key is None
+            or self.s3_bucket is None
+            or not self.s3_access_key.get_secret_value()
+            or not self.s3_secret_key.get_secret_value()
+        ):
+            raise ValueError("complete infrastructure configuration is required")
+        return InfrastructureSettings(
+            database_url=self.database_url,
+            redis_url=self.redis_url,
+            namespace=self.resource_namespace,
+            kafka_bootstrap_servers=self.kafka_bootstrap_servers,
+            s3_endpoint=self.s3_endpoint,
+            s3_access_key=self.s3_access_key,
+            s3_secret_key=self.s3_secret_key,
+            s3_bucket=self.s3_bucket,
+        )
 
 
 def load_settings(config: Path | None = None) -> Settings:

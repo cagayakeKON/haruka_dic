@@ -20,7 +20,7 @@ def markdown_files(root: Path) -> list[Path]:
     paths = [root / "README.md", root / "AGENTS.md"]
     for directory in ("docs", "prototype"):
         paths.extend((root / directory).rglob("*.md"))
-    paths.extend(root / directory / "README.md" for directory in ("backend", "frontend"))
+    paths.extend(root / directory / "README.md" for directory in ("backend", "frontend", "dev"))
     return sorted(path for path in paths if path.is_file())
 
 

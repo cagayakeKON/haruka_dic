@@ -1,0 +1,73 @@
+logging {
+  level  = "info"
+  format = "json"
+}
+
+discovery.docker "haruka" {
+  host = "tcp://socket-proxy:2375"
+  refresh_interval = "5s"
+  filter {
+    name = "label"
+    values = ["com.docker.compose.project=haruka-local"]
+  }
+}
+
+discovery.relabel "haruka" {
+  targets = discovery.docker.haruka.targets
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    regex = "haruka-local"
+    action = "keep"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label = "service"
+  }
+  rule {
+    target_label = "project"
+    replacement = "haruka"
+  }
+  rule {
+    target_label = "environment"
+    replacement = "dev"
+  }
+}
+
+loki.source.docker "haruka" {
+  host = "tcp://socket-proxy:2375"
+  targets = discovery.relabel.haruka.output
+  forward_to = [loki.write.local.receiver]
+}
+
+local.file_match "application" {
+  path_targets = [
+    {"__path__" = "/var/log/haruka/dev*.jsonl", "project" = "haruka", "environment" = "dev", "service" = "host-app"},
+    {"__path__" = "/var/log/haruka/test*.jsonl", "project" = "haruka", "environment" = "test", "service" = "host-app"},
+    {"__path__" = "/var/log/haruka/infra.jsonl", "project" = "haruka", "environment" = "dev", "service" = "infra-smoke"},
+  ]
+  sync_period = "5s"
+}
+
+loki.source.file "application" {
+  targets = local.file_match.application.targets
+  forward_to = [loki.process.application.receiver]
+}
+
+loki.process "application" {
+  stage.json {
+    expressions = {service = "service"}
+  }
+  stage.labels {
+    values = {service = ""}
+  }
+  stage.label_drop {
+    values = ["filename"]
+  }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

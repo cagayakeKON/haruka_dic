@@ -10,8 +10,14 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
+  "asyncpg==0.31.0",
+  "confluent-kafka==2.15.1",
   "fastapi==0.141.1",
+  "minio==7.2.20",
   "pydantic-settings==2.15.0",
+  "redis==8.1.0",
+  "sqlalchemy[asyncio]==2.0.54",
+  "urllib3==2.8.0",
   "uvicorn==0.53.0",
 ]
 
@@ -89,4 +95,4 @@ addopts = "--strict-markers --strict-config -ra"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["error"]
-markers = ["unit: isolated rules and lifecycle", "contract: HTTP and exported protocol boundaries"]
+markers = ["unit: isolated rules and lifecycle", "contract: HTTP and exported protocol boundaries", "integration: isolated real development infrastructure"]

@@ -26,7 +26,9 @@ else:
     from quality.docs import inspect, markdown_files
 
 ROOT = Path(__file__).resolve().parents[1]
-SCOPES = ("docs", "backend", "web", "android", "windows", "all")
+BOOTSTRAP_SCOPES = ("docs", "backend", "web", "android", "windows", "all")
+SCOPES = (*BOOTSTRAP_SCOPES[:-1], "infra", "all")
+INFRA_ACTIONS = ("init", "up", "status", "down", "smoke")
 
 
 class DevError(Exception):
@@ -171,6 +173,7 @@ def run(
     cwd: Path = ROOT,
     timeout: int = 180,
     show_output: bool = True,
+    environment: dict[str, str] | None = None,
 ) -> str:
     command = [*tool(name), *arguments]
     started = time.monotonic()
@@ -184,7 +187,7 @@ def run(
             errors="replace",
             timeout=timeout,
             check=False,
-            env={**os.environ, "PYTHONUTF8": "1"},
+            env={**os.environ, "PYTHONUTF8": "1", **(environment or {})},
         )
     except (OSError, subprocess.TimeoutExpired) as error:
         report.record(name, "failed", arguments=list(arguments), reason=type(error).__name__)
@@ -270,6 +273,14 @@ def doctor(report: Report, scope: str) -> None:
         checks.append(("python", ["--version"], str(manifest["python"])))
     if "backend" in scopes:
         checks.append(("uv", ["--version"], str(manifest["uv"])))
+    if "infra" in scopes:
+        checks.extend(
+            (
+                ("docker", ["version", "--format", "{{.Client.Version}}"], str(manifest["docker"])),
+                ("docker", ["version", "--format", "{{.Server.Version}}"], str(manifest["docker"])),
+                ("docker", ["compose", "version", "--short"], str(manifest["docker_compose"])),
+            )
+        )
     problems: list[str] = []
     for name, arguments, expected in checks:
         try:
@@ -387,6 +398,8 @@ def doctor(report: Report, scope: str) -> None:
         version = ROOT / "backend/.python-version"
         if version.is_file() and version.read_text(encoding="utf-8").strip() != manifest["python"]:
             problems.append("backend/.python-version differs from tools/toolchain.json")
+    if "infra" in scopes:
+        files.extend(["dev/infra.py", "dev/compose.yaml"])
     try:
         require_files(files)
         validate_project_versions(manifest, scopes)
@@ -399,13 +412,13 @@ def doctor(report: Report, scope: str) -> None:
     report.record(
         "scope",
         "ready",
-        note="Build prerequisites only; services, devices, and runtime acceptance are not implied",
+        note="Tool prerequisites and selected Docker daemon only; service readiness, devices, and runtime acceptance are not implied",
     )
 
 
 def bootstrap(report: Report, scope: str) -> None:
     doctor(report, scope)
-    scopes: set[str] = set(SCOPES[:-1]) if scope == "all" else {scope}
+    scopes: set[str] = set(BOOTSTRAP_SCOPES[:-1]) if scope == "all" else {scope}
     if "docs" in scopes:
         run(
             report,
@@ -435,6 +448,21 @@ def bootstrap(report: Report, scope: str) -> None:
             cwd=ROOT / "frontend",
             timeout=600,
         )
+
+
+def infra(report: Report, action: str) -> None:
+    """Delegate all infrastructure configuration and ownership to dev/infra.py."""
+    if action not in INFRA_ACTIONS:
+        raise DevError("Unknown infrastructure operation")
+    require_files(["dev/infra.py", "dev/compose.yaml"])
+    if action == "init":
+        manifest = load_toolchain()
+        if sys.version.split()[0] != manifest["python"]:
+            raise DevError(f"python: incompatible; require {manifest['python']}")
+    else:
+        doctor(report, "infra")
+    run(report, "python", [str(ROOT / "dev/infra.py"), action], timeout=900)
+    report.record("infrastructure", "passed", action=action, project="haruka-local")
 
 
 def junit_results(path: Path) -> int:
@@ -631,12 +659,57 @@ def check_frontend(report: Report) -> None:
     emit(f"Flutter unit/widget results: {count} passed")
 
 
+def check_infrastructure(report: Report) -> None:
+    """Verify the declared local integration target without starting or migrating services."""
+    require_files(
+        [
+            "dev/infra.py",
+            "dev/test_infra.py",
+            "dev/pyrightconfig.json",
+            "dev/.local/test.env",
+            "backend/tests/integration/test_infrastructure.py",
+        ]
+    )
+    doctor(report, "backend")
+    for arguments in (
+        ["ruff", "format", "--check", "--config", "backend/pyproject.toml", "dev"],
+        ["ruff", "check", "--config", "backend/pyproject.toml", "dev"],
+        ["pyright", "--project", "dev/pyrightconfig.json"],
+    ):
+        run(report, "uv", ["run", "--project", "backend", "--locked", *arguments])
+    output = run(report, "python", ["-m", "unittest", "dev.test_infra", "-v"])
+    report.record("infrastructure_tooling_test_results", "passed", passed=unittest_results(output))
+    infra(report, "smoke")
+    report_path = ROOT / "artifacts/dev" / f"infrastructure-{report.run_id}.xml"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    run(
+        report,
+        "uv",
+        [
+            "run",
+            "--locked",
+            "pytest",
+            "tests/integration/test_infrastructure.py",
+            f"--junitxml={report_path}",
+        ],
+        cwd=ROOT / "backend",
+        timeout=300,
+        environment={"HARUKA_INTEGRATION_CONFIG": str(ROOT / "dev/.local/test.env")},
+    )
+    report.record(
+        "infrastructure_test_results",
+        "passed",
+        passed=junit_results(report_path),
+        scope="isolated_development_infrastructure_only",
+    )
+
+
 def check(report: Report, stage: str) -> None:
     if stage in {"B0", "B1", "B2"}:
         raise DevError(
             f"{stage} is not delivered. B0 still requires real PG migration/seed, complete quality gates, and three-platform runtime evidence. Use an explicit implemented local scope."
         )
-    if stage in {"tooling", "B0-foundation"}:
+    if stage in {"tooling", "infrastructure", "B0-foundation"}:
         doctor(report, "backend")
         run(
             report,
@@ -690,6 +763,8 @@ def check(report: Report, stage: str) -> None:
         check_backend(report)
     if stage in {"frontend", "B0-foundation"}:
         check_frontend(report)
+    if stage == "infrastructure":
+        check_infrastructure(report)
     if stage == "B0-foundation":
         codegen(report, write=False)
     report.record(
@@ -763,7 +838,7 @@ def dev(report: Report, arguments: argparse.Namespace) -> None:
         "development_profile", "not_implemented", profile=arguments.profile, target=arguments.target
     )
     raise DevError(
-        "core/jobs orchestration is not implemented: isolated Compose, migrations, seeds, and durable workers remain B0/B1/B2 work. Use the documented per-process API and Flutter shell commands."
+        "core/jobs application orchestration is not implemented: migrations, seeds, and durable workers remain B0/B1/B2 work. Use 'infra up' for isolated infrastructure and the documented per-process API and Flutter shell commands."
     )
 
 
@@ -772,11 +847,25 @@ def parser() -> argparse.ArgumentParser:
     commands = result.add_subparsers(dest="command", required=True)
     for name in ("doctor", "bootstrap"):
         command = commands.add_parser(name)
-        command.add_argument("--scope", choices=SCOPES, required=True)
+        command.add_argument(
+            "--scope", choices=SCOPES if name == "doctor" else BOOTSTRAP_SCOPES, required=True
+        )
+    command = commands.add_parser("infra")
+    command.add_argument("action", choices=INFRA_ACTIONS)
     command = commands.add_parser("check")
     command.add_argument(
         "--stage",
-        choices=("docs", "tooling", "backend", "frontend", "B0-foundation", "B0", "B1", "B2"),
+        choices=(
+            "docs",
+            "tooling",
+            "backend",
+            "frontend",
+            "infrastructure",
+            "B0-foundation",
+            "B0",
+            "B1",
+            "B2",
+        ),
         required=True,
     )
     command = commands.add_parser("codegen")
@@ -804,7 +893,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         getattr(
             arguments,
             "scope",
-            getattr(arguments, "stage", getattr(arguments, "profile", "generated")),
+            getattr(
+                arguments,
+                "stage",
+                getattr(arguments, "profile", getattr(arguments, "action", "generated")),
+            ),
         ),
     )
     try:
@@ -816,6 +909,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             check(report, arguments.stage)
         elif arguments.command == "codegen":
             codegen(report, write=arguments.write)
+        elif arguments.command == "infra":
+            infra(report, arguments.action)
         else:
             dev(report, arguments)
         report.result = "passed"

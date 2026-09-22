@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -217,6 +218,94 @@ class ResultGates(unittest.TestCase):
             self.assertNotIn("fake-value", serialized)
             self.assertNotIn(json.dumps(str(root)), serialized)
             self.assertIn("<repository>", serialized)
+
+
+class InfrastructureChecks(unittest.TestCase):
+    def test_initialization_does_not_require_a_running_docker_daemon(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "dev").mkdir()
+            (root / "dev/infra.py").write_text("", encoding="utf-8")
+            (root / "dev/compose.yaml").write_text("", encoding="utf-8")
+            with (
+                patch("scripts.dev.ROOT", root),
+                patch(
+                    "scripts.dev.load_toolchain", return_value={"python": sys.version.split()[0]}
+                ),
+                patch("scripts.dev.doctor") as doctor,
+                patch("scripts.dev.run") as run,
+            ):
+                dev.infra(dev.Report("infra", "init"), "init")
+                doctor.assert_not_called()
+                self.assertEqual(
+                    run.call_args.args[1:3], ("python", [str(root / "dev/infra.py"), "init"])
+                )
+
+    def test_missing_infrastructure_script_and_unknown_action_cannot_launch(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch("scripts.dev.ROOT", Path(temporary)),
+            patch("scripts.dev.run") as run,
+        ):
+            for action in ("up", "down", "delete-all-volumes"):
+                with self.subTest(action=action), self.assertRaises(dev.DevError):
+                    dev.infra(dev.Report("infra", action), action)
+            run.assert_not_called()
+
+    def test_doctor_rejects_missing_daemon_or_docker_version_drift(self) -> None:
+        manifest = {
+            "schema_version": 1,
+            "python": "3.13.6",
+            "docker": "29.5.2",
+            "docker_compose": "5.1.4",
+        }
+        for daemon_result in ("29.5.1", dev.DevError("Docker daemon is unavailable")):
+            with (
+                self.subTest(daemon_result=type(daemon_result).__name__),
+                patch("scripts.dev.load_toolchain", return_value=manifest),
+                patch("scripts.dev.require_files"),
+                patch("scripts.dev.run", side_effect=["3.13.6", "29.5.2", daemon_result, "5.1.4"]),
+                patch("scripts.dev.emit"),
+                self.assertRaises(dev.DevError),
+            ):
+                dev.doctor(dev.Report("doctor", "infra"), "infra")
+
+    def test_missing_test_target_never_falls_back_to_another_configuration(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            with (
+                patch("scripts.dev.ROOT", Path(temporary)),
+                patch("scripts.dev.run") as run,
+                self.assertRaisesRegex(dev.DevError, "dev/.local/test.env"),
+            ):
+                dev.check_infrastructure(dev.Report("check", "infrastructure"))
+            run.assert_not_called()
+
+    def test_empty_or_skipped_infrastructure_unit_results_block_live_checks(self) -> None:
+        for output in ("Ran 0 tests in 0.0s\nOK", "Ran 1 test in 0.0s\nOK (skipped=1)"):
+            with (
+                self.subTest(output=output),
+                patch("scripts.dev.require_files"),
+                patch("scripts.dev.doctor"),
+                patch("scripts.dev.run", return_value=output),
+                patch("scripts.dev.infra") as infra,
+                self.assertRaises(dev.DevError),
+            ):
+                dev.check_infrastructure(dev.Report("check", "infrastructure"))
+            infra.assert_not_called()
+
+    def test_child_environment_is_private_and_is_not_written_to_the_report(self) -> None:
+        report = dev.Report("test", "tooling")
+        with patch.dict(os.environ, {"HARUKA_TEST_ENV_SENTINEL": "original"}):
+            output = dev.run(
+                report,
+                "python",
+                ["-c", "import os; print(os.environ['HARUKA_TEST_ENV_SENTINEL'])"],
+                show_output=False,
+                environment={"HARUKA_TEST_ENV_SENTINEL": "fake-environment-secret"},
+            )
+            self.assertEqual(output.strip(), "fake-environment-secret")
+            self.assertEqual(os.environ["HARUKA_TEST_ENV_SENTINEL"], "original")
+        self.assertNotIn("fake-environment-secret", json.dumps(report.records))
 
 
 if __name__ == "__main__":

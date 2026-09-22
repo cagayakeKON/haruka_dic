@@ -2,7 +2,7 @@
 
 ## 项目与当前状态
 
-Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用壳、backend/ Python包和scripts/开发入口。阶段1的B0-foundation基础切片已建立；完整B0仍在进行，B1/B2未实现，具体证据见docs/delivery/reviews/2026-09-22-scaffold-foundation.md。原型采用中性底色、Primary主色及杂志式排版，不设“继续阅读”；范围与示例边界见prototype/README.md。
+Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用壳、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1已交付B0-foundation及B0-infrastructure切片；完整B0仍在进行，B1/B2未实现，最新证据见docs/delivery/reviews/2026-09-22-scaffold-infrastructure.md。原型采用中性底色、Primary主色及杂志式排版，不设“继续阅读”；范围与示例边界见prototype/README.md。
 
 文档任务只修改文档；用户要求开始实现时，按实施计划推进必要工程工作。不把计划当成已实现，不为了运行不存在的检查擅自创建项目骨架。
 
@@ -47,7 +47,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 - PRD 定义需求，专题文档定义详细协议；避免复制同一字段表或状态机到多处。
 - 使用相对 Markdown 链接，移动或重命名后修复引用；删除过时方案时同步导航和计划。
 - 将已确认、推荐、待验证和已实现分开标注。中文用于产品文档和沟通，代码标识保持清晰一致。
-- 工程使用frontend/、backend/、scripts/、tools/和根contracts/；deploy/与业务数据/任务工程尚未建立。只创建当前职责需要的模块，不预建后续空目录。
+- 工程使用frontend/、backend/、scripts/、tools/和根contracts/；所有开发Compose与初始化/采集配置放dev/，deploy/及业务数据/任务工程尚未建立。只创建当前职责需要的模块，不预建后续空目录。
 - Flutter 保持功能模块、UI 状态与数据访问分层，平台差异放入适配层；Python 保持路由、服务、仓储和供应商适配分离。
 - Flutter共享业务/数据，复杂页面允许独立紧凑/宽屏布局；空间、输入和平台能力分别判断。布局切换保留账号/资源作用域内的状态，不重复请求/收费或重置考试；Android专属系统行为与真机优化按Flutter适配规范验收。
 - 用户/管理JSON接口统一使用具体化的SuccessResponse[T]、PageResponse[T]与ErrorResponse；服务返回业务结果，路由包装成功，统一处理器包装异常；204/文件/SSE保留原生传输语义，字段/语言/HTTP映射只在返回契约维护。

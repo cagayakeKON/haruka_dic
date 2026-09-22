@@ -39,8 +39,14 @@ def run(args: list[str], cwd: Path, env: dict[str, str], *, expected: int = 0) -
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--uv", required=True, type=Path)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="explicit local infrastructure config for installed lifecycle checks",
+    )
     args = parser.parse_args()
     uv = str(args.uv.resolve(strict=True))
+    infrastructure_config = args.config.resolve(strict=True) if args.config is not None else None
     run_id = uuid.uuid4().hex
     work = Path(tempfile.gettempdir()) / "haruka-package-check" / run_id
     work.mkdir(parents=True)
@@ -124,6 +130,17 @@ def main() -> None:
                 or '"event": "process.stopped"' not in output
             ):
                 raise RuntimeError("installed process lifecycle did not run and close")
+        if infrastructure_config is not None:
+            arguments = [cli, "--config", str(infrastructure_config)]
+            arguments += (
+                ["check-infrastructure"] if name == "haruka-manage" else ["--check-startup"]
+            )
+            output = run(arguments, outside, env)
+            if (
+                '"event": "infrastructure.connected"' not in output
+                or '"event": "process.stopped"' not in output
+            ):
+                raise RuntimeError("installed infrastructure did not connect and close")
     run(
         [str(python), "-I", "-m", "app.contracts.export", "--output", str(work / "contracts")],
         outside,
@@ -154,16 +171,17 @@ def main() -> None:
     if result.returncode == 0 or "hash" not in result.stderr.lower():
         raise RuntimeError("incorrect build hash did not reject the build")
     report = {
-        "scope": "B0-foundation-package",
+        "scope": "B0-infrastructure-package" if infrastructure_config else "B0-foundation-package",
         "wheel": wheel.name,
         "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
         "runtime": "non-editable; runtime-only locked dependencies; isolated cwd and Python import",
         "entries": 4,
         "lifespan": "started-and-stopped",
         "wrong_build_hash": "rejected",
+        "infrastructure_lifespans": 4 if infrastructure_config else 0,
         "limitations": [
-            "No database/Redis lifecycle",
-            "No worker/outbox execution",
+            "No migrations/schema readiness",
+            "No worker/outbox business execution",
             "Windows host only",
         ],
     }

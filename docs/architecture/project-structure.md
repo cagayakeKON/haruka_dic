@@ -1,6 +1,6 @@
 # 项目结构与模块职责
 
-状态：2026-09-22，B0-foundation已建立frontend/backend/scripts/tools/contracts；下列树仍包含尚未创建的目标模块，实际范围见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。独立 [HTML原型](../../prototype/README.md) 保留。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，初始化合同见 [脚手架蓝图](../engineering/scaffold.md)。
+状态：2026-09-22，B0已建立frontend/backend/scripts/tools/contracts及dev/基础设施；下列树仍包含尚未创建的目标模块，最新实际范围见 [基础设施记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)。独立 [HTML原型](../../prototype/README.md) 保留。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，初始化合同见 [脚手架蓝图](../engineering/scaffold.md)。
 
 ## 1. 仓库结构
 
@@ -52,7 +52,8 @@ haruka_dic/
       workers/                      Job handlers、Outbox、截止扫描、清理入口
     alembic/                        版本化迁移，独立于 MyHome
     tests/                          unit、contract、integration、fixtures、evals、support
-  deploy/                           独立 Compose、Nginx、采集增量配置与运行说明
+  dev/                              开发Compose、隔离初始化、Alloy/Loki/Grafana及本地操作入口
+  deploy/                           尚未建立；未来生产Nginx、采集增量与部署恢复配置
   scripts/dev.py                    doctor/bootstrap/dev/check/codegen统一开发入口
   scripts/quality/                  必需用例、覆盖率及结构检查工具/清单
   .github/workflows/                若选GitHub托管：文档/Python/Flutter/构建/发布任务

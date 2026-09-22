@@ -3,7 +3,7 @@
   "scope": "B0-foundation",
   "backend_outputs": ["openapi.json", "errors.json", "telemetry.json", "version.json"],
   "backend": {
-    "source": ["backend/app/schemas", "backend/app/api", "backend/app/contracts"],
+    "source": ["backend/app/schemas", "backend/app/api", "backend/app/contracts", "backend/app/core/logging.py"],
     "generator": "backend/app/contracts/export.py",
     "output": "contracts",
     "ownership": "backend"

@@ -5,6 +5,7 @@ import sys
 
 import uvicorn
 
+from app.bootstrap import InfrastructureUnavailable
 from app.cli.common import checked_settings, config_ok, parser_for
 from app.core.logging import configure_logging
 from app.core.settings import Settings
@@ -14,7 +15,7 @@ from app.main import create_app
 async def check_startup(settings: Settings) -> None:
     app = create_app(settings)
     async with app.router.lifespan_context(app):
-        sys.stdout.write("Process lifecycle started; persistence readiness remains unavailable.\n")
+        sys.stdout.write("Process lifecycle started; schema readiness remains unavailable.\n")
 
 
 def main() -> None:
@@ -32,7 +33,11 @@ def main() -> None:
         return
     configure_logging(settings, "api")
     if args.check_startup:
-        asyncio.run(check_startup(settings))
+        try:
+            asyncio.run(check_startup(settings))
+        except InfrastructureUnavailable:
+            sys.stderr.write("Infrastructure startup failed; inspect safe service logs.\n")
+            raise SystemExit(2) from None
         return
     uvicorn.run(
         create_app(settings),

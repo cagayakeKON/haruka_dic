@@ -1,11 +1,15 @@
 """Argument parsing and safe configuration errors shared by all process entries."""
 
 import argparse
+import asyncio
 import sys
 from pathlib import Path
+from typing import Literal
 
 from pydantic import ValidationError
 
+from app.bootstrap import InfrastructureUnavailable, bootstrap
+from app.core.logging import configure_logging
 from app.core.settings import Settings, load_settings
 
 
@@ -31,6 +35,24 @@ def unavailable(capability: str) -> None:
 
 
 def config_ok() -> None:
-    sys.stdout.write(
-        "Configuration valid (process shell only; persistence readiness not checked).\n"
-    )
+    sys.stdout.write("Configuration valid; connectivity and schema readiness not checked.\n")
+
+
+def check_resources(settings: Settings, role: Literal["worker", "outbox", "manage"]) -> None:
+    """Exercise the installed entry's real lifecycle without consuming business work."""
+    if not settings.infrastructure_enabled:
+        sys.stderr.write("Infrastructure check requires infrastructure-enabled configuration.\n")
+        raise SystemExit(2)
+    configure_logging(settings, role)
+
+    async def check() -> None:
+        async with bootstrap(settings, role=role):
+            sys.stdout.write("Infrastructure connected; schema and business handlers not ready.\n")
+
+    try:
+        asyncio.run(check())
+    except InfrastructureUnavailable:
+        sys.stderr.write(
+            "Infrastructure check failed; inspect safe service logs and local status.\n"
+        )
+        raise SystemExit(2) from None

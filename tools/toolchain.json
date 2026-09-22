@@ -47,5 +47,16 @@
     "Production container image digests",
     "Dart API generator prototype and locked long-term choice",
     "Android device and Windows installer acceptance"
-  ]
+  ],
+  "development_images": {
+    "postgres": "postgres:18@sha256:8ff36f3c66371cba71d20ceedccfc3de9669a68737607888c4ef0af93abe8e39",
+    "redis": "redis:8.8-alpine@sha256:9156d3e4cab19c9b5507e18d7fcfca90c17762914270a3e34c08397ebdf746ff",
+    "kafka": "apache/kafka:4.2.1@sha256:9916d60eca5d599550e2c320230808fda342124ba550bb4ac4ea8591803262a0",
+    "minio": "minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1@sha256:7330be2e7320a7a699b36f72bd06a94d8a21ec9f6f397345d9c38fc6751141f5",
+    "minio_mc": "minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727",
+    "alloy": "grafana/alloy:v1.7.3@sha256:727e38b231503c44d85e4d2080f256730c77ac8b296030e14551d0833466340b",
+    "loki": "grafana/loki:3.4.1@sha256:1d0c5ddc7644b88956aa0bd775ad796d9635180258a225d6ab3552751d5e2a66",
+    "grafana": "grafana/grafana:11.6.1@sha256:52c3e20686b860c6dc1f623811565773cf51eefa378817a4896dfc863c3c82c8",
+    "socket_proxy": "tecnativa/docker-socket-proxy:0.3@sha256:9e4b9e7517a6b660f2cc903a19b257b1852d5b3344794e3ea334ff00ae677ac2"
+  }
 }

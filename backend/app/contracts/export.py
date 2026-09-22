@@ -39,7 +39,7 @@ def documents() -> dict[str, object]:
         },
         "telemetry.json": {
             "schema_version": 1,
-            "scope": "backend-process-shell",
+            "scope": "backend-runtime",
             "events": sorted([*EVENTS, "library.log"]),
             "fields": [
                 "schema_version",
@@ -63,7 +63,7 @@ def documents() -> dict[str, object]:
     }
     payloads["version.json"] = {
         "schema_version": 1,
-        "scope": "B0-foundation",
+        "scope": "B0-infrastructure",
         "sha256": {
             name: hashlib.sha256(canonical_json(value).encode()).hexdigest()
             for name, value in sorted(payloads.items())

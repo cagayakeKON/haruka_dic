@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "scope": "B0-foundation",
+  "scope": "B0-infrastructure",
   "sha256": {
     "errors.json": "f5af16a3b8c20b9b368a57f10b86c6a471d6784ef1410b588d28ed33fa810f2c",
     "openapi.json": "5724eb1bc596da30fc8a6bdcc0939119d627cc76eec874bd667a1d970f1aef64",
-    "telemetry.json": "c4412d3ffca2a8c2ae09f48e9ce4f26158116e5e7f63dfd3978f52f3ece331d8"
+    "telemetry.json": "7cb83124077d53f789374a19b07c48c2714b9486ab55c41af8c529a51d97fdbe"
   }
 }

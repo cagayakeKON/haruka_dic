@@ -1,6 +1,6 @@
 # 脚手架实施蓝图
 
-状态：2026-09-22，开始实施B0-foundation。已建立一个Flutter工程、可安装Python包、锁与局部开发命令；完整合同中的迁移/种子、Dart API生成器、持久进程与质量门禁仍未交付。当前可执行命令见 [开发指南](development.md)，证据见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)；本文仍维护完整B0/B1/B2目标，不以基础切片缩减验收。
+状态：2026-09-22，B0基础壳及基础设施切片已建立。已有Flutter工程、可安装Python包、真实PG/Redis/Kafka/MinIO资源组装及dev/隔离Compose；完整合同中的迁移/种子、Dart API生成器、业务常驻进程与质量门禁仍未交付。当前命令见 [开发指南](development.md)，本轮证据见 [基础设施记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)；本文仍维护完整B0/B1/B2目标，不以切片缩减验收。
 
 配套：[项目结构](../architecture/project-structure.md)、[开发指南](development.md)、[脚手架验收](../delivery/milestones/scaffold.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md)、[配置运维](../operations/configuration.md)。本文维护工程载体与入口，业务规则仍由各专题维护；检查阈值与必需测试仍以 [测试规范](testing/strategy.md) 为准。
 
@@ -16,6 +16,7 @@
 | frontend/config/build_targets.json | 平台×环境的应用身份、构建参数、公开配置schema与目标；不存秘密 |
 | frontend/config/ui_test_ids.json | 前端UI定位元数据唯一来源；生成Dart，Playwright只读消费，不承载业务权限 |
 | scripts/dev.py | 基于Python标准库的开发入口，统一参数、子进程、路径、退出码与报告；不放业务或授权逻辑 |
+| dev/ | 所有开发Compose、初始化脚本及日志采集配置；通过scripts/dev.py infra操作，.local内凭据/运行数据不入Git |
 | tools/node/package.json、package-lock.json | Markdown等Node开发工具的锁定依赖；不增加Node生产服务 |
 | tools/e2e/package.json、package-lock.json | 锁定Playwright/TypeScript开发工具，显式安装浏览器与执行静态检查 |
 | testdata/assets、testdata/scenarios | 共享固定素材及manifest、声明式场景；运行账号/凭据不入库 |

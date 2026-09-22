@@ -2,16 +2,43 @@
 
 import json
 import logging
+import os
 import sys
+from contextlib import suppress
 from datetime import UTC, datetime
+from logging.handlers import RotatingFileHandler
 from typing import TextIO
 from uuid import UUID, uuid4
 
 from app.core.settings import Settings
 
 EVENTS = frozenset(
-    {"process.started", "process.stopped", "http.completed", "http.failed", "process.unavailable"}
+    {
+        "process.started",
+        "process.stopped",
+        "http.completed",
+        "http.failed",
+        "process.unavailable",
+        "infrastructure.connected",
+        "infrastructure.unavailable",
+    }
 )
+
+
+class _SafeHandlerFailure:
+    def handleError(self, record: logging.LogRecord) -> None:
+        """logging's default error path dumps raw msg/args; never use that fallback."""
+        # Do not recurse through logging or expose the failed record.
+        with suppress(OSError, ValueError):
+            sys.stderr.write("Haruka logging output unavailable.\n")
+
+
+class SafeStreamHandler(_SafeHandlerFailure, logging.StreamHandler[TextIO]):
+    pass
+
+
+class SafeFileHandler(_SafeHandlerFailure, RotatingFileHandler):
+    pass
 
 
 class SafeJsonFormatter(logging.Formatter):
@@ -62,9 +89,20 @@ class SafeJsonFormatter(logging.Formatter):
 
 def configure_logging(settings: Settings, service: str, stream: TextIO | None = None) -> None:
     """Configure once at the CLI boundary, including third-party loggers."""
-    handler = logging.StreamHandler(stream or sys.stdout)
+    handler = SafeStreamHandler(stream or sys.stdout)
     handler.setFormatter(SafeJsonFormatter(settings, service))
-    logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
+    handlers: list[logging.Handler] = [handler]
+    if settings.log_file is not None:
+        settings.log_file.parent.mkdir(parents=True, exist_ok=True)
+        # Standard rotating handlers are process-local, never share a file
+        # between API, maintenance, Worker and Outbox processes.
+        path = settings.log_file.with_name(
+            f"{settings.log_file.stem}.{service}.{os.getpid()}{settings.log_file.suffix}"
+        )
+        file_handler = SafeFileHandler(path, maxBytes=10_000_000, backupCount=3, encoding="utf-8")
+        file_handler.setFormatter(SafeJsonFormatter(settings, service))
+        handlers.append(file_handler)
+    logging.basicConfig(level=logging.INFO, handlers=handlers, force=True)
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         logger = logging.getLogger(name)
         logger.handlers.clear()

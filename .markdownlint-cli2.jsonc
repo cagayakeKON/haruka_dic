@@ -22,5 +22,5 @@
     "MD040": true,
     "MD042": true
   },
-  "globs": ["README.md", "AGENTS.md", "docs/**/*.md", "prototype/**/*.md", "backend/README.md", "frontend/README.md"]
+  "globs": ["README.md", "AGENTS.md", "docs/**/*.md", "prototype/**/*.md", "backend/README.md", "frontend/README.md", "dev/README.md"]
 }

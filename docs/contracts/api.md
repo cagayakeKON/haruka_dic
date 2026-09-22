@@ -1,6 +1,6 @@
 # API、事件与客户端契约
 
-状态：设计基线 v0.1，2026-09-22，未实现。本文固定跨模块约定与接口分组，功能载荷由专题定义；后端初始化时将设计展开为OpenAPI/契约测试，不把本表误称已存在接口。
+状态：设计基线 v0.2，2026-09-22，未实现。本文固定跨模块约定与接口分组，功能载荷由专题定义；后端初始化时将设计展开为OpenAPI/契约测试，不把本表误称已存在接口。
 
 协议归属：认证传输与会话轮换见 [认证设计](../architecture/authentication.md)，权限代码见 [权限目录](permissions.md)，选区/来源字段见 [出处协议](content-locator.md)，CSV文件格式见 [CSV契约](vocabulary-csv.md)。模块只引用这些协议并描述用户行为，不再定义另一套字段；未来根contracts中的生成OpenAPI由后端schema单向导出，不与本文手工双向维护字段表。
 
@@ -10,25 +10,9 @@ REST前缀/api/v1；管理业务在/api/v1/admin。请求/响应JSON使用snake_
 
 路由operationId显式声明且稳定唯一；后端schema/注册定义单向生成客户端契约。源码/导出文件归属、生成器原型及差异检查由 [脚手架蓝图](../engineering/scaffold.md) 维护，不改变本文的业务/传输语义。
 
-JSON成功：`{data: ..., meta: {request_id, ...}}`；列表data为items数组，meta含next_cursor/has_more。错误：`{error: {code, message, field_errors?, retryable, details?}, meta: {request_id}}`。details只包含当前用户获授权的安全状态/最新revision，不返回堆栈、SQL、密钥、完整模型回复。二进制、204和SSE使用各自响应，不强套JSON壳。
+所有用户端/管理端JSON采用 [统一返回模型](api-responses.md)：SuccessResponse[T]、PageResponse[T]、ErrorResponse。该专题唯一维护模型字段、分页、HTTP/错误码映射、异常清洗、路由声明与多语言；服务返回业务结果，路由包装成功，异常处理器包装失败。二进制、204、SSE等使用自身传输语义。
 
-GET列表使用opaque cursor + limit，推荐默认20/最大100；排序必须有稳定唯一尾键，cursor绑定筛选/排序/账号/受众和版本。搜索文本不进入日志，排序/过滤字段允许清单。管理聚合另设上限，不能在普通列表强制精确全库total。
-
-| 状态 | 语义/客户端行为 |
-| --- | --- |
-| 200/201/204 | 查询/创建/无响应体成功；201返回资源或Location |
-| 202 | 已持久受理，返回job_id/资源状态；不表示AI/导入/评分完成 |
-| 400/422 | 协议格式/字段与业务输入校验；修正输入，不自动重试 |
-| 401 | 缺身份/失效；仅native ACCESS_EXPIRED可走一次刷新，其余重新认证 |
-| 403 | 已认证但动作/CSRF/功能无权；刷新Token不解决权限不足 |
-| 404 | 资源不存在或其他用户的私有ID；不泄露其存在性 |
-| 409 | 状态/版本/幂等冲突；显示安全的冲突恢复路径，不能盲目覆盖 |
-| 410 | 当前用户的已过期预览/挑战/游标等明确失效资源；他人资源仍404 |
-| 413/415 | 实际大小过限/格式不支持；客户端预检不能代替服务端校验 |
-| 429 | 限流/配额，使用Retry-After；禁止无界即时重试 |
-| 502/503/504 | 依赖错误/不可用/超时；可能存在外部副作用，按资源状态核对后重试 |
-
-稳定错误代码首批：AUTH_LOGIN_FAILED、SESSION_REVOKED、ACCESS_EXPIRED、PERMISSION_DENIED、CSRF_FAILED、REVISION_CONFLICT、IDEMPOTENCY_CONFLICT、STATE_CONFLICT、KEY_REQUIRED、CAPABILITY_UNSUPPORTED、QUOTA_EXCEEDED、EXTERNAL_RESULT_UNKNOWN、INPUT_INVALID。后端消息是安全兜底，用户文案由客户端按code本地化。
+搜索文本不进入日志；排序/过滤字段允许清单，管理聚合另设上限。业务载荷、权限检查和重试必须同时遵循本文与统一返回专题，不能只统一外层JSON就跳过资源授权。
 
 ## 2. 认证、版本、幂等与重试
 
@@ -105,3 +89,5 @@ Last-Event-ID用于有界事件回放；首版仅保证持久状态、阶段结�
 新增可选字段向后兼容；删除字段/改枚举语义/必填字段需版本升级或明确迁移期。每次发布记录min_supported_client与契约版本，旧客户端不能理解的写协议显示升级提示而非猜测提交。CSV、AI输出、事件、出处协议有各自schema_version，不能一个app版本代替全部。
 
 API-01：每个路由映射权限/公共例外并测越权；API-02：分页/版本/幂等/超时重试不重复写；API-03：Pydantic/Dart对null/未知枚举/Decimal/Unicode/UTC一致；API-04：SSE断连/窗口外恢复不重复收费；API-05：文件/CSV媒体类型和失败状态在三端有效；API-06：旧客户端兼容、生成契约差异及未经授权字段拒绝可验证。
+
+统一返回、框架异常覆盖和语言/客户端降级的 API-07～API-10 见 [返回契约验收](api-responses.md#7-验收)，按已交付路由和本阶段影响范围执行。

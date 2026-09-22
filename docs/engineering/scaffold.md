@@ -104,13 +104,15 @@ Web Nginx把/api/v1与私有媒体/事件请求优先转发到后端，未知API
 | --- | --- | --- |
 | app/schemas与api路由 | contracts/openapi.json → Dart API DTO/客户端 | Pydantic维护请求/响应；operationId显式、唯一且稳定，不因Python函数改名漂移 |
 | app/contracts/permissions.py | contracts/permissions.json → 迁移目录校验、Dart常量与路由声明检查 | 代码注册权限语义/依赖；用户角色授权仍在PG事务中维护，导出文件不能回写人工授权 |
-| app/contracts/errors.py | contracts/errors.json → Dart错误枚举/文案映射检查 | 已有安全错误码、可重试分类；未知值安全展示，不映射成功 |
+| app/contracts/errors.py | contracts/errors.json → Dart错误枚举/文案映射检查 | 注册安全错误码、HTTP/重试分类、字段码、参数schema和兜底模板标识；检查已支持locale的占位符一致，未知值安全展示 |
 | app/contracts/telemetry.py | contracts/telemetry.json → Flutter事件接口/服务端接收校验 | 白名单字段、类型/限长/敏感等级；只生成契约，不记录私有正文 |
 | app/schemas/events.py | contracts/events.json → SSE事件解码及样本 | 沿用API专题事件信封/枚举，不建立第二套SDK事件协议 |
 | app/models的MetaData/列注释及Table.info | contracts/database-schema.json → 内部数据字典与schema检查 | 记录scope/逻辑关联/时间/索引，无物理外键；只供内部验证，不直接生成前端DTO，见[数据库规范](database.md) |
 | frontend/config/ui_test_ids.json | frontend/lib/generated/ui_test_ids.dart；Playwright读取同一来源 | UI元数据由前端维护；schema/模板参数/唯一性与生成漂移检查，见前端E2E专题 |
 
 这些来源文件只声明类型与不可变元数据，schema/目录不能反向导入数据库运行组件或在导入时读取环境；模型字典只加载无副作用的ORM声明，不建立连接。角色模板作为受审查的版本化种子输入，不是每次启动覆盖的静态权限事实。新增权限默认不授予自定义角色；Seed更新遵守 [RBAC](../architecture/authorization.md) 与下节迁移规则。
+
+app/schemas/responses.py 是 [统一返回](../contracts/api-responses.md) 的 SuccessResponse[T]/PageResponse[T]/ErrorResponse 唯一代码来源，api/exception_handlers.py 负责真实异常转换，api/responses.py 提供纯构造/OpenAPI辅助；不能靠生成文档安装错误处理器。B0 建立公共模型、具体泛型导出、默认422覆盖和最小真实HTTP边界检查，B1再证明身份/收藏接口全路径使用同一契约。接线与事务示例见 [后端手册](backend.md)。
 
 ### Dart生成器原型
 

@@ -1,6 +1,6 @@
 # 测试规范与验证矩阵
 
-状态：Draft v0.3，2026-09-22。补充前端定位、平台 E2E 与测试数据专题；覆盖分母和必需用例结果门禁继续适用。测试目录、依赖、夹具和 CI 均未创建；本文规定实施时必须验证的行为，不表示任何应用测试已经通过。
+状态：Draft v0.4，2026-09-22。补充后端分层测试写法、fixture 生命周期与依赖覆盖；既有前端/数据专题、覆盖分母和必需用例结果门禁继续适用。测试目录、依赖、夹具和 CI 均未创建；本文规定实施时必须验证的行为，不表示任何应用测试已经通过。
 
 配套：[代码规范](../coding.md)、[数据库规范](../database.md)、[静态检查](../lint.md)、[交付验收](../../delivery/acceptance.md)、[实施阶段](../../delivery/roadmap.md)、[RBAC](../../architecture/authorization.md)、[统一日志](../../operations/observability.md)。
 
@@ -33,6 +33,29 @@
 | AI/TTS 质量评估 | 受控评估样本与独立运行记录 | 英/日解释、抽题/评分、真实声音/音频和模型能力 | 不加入常规 PR 的隐式付费调用 |
 
 Flutter 官方区分 unit/widget/integration；integration_test 不能操作原生平台 UI，须用实际平台操作或经评估的专用驱动补齐，不把自动测试未覆盖的系统界面写成通过。Patrol 的项目分工为 Android 补充，并不表示该工具没有 Web 能力。依据：[Flutter 测试分层](https://docs.flutter.dev/testing/overview)、[集成测试](https://docs.flutter.dev/testing/integration-tests)。
+
+### 后端 route、service 与 repository 的写法
+
+下面沿用既有层级，规定同一功能在不同层的证据责任；不要求每个函数或每个场景在三层重复测试。未来文件按“层级/模块/test_行为.py”组织，通用夹具放适用目录的 conftest.py，跨层准备逻辑复用测试数据工厂。
+
+| 被测入口与样例位置 | 样例责任与主要断言 | 替身边界 |
+| --- | --- | --- |
+| route：tests/contract/api/test_collections.py | 经真实 ASGI 请求证明收藏请求校验、HTTP 状态、响应序列化/字段裁剪、分页及错误映射；检查 OpenAPI 与运行响应一致 | 可以覆盖 service 依赖以触发明确成功/失败，但不能直接调用 route 函数代替 HTTP 协议测试，也不能据此声明授权或数据库已通过 |
+| service 规则：tests/unit/services/test_collections.py | 对纯规则或可独立编排的行为给定有类型的输入/依赖，断言结果、业务错误及禁止发生的副作用 | 可用符合接口的仓储/供应商替身；不把 fake commit、内存去重或调用次数当作真实事务、锁或唯一约束证据 |
+| service 事务：tests/integration/services/test_collections.py | 调用实际服务和仓储，在真实 PG 上验证 ScopeContext、归属/父状态、成功提交及失败回滚；涉及任务时同时验证业务记录与 Outbox 原子性 | 保留真实查询、授权和事务路径，只在已声明的外部供应商边界替换；提交后的结果用独立 Session 读取，失败后确认无半成品 |
+| repository：tests/integration/repositories/test_collections.py | 调用实际仓储方法，验证作用域过滤、稳定排序/分页、软删可见性、实际使用的写入及公共时间字段语义 | 使用迁移后的真实 PG；不 mock SQLAlchemy 的 execute/scalars 调用链来证明 SQL 正确；跨表业务合法性仍按 service 协议验证 |
+
+普通 JSON 的 SuccessResponse[T]、PageResponse[T]、ErrorResponse 以及下载/SSE 等例外，以 [API 返回契约](../../contracts/api-responses.md) 为唯一字段来源。契约测试同时核验 HTTP 状态、明确预期的结构/业务字段与禁止泄漏字段；仅用同一 Pydantic 模型把自身输出解析成功不构成独立预期，不能用整份快照自动接受错误码或敏感字段变化。动态 request_id、时间和业务 ID 验证其约束及关联，不硬编码本次运行值。
+
+认证、权限或隔离为目标时，不覆盖当前用户/授权依赖为“永远允许”；真实 API/Worker 路径和同库 A/B 数据证据仍按第4节执行。将 service 替换掉的 route 契约用例只登记为 contract，不同时登记为对应真实集成用例。
+
+### 命名、AAA 与参数化
+
+- **命名**使用 test_动作_条件_预期 的 snake_case，例如 test_create_collection_foreign_source_rejected；函数名描述可观察行为，不写 test_01 或内部方法名的机械镜像。稳定 case_id 与需求/参数映射独立维护，重命名或移动测试不自动改变用例身份。
+- **Arrange**通过最小合法 fixture 准备前置条件，标明哪些流程未被本次测试；**Act**执行被测公开入口；**Assert**核对结果或类型化错误、已提交状态及必须没有发生的副作用。一个用例聚焦一种行为；并发、恢复或幂等用例可有协议要求的多步 Act，但每步目的和状态断言必须清楚。
+- **断言**优先业务结果与不变量，不断言无契约意义的私有 helper 次数/顺序、ORM 对象内存身份或完整 SQL 文本。拒绝用例同时检查无越权数据、无未经许可的业务写入/付费调用，保留契约要求的审计和限流记录；并发用例检查最终有效记录和业务贡献，而不只断言某个异常出现。错误文案仅在它属于明确兼容契约时逐字比较。
+- **参数化**用 pytest.mark.parametrize / pytest.param 表达同一规则的成功、边界和失败输入，并给每个参数组稳定、无秘密的业务 ids；避免在一个测试函数内循环多组输入，使第一处失败遮住后续结果。不同执行语义拆成用例，不用大笛卡尔积或许多条件分支堆成万能测试。
+- 参数组使用不可变值或准备配方，每次执行重新取得可变对象、账号和 Session；pytest 不复制传入的 list/dict，不能跨参数共享被修改的对象。ids 不含密码、Token 或用户正文；需要登记为必需行为的参数进入第5节的执行键和数据专题 variant，不能只在显示名称中区分。参数语义见 [pytest 参数化](https://docs.pytest.org/en/stable/how-to/parametrize.html)。
 
 ## 3. 夹具、环境与可重复性
 
@@ -71,6 +94,44 @@ Flutter 官方区分 unit/widget/integration；integration_test 不能操作原�
 API 异步测试可使用 HTTPX ASGITransport，必须显式启动/关闭应用 lifespan；AsyncClient 本身不负责触发 lifespan，见 [FastAPI 异步测试](https://fastapi.tiangolo.com/advanced/async-tests/)。真实网关 Cookie、CORS、CSRF、Range 和 SSE 缓冲另外在部署样式环境测试。
 
 Pydantic AI 使用 TestModel/FunctionModel/依赖覆盖测试，默认禁用真实模型请求；SDK 的禁用开关不覆盖独立 HTTPX TTS 适配器，因此测试还必须限制网络出站到声明的测试基础设施或 mock transport。能力和限制见 [Pydantic AI 测试](https://pydantic.dev/docs/ai/guides/testing/)。
+
+### fixture 生命周期与依赖覆盖
+
+可变的 app、会话、ScopeContext、业务时钟、账号数据及替身调用记录默认 function 范围。只读素材可跨用例共享；基础设施或连接池确需更大 scope 时，必须保证资源/事件循环生命周期一致，并继续为每个用例创建独立 Session、执行身份和资源账本。不能把 session 范围的 AsyncSession 或全局已登录客户端当作提速方式。
+
+夹具显式声明依赖，建立资源后及时登记清理，使用 yield 配合 try/finally 或上下文管理器释放。尽量让一个 fixture 管理一种有状态资源；多步准备使用可逐步登记关闭动作的管理器，保证后一步失败时已取得的资源仍可回收。yield 前抛错时，pytest 不会执行该 fixture 的 yield 后段，因此不能把所有清理都放在准备流程的最后。释放失败要保留原测试失败和清理错误；按测试数据专题先 quiesce/fence 再回收账本资源，恢复未成功的环境不得交给下一个用例。依据：[pytest fixture 与安全清理](https://docs.pytest.org/en/stable/how-to/fixtures.html)。
+
+FastAPI 依赖覆盖用实际被 Depends 引用的 callable 作为键。每个修改 overrides 的用例独占自己的 app，覆盖前保存已有映射，finally 恢复；不能只在成功断言后重置，也不能对共享 app 无条件清空其他用例的覆盖。覆盖包围完整请求和相关 lifespan/后台任务的生命周期，退出覆盖前先停止本次活动。机制依据：[FastAPI 依赖覆盖](https://fastapi.tiangolo.com/advanced/testing-dependencies/)。
+
+以下是未来测试 support 的局部辅助模板，尚未创建或执行；function 范围 fixture 可在此上下文内 yield 本用例的 app。原依赖与替身由实际工程明确传入，不在模板中定义应用端口、认证旁路或额外 HTTP 路由：
+
+~~~python
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+
+from fastapi import FastAPI
+
+
+@contextmanager
+def override_dependency(
+    app: FastAPI,
+    target: Callable[..., object],
+    replacement: Callable[..., object],
+) -> Iterator[None]:
+    previous = app.dependency_overrides.copy()
+    try:
+        app.dependency_overrides[target] = replacement
+        yield
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(previous)
+~~~
+
+### mock 与 Fake 的边界
+
+优先对应用已有的接口注入小型、有类型的 Fake；临时 mock 用 create_autospec 约束调用签名，并按需用 spec_set 拒绝未知属性。异步依赖保留 await 语义，不能用宽松 MagicMock 掩盖不存在的方法或错参。patch 作用于被测代码实际查找符号的位置，并以 fixture/上下文限定寿命；避免永久改写环境变量、全局客户端或第三方内部实现。能力依据：[Python mock 与 autospec](https://docs.python.org/3/library/unittest.mock.html)。
+
+规则单测允许模拟时钟、随机数、仓储端口和供应商；狭义 route 契约允许覆盖 service。真实集成/E2E 仍按测试数据专题保留 PG、Redis、权限、Job/Outbox/Worker 等被测链路，Fake 只替换约定的外部供应商。生产配置拒绝 Fake，测试不能增加可公开调用的控制入口。Spy 的次数/顺序只用于有意义的契约，例如拒绝后零次付费调用、限定重试预算；“调用了 commit 一次”不能证明提交成功或无重复结果。
 
 ## 4. 首版必须覆盖的行为矩阵
 

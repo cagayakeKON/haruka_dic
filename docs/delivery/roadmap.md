@@ -46,6 +46,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 参考收藏与出题只提前实现最小业务链路，阶段3/4仍负责其完整功能与最终验收；不能因参考流程通过就勾选整项功能。
 
 - 建立 Flutter 三端、Python 工程、登录/注册/设置页面及 CI 检查入口。
+- 按 [后端手册](../engineering/backend.md) 落实模块公开入口、依赖/事务生命周期；B0建立 [统一返回](../contracts/api-responses.md) 与异常/OpenAPI/语言基础，B1在真实身份和收藏流程验收API-07～API-10的当期范围，不把文档模板视为实现。
 - 按 [前端E2E](../engineering/testing/frontend-e2e.md) 建立Test ID单源生成、Key/Web语义定位原型及平台runner分工；按 [测试数据](../engineering/testing/data.md) 建立共享样本、声明式场景、工厂秘密通道与资源账本，映射UIE/TDS验收。
 - 按 [MyHome 复用](../operations/myhome-integration.md) 接入独立数据库、凭据、Bucket、队列、网络和日志，不共用 MyHome 账号数据。
 - 首次建表前落实数据库规范与 DB 验收：不使用物理/组合外键，保留 PK/UNIQUE/NOT NULL/行内 CHECK；复用 MyHome 的创建/更新时间约定并覆盖全部写路径，维护数据字典、索引和迁移约束。采用同库同 schema 共享表及强制 ScopeContext，P0 不启用 RLS。

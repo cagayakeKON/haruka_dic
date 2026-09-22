@@ -20,6 +20,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 | 阅读、选区、导入、CSV或考试 | 对应模块，以及[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)、[考试](docs/modules/exams.md)所涉及的契约 |
 | Agent、卡片、会话、AI或TTS | [Agent运行层](docs/architecture/agent-runtime.md)、[AI与朗读模块](docs/modules/ai-speech.md) |
 | 编码、初始化或构建 | [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[脚手架](docs/engineering/scaffold.md)、[B0/B1/B2](docs/delivery/milestones/scaffold.md) |
+| 后端接口、模块、返回/异常与多语言 | [后端开发手册](docs/engineering/backend.md)、[统一返回契约](docs/contracts/api-responses.md)、相关API/权限/数据设计 |
 | 控件、测试与数据工厂 | [测试策略](docs/engineering/testing/strategy.md)、[前端E2E](docs/engineering/testing/frontend-e2e.md)、[测试数据](docs/engineering/testing/data.md) |
 | 前端/API/Worker/数据库日志与部署 | [观测](docs/operations/observability.md)、[MyHome复用](docs/operations/myhome-integration.md)、[配置](docs/operations/configuration.md)、[部署恢复](docs/operations/deployment-recovery.md) |
 | 交付或未决方案 | [路线图](docs/delivery/roadmap.md)、[交付验收](docs/delivery/acceptance.md)、[决策待办](docs/decisions/pending.md) |
@@ -45,6 +46,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 - 将已确认、推荐、待验证和已实现分开标注。中文用于产品文档和沟通，代码标识保持清晰一致。
 - 后续工程建议使用 frontend/、backend/、deploy/；这些目录当前尚未创建，实际布局建立后更新本文件。
 - Flutter 保持功能模块、UI 状态与数据访问分层，平台差异放入适配层；Python 保持路由、服务、仓储和供应商适配分离。
+- 用户/管理JSON接口统一使用具体化的SuccessResponse[T]、PageResponse[T]与ErrorResponse；服务返回业务结果，路由包装成功，统一处理器包装异常；204/文件/SSE保留原生传输语义，字段/语言/HTTP映射只在返回契约维护。
 - 用现有约定解决当前问题，不先引入多服务拆分、公共平台包或无实际需求的抽象。
 - 后端正式入口共用资源组装，非editable安装后不依赖checkout/cwd；PEP517构建依赖另行完整锁定。开发命令与前端环境身份按蓝图统一，生成物单向导出并按清单纳管。
 - 数据库结构变化通过 Alembic；接口与 CSV 变更维护版本兼容，不静默丢字段或改出处。

@@ -4,6 +4,8 @@
 
 配套：[项目结构](../architecture/project-structure.md)、[API 契约](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[静态检查](lint.md)、[测试规范](testing/strategy.md)、[交付验收](../delivery/acceptance.md)、[认证与隔离](../architecture/authentication.md)、[统一日志](../operations/observability.md)。
 
+Python 新功能按 [后端开发手册](backend.md) 执行，返回模型/异常/多语言只由 [统一返回契约](../contracts/api-responses.md) 定义；本文维护跨语言的一般编码规则，不复制响应字段。
+
 ## 1. 约束等级与适用范围
 
 - **必须**：实施与交付门禁，代码审查和自动检查共同执行。权限、用户隔离、秘密保护、业务事务一致性不能以格式豁免方式跳过。
@@ -46,6 +48,14 @@ Python 手写函数参数与返回值必须有类型，包括测试夹具和异�
 Dart 使用空安全；异步返回 Future<T>，集合带元素类型。JSON 的 dynamic 只停留在解码边界，经 DTO 校验后进入业务层；不把 Map<String, dynamic> 当长期领域模型。状态用不可变对象/明确枚举或 sealed 类型表达，不用几个可同时为真的布尔值隐含流程。
 
 Pydantic 输入、持久化和返回 DTO 分开定义。注册/授权/Key 等敏感写入模型拒绝未知字段；公开兼容读取与供应商响应可由适配器按明确版本处理额外字段。不能原样返回 ORM 对象、供应商响应或包含答案的题目模型。Pydantic 校验之后仍需校验范围、归属、引用和业务状态；模型本身支持的数据校验见 [官方模型说明](https://pydantic.dev/docs/validation/latest/concepts/models/)。
+
+### Python 可读性与注释
+
+- 公共模块写职责/边界说明；公共 service、跨模块接口、复杂并发/纯规则函数使用 Google 风格 docstring，说明必要的 Args、Returns、Raises，以及 scope、事务归属、幂等和外部副作用。不重复类型标注或逐行翻译代码，简单私有映射不强制模板注释。
+- 注释解释“为何如此”和不可破坏的不变量，例如锁顺序、来源偏移或供应商限制；修复并发问题附对应回归用例/契约位置。TODO 写具体未决问题及跟踪引用，不能以 TODO 代替安全校验。
+- 优先短而明确的业务函数和组合，条件复杂时提取有业务名称的规则；不以统一响应为由引入万能 Controller/BaseService。没有实际复用和稳定边界时不增加继承层级，不用武断行数指标迫使拆碎事务。
+- 不使用可变默认参数、星号导入和在导入期运行的连接/注册副作用；异常链保留在内部排障范围，对外只映射安全错误。裸 except、吞取消、断言代替生产输入校验和任意 setattr 批量写 ORM 都不允许。
+- 公共标识符使用英语业务名，文档/docstring/业务注释可用中文；UTF-8 与项目格式化一致。错误文案进入注册目录/本地化资源，不能分散为 service 中的自由文本。
 
 ## 4. Flutter 状态、交互与异步
 

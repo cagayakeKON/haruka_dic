@@ -93,6 +93,22 @@ haruka_dic/
 - ORM公共Base、TimestampMixin、无外键关联服务与字典生成按 [数据库规范](../engineering/database.md) 组织；逻辑关联存在性和父删除竞争由service/repository承担，不放入隐式ORM级联或数据库外键。
 - app/core 只容纳确实横切的配置与基础机制，不能把所有功能塞进 utils.py 或通用 BaseService。
 
+### 按业务组织文件与跨模块边界
+
+层目录内使用相同业务名分组，如 api/routes/materials.py、schemas/materials.py、services/materials.py、repositories/materials.py、models/materials.py；规模扩大后同层转为 materials/ 包，不提前生成空目录。api/dependencies.py 组装请求依赖，api/exception_handlers.py 负责异常映射，api/responses.py 只提供纯响应/文档辅助，schemas/responses.py 唯一定义 [统一响应模型](../contracts/api-responses.md)。具体新增用例和路由模板见 [后端手册](../engineering/backend.md)。
+
+| 调用方 | 可依赖的业务能力 | 禁止的跨界 |
+| --- | --- | --- |
+| API/Worker/Agent 工具 | 已公开的应用 service、输入/结果类型与自身适配 | 直接访问其他模块 ORM/仓储、用调用者提供的 user_id 构造可信 scope |
+| domain | 纯值对象/规则、无框架的错误/权限代码、标准库 | FastAPI、SQLAlchemy、Pydantic AI、网络/文件 I/O、service/仓储反向依赖 |
+| service | 自身仓储/领域、显式注入的 adapter、其他模块公开用例或事务内能力 | 直接 import 其他业务模块仓储/ORM、读取其私有函数、循环调用和隐含嵌套提交 |
+| repository | 本模块 ORM/纯查询类型和 ScopeContext | import service/api、调用外部模型或隐式 commit |
+| schemas/contracts | Pydantic/标准类型、无副作用的协议定义 | 引入数据库连接、路由注册、运行时环境读取或反向导入 service |
+
+跨域关联只在明确归属的 repository/查询服务中使用显式连接查询；按数据库规范校验每一侧 scope。确需同时使用多个模块模型时，必须登记该联合查询的负责模块、字段投影与授权条件，不能把它做成任意跨表查询工具。跨模块原子写由应用编排用例调用公开的事务内能力，共用一位事务所有者；耗时流程改用 Job/Outbox，不绕过服务边界。
+
+小型模块可直接暴露 services/materials.py 中的方法；拆成包后在明确的 public.py 提供入口，__init__.py 不做连接、注册或大范围星号重导出。跨模块只依赖公开业务类型，不透传 ORM、Session 或 HTTP Request（事务内能力的受控会话参数除外）。导入关系由静态结构检查和 review 共同验证，新增允许边必须说明业务理由；不临时延迟 import 掩盖循环依赖。
+
 ## 4. 模块与功能映射
 
 | 用例 | Flutter feature | 后端服务/仓储 | 异步处理 |

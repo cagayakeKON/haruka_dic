@@ -10,6 +10,7 @@
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 初始化工程 | [脚手架](engineering/scaffold.md) | [项目结构](architecture/project-structure.md)、[B0/B1/B2](delivery/milestones/scaffold.md)、[开发指南](engineering/development.md) |
 | 编写代码与测试 | [代码规范](engineering/coding.md)、[Lint](engineering/lint.md) | [测试策略](engineering/testing/strategy.md)、[前端E2E](engineering/testing/frontend-e2e.md)、[测试数据](engineering/testing/data.md) |
+| 开发后端模块或统一接口返回 | [后端开发手册](engineering/backend.md)、[统一返回/异常/多语言](contracts/api-responses.md) | [API总则](contracts/api.md)、[项目结构](architecture/project-structure.md)、[后端测试写法](engineering/testing/strategy.md) |
 | 设计表、隔离查询或修改数据库 | [数据库规范](engineering/database.md) | [数据与任务](architecture/data-jobs.md)、[认证隔离](architecture/authentication.md)、[迁移操作](operations/deployment-recovery.md) |
 | 接入或部署 | [MyHome复用](operations/myhome-integration.md)、[配置](operations/configuration.md) | [部署与恢复](operations/deployment-recovery.md)、[观测](operations/observability.md) |
 | 确认做到哪、能否交付 | [路线图](delivery/roadmap.md) | [交付验收](delivery/acceptance.md)、[审查记录](delivery/reviews/reorganization.md) |

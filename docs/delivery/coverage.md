@@ -23,6 +23,7 @@
 | 范围 | 唯一方法/规则 | 实施验收 |
 | --- | --- | --- |
 | 目录、依赖与公共服务 | [项目结构](../architecture/project-structure.md)、[架构](../architecture/overview.md) | STR/API/DAT，依赖方向与真实事务/隔离 |
+| 后端模块、统一返回/异常和多语言边界 | [后端手册](../engineering/backend.md)、[返回契约](../contracts/api-responses.md) | STR/SCF与API-07～API-10；真实路由/生成模型一致、框架异常/流式例外、语言和安全参数 |
 | 建表、时间字段与无外键隔离 | [数据库规范](../engineering/database.md) | DB-01～DB-12；结构/字典、时间写入、双账号与逻辑关联竞争、迁移证据，按已交付范围执行 |
 | 包、CLI、构建身份与生成 | [脚手架](../engineering/scaffold.md) | [B0/B1/B2里程碑](milestones/scaffold.md)的SCF |
 | 前端定位与端到端测试 | [前端测试](../engineering/testing/frontend-e2e.md) | UIE，不用一种runner证据代替另一种 |

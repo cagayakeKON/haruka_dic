@@ -16,6 +16,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 | --- | --- |
 | 产品/功能 | [产品总览](docs/product/overview.md)、对应modules规格、[功能与验收追踪](docs/delivery/coverage.md) |
 | 身份、页面、业务动作与数据 | [认证](docs/architecture/authentication.md)、[RBAC](docs/architecture/authorization.md)、[权限目录](docs/contracts/permissions.md)、[API](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) |
+| 建表、ORM、逻辑关联、数据隔离与迁移 | [数据库规范](docs/engineering/database.md)、相关数据/认证设计；按DB验收证明已实现范围 |
 | 阅读、选区、导入、CSV或考试 | 对应模块，以及[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)、[考试](docs/modules/exams.md)所涉及的契约 |
 | Agent、卡片、会话、AI或TTS | [Agent运行层](docs/architecture/agent-runtime.md)、[AI与朗读模块](docs/modules/ai-speech.md) |
 | 编码、初始化或构建 | [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[脚手架](docs/engineering/scaffold.md)、[B0/B1/B2](docs/delivery/milestones/scaffold.md) |
@@ -52,6 +53,8 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 ## 必须保持的技术约束
 
 - 当前用户来自认证上下文，不相信请求体、CSV 或模型提供的 user_id。
+- 不使用数据库物理外键或隐式级联；保留主键、唯一、非空及行内CHECK。跨表归属/存在性/版本由带ScopeContext的服务事务及共同父行锁协议校验，删除/GC也遵守同一规则；首版共享表隔离不宣称已启用RLS。
+- 所有业务表统一created_at/updated_at，采用UTC带时区类型及MyHome式公共TimestampMixin；原生SQL、批量更新、upsert显式维护更新时间，created_at不被普通更新/CSV覆盖。完整命名、字段、索引、字典、迁移与验收以数据库规范为准。
 - PG AuthSession/安全epoch维护持久撤销，Redis保存可丢失会话材料；Web使用opaque Cookie续idle，原生JWT/refresh按代次轮换；会话和权限检查失败关闭。
 - 所有资源查询、批量写入、跨表引用、文件签名、SSE、Worker 和 Agent 工具检查当前动作权限与所有者；管理服务仅能访问明确授予的运维元数据/操作范围，不建立超级管理员的私有内容旁路。
 - RBAC 默认拒绝，身份/受众、账号状态、登录资格、操作权限、数据范围和业务状态都要满足；页面隐藏不能代替接口授权，业务代码不硬编码角色名称。

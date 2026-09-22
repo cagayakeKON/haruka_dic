@@ -5,10 +5,11 @@
 ## 1. 通用数据规则
 
 - PostgreSQL 是身份撤销、权限、业务状态、任务和审计的真相；Redis 只承载可丢失的会话材料/缓存/通知/限流，Kafka 只传事件，MinIO 保存被数据库引用的私有对象。
-- ID 推荐应用生成 UUID；客户端生成 request/operation/idempotency ID 不等于业务对象所有权。每个私有聚合具有 owner_user_id、library_id；引用采用组合唯一键/外键确保同一资料库，不能只靠调用者记得加过滤。
-- 时间采用服务端 UTC timestamptz，API 为带 Z 的 ISO 8601。客户端时间只用于体验，考试截止、Token、幂等过期由服务端判断。版本/revision 使用单调整数。
+- Haruka 使用独立数据库/账号；P0 用户数据采用同库同 schema 共享表，服务与仓储强制接收由受信任身份构造的 ScopeContext。P0 不启用 RLS，不把数据库描述为能自动阻止任意 SQL 跨用户访问；管理元数据范围与本人私有数据仍分开。
+- ID 推荐应用生成 UUID；客户端生成 request/operation/idempotency ID 不等于业务对象所有权。库内私有聚合保存固定的 owner_user_id、library_id；用户级资源按数据库规范登记权威 user_id/owner 列，不重复添加另一套所有者列。两者均不通过修改归属转移记录。数据库不使用物理外键/组合外键；保留 PK、UNIQUE、NOT NULL 和行内 CHECK，跨表引用由服务事务按 ScopeContext 校验所有父/目标适用的归属、版本与状态。
+- 时间采用服务端 UTC timestamptz，API 为带 Z 的 ISO 8601。created_at/updated_at 的字段、默认值与更新责任按 [数据库规范](../engineering/database.md) 复用 MyHome 约定，批量/原生 SQL 路径也必须满足，不能仅依赖 ORM 路径。客户端时间只用于体验，考试截止、Token、幂等过期由服务端判断。版本/revision 使用单调整数。
 - 计分用 PostgreSQL NUMERIC 与 Python Decimal；协议以十进制字符串传输，推荐最多两位小数，ROUND_HALF_UP 仅在契约指定的评分边界执行。禁止浮点累加后展示错误满分；修改精度需要协议迁移。
-- 内容原文与出处 ID 不由模型生成，稳定偏移/Unicode 转换以 [出处协议](../contracts/content-locator.md) 为准。JSONB 用于版本化可变题型/卡片载荷，不把用户、外键、状态与幂等约束全部藏在 JSON。
+- 内容原文与出处 ID 不由模型生成，稳定偏移/Unicode 转换以 [出处协议](../contracts/content-locator.md) 为准。JSONB 用于版本化可变题型/卡片载荷，不把用户、逻辑引用列、状态与幂等约束全部藏在 JSON。
 - 常见索引从 owner/library + 列表排序/状态开始；不能上线无限无条件 count/全表管理查询。最终 DDL 和 EXPLAIN 基于样本确认，不在文档阶段猜测性能已达标。
 
 ## 2. 领域关系与必要约束
@@ -32,7 +33,7 @@
 | Outbox/Inbox/IdempotencyRecord | event_id、schema、资源引用、请求摘要、游标/结果引用 | 已提交事实可重投；重复消费不重复业务；不放秘密/正文 |
 | AdminAuditEvent | actor、target、动作、版本/安全差异、结果 | 与成功变更同事务；应用不可更新/删除；留存独立于Loki |
 
-状态细分见各功能；表名是逻辑职责。数据库迁移可以把小型值对象合表，但不能省略这些完整性约束。
+状态细分见各功能；表名是逻辑职责。“必须保证”同时包含服务层逻辑关联校验与数据库行内/唯一约束，并不表示由外键或跨表 CHECK 执行。迁移可以把小型值对象合表，但不能省略相应校验；完整建表、ScopeContext、逻辑引用、锁顺序和字典登记以 [数据库规范](../engineering/database.md) 为准。
 
 ### 公共逻辑关系与来源
 
@@ -42,7 +43,7 @@
 - Material 的来源格式、导入模式、内容类型、语言与导入报告分开；MaterialRevision 下的 StructureNode、ContentBlock、Sentence 组成版本化结构，Sentence 关联原文 span 与语言。物理原文件和结构内容分离；重新解析产生新版本，收藏尽力重绑失败时保留快照，不因重解析丢失已存学习记录。保留/删除期限仍按第 7 节处理。
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
 - CollectionItem 维护 kind、词句/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词允许为空，不能伪造材料出处。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
-- Exercise 区分 extracted/generated，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至 CollectionItem、Attempt 或 ContentBlock，引用均受同库约束。Attempt 关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
+- Exercise 区分 extracted/generated，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至 CollectionItem、Attempt 或 ContentBlock，引用由服务事务校验同库归属及版本/状态。Attempt 关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
 - AgentMessage 保存结构化文字与卡片结果；Card 保存类型、版本化载荷及合法来源。消息保存和卡片成为可收藏业务结果不是同一成功条件；用户内容、模型候选和生成例句的标识按 [AI 与朗读](../modules/ai-speech.md) 维护。
 - CsvImportBatch 保存用户/资料库、协议版本、批次状态、进度与结果引用，不能用外部 CSV ID 决定所有者；导入的 preview/confirm/重复策略字段以 [CSV 契约](../contracts/vocabulary-csv.md) 为准。Job/外部调用记录和 CSV 批次各自表达领域状态，不互相代替。
 
@@ -61,6 +62,8 @@
 | Worker阶段完成 | 有效租约/代次、状态/版本/权限、阶段产物与下阶段Outbox | 下一次外部调用 |
 
 服务层开启/提交事务，仓储不私自 commit。外部 HTTP、哈希计算、文件解压/渲染和模型等待不持有数据库长事务。并发管理修改锁顺序固定为策略 revision → 用户/会话 → 角色/绑定 → 业务聚合；锁冲突/死锁只重试已经证明安全的短事务，禁止把付费调用包在事务重试里。
+
+新增、合并、重绑逻辑引用时，服务须在提交事务内验证全部父/目标，不能只在预览或路由阶段查一次。引用写入、父对象 tombstone 和物理回收遵守数据库规范的同一父行锁/代次协议及稳定锁顺序，避免检查后删除；Worker 最终写入也不能绕过。这里仅定义适用范围，不另行维护一套无外键并发算法。
 
 ### 上传完成与不可变对象
 
@@ -112,22 +115,22 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 
 ## 7. 删除、版本保留与对象回收
 
-材料删除采用逻辑tombstone，事务推进 delete_generation，立刻从用户书库和新操作中隐藏，拒绝以旧revision创建新引用。解析/音频/AI任务提交必须比较输入的generation/revision与当前有效状态；删除前领取、删除后到达的结果不能复活材料。
+材料删除采用逻辑tombstone，事务推进 delete_generation，立刻从用户书库和新操作中隐藏，拒绝以旧revision创建新引用。新增引用与父删除共用数据库规范的父行锁/代次协议；只做事务前查询不足以防止并发悬空。owner/library 创建后固定，删除不通过转移所有者实现。解析/音频/AI任务提交必须比较输入的generation/revision与当前有效状态；删除前领取、删除后到达的结果不能复活材料。
 
 收藏保留已存词句/笔记/出处快照，原文回跳显示不可用；已开始考试、已提交答卷、Attempt保留必要不可变题面/评分依据和私有题图引用以支持复盘。删除操作明确说明：移除书库原资料，已生成的个人收藏/考试记录仍保留。不是用户数据“彻底抹除”的实现，也不提供跨账号恢复。
 
-原文件/历史revision不被永久无条件保留：只有仍被活跃场次/成绩/收藏必要回跳策略或在途安全处理引用的对象才retain；没有引用的对象进入延迟GC候选。首版推荐7天宽限，删除前再次检查tombstone、引用计数/实际引用、generation和任务租约；GC权限只针对明确对象键与Haruka Bucket。MinIO删除失败重试，不在一个SQL事务中假装对象和数据库原子删除。
+原文件/历史revision不被永久无条件保留：只有仍被活跃场次/成绩/收藏必要回跳策略或在途安全处理引用的对象才retain；没有引用的对象进入延迟GC候选。首版推荐7天宽限，物理回收前按同一父行锁/代次协议再次检查tombstone、实际逻辑引用、generation和任务租约，不能把过期引用计数当删除依据，也不依赖数据库级联删除。GC权限只针对明确对象键与Haruka Bucket。MinIO删除失败重试，不在一个SQL事务中假装对象和数据库原子删除。
 
 未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他同账号资源引用的对象；不跨用户内容去重。数据库迁移和运维恢复步骤见 [部署与恢复](../operations/deployment-recovery.md)，保留参数见 [运行配置](../operations/configuration.md)，不属于用户单词CSV功能。
 
 ## 8. 验收
 
-- DAT-01：真实PostgreSQL约束阻止跨库引用、重复初始化、重复提交；不存在/他人私有ID统一不可访问。
+- DAT-01：实际业务服务在真实 PostgreSQL 集成测试中，通过 ScopeContext 与事务校验拒绝跨 owner/library、错误父版本/状态及混合批量引用；不存在/他人私有 ID 统一不可访问。数据库 PK/UNIQUE/NOT NULL/行内 CHECK 分别证明主键、唯一/重复和行内条件，不声称由 FK/RLS 自动拒绝跨库引用；重复初始化/提交由相应唯一约束与服务幂等共同保证。
 - DAT-02：Redis撤销删除失败、全量丢失与PG不可用时身份失败关闭；已提交学习数据不丢。
 - DAT-03：Outbox重复、消费者提交前后崩溃、租约过期Worker迟到，业务仅提交一次且不会覆盖新代次。
 - DAT-04：供应商收费后断线标unknown，测试无自动无限重试；取消/撤权/删Key停止后续调用。
 - DAT-05：交卷/截止/保存并发、评分A取消后B生效再A迟到，不改写B或重复学习贡献。
-- DAT-06：删除与解析/音频完成竞争不能复活材料；历史考试可复盘，GC不删仍有引用对象。
+- DAT-06：通过真实 PG 并发验证“新增/重绑引用—父 tombstone—物理回收”和解析/音频迟到提交的竞争，共用父行锁/代次协议，不产生新悬空引用或复活材料；历史考试可复盘，GC不删仍有保留引用对象，归属不可转移。
 - DAT-07：授权、版本、审计、Outbox故障注入验证事务提交边界，日志平台故障不改变已提交权限。
 - DAT-08：预签名重复PUT、校验前后覆盖、复制中源变更、完成/取消竞争及复制后PG失败，Worker只能读已验证final对象，孤立对象可回收。
 

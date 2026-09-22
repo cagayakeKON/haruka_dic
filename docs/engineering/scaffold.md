@@ -107,9 +107,10 @@ Web Nginx把/api/v1与私有媒体/事件请求优先转发到后端，未知API
 | app/contracts/errors.py | contracts/errors.json → Dart错误枚举/文案映射检查 | 已有安全错误码、可重试分类；未知值安全展示，不映射成功 |
 | app/contracts/telemetry.py | contracts/telemetry.json → Flutter事件接口/服务端接收校验 | 白名单字段、类型/限长/敏感等级；只生成契约，不记录私有正文 |
 | app/schemas/events.py | contracts/events.json → SSE事件解码及样本 | 沿用API专题事件信封/枚举，不建立第二套SDK事件协议 |
+| app/models的MetaData/列注释及Table.info | contracts/database-schema.json → 内部数据字典与schema检查 | 记录scope/逻辑关联/时间/索引，无物理外键；只供内部验证，不直接生成前端DTO，见[数据库规范](database.md) |
 | frontend/config/ui_test_ids.json | frontend/lib/generated/ui_test_ids.dart；Playwright读取同一来源 | UI元数据由前端维护；schema/模板参数/唯一性与生成漂移检查，见前端E2E专题 |
 
-这些来源文件只声明类型与不可变元数据，不导入数据库或在导入时读取环境。角色模板作为受审查的版本化种子输入，不是每次启动覆盖的静态权限事实。新增权限默认不授予自定义角色；Seed更新遵守 [RBAC](../architecture/authorization.md) 与下节迁移规则。
+这些来源文件只声明类型与不可变元数据，schema/目录不能反向导入数据库运行组件或在导入时读取环境；模型字典只加载无副作用的ORM声明，不建立连接。角色模板作为受审查的版本化种子输入，不是每次启动覆盖的静态权限事实。新增权限默认不授予自定义角色；Seed更新遵守 [RBAC](../architecture/authorization.md) 与下节迁移规则。
 
 ### Dart生成器原型
 
@@ -132,6 +133,8 @@ codegen顺序固定为：锁工具与输入 → 离线导出schema/目录 → �
 未来tools/codegen/manifest.json列出source/generator/output/ownership，受管生成目标内出现未知文件或来源摘要不符时失败；允许接管/移除必须显式变更manifest并审查，不能执行全目录递归删除解决差异。Git忽略规则不得吞掉锁文件或受管生成物；提交前与CI都检查生成差异，已有lint例外仍只适用于真正生成内容。
 
 ## 6. 数据库初始化与种子
+
+所有业务表先满足 [数据库规范](database.md)：统一时间Mixin、无物理外键、明确scope和逻辑关系校验、命名约束与数据库字典。模型注册、生成字典和已迁移实际schema共同验证，不能用空模型清单通过B0。
 
 haruka-manage提供db status、db upgrade、seed apply、admin init等明确子命令。受控密码通过隐藏输入或Secret注入，不进入命令参数历史。显式加载目标配置，显示脱敏环境/实例/数据库指纹；开发runner拒绝生产配置，运维部署另用该维护入口与已批准目标。
 

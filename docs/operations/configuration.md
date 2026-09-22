@@ -13,7 +13,7 @@
 | 类别 | 示例设计键/内容 | 来源与失败策略 |
 | --- | --- | --- |
 | 应用识别 | APP_ENV、INSTANCE_ID、PUBLIC_BASE_URL、RELEASE、允许Origin | 部署配置；INSTANCE_ID稳定区分缓存，不随重启随机变化；生产域名缺失不启动公开服务 |
-| 数据库 | DATABASE_URL、连接池/超时、DB_APPLICATION_NAME | Haruka专用账号/数据库，秘密不进镜像；连接失败readiness不通过 |
+| 数据库 | DATABASE_URL、独立维护凭据、连接池/超时、DB_APPLICATION_NAME | Haruka专用数据库；运行DML与迁移/维护身份分离，UTC/search_path和最小权限按[数据库规范](../engineering/database.md)，API/Worker不取得维护凭据；连接失败readiness不通过 |
 | 会话/权限 | REDIS_URL、HARUKA_NAMESPACE、session TTL、issuer、原生JWT算法/签名key版本 | 签名秘密独立；Cookie名/受众固定；Redis/PG失败关闭认证 |
 | 加密 | CREDENTIAL_KEYRING、ACTIVE_ENCRYPTION_KEY_VERSION、挑战/回执用途隔离密钥 | 独立Secret，版本对应encryption_key_version而非用户credential_version；未知版本不当明文读取或换公共Key |
 | 队列 | KAFKA_BOOTSTRAP、topics/groups、ack/retry/lease参数 | Haruka namespace；不可达保留Outbox，不丢已受理Job |

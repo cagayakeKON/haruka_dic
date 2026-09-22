@@ -14,6 +14,7 @@
 | 浏览器测试 TypeScript | tools/e2e 的 package/lock、类型/格式/lint配置 | 页面对象与用例都通过类型、格式及规则检查，不隐式获取latest |
 | Markdown | 根目录 .markdownlint-cli2.jsonc 与锁定工具清单 | 选定规则通过，链接/围栏/路径另行验证 |
 | 业务结构检查 | 未来 scripts/ 中经测试的检查入口 | 路由权限声明、契约版本、事件目录和生成物一致 |
+| 数据库结构与字典 | Base.metadata、受审查Table.info、迁移及受管数据库字典 | 按[数据库规范](database.md)校验零物理外键、时间/命名/注释、scope/逻辑关系和生成一致；真实约束与并发另由PG集成证明 |
 | UI定位与测试数据 | UI注册表、素材manifest、场景schema及受管生成清单 | 非法/重复/未知标识、生成漂移、样本摘要/引用错误、非法场景或秘密输出拒绝 |
 
 必须固定工具版本；升级先审规则变化，再更新配置/锁文件与基线。CI 只检查，不自动修改并提交代码。不用所有规则全开后全局 ignore 的做法，也不把 lint 当成运行时授权证明。
@@ -196,6 +197,7 @@ Markdownlint 不能代替以下检查，未来 scripts/ 检查入口须实现并
 2. 围栏正确闭合且嵌套代码示例不误判；无冲突标记、失效相对路径或意外秘密。
 3. 未实现状态、P0/P1、产品边界、权限代码/路由映射、事件/协议版本与路线图一致。
 4. 工程建立后扫描每个路由的权限/公共例外声明，校验发布目录与两端组件映射；扫描只能验证声明完整，真实拒绝行为由测试证明。
+5. 数据库变更对受影响模型/迁移及共同Base执行DB结构检查；新增或修改检查器时验证漏时间字段、漏scope/逻辑关系、误加物理外键、重复索引、字典漂移与空模型清单等坏样本。实际PG catalog、时间写入和隔离/锁竞争属于[DB验收](database.md)，不能用Ruff、文本搜索或ORM导入成功替代。
 
 CLI、配置语法与规则以 [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) 和 [markdownlint 规则](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) 为准。初始化时在独立文档工具清单锁定 Node、包版本与 lockfile，CI 调用已安装的 markdownlint-cli2，不临时下载 latest。现在仅能报告实际执行的链接/围栏等文档检查。
 

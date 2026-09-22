@@ -10,6 +10,7 @@
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 初始化工程 | [脚手架](engineering/scaffold.md) | [项目结构](architecture/project-structure.md)、[B0/B1/B2](delivery/milestones/scaffold.md)、[开发指南](engineering/development.md) |
 | 编写代码与测试 | [代码规范](engineering/coding.md)、[Lint](engineering/lint.md) | [测试策略](engineering/testing/strategy.md)、[前端E2E](engineering/testing/frontend-e2e.md)、[测试数据](engineering/testing/data.md) |
+| 设计表、隔离查询或修改数据库 | [数据库规范](engineering/database.md) | [数据与任务](architecture/data-jobs.md)、[认证隔离](architecture/authentication.md)、[迁移操作](operations/deployment-recovery.md) |
 | 接入或部署 | [MyHome复用](operations/myhome-integration.md)、[配置](operations/configuration.md) | [部署与恢复](operations/deployment-recovery.md)、[观测](operations/observability.md) |
 | 确认做到哪、能否交付 | [路线图](delivery/roadmap.md) | [交付验收](delivery/acceptance.md)、[审查记录](delivery/reviews/reorganization.md) |
 
@@ -37,7 +38,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 | modules | 具体业务规则、操作/异常、前后端职责、功能验收 | 公共会话算法、权限代码定义、出处字段 |
 | architecture | 系统选型与依赖、认证/授权、持久任务、Agent机制 | 逐页操作或部署步骤 |
 | contracts | API/权限/CSV/出处等共同协议 | 另一套产品范围或重复生成字段事实 |
-| engineering | 编码、开发、脚手架、Lint和测试方法 | 上线操作与历史通过记录 |
+| engineering | 编码、数据库建表/隔离规则、开发、脚手架、Lint和测试方法 | 上线操作与历史通过记录 |
 | operations | 配置、基础设施、采集、部署/排障/恢复步骤 | 功能交付审批和产品优先级 |
 | delivery | 阶段进度、需求/验收映射、制品证据、历史review | 第二套业务契约 |
 | decisions | 当前选型理由/状态及待决问题/锁定节点 | 已实现/已验证的虚假结论 |

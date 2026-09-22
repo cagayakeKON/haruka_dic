@@ -46,7 +46,7 @@ haruka_dic/
       schemas/                      Pydantic 请求、响应、AI/事件协议
       services/                     用例、授权、事务与幂等协调
       repositories/                 带作用域查询，不提交外层事务
-      models/                       SQLAlchemy ORM 与数据库约束
+      models/                       SQLAlchemy Base/Mixin、无外键模型、scope/逻辑关系元数据
       ai/                           Pydantic AI、模型工厂、工具、Prompt registry
       adapters/                     Redis/Kafka/MinIO、TTS、解析器、邮件等适配
       workers/                      Job handlers、Outbox、截止扫描、清理入口
@@ -90,6 +90,7 @@ haruka_dic/
 - ai 工具调用同一 service，不能直接向表插入数据；输出 schema 不等于通过业务校验。
 - worker 只取 Job 引用，校验阶段/租约/当前权限后执行 service。system principal 只有截止封存、清理和已返回产物最小落盘等固定动作。
 - 数据库会话按请求/独立任务建立，每个并发协程独立 AsyncSession；不在 asyncio.gather 中共享可变 Session。依据：[SQLAlchemy 并发会话约束](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html#using-asyncsession-with-concurrent-tasks)。
+- ORM公共Base、TimestampMixin、无外键关联服务与字典生成按 [数据库规范](../engineering/database.md) 组织；逻辑关联存在性和父删除竞争由service/repository承担，不放入隐式ORM级联或数据库外键。
 - app/core 只容纳确实横切的配置与基础机制，不能把所有功能塞进 utils.py 或通用 BaseService。
 
 ## 4. 模块与功能映射

@@ -2,7 +2,7 @@
 
 状态：Draft v0.3，2026-09-22。补充前端定位、平台 E2E 与测试数据专题；覆盖分母和必需用例结果门禁继续适用。测试目录、依赖、夹具和 CI 均未创建；本文规定实施时必须验证的行为，不表示任何应用测试已经通过。
 
-配套：[代码规范](../coding.md)、[静态检查](../lint.md)、[交付验收](../../delivery/acceptance.md)、[实施阶段](../../delivery/roadmap.md)、[RBAC](../../architecture/authorization.md)、[统一日志](../../operations/observability.md)。
+配套：[代码规范](../coding.md)、[数据库规范](../database.md)、[静态检查](../lint.md)、[交付验收](../../delivery/acceptance.md)、[实施阶段](../../delivery/roadmap.md)、[RBAC](../../architecture/authorization.md)、[统一日志](../../operations/observability.md)。
 
 ## 1. 目标、等级与例外
 
@@ -24,7 +24,7 @@
 | --- | --- | --- | --- |
 | Python 规则单测 | backend/tests/unit，pytest | 状态转换、计分/限额、CSV 转义/重复、Unicode/出处转换、缓存键、类型化模型 | 真实数据库事务、真实供应商语义质量 |
 | API/协议契约 | backend/tests/contract | 输入/返回/错误模型、OpenAPI、SSE 次序与恢复、DTO 字段裁剪、客户端样本解码 | 只凭快照批准敏感字段新增 |
-| Python 集成 | backend/tests/integration | 真实 PostgreSQL 迁移/约束/并发及 AuthSession 撤销事实、Redis 会话材料/轮换、Outbox/Kafka 重投、MinIO 权限及对象生命周期 | 不使用 SQLite 代替 PostgreSQL 锁/精度/JSON/约束语义 |
+| Python 集成 | backend/tests/integration | 真实 PostgreSQL 迁移/行内及唯一约束、服务层无外键逻辑关联/并发、AuthSession 撤销事实、Redis 会话材料/轮换、Outbox/Kafka 重投、MinIO 权限及对象生命周期 | 不使用 SQLite 代替 PostgreSQL 锁/精度/JSON/约束语义；不把任意 SQL 跨用户拒绝当成未启用 RLS 的数据库能力 |
 | Flutter 单元 | frontend/test，flutter_test | 控制器、账号代次、访问快照、DTO、缓存、选择偏移与播放器状态 | OS 安全存储和真实播放 |
 | Flutter 组件 | frontend/test，flutter_test | 加载/空/错误/只读/无权、导航守卫、表单、题目/成绩、无障碍语义 | 真实平台弹窗或浏览器 Cookie |
 | 三端应用内集成 | frontend/integration_test，integration_test | 注册登录、主学习闭环、考试、CSV、退出切账号 | 无法操作原生平台 UI；测试入口包不能代替最终发布包 |
@@ -43,6 +43,14 @@ Flutter 官方区分 unit/widget/integration；integration_test 不能操作原�
 - Redis、Kafka Topic/consumer group、MinIO Bucket/前缀均含本次随机命名空间。清理前核对目标清单，只删除本次创建的资源；不连接或清理 MyHome 数据。
 - 容器镜像按版本/摘要固定，健康检查通过后再测试，不能靠固定 sleep 猜依赖已就绪。缺依赖是环境失败，不是 skip 后显示全通过。
 - SQLite 仅用于真实客户端 Drift 缓存测试。网络故障、死锁/租约和进程重启在隔离环境注入，绝不通过停止共享生产服务实现。
+
+### 无外键数据与隔离验收
+
+按 [数据库规范](../database.md) 的 DB 验收登记迁移元数据、字段/时间、约束、查询、逻辑关联与隔离用例；沿用 [数据与任务](../../architecture/data-jobs.md) 的 DAT-01/DAT-06 验证引用和删除竞争。Haruka 独立数据库/账号，P0 同库同 schema 共享表、强制 ScopeContext、无物理外键且不启用 RLS；A/B 越权用例必须处于同一被测库/schema，不能用分库夹具代替应用隔离。
+
+分别证明两类保证：PK/UNIQUE/NOT NULL/行内 CHECK 由真实 PG 约束测试验证；跨 owner/library、错误父版本/状态、批量混入他人 ID 由实际业务服务/API/Worker 在真实 PG 上拒绝。对所有者/关联的校验不能只 mock 仓储，也不能直接插一条跨库 SQL 然后期待不存在的 FK 或 RLS 自动拒绝。
+
+并发测试使用真实提交与屏障，覆盖新增/重绑引用、父 tombstone、GC及迟到 Worker 在同一父行锁/代次协议下的不同先后次序，验证无新悬空引用、无跨用户转移且保留必要历史。工厂的合法前置和清理按同一逻辑关联规范；created_at/updated_at 覆盖 ORM、批量/raw SQL、upsert 等实际写路径，不把某一路径通过当成全体自动更新时间正确。
 
 ### 共同测试数据
 
@@ -73,7 +81,8 @@ Pydantic AI 使用 TestModel/FunctionModel/依赖覆盖测试，默认禁用真�
 | AUTH | 重复注册竞争/回滚；错误密码/限流；原生刷新轮换/重放、Web 续期/多窗口；改密撤销；启用的验证/恢复挑战按用途/到期/单次消费；两端登录资格 | 真实 DB/Redis + API + 三端/管理 Web |
 | AUTHZ | 多角色/继承/环/停用/deny；未知权限默认拒绝；写权限不扩大读/范围；直达路由和直接 API；逐字段裁剪 | 授权规则/真实投影 + UI + API 权限矩阵 |
 | REVOKE | 多实例旧缓存、通知丢失、Redis 删除失败而 PG 撤销已提交、旧表单/并发管理提交；撤权后新请求/工具/付费步骤拒绝；最后管理员竞争保护 | 并发集成 + SSE/Worker/管理 Web |
-| ISOLATION | A/B 交换所有资源/父子 ID，批量混入他人 ID，私有文件签名/任务/统计/日志无泄漏 | 每个资源族 API/仓储/文件/Worker |
+| ISOLATION | 同库同 schema 的 A/B 交换所有资源/父子 ID，批量混入他人 ID；ScopeContext及服务事务拒绝非法关联，私有文件签名/任务/统计/日志无泄漏 | 每个资源族实际 API/仓储/文件/Worker + 真实 PG；不依赖 FK/RLS |
+| DB | 无物理外键、PK/UNIQUE/NOT NULL/行内 CHECK、字段/时间语义、逻辑关联、父删除竞争、软删唯一、事务/CAS、索引/迁移/字典与数据库账号隔离 | 数据库规范的 DB 验收 + 真实迁移/元数据/服务事务；DAT-01/DAT-06及工厂 TDS 场景 |
 | ACCOUNT_SWITCH | A 退出后 B 登录，旧响应/音频/下载/日志/考试草稿不应用到 B；client/admin 快照和队列不混用 | Flutter 单元/组件 + 三端集成 |
 | IMPORT | 实际格式、大小/解压限制、危险路径/外部资源、取消/重投；解析失败保留原文件/可用原文；显式试卷模式不被 AI 改写 | 解析单测 + 文件/Worker 集成 |
 | READING | 稳定出处/Unicode、重解析与删除后的快照、进度冲突、离线租期和重联撤权 | 跨端相同样本 + 缓存/版本单测 |

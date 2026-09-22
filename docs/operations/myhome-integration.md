@@ -24,6 +24,7 @@
 | [租户角色](../../../MyHome/backend/app/shared/tenant_role.py) | member/admin/owner 固定等级与最低角色比较；认证服务在租户名称修改时使用该判断，不等同于 Haruka 所需的动态完整 RBAC |
 | [密码与令牌](../../../MyHome/backend/app/core/security.py) | pwdlib 密码哈希、JWT、随机刷新令牌及其摘要 |
 | [租户仓储范围](../../../MyHome/backend/app/repositories/tenant_scope.py) | 统一附加 tenant_id 条件；可借鉴为 Haruka 用户/资料库作用域 |
+| [时间Mixin](../../../MyHome/backend/app/models/mixins.py) / [模型Base](../../../MyHome/backend/app/models/base.py) | created_at/updated_at使用server_default，更新列另有onupdate；Base未配置统一命名。Haruka保留UTC带时区并禁止物理外键，不能照搬MyHome的tenant外键或混杂时间类型，详见[数据库规范](../engineering/database.md) |
 | [文件上传服务](../../../MyHome/backend/app/services/file_upload_service.py) | 预签名上传、文件校验、对象记录与 Outbox，含 MyHome 业务和认证依赖 |
 | [MinIO 客户端](../../../MyHome/backend/app/core/minio.py) | 内部存储地址与客户端可达的签名地址分开配置 |
 | [Outbox 服务](../../../MyHome/backend/app/services/outbox_publish_service.py) | 待发布事件领取、发布和恢复，含账本/采集任务的分支 |

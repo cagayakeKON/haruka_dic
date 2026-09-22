@@ -20,7 +20,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 
 | 验证 | 样本/操作 | 通过标准 |
 | --- | --- | --- |
-| 双账号隔离 | A/B 分别建材料、单词、Key 与任务，交换资源 ID | API、文件签名、缓存、Worker 和 CSV 均不串用 |
+| 双账号隔离 | A/B 在 Haruka 同库同 schema 共享表分别建材料、单词、Key 与任务，交换资源/父子 ID | 无外键、P0 无 RLS 时仍由 ScopeContext 与服务校验保证 API、文件签名、缓存、Worker 和 CSV 不串用 |
 | 管理后台与 RBAC | 用户/管理两端登录，多角色、继承、deny、深链直达、直接 API、运行中撤权和越权授予 | UI 与接口一致，管理会话隔离，多实例旧缓存不放行，管理员仍受私有数据边界约束 |
 | Pydantic AI 运行层 | 类型化工具、卡片输出、两用户并发、多轮历史和中断重试 | 结构与出处可校验、Key 不串用、预算有界、业务不重复写入 |
 | 统一日志链路 | 三端正常/错误/埋点 → API → AI/工具 → ORM，另核对 PostgreSQL 引擎日志 | 同一 Grafana 可查且可关联，info 不遗漏，秘密脱敏，账号不误归属 |
@@ -33,7 +33,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 
 ## 2. 六个实施阶段
 
-各阶段共同遵守 [项目结构](../architecture/project-structure.md)、[代码](../engineering/coding.md)、[Lint](../engineering/lint.md)、[测试](../engineering/testing/strategy.md) 与 [交付验收](acceptance.md)。先完成 [开发指南](../engineering/development.md) 的实际初始化，再运行其中标注的未来命令。原设计审查见 [历史记录](reviews/2026-09-22-design.md)，不作为已运行的应用证据。
+各阶段共同遵守 [项目结构](../architecture/project-structure.md)、[代码](../engineering/coding.md)、[数据库规范](../engineering/database.md)、[Lint](../engineering/lint.md)、[测试](../engineering/testing/strategy.md) 与 [交付验收](acceptance.md)。先完成 [开发指南](../engineering/development.md) 的实际初始化，再运行其中标注的未来命令。原设计审查见 [历史记录](reviews/2026-09-22-design.md)，不作为已运行的应用证据。
 
 ### 阶段 1：工程基础、两端登录、管理后台与 RBAC
 
@@ -48,12 +48,13 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 - 建立 Flutter 三端、Python 工程、登录/注册/设置页面及 CI 检查入口。
 - 按 [前端E2E](../engineering/testing/frontend-e2e.md) 建立Test ID单源生成、Key/Web语义定位原型及平台runner分工；按 [测试数据](../engineering/testing/data.md) 建立共享样本、声明式场景、工厂秘密通道与资源账本，映射UIE/TDS验收。
 - 按 [MyHome 复用](../operations/myhome-integration.md) 接入独立数据库、凭据、Bucket、队列、网络和日志，不共用 MyHome 账号数据。
+- 首次建表前落实数据库规范与 DB 验收：不使用物理/组合外键，保留 PK/UNIQUE/NOT NULL/行内 CHECK；复用 MyHome 的创建/更新时间约定并覆盖全部写路径，维护数据字典、索引和迁移约束。采用同库同 schema 共享表及强制 ScopeContext，P0 不启用 RLS。
 - 实现注册事务、密码哈希、设备会话、刷新/撤销、改密、Web Cookie/CSRF 和原生安全存储。
 - 按 [账号流程](../modules/accounts.md) 和 [公共认证机制](../architecture/authentication.md) 实现PG持久撤销/epoch、Web opaque Cookie与原生轮换；覆盖激活条件、login-only空状态、Redis故障与并发刷新。
 - 建立管理 Web 布局、用户管理、角色/权限、两端菜单及注册策略；任务、配额、审计和运行概览随对应模块接入。
 - 实现权限目录、角色继承/显式拒绝、授予边界、AuthorizationService、数据库授权版本与只读策略投影、两端访问快照和路由/操作守卫。
 - 实现受控首管理员初始化、禁用/强制下线、最后管理员保护，以及管理变更与审计/Outbox 同事务提交；测试并发撤权和自我/间接提权。
-- 建立用户/资料库作用域、跨表归属约束、个人 Key 加密、用户配额、Job/Outbox/Worker。
+- 建立受信任 ScopeContext、事务内全部父/目标的 owner/library/版本/状态校验，引用新增与父删除/GC共用父行锁/代次协议；先 tombstone、归属不可转移。具体规则以数据库规范为准，并建立个人 Key 加密、用户配额、Job/Outbox/Worker。
 - 建立 Pydantic AI ModelFactory、运行依赖、基础领域工具、Pydantic 输出模型、AgentThread/AiRun 和应用流式事件；验证阶段边界重试，不默认增加持久执行引擎。
 - 建立 Flutter Telemetry、批量/匿名接收入口、账号隔离队列、Python 统一日志与关联上下文；接入 AI/工具、SQL 访问与 PostgreSQL 引擎日志，验证三端错误捕获和原生诊断边界。
 - 扩展 Alloy 采集清单，在现有 Grafana 建立 Haruka 基础看板；核对 MyHome 的只上报 warn/error、旧 Docker 日志过滤及 7 天留存等适配差异。
@@ -64,6 +65,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 
 - [ ] 三端可注册、登录、续期、退出、改密；失败注册不留下半成品 Library。
 - [ ] A/B 的 API、文件、会话、模型配置和任务不能越权，MyHome Token 不被接受。
+- [ ] 数据库规范的本阶段 DB 验收通过；真实 PG 元数据无物理外键，创建/更新时间及行内/唯一约束符合规范，实际服务的 ScopeContext 关联校验和父删除竞争通过 DAT-01/DAT-06，合法测试工厂不绕过逻辑关联；不得将本条文档化视为已经实现。
 - [ ] 客户端和管理端登录分别受控；client 会话不能调用 admin API，权限未加载/不足时不显示受限页面、菜单、按钮或字段。
 - [ ] 多角色合并、继承环/深度限制、deny 优先、默认拒绝、两端直达路由和直接 API 调用通过权限矩阵。
 - [ ] 授权变更后新请求读取最新版本；缓存失联/消息丢失不继续放行，运行中任务和流按边界撤权，离线租约限制明确。
@@ -88,7 +90,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 
 - [ ] 三份真实样本可读，AI 失败仍能访问已解析原文。
 - [ ] 同账号三端可续读，其他账号持有材料 ID 也无法读取或修改。
-- [ ] 日文、组合字符和 emoji 回跳正确；删除/重解析后保留引用上下文。
+- [ ] 日文、组合字符和 emoji 回跳正确；删除/重解析后保留引用上下文，引用新增与父删除/GC竞争符合数据库规范及 DAT-06。
 - [ ] 离线只在有效权限租约内显示当前账号已有缓存，重联重新鉴权；不承诺完整离线写入。
 - [ ] 导入/阅读/回跳日志及埋点可关联到 API/Worker，页面重建不重复记录业务事件。
 - [ ] 有/无答案试卷可预览校对后进入 ready；残缺选项、题号错配、未知题型/计分规则、总分冲突不被静默忽略。

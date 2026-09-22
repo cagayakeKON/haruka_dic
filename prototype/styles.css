@@ -24,6 +24,7 @@ h1, h2, h3, p { margin: 0; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 svg { width: 20px; height: 20px; flex-shrink: 0; display: block; }
 [hidden] { display: none !important; }
+.mobile-navigation { display: none; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 5px; }
 ::selection { background: #dbe7ff; }
 .skip-link { position: fixed; top: -100px; left: 16px; z-index: 100; background: var(--primary-dark); color: white; padding: 12px 18px; border-radius: 8px; }

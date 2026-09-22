@@ -50,6 +50,18 @@ function toast(message) {
 
 function renderNavigation() {
   const active = state.page === "reader" ? "library" : state.page;
+  const desktopNavigation = document.querySelector("#navigation");
+  const phoneNavigation = document.querySelector("#mobile-navigation");
+  if (isMobile()) {
+    desktopNavigation.innerHTML = "";
+    phoneNavigation.innerHTML = [
+      ["library", "book", "书库", "我的书库"],
+      ["collections", "bookmark", "收藏", "词句收藏"]
+    ].map(([route, symbol, label, accessibleLabel]) => `<a class="m-nav-item ${route === active ? "active" : ""}" href="#${route}" aria-label="${accessibleLabel}" ${route === active ? 'aria-current="page"' : ""}><span class="m-nav-icon">${icon(symbol)}</span><span>${label}</span></a>`).join("") +
+      `<button class="m-nav-item" data-action="planned" data-feature="practice" aria-label="学习练习，查看规划"><span class="m-nav-icon">${icon("practice")}</span><span>练习</span></button><button class="m-nav-item" data-action="planned" data-feature="agent" aria-label="AI 助手，查看规划"><span class="m-nav-icon">${icon("spark")}</span><span>助手</span></button>`;
+    return;
+  }
+  phoneNavigation.innerHTML = "";
   document.querySelector("#navigation").innerHTML = [
     ["library", "book", "我的书库", state.books.length],
     ["collections", "bookmark", "词句收藏", state.collections.length]

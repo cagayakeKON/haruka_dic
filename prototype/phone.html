@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haruka · 手机原型预览</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef1f6; color: #202124; font: 14px/1.5 "Segoe UI", "Microsoft YaHei", sans-serif; }
+    .preview-bar { min-height: 64px; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #dfe5ee; background: #fff; }
+    .preview-bar h1 { font-size: 15px; font-weight: 600; margin: 0; }
+    .preview-bar a { display: inline-flex; align-items: center; min-height: 44px; color: #2563eb; text-decoration: none; }
+    .preview-bar a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+    .preview-stage { padding: 20px; display: flex; justify-content: center; }
+    iframe { display: block; width: 390px; max-width: 100%; height: min(844px, calc(100dvh - 106px)); min-height: 320px; border: 1px solid #cdd5e2; border-radius: 26px; background: #fff; box-shadow: 0 12px 40px #263b6012; }
+    @media (max-width: 520px) {
+      .preview-bar { min-height: 56px; padding: 6px 16px; }
+      .preview-bar h1 { font-size: 14px; }
+      .preview-bar a { font-size: 12px; }
+      .preview-stage { padding: 0; }
+      iframe { width: 100%; height: calc(100dvh - 57px); min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="preview-bar"><h1>Haruka · 手机交互原型</h1><a href="index.html?v=0.4#library" target="_blank" rel="noopener">打开完整页面 ↗</a></header>
+  <main class="preview-stage"><iframe title="Haruka 手机端交互预览" src="index.html?v=0.4#library"></iframe></main>
+</body>
+</html>

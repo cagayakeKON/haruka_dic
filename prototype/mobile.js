@@ -1,7 +1,7 @@
 "use strict";
 
 // Phone screens share data and actions with desktop, but use their own composition.
-const mobileMedia = window.matchMedia("(max-width: 680px), (max-width: 1000px) and (max-height: 500px)");
+const mobileMedia = window.matchMedia("(max-width: 1023px)");
 const isMobile = () => mobileMedia.matches;
 
 function mobileHeader() {
@@ -10,8 +10,8 @@ function mobileHeader() {
 
 function renderMobileLibrary() {
   const activeFilters = Number(state.language !== "全部语言") + Number(state.sort !== "default");
-  main.innerHTML = `${mobileHeader()}<section class="m-page-heading"><div><p class="m-eyebrow">YOUR PERSONAL LIBRARY</p><h1>我的书库<span class="m-total">${state.books.length}</span></h1><p>喜欢的内容，就是最好的开始。</p></div><button class="m-add" data-action="import" aria-label="导入材料">${icon("plus")}</button></section>
-    <section aria-label="书库材料"><div class="m-library-tools"><div class="m-search-row">${searchBox("library-search", "搜索材料名称", state.query)}<button class="m-filter-button ${activeFilters ? "has-filters" : ""}" data-action="mobile-filters" aria-label="筛选与排序${activeFilters ? `，已启用 ${activeFilters} 项` : ""}">${icon("filter")}${activeFilters ? '<i aria-hidden="true"></i>' : ""}</button></div><div class="m-category-tabs" aria-label="材料类型">${["全部材料", "小说", "教材", "试卷", "其他"].map((type) => `<button class="filter-tab ${state.filter === type ? "active" : ""}" data-action="filter" data-value="${type}" aria-label="${type}" aria-pressed="${state.filter === type}">${type === "全部材料" ? "全部" : type}</button>`).join("")}</div></div><div class="m-list-caption"><span id="material-count" role="status" aria-live="polite"></span><span>私人书库 · 示例</span></div><div id="book-list" class="m-book-list"></div></section>`;
+  main.innerHTML = `<header class="m-home-header"><div class="m-home-title"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><h1>我的书库</h1></div><div class="m-home-actions"><button class="m-add" data-action="import" aria-label="导入材料">${icon("plus")}</button><button class="m-profile" data-action="settings" aria-label="偏好设置"><span>K</span></button></div></header>
+    <section class="m-home-materials" aria-label="书库材料"><div class="m-library-tools"><div class="m-search-row">${searchBox("library-search", "搜索材料名称", state.query)}<button class="m-filter-button ${activeFilters ? "has-filters" : ""}" data-action="mobile-filters" aria-label="筛选与排序${activeFilters ? `，已启用 ${activeFilters} 项` : ""}">${icon("filter")}${activeFilters ? '<i aria-hidden="true"></i>' : ""}</button></div><div class="m-category-tabs" aria-label="材料类型">${["全部材料", "小说", "教材", "试卷", "其他"].map((type) => `<button class="filter-tab ${state.filter === type ? "active" : ""}" data-action="filter" data-value="${type}" aria-label="${type}" aria-pressed="${state.filter === type}">${type === "全部材料" ? "全部" : type}</button>`).join("")}</div></div><div class="m-list-caption"><span id="material-count" role="status" aria-live="polite"></span><span>示例书库</span></div><div id="book-list" class="m-book-list"></div></section>`;
   renderBookList();
 }
 

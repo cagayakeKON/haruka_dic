@@ -1,25 +1,26 @@
 # Haruka HTML 交互原型
 
-状态：v0.3，2026-09-22。独立的视觉与交互验证，不是 Flutter/Python 应用交付，不计入 B0/B1/B2。
+状态：v0.4，2026-09-22。独立的视觉与交互验证，不是 Flutter/Python 应用交付，不计入 B0/B1/B2。
 
 ## 打开方式
 
-直接在现代 Edge / Chrome 中打开 [index.html](index.html)。没有安装依赖、外部字体、CDN 或网络 API。也可在仓库根目录使用已有 Python 启动本机预览：
+手机交互从 [phone.html](phone.html) 进入：桌面窗口中直接展示390px手机视口，内嵌的是同一份真实交互页面；手机浏览器中自动使用可用宽度。无需手动缩窄桌面窗口。完整页面仍为 [index.html](index.html)。两者均可在现代 Edge / Chrome 中打开，没有安装依赖、外部字体、CDN 或网络 API。也可在仓库根目录使用已有 Python 启动本机预览：
 
 ```powershell
 python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 ```
 
-然后访问 <http://127.0.0.1:8765>。
+手机预览访问 <http://127.0.0.1:8765/phone.html>，完整页面访问 <http://127.0.0.1:8765>。已打开的旧标签页需刷新以加载本轮代码；资源URL带版本号，但没有证据将此前显示问题归因于缓存。
 
 ## 本轮设计
 
 - 用户要求年轻化、现代美观，保留杂志式标题、留白和封面排版。
 - 按最新反馈移除奶油白/抹茶绿主题，改为白色页面、浅灰侧栏、深灰文字与 Primary 主色。当前按常见蓝色 `#2563EB` 实现；“Markdown Primary”没有统一色值，这一具体取值为暂定设计解释。
 - 书库直接展示全部材料，不设置“继续阅读 / 最近在读”区域。
-- 桌面保留侧栏与杂志式书封排版。手机采用独立页面结构：纵向材料列表、底部导航、筛选底部弹窗和词句卡片；不把桌面网格简单缩小。
+- 桌面保留侧栏与杂志式书封排版。手机采用独立顶栏和独立导航节点：主页顶栏合并标题、导入与设置，底部四项导航切换书库/收藏或打开规划说明。手机下桌面侧栏整块隐藏且清空其菜单，不再把桌面侧栏变形成底栏。
+- 主页首屏直接展示搜索、类型和材料，移除重复品牌标题、英文眉题及宣传文案。主要顶栏/导航按钮不少于48px；搜索焦点不会隐藏底部导航，导入、筛选和偏好从手机入口打开底部面板。
 - 手机阅读页采用通栏正文和独立的目录/字号/朗读工具栏，隐藏全局导航；解释从底部弹出，关闭后恢复原文焦点与位置。收藏卡片与释义显示实际来源句，只有原句匹配预置翻译时才显示该翻译。
-- 页面宽度不超过680px，或紧凑横屏宽度不超过1000px且高度不超过500px时，使用手机结构。调整字号及横竖屏/桌面断点切换时按段落与段内比例恢复阅读位置。
+- 当前原型在宽度小于1024px时使用紧凑结构，不再用高度条件让681～1000px窗口落回桌面侧栏。较宽紧凑窗口限制内容宽度，1024px起恢复桌面结构。调整字号及横竖屏/桌面断点切换时按段落与段内比例恢复阅读位置；不代表Flutter阈值已验证。
 - 封面采用本地 CSS/SVG 绘制，内容为原创示例，不依赖外部图片。
 
 ## 可体验范围
@@ -40,6 +41,7 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 ## 文件与移植约束
 
 - [index.html](index.html)：应用外壳与入口。
+- [phone.html](phone.html)：直接展示手机尺寸的交互预览容器，不复制业务页面或数据。
 - [styles.css](styles.css)：颜色变量、排版、书封、响应式及焦点状态。
 - [mobile.css](mobile.css)：手机专属页面、触控区域、安全边距与底部弹窗。
 - [data.js](data.js)：原创材料、词典和初始收藏。
@@ -56,4 +58,4 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 
 上述为后续映射，不是 HTML 中已存在的安全机制或埋点。具体 [权限](../docs/contracts/permissions.md)、[API](../docs/contracts/api.md)、[数据事务](../docs/architecture/data-jobs.md)、[日志](../docs/operations/observability.md) 仍以专题为准。当前通过可访问名称/原生 HTML 控件定位，不创建未来 Flutter Test ID 注册表或测试旁路。浏览器模拟窄屏不等于 Android/Windows 原生验收。
 
-本轮实际验证与独立审查记录见 [移动端重设计记录](../docs/delivery/reviews/2026-09-22-mobile-prototype.md)；此前桌面与配色记录见 [v0.2审查记录](../docs/delivery/reviews/2026-09-22-prototype.md)。
+本轮实际验证与独立审查记录见 [手机主页与导航修复](../docs/delivery/reviews/2026-09-22-mobile-home.md)；此前记录见 [v0.3移动端重设计](../docs/delivery/reviews/2026-09-22-mobile-prototype.md)及[v0.2桌面与配色](../docs/delivery/reviews/2026-09-22-prototype.md)。

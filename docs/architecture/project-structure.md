@@ -1,6 +1,6 @@
 # 项目结构与模块职责
 
-状态：2026-09-22，B0已建立frontend/backend/scripts/tools/contracts及dev/基础设施；下列树仍包含尚未创建的目标模块，最新实际范围见 [基础设施记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)。独立 [HTML原型](../../prototype/README.md) 保留。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，初始化合同见 [脚手架蓝图](../engineering/scaffold.md)。
+状态：2026-09-22，完整B0已验收，已建立frontend/backend/scripts/tools/contracts及dev/基础设施；下列树仍包含尚未创建的业务模块，实际范围见 [B0验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。独立 [HTML原型](../../prototype/README.md) 保留。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，初始化合同见 [脚手架蓝图](../engineering/scaffold.md)。
 
 ## 1. 仓库结构
 
@@ -183,4 +183,4 @@ UI Test ID属于前端自有元数据，以config/ui_test_ids.json为源生成Da
 
 工程初始化另外执行 [SCF脚手架验收](../delivery/milestones/scaffold.md)，不以空目录或模板测试替代参考闭环。
 
-以上是完整结构验收目标；本次只交付应用壳和公共边界，不能把局部构建与测试视为STR或完整B0全部通过。
+以上是完整产品的结构验收目标。B0工程基础已按SCF范围验收；业务模块尚未建立，不将B0通过等同于整个STR目标或阶段1完成。

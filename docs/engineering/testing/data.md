@@ -1,6 +1,6 @@
 # 测试素材、场景工厂与运行数据
 
-状态：设计基线 v0.1，2026-09-22，未实现、未执行。本文规定后续测试数据的来源、创建、隔离、使用和清理；不会创建素材、账号、测试接口或基础设施。用例层级与通过条件以 [测试规范](strategy.md) 为准，平台驱动与 Test ID 见 [前端 E2E](frontend-e2e.md)，B0/B1/B2 范围见 [脚手架验收](../../delivery/milestones/scaffold.md)。
+状态：2026-09-22，B0已有两份固定Unicode文本资产、只读声明场景及摘要/坏样本校验，见 [验收记录](../../delivery/reviews/2026-09-22-b0-acceptance.md)；账号/业务工厂和执行实例隔离随B1/B2实现。本文规定测试数据的来源、创建、隔离、使用和清理。用例层级与通过条件以 [测试规范](strategy.md) 为准，平台驱动与 Test ID 见 [前端 E2E](frontend-e2e.md)，B0/B1/B2 范围见 [脚手架验收](../../delivery/milestones/scaffold.md)。
 
 ## 1. 约束等级与三层数据
 

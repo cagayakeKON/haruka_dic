@@ -1,6 +1,6 @@
 # 测试规范与验证矩阵
 
-状态：2026-09-22，B0-foundation已建立后端unit/contract、Flutter unit/widget/integration入口及开发工具坏样本测试；实际结果见 [工程记录](../../delivery/reviews/2026-09-22-scaffold-foundation.md)。完整必需用例/覆盖分母门禁、业务集成与CI仍未交付；本文规定后续必须验证的行为，不以局部通过替代完整矩阵。
+状态：2026-09-22，B0已建立后端/前端/工具测试、真实结果收集、必需矩阵和覆盖分母检查器；完整B0结果见 [验收记录](../../delivery/reviews/2026-09-22-b0-acceptance.md)。本小阶段只验证源码清单和覆盖检查器，不声明全仓覆盖阈值达标；B1/B2业务集成、阶段1大节点完整门禁及远端CI仍待交付。
 
 配套：[代码规范](../coding.md)、[数据库规范](../database.md)、[静态检查](../lint.md)、[交付验收](../../delivery/acceptance.md)、[实施阶段](../../delivery/roadmap.md)、[RBAC](../../architecture/authorization.md)、[统一日志](../../operations/observability.md)。
 

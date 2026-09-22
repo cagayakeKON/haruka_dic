@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-已开始阶段1，建立 [Flutter应用壳](frontend/README.md)、[Python后端包](backend/README.md)、锁文件与统一开发检查入口。B0已有 [本地基础设施](dev/README.md)、[受控数据库初始化](docs/delivery/reviews/2026-09-22-b0-identity.md)、[前端契约](docs/delivery/reviews/2026-09-22-b0-frontend.md)及[质量检查器](docs/delivery/reviews/2026-09-22-b0-quality.md)；core/jobs [开发编排](docs/delivery/reviews/2026-09-22-b0-development.md)已通过Windows真实启动/关闭与前后端健康页联调。完整B0仍需干净环境与平台矩阵收口，B1/B2未实现；基础壳历史证据见 [首轮记录](docs/delivery/reviews/2026-09-22-scaffold-foundation.md)。
+阶段1的 **B0 可重复工程基础已验收**：包含 [Flutter三端应用壳](frontend/README.md)、[可安装Python后端](backend/README.md)、[本地基础设施](dev/README.md)、受控数据库初始化、前端契约、开发编排和质量门禁。Windows/Linux干净检出、仓库外正式入口、三端交互及完整B0证据矩阵已通过，详见 [B0验收记录](docs/delivery/reviews/2026-09-22-b0-acceptance.md)。B1登录/收藏/RBAC参考流程和B2持久任务闭环尚未实现，阶段1仍在进行。
 
 已有独立 [HTML交互原型](prototype/README.md)，采用中性底色、Primary主色与杂志式排版，不设“继续阅读”；它使用内存示例，不代表真实业务已交付。开发命令与工具前提见 [开发指南](docs/engineering/development.md)。
 

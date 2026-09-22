@@ -1,19 +1,19 @@
 # 格式、静态分析与文档检查规则
 
-状态：2026-09-22，B0-foundation已创建Python/Dart/Markdown配置及局部检查入口；本文中数据库、业务结构及完整门禁仍是后续实施合同。实测见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)，不能将本文当作完整检查通过记录。
+状态：2026-09-22，B0已建立Python/Dart/Markdown配置、数据库字典、契约/事件登记及生成检查，完整B0证据见 [验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。后续业务路由和模块随所属阶段扩充检查；本文维护规则，不代替具体版本的实际执行记录。
 
 配套：[代码规范](coding.md)、[本地开发](development.md)、[测试](testing/strategy.md)、[交付验收](../delivery/acceptance.md)。
 
 ## 1. 门禁与配置归属
 
-| 检查 | 未来权威配置 | 强制结果 |
+| 检查 | 权威配置或实施载体 | 强制结果 |
 | --- | --- | --- |
 | Python 格式/规则 | backend/pyproject.toml 的 tool.ruff | format 无差异，check 零违规 |
 | Python 类型 | 同文件的 tool.pyright | 手写应用、测试、迁移零错误；不忽略整个适配层 |
 | Dart 格式/分析 | frontend/analysis_options.yaml、锁定 Flutter SDK | format 无差异，analyze 零 error/warning/info |
 | 浏览器测试 TypeScript | tools/e2e 的 package/lock、类型/格式/lint配置 | 页面对象与用例都通过类型、格式及规则检查，不隐式获取latest |
 | Markdown | 根目录 .markdownlint-cli2.jsonc 与锁定工具清单 | 选定规则通过，链接/围栏/路径另行验证 |
-| 业务结构检查 | 未来 scripts/ 中经测试的检查入口 | 路由权限声明、契约版本、事件目录和生成物一致 |
+| 业务结构检查 | scripts/dev.py codegen及backend/tools/check_registries.py；业务路由检查随后续阶段扩充 | 已登记权限/事件引用、契约版本和生成物一致；后续业务路由必须有权限声明 |
 | 数据库结构与字典 | Base.metadata、受审查Table.info、迁移及受管数据库字典 | 按[数据库规范](database.md)校验零物理外键、时间/命名/注释、scope/逻辑关系和生成一致；真实约束与并发另由PG集成证明 |
 | UI定位与测试数据 | UI注册表、素材manifest、场景schema及受管生成清单 | 非法/重复/未知标识、生成漂移、样本摘要/引用错误、非法场景或秘密输出拒绝 |
 
@@ -202,7 +202,7 @@ Markdownlint 不能代替以下检查，未来 scripts/ 检查入口须实现并
 7. 按 [模块边界](../architecture/project-structure.md) 检查受影响Python导入关系、domain禁依赖和循环依赖；跨模块仓储/模型联合查询例外需登记。规则用AST或实际导入图实现，不只靠搜索类名；首次建立/改变检查器时提供违法依赖样本证明能阻断。
 8. Flutter按 [适配规范](flutter.md) 检查feature/UI不直接导入原生库或调用MethodChannel，平台依赖只在声明适配边界出现；布局阈值集中、业务controller不持有界面对象。静态检查/代码review只能证明边界，三端编译、状态切换与原生交互仍需对应FLT证据，不把检测到kIsWeb当兼容通过。
 
-CLI、配置语法与规则以 [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) 和 [markdownlint 规则](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) 为准。初始化时在独立文档工具清单锁定 Node、包版本与 lockfile，CI 调用已安装的 markdownlint-cli2，不临时下载 latest。现在仅能报告实际执行的链接/围栏等文档检查。
+CLI、配置语法与规则以 [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) 和 [markdownlint 规则](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) 为准。独立文档工具清单已锁定 Node、包版本与 lockfile，CI 调用已安装的 markdownlint-cli2，不临时下载 latest。报告只声明本次实际执行的检查和文件范围。
 
 ## 6. 豁免与验证证据
 

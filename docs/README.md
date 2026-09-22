@@ -1,6 +1,6 @@
 # 文档导航
 
-当前进入阶段1，Flutter/Python应用壳、锁文件、局部检查入口以及 [本地基础设施](../dev/README.md) 已建立；范围与实测分别见 [基础壳记录](delivery/reviews/2026-09-22-scaffold-foundation.md) 和 [基础设施记录](delivery/reviews/2026-09-22-scaffold-infrastructure.md)。新增[数据库切片](delivery/reviews/2026-09-22-b0-identity.md)已落实迁移、受控初始化和schema检查；完整B0尚未验收，B1/B2未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
+阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。B1/B2未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
 
 ## 1. 按任务阅读
 
@@ -65,10 +65,12 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [基础设施切片](delivery/reviews/2026-09-22-scaffold-infrastructure.md)：真实客户端生命周期、隔离Compose、正常日志采集、运行与维护账号边界。
 
 - [数据库与受控初始化](delivery/reviews/2026-09-22-b0-identity.md)：基础表/字典、迁移锁、幂等种子、首管理员与动态readiness。
-- [前端契约与控件](delivery/reviews/2026-09-22-b0-frontend.md)：Dio/DTO、Python到Dart兼容样本、三端控件原型与真实健康页联调；完整平台矩阵仍待收口。
-- [质量门禁](delivery/reviews/2026-09-22-b0-quality.md)：真实测试结果收集、缺项/坏样本阻断、源码覆盖清单及CI参考入口；不代表远端CI或完整B0已通过。
-- [开发编排](delivery/reviews/2026-09-22-b0-development.md)：core/jobs资源profile、真实启停、进程所有权、局部跨系统回归与仍待补齐的完整矩阵。
+- [前端契约与控件](delivery/reviews/2026-09-22-b0-frontend.md)：Dio/DTO、Python到Dart兼容样本、三端控件原型、真实健康页及正式管理路由联调。
+- [质量门禁](delivery/reviews/2026-09-22-b0-quality.md)：真实测试结果收集、缺项/坏样本阻断、源码覆盖清单及CI参考入口；远端CI尚未执行。
+- [开发编排](delivery/reviews/2026-09-22-b0-development.md)：core/jobs资源profile、真实启停、进程所有权及局部跨系统回归的实现记录。
 - [Windows安装身份原型](delivery/reviews/2026-09-22-b0-windows-installer.md)：独立安装/凭据service、共存/升级/卸载的真实验证；载荷为无网络探针，不代表正式应用分发。
+- [Windows干净检出](delivery/reviews/2026-09-22-b0-windows-clean.md) 与 [Linux干净检出](delivery/reviews/2026-09-22-b0-linux.md)：同候选的锁定构建、负例诊断、重复初始化和完整应用生命周期。
+- [B0最终验收](delivery/reviews/2026-09-22-b0-acceptance.md) 与 [独立证据核查](delivery/reviews/2026-09-22-b0-evidence.md)：44个必需节点、11份逐断言签收及统一入口88项检查通过；后续能力仍按所属阶段交付。
 
 ## 5. 维护规则
 

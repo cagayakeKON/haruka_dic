@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "candidate_identity": {
+    "commit": "f3b33c4accf978e87806558cfa1c46641ccc8745",
+    "build_id": "B0-final-f3b33c4accf9",
+    "configuration": "local-isolated-dev-test",
+    "toolchain_sha256": "0ff150c4afa62ae67faa1a8af8410442767904027d089261426637f063ec2729",
+    "run_id": "7f7d6c83b1e449d49ee2f83a33534aca"
+  },
+  "gate_executor_commit": "a605c709691e0fbafb0db67ffc175dc346e860bd",
+  "candidate_scope": "B0 only; source applicability reviewed separately; not automatic acceptance of arbitrary later HEADs",
+  "review": {
+    "author": "root",
+    "reviewer": "infrastructure_tooling",
+    "reviewed_at": "2026-09-22T07:01:46.712276+00:00",
+    "all_procedures_approved": true
+  },
+  "result": {
+    "passed": true,
+    "required_nodes": 44,
+    "collection_and_result_checks": 88,
+    "failures": 0,
+    "report_count": 26,
+    "procedure_count": 11,
+    "automatic_node_count": 33,
+    "remote_ci_executed": false,
+    "tests_reexecuted_by_gate": false
+  },
+  "identity_file": {
+    "path": "artifacts/b0-final-20260922/identity.json",
+    "sha256": "81e512a595b8e842719424fcd8903c5434ffaa466c47c81ed8f52fc75d785d42"
+  },
+  "gate_report": {
+    "path": "artifacts/dev/check-5285787c409342699a8798fe232f37c1.json",
+    "sha256": "d8c121655a4e31c397944223924586af49e49d9cc3c1a67a57bf6e6a9be8b4a8"
+  },
+  "matrix_report": {
+    "path": "artifacts/dev/check-5285787c409342699a8798fe232f37c1-matrix.json",
+    "sha256": "70e790ee96e82eb553e6c5f438458793335e4d96bb05e20b4b4f97578fb005a5"
+  },
+  "report_paths": {
+    "path": "artifacts/b0-final-20260922/report-paths.json",
+    "sha256": "16ce7b04a6b6c352077df5f3d1b74e8423c480534922515e5f7a4179bc5c9c69"
+  },
+  "reports": [
+    {
+      "path": "artifacts/b0-final-20260922/quality-unit/quality-unit-collection.json",
+      "sha256": "e390927d2b0b286945cd1aa152eddbb01ead1f98b818706cb3aed37497e3c243"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/quality-unit/quality-unit-result.json",
+      "sha256": "3a9882bbbebe93b5487126f62bd6f8a13961d419411863e5c9d421e1d7c27405"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/quality-pytest/quality-pytest-adapter-collection.json",
+      "sha256": "e2ea69480cb3dc7b8c9dffdd4dc31f5027d5d62f77ca3aaf4e8c374e7b469694"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/quality-pytest/quality-pytest-adapter-result.json",
+      "sha256": "dee7a67372ac942860338412cdd0a6cf4b4b02162eb842692fc1a4522ab19095"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-01-windows-collection.json",
+      "sha256": "02dedeed0884f21164491b67fcac5c24421a75019990952efdaed50417192fd1"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-01-windows-result.json",
+      "sha256": "1874b23b6f98e97010a26c0d5ec1d51c38b865aab750fef065d75a07cac6011b"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-01-linux-collection.json",
+      "sha256": "6ac6717cf586bb9aae02545a497116d818750230f951f18e199440cc7e351e30"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-01-linux-result.json",
+      "sha256": "10eb4f4767ec5086a3d44e9dad7977854e41cf8a2e0aeb3c07663a9bcc9ad080"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-02-windows-collection.json",
+      "sha256": "379ca5bce809fbb9822c2997630c48ee8d56a9cc99f110b62e7d240b2fa1cb7c"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-02-windows-result.json",
+      "sha256": "6e440d3c8e6a4a5e96d999dbac5da32bf606003481e7ad8af0802cd70c1ad1fc"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-02-linux-collection.json",
+      "sha256": "4dd7b04ce384ee30950452b8237dbbee0be31b2d7830bbf33d26a5f714169325"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-02-linux-result.json",
+      "sha256": "2ebdaa07c380bccdca987376d47da4d9e30d384812aad1cb99f2cd93adff8f1a"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-03-windows-collection.json",
+      "sha256": "919bc76c4761e1c8f9bee84ae943514d050869f33802588e9a5fd28d824ef687"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-03-windows-result.json",
+      "sha256": "4ed50e489f8eaba1b61fc21dd636003f60ca1aec054cf6550aa8fe74a77b4386"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-03-linux-collection.json",
+      "sha256": "4e5dfefcb904bf686ab1684a2fba2cae29d3f091ba1262d499e03e3157045984"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-03-linux-result.json",
+      "sha256": "ba8cc3d58e1f15f8170eb9de9a3778fcd34b9c02b2da6e3e007abc474fbc8db6"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-04-host-collection.json",
+      "sha256": "8389ea7bc9ca1f2bf6990c936c6a2dc609d0edd94a0476269a63fd52ced7aada"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-04-host-result.json",
+      "sha256": "2fd5b0d284910cc3b61de6ea3c80e6de0d93b2d623fc522c96dc9e978e4d2519"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-05-host-collection.json",
+      "sha256": "1bcf3858e62c5e88fd0371954d1b5de7cb446bebcc1edf047ebbee11b772d607"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-05-host-result.json",
+      "sha256": "158a23280400f6e626be2f1f628a00f8f54c137186d03f62eb2163255e1b4ef7"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-06-windows-collection.json",
+      "sha256": "c6787df12d51ff8055e05ad2a7bc028c9f8c6b3f0f08a3cf5d7b2fe03f0abfd3"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-06-windows-result.json",
+      "sha256": "80c5a7615aaa64bd29fac2c3e54ff1f5aa9134ed2e640860cfc29601db777cad"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-06-web-collection.json",
+      "sha256": "d49857b3e1cfaaacf1bd4d7b424f25e90c8c2988039c1426d9a8ab24edd1071f"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-06-web-result.json",
+      "sha256": "fd17c07ed1cfbc813924a8b30fef4ce6044d2641d1c0f1806c0fe06ff993d798"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-06-android-collection.json",
+      "sha256": "aa476de825b7ef05bfc9d9f543e066d0835b6ac7a75394999d6dff46d8ee60d2"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-reports/scf-b0-06-android-result.json",
+      "sha256": "2d07d2f6cebeed95157507dceae13f7b1b33f61553c801c7dfc7bca92ab97891"
+    }
+  ],
+  "procedure_indexes": [
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-01-windows.json",
+      "sha256": "8baa94366a1323b6f9b39abe26dfbba3191fd2f41bb22d42a5a6b6e25de9979c"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-01-linux.json",
+      "sha256": "232715d7486b358484dc6b8acce5be0d827cf4cbee8a2aecc42a94c3d80b25b6"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-02-windows.json",
+      "sha256": "f958b2012549ced7628c85187cd4514a2c18813e8d7e0775565fc112e7b8fc13"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-02-linux.json",
+      "sha256": "ef09f50080699771c7add58798fca1d1e313324e28d9d5a7c535559470557159"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-03-windows.json",
+      "sha256": "d911e9eaa6e185fa9a23a340d9354bdaf7560b39c6bbd1298216c7d6a9754532"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-03-linux.json",
+      "sha256": "84283ee5e9ccff98c5f68819e4898216f1df2048418c0eb379f601f72bf27e9d"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-04-host.json",
+      "sha256": "32483084b255ba48360eb740cfa28c114655debe48fabde2157a3b8b3264098c"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-05-host.json",
+      "sha256": "3b5dd330f027d70099e01457ee5cf72c351db7ab26cedb60d7b18d65e1a78654"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-06-windows.json",
+      "sha256": "231300997aca99713a11c93abc7b91d899bd1b50da2c0ee7d950820d077093b8"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-06-web.json",
+      "sha256": "89cb724f9ea405f6ed464d09881fddf0136c7239ec0964f7b235f48f1f93d5d7"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/procedure-indexes/scf-b0-06-android.json",
+      "sha256": "9b8c62454f377fadb3ab97b72a487afff688136e2ce68e125b3c7f96edc175da"
+    }
+  ],
+  "supporting_evidence": [
+    {
+      "path": "artifacts/b0-final-20260922/source-applicability.json",
+      "sha256": "17420495ecfbf43212eb8b6c431c7a58e857a6f48aa650c25474267bf4b27952"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/inventory.json",
+      "sha256": "c5429614a68693de163114ee4d223921fc449b8c09ed290e235da7ca6330b660"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/testdata.json",
+      "sha256": "577d94b2c169d7eb14e369de172a7638bae3d0198a126e497c16285922490459"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/windows-offline-help.json",
+      "sha256": "749bfdeafae66e9feb66531fb90b95150e88c4018e4ffac5c89c7ec52ff988bd"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/source-fingerprint-before.json",
+      "sha256": "51d5f84a928ce8ab3d651cfadfb0118f59b51846c347bcb7b3497bf80975c564"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/independent-signoff.json",
+      "sha256": "4125ef9b92048a6b76e66f03ee6bb7e51bb99ebcf933e23487c451ecfd550832"
+    },
+    {
+      "path": "artifacts/b0-final-20260922/gate-invocation.json",
+      "sha256": "2c8faa305e2de433d21a0173804a5413a416dd3d4c3c8b641b93e92cd1dbc4b4"
+    }
+  ],
+  "raw_artifact_policy": "Local ignored artifacts retain original metadata and failed attempts; this committed manifest records their hashes without committing credentials or overwriting historical results."
+}

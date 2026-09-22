@@ -1,6 +1,6 @@
 # 交付、发布与验收规范
 
-状态：设计基线 v0.3，2026-09-22。本文维护交付状态、检查/评审门禁和所需证据；部署操作统一引用运行说明。Flutter/Python 应用、构建制品、部署流水线与应用验收仍未实现，HTML 原型不能代替运行证据。
+状态：2026-09-22，B0工程基础已按 [独立证据与完整矩阵](reviews/2026-09-22-b0-acceptance.md) 验收，B1/B2业务、阶段1大节点及生产发布尚未完成。本文维护交付状态、检查/评审门禁和所需证据；部署操作统一引用运行说明，HTML原型不能代替运行证据。
 
 配套：[实施计划](roadmap.md)、[开发流程](../engineering/development.md)、[代码规范](../engineering/coding.md)、[静态检查](../engineering/lint.md)、[测试规范](../engineering/testing/strategy.md)、[MyHome 复用](../operations/myhome-integration.md)、[运行配置](../operations/configuration.md)、[部署与恢复](../operations/deployment-recovery.md)、[统一日志](../operations/observability.md)。
 

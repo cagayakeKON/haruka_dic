@@ -1,6 +1,6 @@
 # 脚手架实施蓝图
 
-状态：2026-09-22，B0已有Flutter工程、可安装Python包、PG/Redis/Kafka/MinIO资源组装及dev/隔离Compose；[数据库切片](../delivery/reviews/2026-09-22-b0-identity.md)、[前端契约](../delivery/reviews/2026-09-22-b0-frontend.md)及[质量检查器](../delivery/reviews/2026-09-22-b0-quality.md)已取得局部证据。[开发编排](../delivery/reviews/2026-09-22-b0-development.md)的Windows core/jobs已实测，干净检出、Linux完整应用与平台矩阵仍在补齐。当前命令见 [开发指南](development.md)；本文仍维护完整B0/B1/B2目标，不以切片缩减验收。
+状态：2026-09-22，完整B0已验收，实际范围与Windows/Linux干净检出、三端及完整门禁证据见 [验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。B1/B2未实现。当前命令见 [开发指南](development.md)；本文继续维护B0/B1/B2工程合同，不以已完成基础壳代替后续业务目标。
 
 配套：[项目结构](../architecture/project-structure.md)、[开发指南](development.md)、[脚手架验收](../delivery/milestones/scaffold.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md)、[配置运维](../operations/configuration.md)。本文维护工程载体与入口，业务规则仍由各专题维护；检查阈值与必需测试仍以 [测试规范](testing/strategy.md) 为准。
 
@@ -24,7 +24,7 @@
 | contracts/ | 由后端导出的OpenAPI、权限/错误/事件目录、版本和摘要；不是另一套可独立编辑的业务定义 |
 | .editorconfig、.gitattributes、.gitignore | UTF-8、文本换行、平台文件例外、二进制与生成物分类；不依赖个人Git设置 |
 
-toolchain不复制所有第三方依赖版本，工具/SDK在此固定，依赖包由各自lock控制；多处必要声明用检查器验证一致。记录可兼容范围不能替代实际构建所用的精确版本。Python首版仍为3.13系列，补丁与Flutter/插件等版本在B0原型通过后锁定，不在本次文档中虚构验证结果。
+toolchain不复制所有第三方依赖版本，工具/SDK在此固定，依赖包由各自lock控制；多处必要声明用检查器验证一致。记录可兼容范围不能替代实际构建所用的精确版本。B0实际版本已锁在 [工具清单](../../tools/toolchain.json) 与各依赖锁文件，升级需重新核对受影响的兼容性和构建证据。
 
 初始运行器需要事先安装的受支持Python、uv与对应平台工具；doctor仅检查并给出安装说明，不假设bootstrap可以先运行尚未安装的Python。bootstrap不自动升级系统SDK，不需要现成后端虚拟环境才能解析自身参数。
 
@@ -40,7 +40,7 @@ PEP 517隔离构建依赖另在同一pyproject的tool.uv.build-constraint-depend
 
 ### 正式进程入口
 
-以下是将写入project.scripts的命令契约，当前不是可执行工具：
+以下四个project.scripts入口已实现。表格保留最终职责；B0的Worker/Outbox仅验证资源生命周期，任务消费/投递及管理恢复业务随后续阶段实现：
 
 | 命令 | 入口设计 | 职责 |
 | --- | --- | --- |
@@ -119,6 +119,8 @@ app/schemas/responses.py 是 [统一返回](../contracts/api-responses.md) 的 S
 
 ### Dart生成器原型
 
+本轮已评估dart-dio 7.25.0，其union输出未通过样本；按 [受审过渡记录](../../tools/codegen/dart-api/README.md) 使用集中手写DTO和同一Python/Dart兼容样本，范围限B0/B1。以下保留长期生成方案的选择标准，B2前必须锁定，不将当前手写DTO称为自动生成。
+
 首选评估OpenAPI Generator的dart-dio，确切版本、获取方式/摘要、Java运行要求和配置随B0原型锁定；不直接复制默认选项。前端已规划Dio，原型要验证生成代码可以纳入单一Flutter工程的lib/generated/api，不覆盖应用pubspec或形成未经决定的第二Dart包。生成模板/必要适配必须版本化且可重复，不允许手改结果。[生成器选项](https://openapi-generator.tech/docs/generators/dart-dio/)
 
 原型样本至少包含：snake_case映射、UUID字符串、UTC、Decimal字符串、缺省/显式null/值三态、未知枚举、嵌套列表/分页/统一错误、204、二进制/上传、带discriminator的结构化卡片。Cookie/原生认证协调、SSE重连、幂等与重试由现有手写core适配，不交给生成器默认行为决定。
@@ -135,7 +137,7 @@ codegen顺序固定为：锁工具与输入 → 离线导出schema/目录 → �
 | 提交并校验 | Drift等位于源码旁的生成文件、生成器必要的Dart辅助文件；采用后加入明确清单，不能只扫描generated目录 |
 | 不提交 | .env真实值、证书/签名密钥、.venv、.dart_tool、构建目录、生成临时目录、工具下载缓存、运行/测试报告及本机配置 |
 
-未来tools/codegen/manifest.json列出source/generator/output/ownership，受管生成目标内出现未知文件或来源摘要不符时失败；允许接管/移除必须显式变更manifest并审查，不能执行全目录递归删除解决差异。Git忽略规则不得吞掉锁文件或受管生成物；提交前与CI都检查生成差异，已有lint例外仍只适用于真正生成内容。
+现有 [生成清单](../../tools/codegen/manifest.json) 列出source/generator/output/ownership，受管生成目标内出现未知文件或来源摘要不符时失败；允许接管/移除必须显式变更manifest并审查，不能执行全目录递归删除解决差异。Git忽略规则不得吞掉锁文件或受管生成物；提交前与CI都检查生成差异，已有lint例外仍只适用于真正生成内容。
 
 ## 6. 数据库初始化与种子
 

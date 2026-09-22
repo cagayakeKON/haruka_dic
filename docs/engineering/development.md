@@ -1,6 +1,6 @@
 # 开发环境与日常操作
 
-状态：2026-09-22，已建立backend/、frontend/、scripts/、tools/、dev/及锁文件，B0已交付基础壳、基础设施、数据库初始化、前端契约与质量检查器；开发编排已实测，完整干净环境/平台矩阵仍在补齐。CI参考工作流已建立，未发生远端运行；生产deploy/与B1/B2业务流程尚未建立。下文“当前可运行”区按实际范围执行，其余章节继续维护完整实施合同。
+状态：2026-09-22，完整B0已验收，包含两系统干净检出与开发编排、三端壳、数据库初始化、前端契约和质量门禁，见 [验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。CI参考工作流已建立，未发生远端运行；生产deploy/与B1/B2业务流程尚未建立。下文“当前可运行”区按实际范围执行，其余章节继续维护完整实施合同。
 
 ## 当前可运行：基础设施
 
@@ -15,7 +15,7 @@
 
 启动前生成Git忽略的dev/.local/backend.env及test.env；配置中的基础设施开关启用真实连接，不能从其他环境回退。重复up保留已有配置和卷，down也不删卷。端口、凭据位置、镜像摘要与受限账号说明见dev/README。管理连接检查为 `haruka-manage --config dev/.local/backend.env check-infrastructure`，Worker/Outbox使用同一配置的 `--check-startup` 检验生命周期，不领取业务任务。
 
-本轮必要检查使用 `check --stage infrastructure`：脚本和dev安全回归/静态检查、真实服务smoke及后端隔离集成。后端改动另运行直接受影响的unit/contract、Ruff/Pyright；不重复前端三平台测试。带 `--config dev/.local/test.env` 的backend/tools/verify_distribution.py验证仓库外wheel中四个入口真实连接与关闭。实际证据和B0剩余门禁见 [交付记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)。
+基础设施范围检查使用 `check --stage infrastructure`：脚本和dev安全回归/静态检查、真实服务smoke及后端隔离集成。后端改动另运行直接受影响的unit/contract、Ruff/Pyright；不重复未受影响的前端三平台测试。带 `--config dev/.local/test.env` 的backend/tools/verify_distribution.py验证仓库外wheel中四个入口真实连接与关闭。基础设施实测见 [切片记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)，完整B0结果见本页开头验收记录。
 
 ## 当前可运行：B0-foundation
 
@@ -33,11 +33,20 @@
 .tools/uv/uv.exe run --project backend --locked haruka-api --config backend/.env.example
 ```
 
-普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号。check各scope均为局部检查；B0-foundation仍保留首轮组合，不签署完整B0，报告在忽略目录artifacts/dev。`check --stage B0/B1/B2`在完整必需矩阵签署前仍明确失败。质量切片已有[独立报告检查入口](../../tools/ci/README.md)，不把缺少平台结果转换成通过。
+普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号。`B0-foundation`和backend/frontend等scope是局部检查；`check --stage B0`要求显式`--identity`与全部`--report`，调用既有必需用例检查器核对完整候选矩阵。缺项、失败、身份不符或procedure缺独立签收均拒绝，B1/B2仍拒绝。报告保存在忽略目录artifacts/dev；详见 [报告合同](../../tools/ci/README.md)。
 
 前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200；基础设施配置下ready重新检查数据库schema及依赖，成功200、失败503；离线壳仍返回503。没有公开登录、业务授权或模型接口。Worker/Outbox尚不处理业务；受控迁移、种子和首管理员入口已开放，首次启动API前按后端指南执行迁移。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
 
-制品安装检查可用锁定Python运行`backend/tools/verify_distribution.py --uv .tools/uv/uv.exe`，执行干净缓存wheel/sdist构建、运行依赖单独安装、独立工作目录CLI/生命周期与错误构建哈希拒绝。它不执行PG迁移或真实模型调用。实测、review和仍欠缺的B0门禁统一见 [交付记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。
+制品安装检查可用锁定Python运行`backend/tools/verify_distribution.py --uv .tools/uv/uv.exe`，执行干净缓存wheel/sdist构建、运行依赖单独安装、独立工作目录CLI/生命周期与错误构建哈希拒绝。它不执行PG迁移或真实模型调用。实测、review与历史来源适用性统一见 [B0验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。
+
+完整B0入口只核对显式候选的已有证据，不重新执行测试，也不自动将当前HEAD视为同一候选。在本机原始artifacts仍保留时，可按已提交的 [证据摘要清单](../delivery/reviews/2026-09-22-b0-evidence-manifest.json) 重放汇总；新检出需重新收集对应证据，不靠目录通配发现报告：
+
+```powershell
+$acceptance = Get-Content 'docs/delivery/reviews/2026-09-22-b0-evidence-manifest.json' -Raw | ConvertFrom-Json
+$checkArgs = @('scripts/dev.py', 'check', '--stage', 'B0', '--identity', $acceptance.identity_file.path)
+foreach ($report in $acceptance.reports) { $checkArgs += @('--report', $report.path) }
+& backend/.venv/Scripts/python.exe @checkArgs
+```
 
 配套：[项目结构](../architecture/project-structure.md)、[代码规范](coding.md)、[静态检查](lint.md)、[测试规范](testing/strategy.md)、[交付验收](../delivery/acceptance.md)、[MyHome 复用](../operations/myhome-integration.md)。
 
@@ -63,7 +72,7 @@ $runtimeConfig = (Resolve-Path 'dev/.local/backend.env').Path
 
 默认API端口8000在部分Windows机器处于系统保留段；显式`--api-port 18080`只选择已登记备用地址，不改变系统排除段、不结束端口占用者、不改秘密配置。Web来源固定localhost:5173。所有继承的`HARUKA_*`覆盖都会被编排入口拒绝，避免doctor和子进程指向不同资源。
 
-Ctrl+C只停止本次应用进程，Compose及数据卷保留；自动烟测可用`--run-seconds 2`，或提供父目录存在、尚不存在的绝对`--stop-file`，随后创建该文件发出停止请求。API/Worker/Outbox先释放资源，Flutter接收app.stop，有界等待后仍需强制回收则报告失败。实际Windows core/jobs启动、UI联调、子进程所有权及Linux进程分支证据见[开发编排记录](../delivery/reviews/2026-09-22-b0-development.md)，这不代替完整Linux应用与三端矩阵。
+Ctrl+C只停止本次应用进程，Compose及数据卷保留；自动烟测可用`--run-seconds 2`，或提供父目录存在、尚不存在的绝对`--stop-file`，随后创建该文件发出停止请求。API/Worker/Outbox先释放资源，Flutter接收app.stop，有界等待后仍需强制回收则报告失败。进程所有权实现见 [开发编排记录](../delivery/reviews/2026-09-22-b0-development.md)，两系统完整应用与三端矩阵见 [B0验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。
 
 ## 1. 工作边界与约束等级
 

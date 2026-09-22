@@ -1,6 +1,6 @@
 # 实施计划与验收
 
-状态：2026-09-22，阶段1已开始，Flutter/Python基础壳与dev/基础设施切片已建立，完整B0/B1/B2尚未验收。最新实际局部范围见 [基础设施记录](reviews/2026-09-22-scaffold-infrastructure.md)。本页维护实施顺序、阶段验收和实际进度；范围以 [产品总览](../product/overview.md) 为准，逐功能流程由 [覆盖索引](coverage.md) 定位到对应模块，公共技术设计从 [架构总览](../architecture/overview.md) 进入。
+状态：2026-09-22，阶段1的完整B0已验收，B1/B2尚未实现，阶段1未完成。实际范围、候选和证据见 [B0验收记录](reviews/2026-09-22-b0-acceptance.md)。本页维护实施顺序、阶段验收和实际进度；范围以 [产品总览](../product/overview.md) 为准，逐功能流程由 [覆盖索引](coverage.md) 定位到对应模块，公共技术设计从 [架构总览](../architecture/overview.md) 进入。
 
 文档整理与应用交付分别记账：[本轮重组记录](reviews/reorganization.md) 维护迁移、review及提交证据，不勾选下列工程验收。未来开发遵循 [AGENTS.md](../../AGENTS.md) 的前后端并行、分阶段提交、必要测试与review规则；本页不重复维护另一套频率要求。
 
@@ -8,7 +8,7 @@
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。
 
-当前 [HTML 原型](../../prototype/README.md) 验证杂志式书库、搜索筛选、示例阅读和词句收藏，不设“继续阅读”。配色按最新要求改为中性底色与 Primary 主色，蓝色具体取值暂定。原型使用内存示例，不提供真实服务。所有下方正式应用验收项仍未完成；不修改 MyHome、不连接生产服务。
+当前 [HTML 原型](../../prototype/README.md) 验证杂志式书库、搜索筛选、示例阅读和词句收藏，不设“继续阅读”。配色按最新要求改为中性底色与 Primary 主色，蓝色具体取值暂定。原型使用内存示例，不提供真实服务；正式应用的B0通过依据独立工程证据。尚未完成下方业务验收，不修改 MyHome、不连接生产服务。
 
 多用户和账号功能已确定。推荐每账号一个私有资料库、邮箱密码登录和 Haruka 独立会话。注册开放策略、邮箱验证/找回方式、阅读器要求、默认供应商和原需求契约缺口统一见 [待决事项及锁定节点](../decisions/pending.md)；依赖项未闭环不能将相关能力标为ready。
 
@@ -42,11 +42,11 @@ OCR已确认统一走 [视觉模型识别](../architecture/vision-recognition.md
 
 先按 [脚手架蓝图](../engineering/scaffold.md) 和 [脚手架验收](milestones/scaffold.md) 取得以下子里程碑证据。它们不另开产品阶段，也不替代本阶段下方的完整验收：
 
-- [ ] B0：锁定工具/构建依赖、统一命令、可安装包与仓库外启动、三端壳、受控迁移/种子、代码生成和质量门禁通过。
+- [x] B0：锁定工具/构建依赖、统一命令、可安装包与仓库外启动、三端壳、受控迁移/种子、代码生成和质量门禁通过。
 - [ ] B1：三端正式登录/access、合法选区收藏新增/列表、最小管理受众边界和日志查询通过；最终注册恢复策略另行落实。
 - [ ] B2：从收藏经正式Job/Outbox/Kafka/Worker/SSE生成一个练习，dev/test Fake、撤权/故障/重复与模拟日志口径通过；真实AI验证仍待执行。
 
-B0-foundation已落地两端工程、公共边界和局部检查；[B0-infrastructure](reviews/2026-09-22-scaffold-infrastructure.md) 补齐PG/Redis/Kafka/MinIO客户端生命周期与dev/隔离Compose、日志采集。[数据库切片](reviews/2026-09-22-b0-identity.md)补齐迁移/种子/首管理员、schema检查及字典；[前端契约](reviews/2026-09-22-b0-frontend.md)和[质量检查器](reviews/2026-09-22-b0-quality.md)已完成局部review与验证。[开发编排](reviews/2026-09-22-b0-development.md)已取得core/jobs Web真实启停证据；干净检出、Linux完整应用、Windows安装隔离及最终程序/平台矩阵仍需收口，局部切片不等于完整B0通过。
+B0各切片已完成必要测试与独立review。Windows/Linux干净检出、受控数据库初始化、两系统core/jobs启停、三端壳交互、Windows安装身份原型及最终必需矩阵已在 [B0验收记录](reviews/2026-09-22-b0-acceptance.md) 汇总通过。统一入口核对33个自动节点和11个procedure的collection/result，共88项检查、零失败；不代表登录、实际授权或任务业务已交付，也不替代阶段1大节点的全量验收。
 
 参考收藏与出题只提前实现最小业务链路，阶段3/4仍负责其完整功能与最终验收；不能因参考流程通过就勾选整项功能。
 

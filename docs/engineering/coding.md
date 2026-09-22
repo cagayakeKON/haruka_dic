@@ -1,6 +1,6 @@
 # 代码与变更规范
 
-状态：2026-09-22，B0-foundation已有应用壳与公共后端代码。本文是实施合同；实际局部检查见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)，尚未选择或执行远端CI。
+状态：2026-09-22，完整B0工程基础已验收，实际范围和检查见 [验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。本文继续作为后续业务实施合同；CI参考工作流已建立，远端尚未执行。
 
 配套：[项目结构](../architecture/project-structure.md)、[API 契约](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[静态检查](lint.md)、[测试规范](testing/strategy.md)、[交付验收](../delivery/acceptance.md)、[认证与隔离](../architecture/authentication.md)、[统一日志](../operations/observability.md)。
 

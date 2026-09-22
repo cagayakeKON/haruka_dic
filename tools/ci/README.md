@@ -15,6 +15,8 @@ uv run --project backend --locked python -m tools.ci.quality --scope B0-pytest-a
 
 该入口运行 `required_cases.json` 的 `B0-quality` 精确节点，保存 collection/result 原始结构化记录、identity、检查器结论、素材校验和手写源清单。单独选择测试不能缩减 `B0` 的必需矩阵。B0 的 SCF-01～06 程序与平台记录仍在 [程序索引](b0-procedures.json) 登记；索引是执行计划，不能作为通过证据。
 
+完整B0已取得 [本地验收记录](../../docs/delivery/reviews/2026-09-22-b0-acceptance.md)。统一入口 `scripts/dev.py check --stage B0 --identity <候选身份> --report <报告>` 消费全部collection/result报告，`--report`可重复；它调用下述既有检查器，不自动发现报告、不重新执行测试、不将当前HEAD自动视为已验收。实际26份输入、11份procedure索引和最终矩阵的路径/SHA256见 [证据摘要清单](../../docs/delivery/reviews/2026-09-22-b0-evidence-manifest.json)，原始运行文件仍按规则保存在本机ignored artifacts。
+
 ## 报告合同
 
 [必需用例清单](../../scripts/quality/required_cases.json) 单向关联 case_id、验收引用、精确测试节点、主要层级、runner、平台、受众、传输、参数和责任分片。同一 case 的不同参数/平台形成不同执行键。报告必须绑定同一 `commit/build_id/configuration/toolchain_sha256/run_id`，每次 attempt 都需要完整 collection/result 和 `session_status=passed`；suite 清理错误、pytest 收集/会话失败、skip、xfail、xpass、deselect、缺记录或错误驱动不能变成通过。后续重试不覆盖首次失败，不同 attempt 的部分节点不能互相补齐。

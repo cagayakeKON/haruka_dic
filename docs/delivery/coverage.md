@@ -12,7 +12,8 @@
 | [小说：预处理与连续阅读](../modules/novels.md) | [材料类型](../contracts/material-types.md)、[出处](../contracts/content-locator.md) | NOV；章序/段落/对话、分句分词、专用阅读和标注降级 |
 | [课本：单元结构与学习](../modules/textbooks.md) | [材料类型](../contracts/material-types.md)、[普通练习](../modules/vocabulary-practice.md) | TBK；内容角色/词表/题目关联、单元位置、逐题反馈与独立状态 |
 | [学习：收藏、照片、练习、评分和诊断](../modules/vocabulary-practice.md) | [权限](../contracts/permissions.md)、[数据与任务](../architecture/data-jobs.md) | COL/PHOTO/PRA/DIAG；重复与来源、规则/AI评分、有效贡献 |
-| [单词CSV入口](../modules/vocabulary-practice.md) | [CSV唯一协议](../contracts/vocabulary-csv.md) | 原CSV清单；全部逻辑记录导出、预览/分批/重复策略、公式转义、跨账号往返 |
+| [多单词本与每日学习](../modules/vocabulary-notebooks.md) | [学习证据/掌握/调度](../architecture/vocabulary-learning.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-10、VL-01～VL-10；多对多归属、删本/删词、跨本去重、自动掌握、日额度/辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |
+| [单词CSV入口](../modules/vocabulary-practice.md) | [CSV唯一协议](../contracts/vocabulary-csv.md) | 原CSV清单；全部逻辑记录导出、v2词本归属与v1兼容、快照不恢复学习证据、预览/分批/重复策略、公式转义、跨账号往返 |
 | [考试：导入、校对、答题、交卷与成绩](../modules/exams.md) | [API](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[出处](../contracts/content-locator.md) | 原考试清单及DAT；冻结版本、草稿/截止/锁卷、评分恢复与重评 |
 | [AI与朗读：解释、卡片、对话和TTS](../modules/ai-speech.md) | [Agent运行层](../architecture/agent-runtime.md)、[API事件](../contracts/api.md) | AI/TTS；类型校验、权限/预算、流恢复、音频缓存与播放 |
 | [词句解析与TTS的持久保存/缓存](../architecture/learning-cache.md) | [AI/朗读](../modules/ai-speech.md)、[收藏](../modules/vocabulary-practice.md)、[设置](../modules/settings.md)、[数据与任务](../architecture/data-jobs.md) | LC-01～LC-10；未收藏也保存、书内语境索引、跨端复用、全局标准词音与私人关联/费用、生成合并/版本、容量与GC、权限/离线 |

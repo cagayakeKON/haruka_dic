@@ -10,6 +10,7 @@
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |
 | 实现私有解释/TTS缓存和全局单词发音 | [学习结果缓存](architecture/learning-cache.md) | [AI与朗读](modules/ai-speech.md)、[收藏](modules/vocabulary-practice.md)、[设置](modules/settings.md)、[数据与任务](architecture/data-jobs.md) |
+| 实现多单词本、自动掌握与每日复习 | [单词本](modules/vocabulary-notebooks.md) | [学习证据与调度](architecture/vocabulary-learning.md)、[普通练习](modules/vocabulary-practice.md)、[CSV](contracts/vocabulary-csv.md) |
 | 初始化工程 | [脚手架](engineering/scaffold.md) | [项目结构](architecture/project-structure.md)、[B0/B1/B2](delivery/milestones/scaffold.md)、[开发指南](engineering/development.md) |
 | 编写代码与测试 | [代码规范](engineering/coding.md)、[Lint](engineering/lint.md) | [测试策略](engineering/testing/strategy.md)、[前端E2E](engineering/testing/frontend-e2e.md)、[测试数据](engineering/testing/data.md) |
 | 开发Flutter页面或移动端适配 | [Flutter开发与适配规范](engineering/flutter.md) | [项目结构](architecture/project-structure.md)、[前端测试与适配矩阵](engineering/testing/frontend-e2e.md) |
@@ -31,6 +32,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 | [小说](modules/novels.md) | 章节/语言预处理、连续阅读与选词 | [三类材料](contracts/material-types.md)、[出处](contracts/content-locator.md) |
 | [课本](modules/textbooks.md) | 单元/内容角色、词表、课文与逐题练习 | [三类材料](contracts/material-types.md)、[普通练习](modules/vocabulary-practice.md) |
 | [收藏与练习](modules/vocabulary-practice.md) | 词表、CSV/照片、练习、评分、错题与诊断 | [CSV](contracts/vocabulary-csv.md)、[API](contracts/api.md) |
+| [单词本](modules/vocabulary-notebooks.md) | 多本组织、单词详情/批量、每日队列、自动掌握与学习历史 | [词汇学习状态](architecture/vocabulary-learning.md)、[普通练习](modules/vocabulary-practice.md)、[CSV](contracts/vocabulary-csv.md) |
 | [考试](modules/exams.md) | 试卷校对、整卷答题、保存/交卷、成绩与重评 | [数据与任务](architecture/data-jobs.md)、[出处](contracts/content-locator.md) |
 | [AI与朗读](modules/ai-speech.md) | 解释、对话、卡片、TTS与播放 | [Agent运行层](architecture/agent-runtime.md)、[API事件](contracts/api.md) |
 | [管理后台](modules/admin.md) | 用户、角色、菜单、策略、任务与审计 | [RBAC](architecture/authorization.md)、[权限目录](contracts/permissions.md) |

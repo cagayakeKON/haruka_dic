@@ -118,6 +118,8 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 | 阅读 | reading.chapter.opened、reading.session.ended、source.navigation.result | 材料/章节引用、有效前台阅读时长、回跳结果；不收集逐字选区或逐帧滚动 |
 | 课本 | textbook.lesson.opened | 受控材料/版本/Lesson引用、内容角色、结果与耗时；不含课文/词表/题目正文；作答计数复用practice事实，不另累计 |
 | 解释/收藏 | explanation.requested、explanation.completed、collection.saved | 内容类别、语言、引用、耗时；不记录原词句、笔记或解释正文 |
+| 单词本 | notebook.created/updated/deleted、notebook.members.changed | 本/操作类型、计数、受控引用、提交结果；无本名/简介/词内容，删本不计作删词 |
+| 词汇学习 | vocabulary.review.plan_created、vocabulary.learning.updated/rebuild_failed | 机会/投影受控引用、策略/算法版本、结果类别/耗时/数量；不记答案、逐人掌握明细或日历史；队列和埋点不作为学习成绩，重放不计新作答 |
 | TTS/播放 | speech.requested、speech.generated、speech.cache.hit、playback.started、playback.failed | 模型/声音、缓存结果、首音频耗时、时长、平台错误 |
 | 学习结果复用 | learning.cache.resolved、learning.result.persisted、learning.result.persistence_failed、learning.generation.joined | 缓存层/结果种类、private/global_word、命中/缺失原因、配置是否不同、条目数/耗时及受控引用；不记录词句/上下文/完整文本hash，命中和等待不重复累计模型调用；全局词音费用只归生产者，等待者事件绑定本人，不下发他人Job/身份 |
 | 练习 | practice.started、answer.submitted、answer.scored、practice.completed | 题型、来源、题数、规则/AI 评分方式；答案与学习事实留在业务库 |

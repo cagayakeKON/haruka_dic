@@ -48,15 +48,21 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST sources/resolve | 授权解析出处，返回三类之一及专用目标引用 | 当前源业务read与同库/版本检查；考试按考试投影规则，不由自报locator获得权限 |
 | POST materials/{id}/reparse、materials/{id}/analysis | reparse发布新内容版本；analysis可首次视觉转写尚无发布版本的源，或仅分析已发布正文 | 按[视觉OCR](../architecture/vision-recognition.md)明确阶段/页计划；首次OCR复核原import/read/analyze，已发布后视觉补识别/重识别需reparse+analyze；expected_revision/幂等/原件资格 |
 | GET/PUT materials/{id}/progress；GET/POST/DELETE bookmarks | 小说位置/最远位置、课本单元位置、书签；不承载考试进度 | material.read与progress/bookmark动作；只接受novel/textbook |
-| GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind/词句/笔记/标签/状态/出处快照 | collection对应动作；标签关系本人范围 |
-| POST collections/merge | 明确目标/来源条目和合并策略，expected_revision | collection.read/update/delete；只在本人范围合并，不静默删除来源 |
-| GET collections/words/export；POST vocabulary-csv/previews；POST {id}/commit | 流式CSV、映射/预览/确认/游标 | CSV组合权限；既有记录比较/跳过需collection.read，合并再需update；无read只明确直接新增、不返回旧词表信息 |
+| GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind仅创建时选择，词句/笔记/标签/study_control/出处；响应可带只读mastery/learning_revision | collection对应动作；拒绝写mastery/due/证据计数，实质学习内容变更推进版本；有成员时不得改成不匹配语言 |
+| GET/POST vocabulary-notebooks；GET/PATCH/DELETE vocabulary-notebooks/{id} | 多本名称/目标语/简介、版本与去重统计；删除本保留单词和历史 | vocabulary_notebook对应动作，self/同库；读需collection.read，写按目录依赖；非空本不切换语种 |
+| GET vocabulary-notebooks/{id}/items；POST vocabulary-notebooks/membership-changes | 稳定分页/筛选；明确add/remove/move、受控条目或冻结选择快照、所涉本expected_revision | notebook.read/update和collection.read；移动同时检查来源/目标本；不授权删除词、改掌握或复制学习进度 |
+| GET vocabulary/learning-states；GET vocabulary/review-queue | 本人词的只读掌握/原因/调度摘要、今日计划预览及剩余/待补全计数 | collection.read；证据引用/历史明细及队列另需practice.read和实际来源read，按本筛选需notebook.read；缺实践读取权限只给摘要，不含Attempt ID/题答/分数；不发模型请求 |
+| POST vocabulary/review-plans | 冻结条目/版本/题型/机会，原子预留每日新词额度，返回可供practice-sessions启动的本人计划 | practice.start/read、collection.read及所选本read；幂等/日账本并发检查，生成新题仍独立generate/Key/预算 |
+| GET/DELETE vocabulary/review-plans/{id} | 读取本人冻结计划/有效进度；幂等取消未开始或未完成部分，不物理删历史 | GET需practice.read和实际来源read；DELETE另需practice.start，停止后续领取/提交并保留已接受答案；仅无作答且无其他有效计划引用的额度可释放 |
+| POST collections/merge | 明确目标/来源条目和合并策略，expected_revision；涉及词本时确认成员并集 | collection.read/update/delete；成员迁移另需notebook.read/update；只在本人范围合并，学习证据按等价/新学习版本重算，不取最高掌握值 |
+| GET collections/words/export；POST vocabulary-csv/previews；POST {id}/commit | 流式CSV v2兼容v1、可选词本列、映射/预览/确认/游标；导入状态仅为来源快照 | CSV组合权限及词本列/筛选依赖；既有记录比较/跳过需collection.read，合并再需update；无read只明确直接新增、不返回旧词表信息 |
 | POST photo-word-imports；GET {id} | 一张图/语言→候选词预览，尚不写收藏 | photo.import；识别可能收费，不能冒充整卷OCR |
 | POST photo-word-imports/{id}/confirm | 明确新增/补空合并/排除行后确认 | photo.import；新增再验collection.create；读取/合并既有记录另验collection.read/update，缺任一所选动作权限整次确认拒绝 |
 | PATCH/DELETE photo-word-imports/{id} | 修正/丢弃尚未确认的候选预览 | 本人photo.import；已确认的Collection独立编辑，不回滚已提交记录 |
 | POST practice-sessions、practice-generations；GET practice-sessions/{id} | 已有题开始与生成新题分离，返回冻结会话/Job | practice.start/generate/read |
 | GET practice-generations/{id}；GET mistakes | 已受理生成状态/题目；本人有效错题列表 | practice.read及来源权限，失权结果不因知道Job ID可读 |
-| POST practice-sessions/{id}/answers、finish；GET attempts/{id} | 答案版本/提交；结束/成绩读取 | practice.answer/read；服务端判状态 |
+| POST practice-sessions/{id}/answers、finish；GET attempts/{id} | 答案版本/提交；结束/成绩读取；response_kind区分answer/dont_know/skip | practice.answer/read；answer/dont_know按冻结规则形成Attempt，skip仅记录跳过，不以空答案造零分；服务端判状态 |
+| POST practice-sessions/{id}/items/{item_id}/assistances | 受控hint/reveal；记录该题及同目标机会的曝光顺序，才返回允许提示 | practice.answer/read与本人活动场次；不同session/设备不能擦除同机会已辅助事实，考试不复用此入口 |
 | POST attempts/{id}/grading-runs、review-requests | 付费评分/重评、个人异议标记 | grade.request/review.request；不能写任意分数 |
 | GET/POST diagnoses；GET diagnoses/{id} | 报告列表/详情/生成，数据范围与统计窗口 | diagnosis.read/generate+来源read |
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |

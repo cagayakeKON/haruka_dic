@@ -36,6 +36,8 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 
 所有示例状态仅在当前页面内存中保存，刷新重置。没有真实账号、文件上传/解析、CSV、考试答题/评分、AI/TTS、后端授权、日志采集或离线缓存。不会接收真实 Key、调用系统 TTS 或连接 MyHome。试卷首版格式范围仍待确认。
 
+VB1新增[多单词本](../docs/modules/vocabulary-notebooks.md)和[练习驱动掌握](../docs/architecture/vocabulary-learning.md)规格，当前原型尚未迁移；原型手动切掌握状态仅为旧交互，不得移植为正式行为。正式端支持多本组织、服务端自动判定及每日复习；本次文档修订没有实现这些页面。
+
 只支持点击明确标记的预置词；不声称支持任意选区解释。收藏保留示例材料/章节/段落/词语起点，回跳标记对应段落；正式跨版本定位以 [材料与阅读](../docs/modules/materials-reading.md) 为准。
 
 ## 文件与移植约束
@@ -53,7 +55,7 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 | 书库/阅读/来源回跳 | client.material.list/read | screen.viewed、reading.chapter.opened、source.navigation.result |
 | 导入材料/试卷 | client.material.import；试卷另验 client.exam.import | material.import.requested/completed/failed |
 | 新解释 | client.ai.explain、来源 read、本人 Key | explanation.requested/completed |
-| 收藏新增/掌握/移除 | client.collection.create/update/delete、来源 read | collection.saved；正式成功以服务端提交为准 |
+| 收藏新增/编辑/移除 | client.collection.create/update/delete、来源 read | collection.saved；正式成功以服务端提交为准；旧手动掌握动作不迁移 |
 | 云端朗读 | client.speech.generate/play、来源 read；新合成需本人 Key | speech.requested/generated、playback.started/failed |
 
 上述为后续映射，不是 HTML 中已存在的安全机制或埋点。具体 [权限](../docs/contracts/permissions.md)、[API](../docs/contracts/api.md)、[数据事务](../docs/architecture/data-jobs.md)、[日志](../docs/operations/observability.md) 仍以专题为准。当前通过可访问名称/原生 HTML 控件定位，不创建未来 Flutter Test ID 注册表或测试旁路。浏览器模拟窄屏不等于 Android/Windows 原生验收。

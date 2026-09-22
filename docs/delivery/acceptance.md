@@ -65,7 +65,7 @@ CI 实体尚未创建，工程初始化时按以下职责落地；CI 平台按�
 
 ## 5. 版本、配置与制品
 
-应用推荐使用 MAJOR.MINOR.PATCH，预发布标识与递增 build 单独记录；文档 Draft 版本、API v1、CSV v1、数据库迁移 revision、权限目录和事件 schema 版本相互独立。Flutter 三端同一功能发布共享 release 标识，平台 build 信息保留各自差异。
+应用推荐使用 MAJOR.MINOR.PATCH，预发布标识与递增 build 单独记录；文档 Draft 版本、API v1、CSV协议版本（当前草案v2兼容v1）、数据库迁移 revision、权限目录和事件 schema 版本相互独立。Flutter 三端同一功能发布共享 release 标识，平台 build 信息保留各自差异。
 
 | 交付物 | 必须包含 |
 | --- | --- |

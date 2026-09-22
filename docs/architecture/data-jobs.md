@@ -24,6 +24,9 @@
 | LinguisticAnalysis/Sentence/Token | 内容版本、分析/规则/词典版本、语言、原文span | 派生标注不改canonical_text；新切句不能静默改变旧sentence_id的含义 |
 | FileObject/UploadIntent | owner、临时staging_key、独占final_key、用途、最终摘要/实际大小、状态、到期 | 客户端仅写临时对象；后端固定不可变final对象并验证后才发布；完成幂等 |
 | CollectionItem/Tag/Bookmark/ReadingProgress | kind、词/笔记、出处快照、current_position、小说max_progress、revision | 标签关系同库；小说当前/最远分离，课本位置不表示完成度，考试进度另存；删除材料后收藏文本仍存在 |
+| VocabularyNotebook/NotebookItem | owner/library、名称/目标语、成员CollectionItem和revision | 多本多对多、单语匹配、关系唯一；同条目多本不复制进度，删本不删词；改词语言与成员增改共用父锁 |
+| VocabularyLearningState/ReviewSchedule/EffectiveLearningEvidence | item/learning_revision/skill、有效成绩证据、mastery与调度版本 | [词汇学习](vocabulary-learning.md)只从有效证据派生；客户端/CSV不得写mastery，重评按原时间重放不重复累计 |
+| ReviewOpportunity/DailyLearningBudget/NewWordReservation | 当前学习机会/辅助曝光、owner学习日与条目唯一额度预留 | 跨本/设备共享机会与预留；领取原子占额、接受作答即消费，pending不释放，取消/日边界按协议处理 |
 | Exercise/PracticeSession/Attempt/GradeRun | 冻结题目与依据、答案、提交幂等键、评分代次 | 同一提交不重复 Attempt；规则/AI 成绩有来源；有效成绩与历史分开 |
 | ExamPaper/Version/Item/GradingBasis | 题面/题序/分值与依据版本 | ready 版本不可变；题面 DTO 不含答案/rubric |
 | ExamSession/Response/GradeRun | 固定版本、deadline、edit_epoch、response_revision、grade_generation | 保存/交卷在场次行锁内；单题答案唯一；提交后不可修改 |
@@ -114,6 +117,8 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 3. 旧run取消后迟到的供应商结果只保存历史，发布要求 active_run_id/generation 和租约代次仍匹配。显式重评不立即删除旧effective指针，页面标“重评中”，旧有效成绩仍可查。
 4. 有效成绩切换在单事务内CAS检查最新generation，校验全部必须评分项完成且无needs_review，再切effective指针并按 source + session/attempt + item 替换LearnerContribution；汇总可在同事务更新或由带版本事件重算，禁止对旧贡献再加一遍。
 5. 初次部分评分可显示run的部分分数，但尚未作为完整effective成绩。确认的单题是否用于即时学习统计采用一条规则：首版仅整次评分成功发布后回流；needs_review/failed/partial不回流正式掌握度。新一轮失败保留原有效成绩和统计，不混合两轮题分。
+
+词汇掌握与间隔调度按[学习证据协议](vocabulary-learning.md)消费此发布：普通练习的“整次”指该Attempt的完整评分，考试指整个场次有效成绩。只有冻结到本人词条/学习版本/能力及评分项的明确映射才能回流，不能从总分猜每词掌握。Outbox与贡献在有效评分事务提交，投影按原接受时间/稳定ID、机会去重及参数版本重放；内容改版/删除阻止迟到结果复活，删词本不删除学习状态。
 
 该规则消除“旧评分最后返回就覆盖新成绩”。允许并发run或逐题提前回流属于未来协议变更，必须补竞态和统计迁移验收。
 

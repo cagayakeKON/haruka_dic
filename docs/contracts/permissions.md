@@ -8,6 +8,8 @@
 
 下列“读取来源”指实际使用的对象：材料内容需material.read，收藏需collection.read，练习/成绩需相应read，当前输入的自由文本不要求虚构材料ID。后台/Agent执行同样复核每个动作，配置和权限快照不能当作永久凭证。复合请求受理前列出并验证所有用户明确请求的动作；缺权限返回具体安全错误和可选降级入口，由用户重新选择，不静默删步骤或收费。
 
+收藏合并要求collection.read/update/delete；涉及有效词本成员迁移时另需vocabulary_notebook.read/update，确认归属并集后在同事务去重，不能以collection.update绕过成员权限。删除词条仍是独立collection.delete用例，可清其关系但不转移到其他条目；历史学习事实按版本保留。
+
 ## 2. 用户端目录
 
 | 权限代码 | 页面/接口动作 | 附加依赖和付费含义 |
@@ -21,13 +23,14 @@
 | client.material.delete | 从书库移除材料 | read；tombstone/引用保留，不删除成绩/收藏 |
 | client.reading.progress.update | 小说当前位置/最远进度、课本最近单元位置 | material.read；仅novel/textbook，无该权限仍能只读；考试进度使用场次动作 |
 | client.bookmark.read/create/delete | 阅读书签列表/创建/删除 | material.read；本人记录 |
-| client.collection.read/create/update/delete | 收藏列表、笔记、标签关系与状态 | create引用来源时校验来源read；update/delete需read；标签管理不跨本人收藏 |
-| client.vocabulary.csv.export | 导出本人单词CSV | collection.read；无需Key |
-| client.vocabulary.csv.import | 预览/确认/分批导入 | collection.create；比较/匹配/跳过已有记录需collection.read，合并另需collection.update；无read只能显式直接新增且不比较/披露旧词表；无需Key |
+| client.collection.read/create/update/delete | 收藏列表、笔记、标签和study_control；自动mastery摘要只读 | create引用来源需read；update/delete需collection.read；学习证据/历史明细另需practice.read及来源read，所属本需notebook.read；不授予改掌握/调度/历史证据权限 |
+| client.vocabulary_notebook.read/create/update/delete | 多单词本、成员关系和本内计数 | read需collection.read；create/update/delete需notebook.read，成员变更需update+collection.read；删本不删词，删除词另需collection.delete |
+| client.vocabulary.csv.export | 导出本人单词CSV | collection.read；含wordbooks列或按本筛选另需vocabulary_notebook.read，缺时可明确选择仅单词内容；无需Key |
+| client.vocabulary.csv.import | 预览/确认/分批导入 | collection.create；比较/匹配/跳过已有记录需collection.read，合并另需collection.update；选择v2词本列需notebook.read/update，建新本另需create；无read只能明确直接新增且不比较/恢复既有词本；不从status导入掌握，无需Key |
 | client.vocabulary.photo.import | 照片识词及预览 | 新视觉调用要求Key/预算；确认新增需collection.create，读取/补空合并既有记录另需collection.read/update，按所选动作组合检查 |
 | client.practice.read | 题目/会话/本人历史成绩读取 | 提交前DTO不提前返回答案 |
-| client.practice.start | 用已有题开始普通练习 | practice.read、来源read；不自动出新题收费 |
-| client.practice.answer | 保存/提交回答、规则判分、结束已有练习 | practice.read、本人活动场次；新AI判分另验grade.request |
+| client.practice.start | 用已有题开始普通练习/词本复习计划 | practice.read、来源read，按本选题另需notebook.read；新词预留日额度，不自动出新题收费 |
+| client.practice.answer | 保存/提交回答、规则判分、受控提示/揭示、结束已有练习 | practice.read、本人活动场次；服务端记录辅助/不会/跳过，新AI判分另验grade.request；不授予直接改掌握权限 |
 | client.practice.generate | 从收藏/错题等生成新题 | 对应来源read、Key/预算；不由start隐含授予 |
 | client.practice.grade.request | 主观AI判分/显式重评 | practice.read、已提交答案、Key/预算；规则判分不要求此收费权限 |
 | client.practice.review.request | 个人成绩标记待审/异议 | practice.read；不直接改分，人工覆盖P1另行注册权限 |
@@ -84,7 +87,7 @@
 
 ## 5. 角色模板的可复现生成
 
-learner由发布种子显式列出本期所有client业务权限，不使用运行时通配符；client_readonly包含client.login、material.list/read、bookmark.read、collection.read、practice.read、diagnosis.read、agent.read、speech.play、exam.list/read、exam_session.read、exam_grade.read、profile.read、credential.read、job.read及CSV导出，仍按来源/范围限制。照片、导入、AI、写入及管理权限均不含于只读模板。
+learner由发布种子显式列出本期所有client业务权限，不使用运行时通配符；client_readonly包含client.login、material.list/read、bookmark.read、collection.read、vocabulary_notebook.read、practice.read、diagnosis.read、agent.read、speech.play、exam.list/read、exam_session.read、exam_grade.read、profile.read、credential.read、job.read及CSV导出，仍按来源/范围限制。照片、导入、AI、写入及管理权限均不含于只读模板。
 
 operator包含admin.login/dashboard.view/resource_metadata.read/job.read/cancel/retry与diagnostics.read；account_admin只管理授予边界内账号/会话/角色绑定；security_admin只管理可委派角色/菜单/策略；auditor只读审计/诊断。每个模板的完整展开清单在工程种子和权限矩阵中版本化，权限目录新增时默认不给自定义角色。super_admin也受硬数据边界，不能获得未定义的私人内容旁路。
 

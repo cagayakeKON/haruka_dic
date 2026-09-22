@@ -2,7 +2,7 @@
 
 ## 项目与当前状态
 
-Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求、架构、计划文档，尚无 Flutter/Python 工程、依赖清单、构建脚本或应用测试。旧 HTML 原型已按用户要求删除，目前仅讨论新的视觉方案，不创建原型文件；B0/B1/B2 均尚未实现。
+Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求、架构、计划文档及 prototype/ 下的新 HTML 交互原型，尚无 Flutter/Python 工程、依赖清单、构建脚本或应用测试。原型采用中性底色、Primary 主色及杂志式排版，不设“继续阅读”；范围与示例边界见 prototype/README.md。B0/B1/B2 均尚未实现。
 
 文档任务只修改文档；用户要求开始实现时，按实施计划推进必要工程工作。不把计划当成已实现，不为了运行不存在的检查擅自创建项目骨架。
 
@@ -10,19 +10,18 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 
 ## 开始工作前
 
-1. 阅读 [README](README.md) 和 [文档目录](docs/README.md)。
-2. 根据任务读取 [PRD](docs/product/overview.md)、[架构](docs/architecture/overview.md) 和对应专题。
-3. 认证、数据库、文件、缓存、任务或 AI 相关改动必须参考 [认证与隔离](docs/architecture/authentication.md)。
-4. CSV 改动以 [单词 CSV 规范](docs/contracts/vocabulary-csv.md) 为准；接入共享服务前查看 [MyHome 复用](docs/operations/myhome-integration.md)。
-5. 检查实际文件和工作区变更，保留用户已有工作。不要假定未来目录、命令或 Git 仓库已经存在。
-6. Agent、模型调用、卡片或会话相关工作读取 [Pydantic AI 运行层](docs/architecture/agent-runtime.md)。
-7. 前端、API、Worker、数据库或部署相关工作读取 [统一日志与前端埋点](docs/operations/observability.md)，新功能同时维护采集与事件契约。
-8. 材料导入、考试、答题或评分相关工作读取 [试卷模式](docs/modules/exams.md)，区分普通练习与整卷考试的提交/反馈规则。
-9. 所有页面/接口/业务动作与账号管理相关工作读取 [管理后台与 RBAC](docs/architecture/authorization.md)，维护权限代码、两端显示与服务端执行的一致映射。
-10. 用 [功能覆盖索引](docs/delivery/coverage.md) 定位详细流程；具体权限/接口/事务分别以 [权限目录](docs/contracts/permissions.md)、[API契约](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) 为准。
-11. 工程开始前读取 [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[测试](docs/engineering/testing/strategy.md)、[交付验收](docs/delivery/acceptance.md)。配置/部署读取运行规范；未决产品选项见决策清单。
-12. 工程初始化、包/CLI、构建身份或生成流程读取 [脚手架蓝图](docs/engineering/scaffold.md) 和 [阶段验收](docs/delivery/milestones/scaffold.md)，按B0/B1/B2提供实际证据，不把未来命令当现有工具。
-13. 前端控件、测试定位、浏览器/原生 E2E 或夹具改动读取 [前端测试](docs/engineering/testing/frontend-e2e.md) 和 [测试数据](docs/engineering/testing/data.md)，同步标识来源、平台覆盖与场景隔离。
+先读 [项目入口](README.md) 和 [文档导航](docs/README.md)，确认实际文件、工作区变更、当前阶段与本次范围；保留用户及并行Agent已有工作。只读取当前任务相关正文，不假定未来工程/命令已经存在。
+
+| 任务 | 必须读取的权威正文 |
+| --- | --- |
+| 产品/功能 | [产品总览](docs/product/overview.md)、对应modules规格、[功能与验收追踪](docs/delivery/coverage.md) |
+| 身份、页面、业务动作与数据 | [认证](docs/architecture/authentication.md)、[RBAC](docs/architecture/authorization.md)、[权限目录](docs/contracts/permissions.md)、[API](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) |
+| 阅读、选区、导入、CSV或考试 | 对应模块，以及[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)、[考试](docs/modules/exams.md)所涉及的契约 |
+| Agent、卡片、会话、AI或TTS | [Agent运行层](docs/architecture/agent-runtime.md)、[AI与朗读模块](docs/modules/ai-speech.md) |
+| 编码、初始化或构建 | [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[脚手架](docs/engineering/scaffold.md)、[B0/B1/B2](docs/delivery/milestones/scaffold.md) |
+| 控件、测试与数据工厂 | [测试策略](docs/engineering/testing/strategy.md)、[前端E2E](docs/engineering/testing/frontend-e2e.md)、[测试数据](docs/engineering/testing/data.md) |
+| 前端/API/Worker/数据库日志与部署 | [观测](docs/operations/observability.md)、[MyHome复用](docs/operations/myhome-integration.md)、[配置](docs/operations/configuration.md)、[部署恢复](docs/operations/deployment-recovery.md) |
+| 交付或未决方案 | [路线图](docs/delivery/roadmap.md)、[交付验收](docs/delivery/acceptance.md)、[决策待办](docs/decisions/pending.md) |
 
 ## 已确认的产品边界
 
@@ -95,22 +94,13 @@ UI Test ID由前端注册表单一维护，Flutter Key与外部Semantics定位�
 
 具体静态规则/命令/例外按Lint专题；所选必需用例不能以进程退出0代替真实结果，大节点另执行完整覆盖分母门禁。测试范围和review次数以本文件的分阶段规则为准，专题维护具体方法。待产品决策不等于已知缺陷可豁免。
 
-建立工程后，先以真实依赖清单和 CI 为准确定命令，再执行与改动相关的检查。预期工具如下，当前不保证可执行：
-
-| 范围 | 工程建立后的典型检查 |
-| --- | --- |
-| Python | uv run ruff check、uv run pyright、相关 uv run pytest；按实际配置指定路径 |
-| Flutter | dart format 检查、flutter analyze、相关 flutter test |
-| 平台发布 | Flutter Web/Android/Windows 构建；Windows 使用 Windows 环境 |
-| 数据结构 | 迁移应用/回滚策略及实际约束验证 |
-
-测试优先覆盖两端登录与角色权限矩阵、菜单/路由/按钮/接口一致性、撤权与越权/提权、会话轮换/退出、缓存串用、任务幂等、出处/Unicode、规则评分、音频复用、CSV 往返、考试/评分，以及日志脱敏/补传和审计。不要为纯文档或低风险格式改动创建无意义的实现镜像测试。
+工程建立后，以真实锁定依赖与CI为准执行相关 [Lint](docs/engineering/lint.md) 和 [测试](docs/engineering/testing/strategy.md)，不在本文件复制命令/配置。优先证明权限隔离、事务/任务、出处、考试评分、账号切换与日志保护；不为纯文档、低风险格式或实现细节增加无意义测试。
 
 ## 分阶段 Review
 
 - 小阶段只做1～2轮review：第1轮集中检查本阶段改动及直接影响；需要修订时先集中修复，再用第2轮定点复核。由非作者Agent或独立reviewer执行，不对未改动的整个项目反复审查，不机械开启第3轮。未关闭缺陷不能标为完成或以达到轮数上限为由忽略。
 - 每个大阶段开发完成后必须做全盘review，覆盖该节点的前端、后端、两端契约与联调、权限/数据隔离、迁移与任务、日志、测试和文档一致性；并行开发各自通过局部review不能代替这次整体审查。
-- Review结果区分缺陷与建议，记录修复和实际复核证据；文档审查记入DOCUMENT_REVIEW，工程建立后按交付记录归档。大阶段全盘review不能以测试通过代替，review无问题也不能代替运行验收。
+- Review结果区分缺陷与建议，记录修复和实际复核证据；文档审查按阶段记入 [delivery/reviews](docs/delivery/reviews/reorganization.md)，工程建立后按交付记录归档。大阶段全盘review不能以测试通过代替，review无问题也不能代替运行验收。
 
 ## MyHome 与工作区边界
 

@@ -1,14 +1,16 @@
 # 实施计划与验收
 
-状态：Draft v0.8，2026-09-22，旧 HTML 原型已删除，新视觉方案讨论中，Flutter/Python 正式实现尚未开始。范围以 [PRD](../product/overview.md) 为准；逐功能流程见 [覆盖索引](coverage.md)，技术见 [总览](../architecture/overview.md)、[RBAC](../architecture/authorization.md)、[运行层](../architecture/agent-runtime.md)、[试卷](../modules/exams.md) 和 [日志](../operations/observability.md)。
+状态：设计计划，2026-09-22，新版 HTML 原型已建立，Flutter/Python 正式实现尚未开始。本页维护实施顺序、阶段验收和实际进度；范围以 [产品总览](../product/overview.md) 为准，逐功能流程由 [覆盖索引](coverage.md) 定位到对应模块，公共技术设计从 [架构总览](../architecture/overview.md) 进入。
+
+文档整理与应用交付分别记账：[本轮重组记录](reviews/reorganization.md) 维护迁移、review及提交证据，不勾选下列工程验收。未来开发遵循 [AGENTS.md](../../AGENTS.md) 的前后端并行、分阶段提交、必要测试与review规则；本页不重复维护另一套频率要求。
 
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。
 
-当前仅讨论年轻化、漂亮、现代美观的视觉方案，不创建原型文件。旧 HTML 原型已删除，具体风格与后续原型范围待确认。所有下方正式应用验收项仍未完成；不修改 MyHome、不连接生产服务。
+当前 [HTML 原型](../../prototype/README.md) 验证杂志式书库、搜索筛选、示例阅读和词句收藏，不设“继续阅读”。配色按最新要求改为中性底色与 Primary 主色，蓝色具体取值暂定。原型使用内存示例，不提供真实服务。所有下方正式应用验收项仍未完成；不修改 MyHome、不连接生产服务。
 
-多用户和账号功能已确定。推荐每账号一个私有资料库、邮箱密码登录和 Haruka 独立会话。注册开放策略、邮箱验证/找回方式、阅读器要求与默认供应商见 [PRD 待确认问题](../product/overview.md)。
+多用户和账号功能已确定。推荐每账号一个私有资料库、邮箱密码登录和 Haruka 独立会话。注册开放策略、邮箱验证/找回方式、阅读器要求、默认供应商和原需求契约缺口统一见 [待决事项及锁定节点](../decisions/pending.md)；依赖项未闭环不能将相关能力标为ready。
 
 试卷模式已确认；文件格式还待明确，当前推荐 MD/EPUB + 文本型 PDF 优先，扫描 PDF/多图 OCR 暂按后续。文本型 PDF 的首版接入为推荐计划，确认后再锁定解析库、样本范围与工期。
 
@@ -31,7 +33,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 
 ## 2. 六个实施阶段
 
-各阶段共同遵守 [项目结构](../architecture/project-structure.md)、[代码](../engineering/coding.md)、[Lint](../engineering/lint.md)、[测试](../engineering/testing/strategy.md) 与 [交付验收](acceptance.md)。先完成 [开发/配置合同](../engineering/development.md) 的实际初始化，再运行其中标注的未来命令。文档审查不勾选下列应用验收，当前review闭环单独见 [记录](reviews/2026-09-22-design.md)。
+各阶段共同遵守 [项目结构](../architecture/project-structure.md)、[代码](../engineering/coding.md)、[Lint](../engineering/lint.md)、[测试](../engineering/testing/strategy.md) 与 [交付验收](acceptance.md)。先完成 [开发指南](../engineering/development.md) 的实际初始化，再运行其中标注的未来命令。原设计审查见 [历史记录](reviews/2026-09-22-design.md)，不作为已运行的应用证据。
 
 ### 阶段 1：工程基础、两端登录、管理后台与 RBAC
 
@@ -47,7 +49,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 - 按 [前端E2E](../engineering/testing/frontend-e2e.md) 建立Test ID单源生成、Key/Web语义定位原型及平台runner分工；按 [测试数据](../engineering/testing/data.md) 建立共享样本、声明式场景、工厂秘密通道与资源账本，映射UIE/TDS验收。
 - 按 [MyHome 复用](../operations/myhome-integration.md) 接入独立数据库、凭据、Bucket、队列、网络和日志，不共用 MyHome 账号数据。
 - 实现注册事务、密码哈希、设备会话、刷新/撤销、改密、Web Cookie/CSRF 和原生安全存储。
-- 按 [账号操作合同](../modules/accounts.md) 实现PG持久撤销/epoch、Web opaque Cookie与原生轮换；覆盖激活条件、login-only空状态、Redis故障与并发刷新。
+- 按 [账号流程](../modules/accounts.md) 和 [公共认证机制](../architecture/authentication.md) 实现PG持久撤销/epoch、Web opaque Cookie与原生轮换；覆盖激活条件、login-only空状态、Redis故障与并发刷新。
 - 建立管理 Web 布局、用户管理、角色/权限、两端菜单及注册策略；任务、配额、审计和运行概览随对应模块接入。
 - 实现权限目录、角色继承/显式拒绝、授予边界、AuthorizationService、数据库授权版本与只读策略投影、两端访问快照和路由/操作守卫。
 - 实现受控首管理员初始化、禁用/强制下线、最后管理员保护，以及管理变更与审计/Outbox 同事务提交；测试并发撤权和自我/间接提权。
@@ -155,7 +157,7 @@ Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施
 - 验证注册/登录限流、会话失效、用户配额、共享服务负载与日志脱敏；明确注册开放及账号恢复策略。
 - 完成管理 Web 的用户/角色/权限/菜单/策略/任务/审计闭环，执行 [RBAC 验收](../architecture/authorization.md)；普通应用角色不自动获得 Grafana/Loki 的全局访问权。
 - 完成全部日志来源、三端 release 堆栈、平台崩溃诊断、补传与采集故障恢复验收，验证看板、告警、端到端探针及留存容量。
-- 验证迁移、运维数据保护和回滚步骤；运维灾难恢复不变成用户侧全库备份需求。
+- 按 [部署与恢复](../operations/deployment-recovery.md) 验证迁移、运维数据保护和回滚步骤；运维灾难恢复不变成用户侧全库备份需求。
 
 验收：
 

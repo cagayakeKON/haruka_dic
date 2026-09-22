@@ -1,0 +1,470 @@
+{
+  "schema_version": 1,
+  "source_roots": {
+    "python": "backend/app",
+    "flutter": "frontend/lib"
+  },
+  "generation_manifest": "tools/codegen/manifest.json",
+  "files": {
+    "backend/app/__init__.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/adapters/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/adapters/blocking.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/adapters/cache.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/adapters/database.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/adapters/queue.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/adapters/storage.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/api/context.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/exception_handlers.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/health.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/responses.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/bootstrap.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/cli/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/cli/api.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/cli/common.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/cli/manage.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/cli/outbox.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/cli/worker.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/contracts/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/contracts/errors.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/contracts/export.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/contracts/permissions.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/core/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/core/logging.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/core/settings.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/domain/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/domain/errors.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/main.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/maintenance/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only module docstring; verified by AST."
+    },
+    "backend/app/maintenance/migrations.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/maintenance/schema.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/maintenance/settings.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/__init__.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/authorization.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/base.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/dictionary.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/identity.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/schemas/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/schemas/health.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/schemas/responses.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/schemas/scalars.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/__init__.py": {
+      "language": "python",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only module docstring; verified by AST."
+    },
+    "backend/app/services/initialization.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "frontend/lib/app/app_shell.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/environment_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/haruka_app.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/app/home_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/platform_routes.dart": {
+      "language": "flutter",
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "frontend/lib/app/platform_routes_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/app/platform_routes_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/app/status_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/core/api/api_client.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/api/responses.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/api/wire.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/config/app_config.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/layout/adaptive_policy.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/generated/api_catalog.dart": {
+      "language": "flutter",
+      "kind": "generated",
+      "groups": [],
+      "reason": "Exact registered output generated by frontend/tool/generate.py from backend error catalogue and localizations."
+    },
+    "frontend/lib/generated/build_targets.dart": {
+      "language": "flutter",
+      "kind": "generated",
+      "groups": [],
+      "reason": "Exact output registered with sources and generator in tools/codegen/manifest.json; codegen drift checked separately."
+    },
+    "frontend/lib/generated/l10n/app_localizations.dart": {
+      "language": "flutter",
+      "kind": "generated",
+      "groups": [],
+      "reason": "Exact output registered with sources and generator in tools/codegen/manifest.json; codegen drift checked separately."
+    },
+    "frontend/lib/generated/l10n/app_localizations_zh.dart": {
+      "language": "flutter",
+      "kind": "generated",
+      "groups": [],
+      "reason": "Exact output registered with sources and generator in tools/codegen/manifest.json; codegen drift checked separately."
+    },
+    "frontend/lib/generated/ui_test_ids.dart": {
+      "language": "flutter",
+      "kind": "generated",
+      "groups": [],
+      "reason": "Exact output registered with sources and generator in tools/codegen/manifest.json; codegen drift checked separately."
+    },
+    "frontend/lib/main.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/shared/identified.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    }
+  },
+  "core_groups": {
+    "backend-foundation": {
+      "language": "python",
+      "threshold": 90,
+      "required_prefixes": [
+        "backend/app/core/settings.py",
+        "backend/app/core/logging.py",
+        "backend/app/bootstrap.py",
+        "backend/app/api/",
+        "backend/app/schemas/responses.py",
+        "backend/app/schemas/scalars.py",
+        "backend/app/maintenance/",
+        "backend/app/models/",
+        "backend/app/services/",
+        "backend/app/contracts/permissions.py"
+      ]
+    },
+    "frontend-foundation": {
+      "language": "flutter",
+      "threshold": 85,
+      "required_prefixes": [
+        "frontend/lib/core/",
+        "frontend/lib/main.dart",
+        "frontend/lib/app/haruka_app.dart"
+      ]
+    }
+  },
+  "thresholds": {
+    "python": 80,
+    "flutter": 75
+  },
+  "required_shards": {
+    "python": [
+      "backend-unit-contract",
+      "backend-integration"
+    ],
+    "flutter": [
+      "flutter-unit-widget",
+      "flutter-web-widget"
+    ]
+  }
+}

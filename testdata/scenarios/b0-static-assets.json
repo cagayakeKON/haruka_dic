@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scenario_id": "b0_static_assets",
+  "scenario_version": 1,
+  "acceptance_refs": ["SCF-B0-07", "TDS-01", "TDS-02"],
+  "setup_recipe": "validate_static_assets",
+  "asset_refs": ["english_unicode_v1", "japanese_unicode_v1"],
+  "actors_profile": "none",
+  "recipe_params": {
+    "assets": {
+      "assets.english": "english_unicode_v1",
+      "assets.japanese": "japanese_unicode_v1"
+    }
+  },
+  "clock_profile": "none",
+  "provider_profile": "blocked",
+  "expected_aliases": ["assets.english", "assets.japanese"]
+}

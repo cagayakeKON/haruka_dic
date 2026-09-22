@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "status": "execution records required; this plan is not passing evidence",
+  "procedures": [
+    {
+      "node_id": "SCF-B0-01:windows",
+      "purpose": "Windows clean checkout doctor/bootstrap/check/dev and failure classification",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-01:linux",
+      "purpose": "Linux CI shell clean checkout doctor/bootstrap/check/dev and failure classification",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-02:windows",
+      "purpose": "Locked wheel/sdist/editable and installed console scripts outside checkout",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-02:linux",
+      "purpose": "Locked build and installed process entrypoints in clean Linux environment",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-03:windows",
+      "purpose": "API, worker and outbox actual graceful lifecycle and failure cleanup",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-03:linux",
+      "purpose": "API, worker and outbox actual graceful lifecycle and failure cleanup",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-04:host",
+      "purpose": "Real PostgreSQL migrations, contention/interruption, seed/admin safeguards",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-05:host",
+      "purpose": "Regeneration twice, tamper/version/registry failures and Dart contract samples",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-06:windows",
+      "purpose": "Windows shell interaction, boundary and install identity evidence",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-06:web",
+      "purpose": "Web shell/admin boundary and external semantic node interaction",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B0-06:android",
+      "purpose": "Android shell interaction and platform boundary",
+      "evidence_required": [
+        "actual commands and exit codes",
+        "toolchain/configuration/artifact identifiers",
+        "each positive and failure assertion from the authoritative SCF row",
+        "reviewed structured outcome; absence is failure"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    }
+  ]
+}

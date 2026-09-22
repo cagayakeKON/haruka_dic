@@ -1,0 +1,4 @@
+Mika reads a café sign. The accent is a combining character.
+“Shall we go?” she asks. A small cat 🐈 waits outside.
+
+The next block starts here; a selection may span the blank line.

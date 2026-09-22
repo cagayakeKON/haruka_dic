@@ -65,6 +65,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 
 - [数据库与受控初始化](delivery/reviews/2026-09-22-b0-identity.md)：基础表/字典、迁移锁、幂等种子、首管理员与动态readiness。
 - [前端契约与控件](delivery/reviews/2026-09-22-b0-frontend.md)：Dio/DTO、Python到Dart兼容样本、三端控件原型与真实健康页联调；完整平台矩阵仍待收口。
+- [质量门禁](delivery/reviews/2026-09-22-b0-quality.md)：真实测试结果收集、缺项/坏样本阻断、源码覆盖清单及CI参考入口；不代表远端CI或完整B0已通过。
 
 ## 5. 维护规则
 

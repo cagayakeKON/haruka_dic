@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "asset_id": "english_unicode_v1",
+      "version": 1,
+      "path": "text/english-unicode-v1.txt",
+      "sha256": "46f061daeebe733f409d24a73981d9587c277f3eb312cb9bed3159bdb929c63e",
+      "media_type": "text/plain",
+      "bytes": 190,
+      "languages": [
+        "en"
+      ],
+      "source": "Haruka contributors; synthetic original fixture",
+      "license": "CC0-1.0",
+      "purpose": "B0 immutable text and provenance validation; no material import or locator implementation claim",
+      "text_protocol": "canonical-text-v1"
+    },
+    {
+      "asset_id": "japanese_unicode_v1",
+      "version": 1,
+      "path": "text/japanese-unicode-v1.txt",
+      "sha256": "fef396b7e50685362830855d69742d14e99f7885ef9b8545e42fb4687e549010",
+      "media_type": "text/plain",
+      "bytes": 254,
+      "languages": [
+        "ja"
+      ],
+      "source": "Haruka contributors; synthetic original fixture",
+      "license": "CC0-1.0",
+      "purpose": "B0 immutable text and provenance validation; no material import or locator implementation claim",
+      "text_protocol": "canonical-text-v1"
+    }
+  ]
+}

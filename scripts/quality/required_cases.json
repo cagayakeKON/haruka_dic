@@ -1,0 +1,393 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "SCF-B0-07-cases",
+      "acceptance_refs": [
+        "SCF-B0-07"
+      ],
+      "layer": "unit",
+      "runner": "unittest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "quality-unit",
+      "nodes": [
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_real_collection_and_result_are_both_required",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_every_nonpassing_status_blocks",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_unknown_case_and_wrong_driver_are_rejected",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_missing_or_multiple_primary_layers_are_rejected",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_missing_case_mapping_and_excluded_slow_case_block",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_partial_parameters_or_missing_shard_cannot_shrink_matrix",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_empty_duplicate_and_wrong_commit_reports_are_rejected",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_retry_success_preserves_original_failure",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_manifest_missing_implementation_and_conflicting_keys_fail",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_orphan_retry_and_extra_unmapped_failure_cannot_pass",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_unittest_collector_records_real_skip_failure_and_xfail",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_procedure_requires_each_hashed_assertion_and_independent_review",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_attempts_cannot_supply_each_others_missing_nodes",
+        "scripts.tests.test_quality_cases.RequiredCaseChecks.test_unittest_class_cleanup_error_is_preserved_in_failed_json"
+      ],
+      "source": "scripts/tests/test_quality_cases.py"
+    },
+    {
+      "case_id": "SCF-B0-07-coverage",
+      "acceptance_refs": [
+        "SCF-B0-07"
+      ],
+      "layer": "unit",
+      "runner": "unittest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "quality-unit",
+      "nodes": [
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_inventory_and_weighted_reports_pass_at_threshold",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_new_never_imported_handwritten_file_fails_inventory_then_report",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_empty_or_incomplete_core_groups_are_rejected",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_critical_prefix_cannot_be_reclassified_as_ordinary",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_generated_and_declaration_exclusions_cannot_hide_code",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_unknown_external_and_conflicting_paths_are_rejected",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_missing_empty_corrupt_and_zero_denominator_reports_fail",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_missing_shard_and_report_digest_mismatch_fail",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_overlapping_shards_use_union_not_summed_percentages",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_average_file_percentages_cannot_pass_weighted_threshold",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_branches_are_in_python_denominator",
+        "scripts.tests.test_quality_coverage.CoverageChecks.test_cross_platform_paths_require_explicit_checkout_mapping"
+      ],
+      "source": "scripts/tests/test_quality_coverage.py"
+    },
+    {
+      "case_id": "SCF-B0-07-testdata",
+      "acceptance_refs": [
+        "SCF-B0-07",
+        "TDS-01",
+        "TDS-02"
+      ],
+      "layer": "unit",
+      "runner": "unittest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "quality-unit",
+      "nodes": [
+        "scripts.tests.test_quality_testdata.TestDataChecks.test_original_fixture_hashes_and_scenario_bindings_are_valid",
+        "scripts.tests.test_quality_testdata.TestDataChecks.test_missing_changed_or_extra_asset_is_rejected",
+        "scripts.tests.test_quality_testdata.TestDataChecks.test_license_language_version_and_path_boundary_are_required",
+        "scripts.tests.test_quality_testdata.TestDataChecks.test_recipe_schema_unknown_fields_and_secret_parameters_fail",
+        "scripts.tests.test_quality_testdata.TestDataChecks.test_unknown_missing_or_cross_scope_aliases_fail",
+        "scripts.tests.test_quality_testdata.TestDataChecks.test_executable_yaml_and_duplicate_json_keys_are_rejected"
+      ],
+      "source": "scripts/tests/test_quality_testdata.py"
+    },
+    {
+      "case_id": "SCF-B0-01",
+      "acceptance_refs": [
+        "SCF-B0-01"
+      ],
+      "layer": "artifact",
+      "runner": "procedure",
+      "platform": "windows",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-01-windows",
+      "nodes": [
+        "SCF-B0-01:windows"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "clean_checkout_locked_tools",
+        "bootstrap_idempotent_locks_and_user_config",
+        "doctor_missing_tool_service_port_config_failure",
+        "core_jobs_process_start_and_owned_cleanup"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-01",
+      "acceptance_refs": [
+        "SCF-B0-01"
+      ],
+      "layer": "artifact",
+      "runner": "procedure",
+      "platform": "linux",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-01-linux",
+      "nodes": [
+        "SCF-B0-01:linux"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "clean_checkout_locked_tools",
+        "bootstrap_idempotent_locks_and_user_config",
+        "doctor_missing_tool_service_port_config_failure",
+        "core_jobs_process_start_and_owned_cleanup"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-02",
+      "acceptance_refs": [
+        "SCF-B0-02"
+      ],
+      "layer": "artifact",
+      "runner": "procedure",
+      "platform": "windows",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-02-windows",
+      "nodes": [
+        "SCF-B0-02:windows"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "clean_hash_locked_build_closure",
+        "wheel_sdist_editable_builds",
+        "runtime_only_install_outside_checkout",
+        "all_formal_entrypoints_lifecycle",
+        "packaged_runtime_resources",
+        "missing_build_hash_or_resource_rejected"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-02",
+      "acceptance_refs": [
+        "SCF-B0-02"
+      ],
+      "layer": "artifact",
+      "runner": "procedure",
+      "platform": "linux",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-02-linux",
+      "nodes": [
+        "SCF-B0-02:linux"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "clean_hash_locked_build_closure",
+        "wheel_sdist_editable_builds",
+        "runtime_only_install_outside_checkout",
+        "all_formal_entrypoints_lifecycle",
+        "packaged_runtime_resources",
+        "missing_build_hash_or_resource_rejected"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-03",
+      "acceptance_refs": [
+        "SCF-B0-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "windows",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-03-windows",
+      "nodes": [
+        "SCF-B0-03:windows"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "import_help_schema_offline",
+        "configuration_fails_before_accepting",
+        "partial_initialization_reverse_cleanup",
+        "api_worker_outbox_bounded_shutdown",
+        "unreachable_dependency_fails_safely"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-03",
+      "acceptance_refs": [
+        "SCF-B0-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "linux",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-03-linux",
+      "nodes": [
+        "SCF-B0-03:linux"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "import_help_schema_offline",
+        "configuration_fails_before_accepting",
+        "partial_initialization_reverse_cleanup",
+        "api_worker_outbox_bounded_shutdown",
+        "unreachable_dependency_fails_safely"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-04",
+      "acceptance_refs": [
+        "SCF-B0-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-04-host",
+      "nodes": [
+        "SCF-B0-04:host"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "empty_database_to_current_revision",
+        "same_physical_connection_lock_and_ddl",
+        "two_migration_process_contention",
+        "disconnect_after_lock_during_ddl_after_partial_commit",
+        "retry_relocks_and_reads_actual_revision",
+        "seed_idempotency_preserves_manual_grants",
+        "administrator_controlled_atomic_initialization",
+        "production_rejects_test_seed"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-05",
+      "acceptance_refs": [
+        "SCF-B0-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-05-host",
+      "nodes": [
+        "SCF-B0-05:host"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "regenerate_twice_without_drift",
+        "schema_samples_dart_decode_and_compatibility",
+        "added_removed_fields_rejected",
+        "unknown_permission_event_ui_ids_rejected",
+        "generator_version_mismatch_rejected",
+        "tampered_or_missing_generated_output_rejected"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-06",
+      "acceptance_refs": [
+        "SCF-B0-06"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "windows",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-06-windows",
+      "nodes": [
+        "SCF-B0-06:windows"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "platform_build_and_actual_shell_interaction",
+        "key_locator_and_accessible_label",
+        "platform_config_and_conditional_imports",
+        "admin_routes_web_only",
+        "installer_identity_install_uninstall_isolation"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-06",
+      "acceptance_refs": [
+        "SCF-B0-06"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-06-web",
+      "nodes": [
+        "SCF-B0-06:web"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "platform_build_and_actual_shell_interaction",
+        "key_locator_and_accessible_label",
+        "platform_config_and_conditional_imports",
+        "admin_routes_web_only",
+        "external_semantics_locator_input_and_navigation"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-06",
+      "acceptance_refs": [
+        "SCF-B0-06"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "scf-b0-06-android",
+      "nodes": [
+        "SCF-B0-06:android"
+      ],
+      "source": "tools/ci/b0-procedures.json",
+      "assertions": [
+        "platform_build_and_actual_shell_interaction",
+        "key_locator_and_accessible_label",
+        "platform_config_and_conditional_imports",
+        "admin_routes_web_only"
+      ]
+    },
+    {
+      "case_id": "SCF-B0-07-pytest-adapter",
+      "acceptance_refs": [
+        "SCF-B0-07"
+      ],
+      "layer": "unit",
+      "runner": "unittest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {},
+      "shard": "quality-pytest-adapter",
+      "nodes": [
+        "scripts.tests.test_quality_pytest_adapter.PytestAdapterChecks.test_real_pytest_adapter_preserves_selection_layers_and_outcomes"
+      ],
+      "source": "scripts/tests/test_quality_pytest_adapter.py"
+    }
+  ],
+  "scopes": {
+    "B0-quality": [
+      "SCF-B0-07-cases",
+      "SCF-B0-07-coverage",
+      "SCF-B0-07-testdata"
+    ],
+    "B0": [
+      "SCF-B0-07-cases",
+      "SCF-B0-07-coverage",
+      "SCF-B0-07-testdata",
+      "SCF-B0-01",
+      "SCF-B0-02",
+      "SCF-B0-03",
+      "SCF-B0-04",
+      "SCF-B0-05",
+      "SCF-B0-06",
+      "SCF-B0-07-pytest-adapter"
+    ],
+    "B0-pytest-adapter": [
+      "SCF-B0-07-pytest-adapter"
+    ]
+  }
+}

@@ -62,8 +62,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
 | POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新付费另验Key/预算；显式再解析使用expected_lookup_revision取得新查阅代次 |
 | GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；run引用与流 | agent.read/use/delete，每工具独立授权 |
-| POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→Job或已有音频 | speech.generate/play及来源read |
-| POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 纯缓存查询、合成状态、音频传输 | resolve/play不收费、不要求Key；新生成只走requests且需generate |
+| POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；global_word生产者Job/Key/费用不返回给其他等候者，缺失不自动换用户Key |
+| POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 只读匹配/本人等待状态/音频传输；global_word响应含asset_kind及实际profile，不含贡献者/他人Job/使用人数 | resolve/play不收费、不要求Key；全局媒体也须验证本人收藏来源/版本/读音/profile与资产匹配；新生成只走requests且需generate |
 | GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从exam材料准备/校对/冻结；不能直接把novel/textbook当试卷 | exam动作+实际AI分析/导入权限；其他类型先显式重新处理 |
 | POST exams/{id}/sessions；GET exam-sessions/{id}；POST {id}/takeover | 开考/恢复/显式编辑端接管 | exam_session.start/read/save、edit_epoch |
 | PUT exam-sessions/{id}/responses；POST {id}/submit | response_revision/edit_epoch；最后答案与submit_reason | save/submit；服务端时间/锁卷 |

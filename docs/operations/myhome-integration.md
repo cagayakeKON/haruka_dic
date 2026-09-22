@@ -139,7 +139,7 @@ MyHome 已检查的角色机制是固定等级比较。Haruka 需要新增关系
 
 建议按任务用途命名，例如 haruka.imports、haruka.speech，并配套 DLQ 和消费者组。消息只包含用户/资料库/任务/凭据引用等必要信息，不包含明文 Key 或整本材料。不新增整库备份 Topic。
 
-Redis 业务缓存、会话和通知带 Haruka 前缀及用户/会话范围；MinIO 按用户分路径，所有上传与签名下载先检查所有者。仅加 haruka 前缀不能隔离不同 Haruka 用户。
+Redis私有业务缓存、会话和通知带Haruka前缀及用户/会话范围；MinIO私有对象按用户分路径，上传/下载检查所有者。仅[标准收藏词音](../architecture/learning-cache.md#51-收藏库标准单词发音的全局缓存)使用Haruka实例的global_word缓存/占用与独立MinIO前缀，由受控目录服务发布和鉴权；共享不延伸到MyHome或私人上下文，个人Job/Key/费用仍隔离。仅加haruka前缀不能代替私有资源归属检查。
 
 角色策略、授权版本、授予边界和管理审计归 Haruka PostgreSQL；Redis 仅缓存与数据库版本完全对应的授权快照，并提供失效通知。每个受保护请求读取数据库当前版本，不能依赖 Pub/Sub 必达或旧 JWT 权限；日志/队列中断不改变数据库授权真相。
 

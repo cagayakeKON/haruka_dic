@@ -35,8 +35,8 @@
 | client.ai.explain | 词句解释、只读resolve、本人完整缓存结果与书内已查索引 | 实际来源read，批量索引逐项按业务状态裁剪；仅新外部调用要求Key/预算，缓存命中不收费；不能作为任意工具操作许可 |
 | client.ai.feedback | 对本人解释结果提交反馈 | 该结果当前可读，不授权读取他人内容 |
 | client.agent.read/use/delete | 历史对话；创建空会话/新一轮；删除对话 | use需read；空会话不收费，新run需Key/预算；工具再验具体业务权限；delete不删除已收藏的独立结果 |
-| client.speech.generate | 创建TTS合成请求 | 实际来源read，仅新调用要求Key/预算；缓存命中不收费，无Key也可复用已有音频 |
-| client.speech.play | 读取音频清单、播放/本人缓存下载 | 实际来源可读且音频有效；无需重新合成权限或Key |
+| client.speech.generate | 创建TTS合成请求 | 实际来源read，仅新调用要求本人Key/预算；标准收藏词音全局合并不授予读/取消他人Job或借Key权限，已有结果只读复用不收费 |
+| client.speech.play | 读取音频清单、播放/缓存下载，含受控global_word | 实际来源可读且音频有效；标准词音需本人collection.read、词条/读音/profile匹配，无需生成权限或Key；非匿名全局媒体接口 |
 | client.exam.list/read | 试卷列表/版本题面 | read控制专用题面与状态，答案有独立DTO |
 | client.exam.import/edit | 创建试卷/题目校对/版本确认 | import复用上传需material.import；AI结构化另验material.analyze；edit需exam.read；在本人校对范围使用完整原件另需material.read，普通题面read不授予含答案原件的复用/下载 |
 | client.exam_session.start/read/save/submit | 开考、恢复/答题卡、存草稿、交卷 | start需exam.read；save/submit需session.read与活动状态/edit_epoch；submit不隐含收费批改 |
@@ -78,7 +78,7 @@
 | 身份基础 | 本人access、model-capabilities、CSRF读取、续期、改密、列出/撤销本人会话、近期重验、退出 | 本人有效会话/必要旧密码或挑战；模型目录仅有效client登录者的已发布能力；active与受众登录资格按账号协议；退出可本地清理失效会话；不授权他人数据 |
 | 已登录遥测 | frontend-logs及admin对应入口 | 当前受众login权限；只写白名单遥测，无查询权 |
 | 运行探针 | live/readiness | 公网仅最少状态，依赖细节仅内部；不返回配置/秘密 |
-| 系统维护 | 截止锁卷、租约清理、Outbox发布、明确GC、已返回产物最低落盘 | 固定代码注册的服务主体/动作白名单，不接受用户指定任意principal |
+| 系统维护 | 截止锁卷、租约清理、Outbox发布、明确GC、已返回产物最低落盘、公共词音错误版本隔离/指针修复 | 固定代码注册的服务主体/动作白名单，不接受用户指定任意principal；目录维护仅非付费公共资产操作，不借个人Key生成 |
 
 每条路由/Worker handler/工具都登记“具体权限集合+范围+状态”或以上具体例外及原因，CI检查未登记项。例外不是通过 path 包含auth/admin 等字符串自动放行。
 

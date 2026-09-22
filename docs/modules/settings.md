@@ -64,6 +64,7 @@ Web 推荐固定同源部署，显示当前服务地址和连接状态；不在�
 | 文本 | provider、credential_id、model_id、解释语言/详细程度 | 下一个新 run 使用新 settings_revision；活动 run 保持其冻结模型参数，凭据有效性仍逐付费步骤检查 |
 | 视觉 | provider/模型/credential、目标语和释义语言默认 | [统一OCR/拍照识别](../architecture/vision-recognition.md)使用此配置，无传统OCR自动后备；缺Key时扫描内容待识别，模型图像支持不等于整卷质量通过 |
 | TTS | provider/模型/credential、按语言声音、实际支持的合成参数 | 新请求使用新合成键；已缓存旧声音仍标识其配置，不假装已切换 |
+| 收藏单词标准发音 | 已发布标准声音profile及词条读音变体，规则见[全局词音](../architecture/learning-cache.md#51-收藏库标准单词发音的全局缓存) | 默认用标准profile提升跨用户复用；显示实际配置，改个性参数未纳入标准profile时走私有缓存；未命中使用本人Key，不能借其他人的Key |
 | 语言 | P0 界面 zh-Hans；母语、target_languages、active_target_language | 激活语言须属于已选目标语；切换刷新诊断/练习范围，不改旧记录语言、不删除历史 |
 | 时区 | IANA 时区标识，初始取设备建议并允许用户确认修改 | 用于日期展示与诊断窗口；后端校验，历史仍存 UTC，不改变考试截止或会话期限 |
 | 阅读 | 字体类别、字号、行距、浅/深/sepia | 即时预览、保存成功后跨端使用；字体不可用使用可预期回退，不改原文锚点 |

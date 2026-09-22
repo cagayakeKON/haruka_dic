@@ -31,6 +31,7 @@
 | AgentThread/Message/AiRun/Card | owner、SDK/协议/模型/Prompt版本、run状态、结果引用 | 单线程轮次占用/版本校验；消息与可收藏卡片的提交状态分离 |
 | Explanation/SourceResultBinding/MaterialLearningIndex/LearningLookupState/GenerationSlot | 完整结果、源/语境/用途、查阅键/严格生成键；LookupState维护跨配置的选用run/effective/代次 | 成功后同事务建历史绑定，通过共同查阅代次才更新当前索引；不同语境不误用，严格键slot只合并调用；已有结果不依赖Redis或本机存续 |
 | AudioAsset/Segment/Manifest | owner、内容/声音/模型/参数摘要、格式、对象与句子引用 | 用户内去重；实际格式与Content-Type匹配；未完成产物不播放 |
+| GlobalWordAudio/GlobalWordGenerationSlot | system_catalog标准词条/读音/profile、全局合成键、对象版本及内部生成租约/代次 | 仅[标准收藏词音](learning-cache.md#51-收藏库标准单词发音的全局缓存)跨用户去重；发布/消费走专用目录服务，个人引用/Job/凭据/费用仍隔离，不给私有AudioAsset增加owner空值旁路 |
 | ProviderCredential/Settings | owner、provider、密文、credential_version、encryption_key_version、row revision；模型能力选择在Settings | 用户换Key/撤销更新credential_version，主密钥重加密只更新encryption_key_version，二者不混用；DTO只返回掩码 |
 | Job/JobStage/ExternalCall | actor/owner/audience、权限引用、输入版本、阶段、租约、预算 | 状态CAS、阶段幂等、调用结果不确定单独记录 |
 | Outbox/Inbox/IdempotencyRecord | event_id、schema、资源引用、请求摘要、游标/结果引用 | 已提交事实可重投；重复消费不重复业务；不放秘密/正文 |
@@ -126,7 +127,7 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 
 单词/句子解释和TTS的已提交版本、书内索引与来源绑定也是权威业务引用，完整规则见 [学习结果缓存](learning-cache.md)。有效业务引用期间不按短TTL/LRU淘汰付费结果；原书删除后仅书属引用可解除，独立收藏/历史业务必要引用仍按各自授权保留，旧版/在途发布也纳入共同父行锁检查。仅清理本机或Redis不触发服务端GC，临时未发布/失效孤立对象与成功结果分开处理。
 
-未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他同账号资源引用的对象；不跨用户内容去重。数据库迁移和运维恢复步骤见 [部署与恢复](../operations/deployment-recovery.md)，保留参数见 [运行配置](../operations/configuration.md)，不属于用户单词CSV功能。
+未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他有效资源引用的对象。私有内容不跨用户去重；已ready的global_word有独立公共目录引用，删除贡献者/任一收藏不移除此引用，GC须在目录父锁内复核版本、个人选用引用和在途占用。共享容量只计一份，生产者私人Job/费用记录按自己的生命周期处理。数据库迁移和运维恢复步骤见 [部署与恢复](../operations/deployment-recovery.md)，保留参数见 [运行配置](../operations/configuration.md)，不属于用户单词CSV功能。
 
 ## 8. 验收
 

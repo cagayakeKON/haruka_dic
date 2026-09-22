@@ -83,7 +83,7 @@ Base统一使用MetaData.naming_convention。命名模板包含全部组合列�
 | user_owned | 个人Key、设置、设备会话 | 权威所有者列NOT NULL；现有领域称user_id时保留该列，并在字典映射到ScopeContext.user_id，不再复制owner_user_id |
 | library_root | libraries | id为library_id，owner_user_id NOT NULL且唯一；首版每用户一个私有库 |
 | library_owned | 材料、内容子表、收藏、考试/作答、私有关联表等 | owner_user_id与library_id均NOT NULL，服务检查库属于该用户，双方列不可事后转移 |
-| system_catalog | 权限、角色/菜单定义、注册策略等 | 独立服务与管理授权，不伪造owner=NULL为用户查询通配符 |
+| system_catalog | 权限、角色/菜单定义、注册策略、标准词音目录等 | 独立服务和明确入口；global_word仅按[缓存协议](../architecture/learning-cache.md#51-收藏库标准单词发音的全局缓存)供获权用户复用/受控Worker填充，不伪造owner=NULL为用户查询通配符 |
 | system_operation | 运维审计、固定职责维护记录 | 固定操作范围与最小DTO，不提供“任意用户”开关；私有Job仍有不可变所有者 |
 
 每个业务表必须登记scope_kind、权威归属列、允许入口和生命周期；漏登记阻断建表。新增库内子表显式带owner/library，不能只沿多跳关联猜归属。库内冗余归属值只能从已认证上下文及已验证父记录派生，后续不可批量“改归属”；需迁移到另一用户的功能当前不在范围。
@@ -94,7 +94,7 @@ Base统一使用MetaData.naming_convention。命名模板包含全部组合列�
 - Repository方法必须接收适合该表类别的scope；没有scope=None、is_admin=True或ignore_owner的通用绕过参数。管理查询使用独立AdminScopeContext、操作范围和白名单DTO，不复用用户全文接口。
 - 列表、详情、搜索、分页游标、COUNT、JOIN、子查询、UPDATE、DELETE、UPSERT都约束归属。JOIN每一侧的私有数据均核对owner/library；只过滤主表不能自动证明错误关联的另一侧安全。
 - 更新采用id + scope + expected_revision/状态条件，检查受影响行数；零行按统一不可访问/版本冲突映射，不另查无scope对象确认属于谁。新增所有者由服务写入，不能批量解包客户端对象覆盖归属。
-- 缓存key、幂等key、解释/TTS请求合并、对象路径和事件订阅包含账号/实例范围。Worker从持久Job恢复身份和归属，逐阶段/付费动作重查权限，不信任队列快照；缓存或分区不是授权替代品。
+- 私有缓存key、幂等key、解释/私有TTS请求合并、对象路径和事件订阅包含账号/实例范围。仅global_word目录与全局生成占用按实例/标准词音键唯一；目录仓储接收限定词条/profile/操作的服务端CatalogScope，不允许通用ignore_owner。内部占用可关联私有生产Job，客户端无读取该关联权限；请求/费用/等待引用仍有owner。Worker从持久Job恢复身份和归属，逐阶段/付费动作重查权限，不信任队列快照；缓存或分区不是授权替代品。
 - 文件签名、CSV、SSE、Agent工具、统计导出与管理元数据都受相同隔离；日志按现有脱敏/身份绑定契约，不把私有正文用于数据库巡检日志。
 
 用户端不获得PG连接。API/Worker账号仅具运行所需DML，不能DDL、切换为迁移身份或修改追加审计；迁移与受控维护使用单独凭据，应用管理员不是数据库管理员。连接池Session只属于当前请求/任务，不缓存上个用户scope。此基线保障的是受控应用路径，持有数据库运行凭据的任意SQL不会自动经过ScopeContext；不将其描述为数据库原生行级隔离。

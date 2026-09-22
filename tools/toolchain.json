@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "scope": "B0-foundation",
+  "python": "3.13.6",
+  "uv": "0.12.17",
+  "flutter": {
+    "version": "3.47.3",
+    "revision": "e8113bf45620cbeb8aff64947ee4c93e16adb4cf",
+    "dart": "3.13.3"
+  },
+  "node": "24.18.0",
+  "npm": "11.16.0",
+  "java": "21.0.10",
+  "java_build": "21.0.10+-14961533-b1163.108",
+  "java_source": "Flutter-selected Android Studio JBR (verified by flutter doctor -v)",
+  "path_java_observation": {
+    "version": "21.0.5",
+    "build": "21.0.5+11-LTS",
+    "use_for_android": false
+  },
+  "hatchling": "1.32.4",
+  "android": {
+    "compile_sdk": 36,
+    "target_sdk": 36,
+    "min_sdk": 24,
+    "build_tools": "36.0.0",
+    "platform_tools": "37.0.0",
+    "ndk": "28.2.13676358",
+    "gradle": "9.3.1",
+    "android_gradle_plugin": "9.1.0",
+    "kotlin_plugin": "2.4.0",
+    "runtime_acceptance": "API 34 emulator: shell integration 2 passed; full B0 pending"
+  },
+  "windows": {
+    "visual_studio": "17.9.34616.47",
+    "sdk": "10.0.19041.0",
+    "runtime_acceptance": "Windows host: shell integration 2 passed; installer and full B0 pending"
+  },
+  "docker": "29.5.2",
+  "docker_compose": "5.1.4",
+  "markdownlint_cli2": "0.23.3",
+  "ci": {
+    "provider": null,
+    "status": "not_selected_or_executed"
+  },
+  "pending": [
+    "Production container image digests",
+    "Dart API generator prototype and locked long-term choice",
+    "Android device and Windows installer acceptance"
+  ]
+}

@@ -1,6 +1,6 @@
 # 项目结构与模块职责
 
-状态：设计基线 v0.2，2026-09-22。以下是正式工程创建时的目标结构；当前已有文档和独立 [HTML 原型](../../prototype/README.md)，正式工程尚未创建。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，具体初始化载体见 [脚手架蓝图](../engineering/scaffold.md)。
+状态：2026-09-22，B0-foundation已建立frontend/backend/scripts/tools/contracts；下列树仍包含尚未创建的目标模块，实际范围见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。独立 [HTML原型](../../prototype/README.md) 保留。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，初始化合同见 [脚手架蓝图](../engineering/scaffold.md)。
 
 ## 1. 仓库结构
 
@@ -178,4 +178,4 @@ UI Test ID属于前端自有元数据，以config/ui_test_ids.json为源生成Da
 
 工程初始化另外执行 [SCF脚手架验收](../delivery/milestones/scaffold.md)，不以空目录或模板测试替代参考闭环。
 
-以上均为未来工程验收，当前未创建这些目录或运行构建。
+以上是完整结构验收目标；本次只交付应用壳和公共边界，不能把局部构建与测试视为STR或完整B0全部通过。

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "public_defines": ["HARUKA_ENV", "HARUKA_INSTANCE_ID", "HARUKA_API_BASE_URL"],
+  "environments": {
+    "dev": {
+      "display_name": "Haruka Dev",
+      "instance_id": "haruka-local-dev",
+      "api_base_url": "http://127.0.0.1:8000",
+      "allowed_api_base_urls": ["http://127.0.0.1:8000", "http://localhost:8000", "http://10.0.2.2:8000"]
+    },
+    "production": {
+      "display_name": "Haruka",
+      "instance_id": null,
+      "api_base_url": null,
+      "allowed_api_base_urls": []
+    }
+  },
+  "platforms": {
+    "android": {
+      "dev": {"application_id": "app.haruka.dictionary.dev", "flavor": "dev", "default_api_base_url": null, "emulator_api_base_url": "http://10.0.2.2:8000"},
+      "production": {"application_id": "app.haruka.dictionary", "flavor": "production", "default_api_base_url": null}
+    },
+    "windows": {
+      "dev": {"application_id": "haruka.dictionary.dev", "binary_name": "haruka"},
+      "production": {"application_id": "haruka.dictionary", "binary_name": "haruka"}
+    },
+    "web": {
+      "dev": {"origin": "http://localhost:5173", "admin_routes": true},
+      "production": {"origin": null, "admin_routes": true}
+    }
+  }
+}

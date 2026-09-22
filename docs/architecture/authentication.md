@@ -88,7 +88,6 @@ Haruka 使用独立数据库和数据库账号，P0 用户数据采用同库、�
 
 ## 6. 会话存储、刷新与撤销机制
 
-
 ### 数据职责
 
 PostgreSQL AuthSession 保存 session_id、user_id、audience、transport、created_at、absolute_expires_at、revoked_at、创建时的用户/受众安全 epoch、近期重验时间和安全设备摘要；它是持久身份/撤销事实。User 保存 security_epoch 与各受众 epoch，区别于 RBAC authz_version。Redis 保存Web随机会话摘要/CSRF状态或原生刷新摘要/代次，以及idle TTL、短期重复请求回执和限流；Redis 丢失只能要求重新登录。

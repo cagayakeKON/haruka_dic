@@ -1,0 +1,10 @@
+# GENERATED from config/build_targets.json; sha256:fe6d618744a7df12c7a6defc4a8809e3b82697291e382439de29f8c9298582d3. Do not edit.
+if(",${DART_DEFINES}," MATCHES ",SEFSVUtBX0VOVj1wcm9kdWN0aW9u,")
+  set(BINARY_NAME "haruka")
+  set(HARUKA_APP_ID "haruka.dictionary")
+  set(HARUKA_APP_NAME "Haruka")
+else()
+  set(BINARY_NAME "haruka")
+  set(HARUKA_APP_ID "haruka.dictionary.dev")
+  set(HARUKA_APP_NAME "Haruka Dev")
+endif()

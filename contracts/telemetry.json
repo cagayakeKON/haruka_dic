@@ -1,0 +1,30 @@
+{
+  "events": [
+    "http.completed",
+    "http.failed",
+    "library.log",
+    "process.started",
+    "process.stopped",
+    "process.unavailable"
+  ],
+  "fields": [
+    "schema_version",
+    "event_id",
+    "occurred_at",
+    "record_type",
+    "event",
+    "level",
+    "project",
+    "environment",
+    "service",
+    "release",
+    "origin",
+    "request_id",
+    "status_code",
+    "duration_ms",
+    "stack_frames"
+  ],
+  "private_payloads": false,
+  "schema_version": 1,
+  "scope": "backend-process-shell"
+}

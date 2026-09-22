@@ -1,0 +1,259 @@
+{
+  "errors": [
+    {
+      "code": "ACCESS_EXPIRED",
+      "details_kind": null,
+      "http_status": 401,
+      "message": "登录凭据已过期",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "AUTH_LOGIN_FAILED",
+      "details_kind": null,
+      "http_status": 401,
+      "message": "登录失败",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "AUTH_REQUIRED",
+      "details_kind": null,
+      "http_status": 401,
+      "message": "请先登录",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "BAD_REQUEST",
+      "details_kind": null,
+      "http_status": 400,
+      "message": "请求格式有误",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "CAPABILITY_UNSUPPORTED",
+      "details_kind": null,
+      "http_status": 422,
+      "message": "暂不支持所选能力",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "CSRF_FAILED",
+      "details_kind": null,
+      "http_status": 403,
+      "message": "请求验证失败",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "DEPENDENCY_ERROR",
+      "details_kind": null,
+      "http_status": 502,
+      "message": "依赖服务响应异常",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "DEPENDENCY_TIMEOUT",
+      "details_kind": null,
+      "http_status": 504,
+      "message": "依赖服务响应超时",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "EXTERNAL_RESULT_UNKNOWN",
+      "details_kind": null,
+      "http_status": 504,
+      "message": "外部操作结果待确认",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "IDEMPOTENCY_CONFLICT",
+      "details_kind": null,
+      "http_status": 409,
+      "message": "重复请求内容不一致",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "INPUT_INVALID",
+      "details_kind": null,
+      "http_status": 422,
+      "message": "输入信息有误",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "INTERNAL_ERROR",
+      "details_kind": null,
+      "http_status": 500,
+      "message": "服务暂时无法完成请求",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "KEY_REQUIRED",
+      "details_kind": null,
+      "http_status": 409,
+      "message": "请配置自己的模型凭据",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "MEDIA_TYPE_UNSUPPORTED",
+      "details_kind": null,
+      "http_status": 415,
+      "message": "不支持此内容类型",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "METHOD_NOT_ALLOWED",
+      "details_kind": null,
+      "http_status": 405,
+      "message": "不支持此请求方法",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "PAYLOAD_TOO_LARGE",
+      "details_kind": null,
+      "http_status": 413,
+      "message": "请求内容过大",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "PERMISSION_DENIED",
+      "details_kind": null,
+      "http_status": 403,
+      "message": "没有操作权限",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "QUOTA_EXCEEDED",
+      "details_kind": null,
+      "http_status": 429,
+      "message": "已达到使用额度",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "RATE_LIMITED",
+      "details_kind": null,
+      "http_status": 429,
+      "message": "操作过于频繁",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "REFRESH_SUPERSEDED",
+      "details_kind": null,
+      "http_status": 409,
+      "message": "登录凭据已由另一请求更新",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "RESOURCE_EXPIRED",
+      "details_kind": null,
+      "http_status": 410,
+      "message": "资源已过期",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "RESOURCE_NOT_FOUND",
+      "details_kind": null,
+      "http_status": 404,
+      "message": "未找到资源",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "REVISION_CONFLICT",
+      "details_kind": "revision_conflict",
+      "http_status": 409,
+      "message": "内容已更新，请重新加载",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "SERVICE_UNAVAILABLE",
+      "details_kind": null,
+      "http_status": 503,
+      "message": "服务尚未就绪",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "SESSION_INVALID",
+      "details_kind": null,
+      "http_status": 401,
+      "message": "登录已失效",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "SESSION_REVOKED",
+      "details_kind": null,
+      "http_status": 401,
+      "message": "登录已失效",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "STATE_CONFLICT",
+      "details_kind": null,
+      "http_status": 409,
+      "message": "当前状态不支持此操作",
+      "message_args": {},
+      "retryable": false
+    }
+  ],
+  "field_errors": [
+    {
+      "code": "VALIDATION_FORMAT",
+      "message": "信息格式有误",
+      "message_args": {}
+    },
+    {
+      "code": "VALIDATION_INVALID",
+      "message": "输入信息有误",
+      "message_args": {}
+    },
+    {
+      "code": "VALIDATION_OUT_OF_RANGE",
+      "message": "数值超出允许范围",
+      "message_args": {}
+    },
+    {
+      "code": "VALIDATION_REQUIRED",
+      "message": "请填写必填信息",
+      "message_args": {}
+    },
+    {
+      "code": "VALIDATION_TOO_LONG",
+      "message": "内容超过允许长度",
+      "message_args": {}
+    },
+    {
+      "code": "VALIDATION_TYPE",
+      "message": "信息类型有误",
+      "message_args": {}
+    },
+    {
+      "code": "VALIDATION_UNKNOWN_FIELD",
+      "message": "包含不支持的字段",
+      "message_args": {}
+    }
+  ],
+  "locale": "zh-Hans",
+  "schema_version": 1
+}

@@ -1,6 +1,6 @@
 # 前端 Test ID 与端到端测试
 
-状态：Draft v0.1，2026-09-22。本文确定实施基线；测试工程、标识注册表和驱动均未创建，SDK/插件版本及平台原型尚未验证。
+状态：2026-09-22，B0-foundation已建立Flutter测试入口、UI标识注册表与生成器；局部平台结果见 [工程记录](../../delivery/reviews/2026-09-22-scaffold-foundation.md)。完整Playwright/Patrol驱动、系统交互和业务矩阵仍待交付，本文继续作为实施基线。
 
 配套：[测试总则与必需用例门禁](strategy.md)、[测试数据](data.md)、[脚手架验收](../../delivery/milestones/scaffold.md)、[交付验收](../../delivery/acceptance.md)。本篇维护工具分工和定位契约，业务断言仍以各功能专题为准。
 

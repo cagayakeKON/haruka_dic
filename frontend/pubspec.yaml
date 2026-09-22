@@ -1,0 +1,30 @@
+name: haruka
+description: Haruka language-learning application shell.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.13.3 <4.0.0'
+  flutter: '>=3.47.3'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  go_router: 18.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
+  flutter_lints: 6.0.0
+
+flutter:
+  generate: true
+  uses-material-design: true

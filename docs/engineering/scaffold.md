@@ -1,6 +1,6 @@
 # 脚手架实施蓝图
 
-状态：设计基线 v0.1，2026-09-22。本文补充工程初始化的具体选择与操作合同；下列目录、命令、配置和生成物均未创建，不能直接执行或视为验收通过。保持一个 Flutter 工程和一个可安装 Python 包，复用既有业务、认证、权限与日志契约。
+状态：2026-09-22，开始实施B0-foundation。已建立一个Flutter工程、可安装Python包、锁与局部开发命令；完整合同中的迁移/种子、Dart API生成器、持久进程与质量门禁仍未交付。当前可执行命令见 [开发指南](development.md)，证据见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)；本文仍维护完整B0/B1/B2目标，不以基础切片缩减验收。
 
 配套：[项目结构](../architecture/project-structure.md)、[开发指南](development.md)、[脚手架验收](../delivery/milestones/scaffold.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md)、[配置运维](../operations/configuration.md)。本文维护工程载体与入口，业务规则仍由各专题维护；检查阈值与必需测试仍以 [测试规范](testing/strategy.md) 为准。
 

@@ -6,7 +6,9 @@
 
 ## 当前状态
 
-需求与技术方案已文档化，Flutter/Python工程、依赖、运行测试及B0/B1/B2尚未实现。已有独立 [HTML交互原型](prototype/README.md)，采用中性底色、Primary主色与杂志式排版，不设“继续阅读”；它使用内存示例，不代表真实业务已交付。具体视觉取值及原型边界以其说明为准。
+已开始阶段1，建立 [Flutter应用壳](frontend/README.md)、[Python后端包](backend/README.md)、锁文件与统一开发检查入口。本次交付为B0内的首个工程基础切片（B0-foundation）；完整B0的迁移、种子、生成器和门禁仍待完成，B1/B2未实现。实际范围、验证与限制见 [交付记录](docs/delivery/reviews/2026-09-22-scaffold-foundation.md)。
+
+已有独立 [HTML交互原型](prototype/README.md)，采用中性底色、Primary主色与杂志式排版，不设“继续阅读”；它使用内存示例，不代表真实业务已交付。开发命令与工具前提见 [开发指南](docs/engineering/development.md)。
 
 ## 从这里开始
 

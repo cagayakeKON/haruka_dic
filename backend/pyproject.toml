@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "haruka-backend"
+version = "0.1.0"
+description = "Haruka API and process entry points"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+  "fastapi==0.141.1",
+  "pydantic-settings==2.15.0",
+  "uvicorn==0.53.0",
+]
+
+[project.scripts]
+haruka-api = "app.cli.api:main"
+haruka-worker = "app.cli.worker:main"
+haruka-outbox = "app.cli.outbox:main"
+haruka-manage = "app.cli.manage:main"
+
+[dependency-groups]
+lint = ["ruff==0.16.8", "pyright==1.1.414"]
+test = ["httpx2==2.13.0", "pytest==9.1.1", "pytest-asyncio==1.4.0"]
+codegen = []
+dev = [{include-group = "lint"}, {include-group = "test"}, {include-group = "codegen"}]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/app", "/pyproject.toml", "/README.md"]
+
+[tool.uv]
+required-version = "==0.12.17"
+# Starlette 1.6.0 still imports anyio.abc.BlockingPortal; newer AnyIO deprecates it.
+constraint-dependencies = ["anyio==4.12.1"]
+no-build = true
+no-build-package = []
+build-constraint-dependencies = [
+  {requirement = "hatchling==1.32.4", hashes = ["sha256:08ecf7548fb48205e7f213d70c71e67b8271b7242093dc3f1da578b42c734a2c"]},
+  {requirement = "packaging==26.3", hashes = ["sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"]},
+  {requirement = "pathspec==1.1.1", hashes = ["sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189"]},
+  {requirement = "pluggy==1.6.0", hashes = ["sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746"]},
+  {requirement = "tomlkit==0.15.1", hashes = ["sha256:177a05aece5a8ca5266fd3c448abb47b8d352f09d477d3ca8332db4d89b24304"]},
+  {requirement = "trove-classifiers==2026.9.21.13", hashes = ["sha256:8b1ff4f9c191b1040b71c37f1e445ab99732911e3cd91de52838453a854d7a17"]},
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["app"]
+preview = false
+extend-exclude = [".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "ASYNC", "S", "T20", "SIM", "PIE", "RET", "RUF100"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+
+[tool.pyright]
+include = ["app", "tests", "tools"]
+exclude = [".venv", "build", "dist"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportMatchNotExhaustive = "error"
+reportImportCycles = "error"
+enableTypeIgnoreComments = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config -ra"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error"]
+markers = ["unit: isolated rules and lifecycle", "contract: HTTP and exported protocol boundaries"]

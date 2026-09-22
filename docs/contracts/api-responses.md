@@ -1,6 +1,6 @@
 # 统一 API 返回、异常与语言契约
 
-状态：设计基线 v0.1，2026-09-22，未实现。所有用户端和管理端 JSON API 共用本文模型；接口分组、认证、幂等和流事件见 [API 总则](api.md)。本文是返回结构的唯一人工规范，未来由后端 Pydantic 模型生成 OpenAPI 和 Dart DTO，不另外维护一套前端响应字段。
+状态：2026-09-22，B0-foundation已实现公共模型、健康路由和统一错误的最小HTTP边界；业务JSON接口与Dart API生成仍待交付，证据见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。所有用户端和管理端JSON API共用本文模型；接口分组、认证、幂等和流事件见 [API总则](api.md)。本文是返回结构的唯一人工规范，OpenAPI由后端Pydantic单向导出。
 
 ## 1. 适用范围与返回责任
 
@@ -18,7 +18,7 @@
 
 ## 2. 统一模型基线
 
-以下为未来 `backend/app/schemas/responses.py` 的类型模板，枚举来自未来 `app/contracts/errors.py` 的只读注册表；这些文件和依赖当前尚未创建。Pydantic 泛型和字段模型的实现依据 [官方模型文档](https://pydantic.dev/docs/validation/latest/concepts/models/#generic-models)，实际版本在 B0 锁定。
+以下为 `backend/app/schemas/responses.py` 的模型基线，枚举来自 `app/contracts/errors.py` 的只读注册表；基础实现已建立，后续按业务扩展安全字段路径与参数目录。Pydantic泛型和字段模型依据 [官方模型文档](https://pydantic.dev/docs/validation/latest/concepts/models/#generic-models)，实际版本由backend/uv.lock锁定。
 
 ```python
 from typing import Generic, Literal, Self, TypeVar
@@ -217,7 +217,7 @@ locale 解析结果保存在请求上下文，显式传入消息渲染器，不�
 
 ## 7. 验收
 
-以下在 B0/B1 及后续受影响功能落实；目前均未执行，不为文档创建应用测试。
+以下在B0/B1及后续受影响功能落实；当前只有基础模型、真实ASGI错误和离线OpenAPI的局部证据，完整API-07～API-10仍未完成。
 
 - API-07：单资源、分页、空列表、202 使用具体统一模型；HTTP/头/meta 相符，幂等回放更新 request_id，无重复包装。
 - API-08：真实路由的业务异常、坏 JSON、字段错误、401/403/404/405、500 均符合 ErrorResponse；默认 422 schema 已替换，未知内部异常无正文/秘密泄露。

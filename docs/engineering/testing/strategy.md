@@ -1,6 +1,6 @@
 # 测试规范与验证矩阵
 
-状态：Draft v0.4，2026-09-22。补充后端分层测试写法、fixture 生命周期与依赖覆盖；既有前端/数据专题、覆盖分母和必需用例结果门禁继续适用。测试目录、依赖、夹具和 CI 均未创建；本文规定实施时必须验证的行为，不表示任何应用测试已经通过。
+状态：2026-09-22，B0-foundation已建立后端unit/contract、Flutter unit/widget/integration入口及开发工具坏样本测试；实际结果见 [工程记录](../../delivery/reviews/2026-09-22-scaffold-foundation.md)。完整必需用例/覆盖分母门禁、业务集成与CI仍未交付；本文规定后续必须验证的行为，不以局部通过替代完整矩阵。
 
 配套：[代码规范](../coding.md)、[数据库规范](../database.md)、[静态检查](../lint.md)、[交付验收](../../delivery/acceptance.md)、[实施阶段](../../delivery/roadmap.md)、[RBAC](../../architecture/authorization.md)、[统一日志](../../operations/observability.md)。
 

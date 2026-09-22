@@ -26,8 +26,6 @@ P0 覆盖注册、激活条件、两端登录、会话恢复、本人改密/会�
 
 账号字段区分 status=pending/active/disabled、email_verified_at、approval_status、locked_until。审批/邮箱检查是激活前置条件，locked_until 是限时安全阻断，不覆盖管理员 disabled。审批拒绝保留 pending 与 rejected 原因类别，不能再被验证邮件激活。
 
-
-
 ### 2.2 登录与失败反馈
 
 1. 用户端 POST /auth/login；管理端 POST /admin/auth/login。固定路由决定 audience；platform 仅决定允许的传输适配，不能获得更多权限。

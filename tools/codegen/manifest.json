@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "scope": "B0-foundation",
+  "backend_outputs": ["openapi.json", "errors.json", "telemetry.json", "version.json"],
+  "backend": {
+    "source": ["backend/app/schemas", "backend/app/api", "backend/app/contracts"],
+    "generator": "backend/app/contracts/export.py",
+    "output": "contracts",
+    "ownership": "backend"
+  },
+  "frontend": [
+    {
+      "source": ["frontend/config/ui_test_ids.json"],
+      "generator": "frontend/tool/generate.py",
+      "output": ["frontend/lib/generated/ui_test_ids.dart"],
+      "ownership": "frontend"
+    },
+    {
+      "source": ["frontend/config/build_targets.json"],
+      "generator": "frontend/tool/generate.py",
+      "output": ["frontend/lib/generated/build_targets.dart", "frontend/windows/haruka_build_targets.cmake"],
+      "ownership": "frontend"
+    },
+    {
+      "source": ["frontend/lib/l10n/app_zh.arb", "frontend/l10n.yaml", "frontend/pubspec.yaml"],
+      "generator": "frontend/tool/generate.py (locked Flutter gen-l10n)",
+      "output": ["frontend/lib/generated/l10n/app_localizations.dart", "frontend/lib/generated/l10n/app_localizations_zh.dart"],
+      "ownership": "frontend"
+    },
+    {
+      "source": ["frontend/pubspec.lock", "tools/toolchain.json"],
+      "generator": "locked Flutter plugin tooling",
+      "output": ["frontend/windows/flutter/generated_plugin_registrant.cc", "frontend/windows/flutter/generated_plugin_registrant.h", "frontend/windows/flutter/generated_plugins.cmake"],
+      "ownership": "frontend"
+    }
+  ],
+  "dart_api": {
+    "status": "not-adopted",
+    "reason": "No business client yet; generator compatibility samples remain a B0 gate."
+  }
+}

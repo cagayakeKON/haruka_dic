@@ -1,0 +1,51 @@
+# Local credentials and machine configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.keystore
+*.jks
+local.properties
+key.properties
+.DS_Store
+.idea/
+.vscode/
+
+# Local tool downloads, reports, and temporary output
+.tools/
+artifacts/
+.tmp/
+node_modules/
+*.log
+
+# Python (lock files and Alembic source remain tracked)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/
+*.egg-info/
+backend/dist/
+backend/build/
+
+# Flutter (generated source and platform host source remain tracked)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+frontend/build/
+frontend/coverage/
+frontend/android/.gradle/
+frontend/android/captures/
+frontend/android/app/debug/
+frontend/android/app/profile/
+frontend/android/app/release/
+frontend/windows/flutter/ephemeral/

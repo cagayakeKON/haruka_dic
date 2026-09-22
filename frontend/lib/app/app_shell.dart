@@ -1,0 +1,155 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
+import '../core/config/app_config.dart';
+import '../core/layout/adaptive_policy.dart';
+import '../generated/l10n/app_localizations.dart';
+import '../generated/ui_test_ids.dart';
+import '../shared/identified.dart';
+
+class AppShell extends StatelessWidget {
+  const AppShell({required this.config, required this.location, required this.child, super.key});
+
+  final AppConfig config;
+  final String location;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final selected = location == '/environment' ? 1 : 0;
+    void navigate(int index) => context.go(index == 0 ? '/' : '/environment');
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.digit1, alt: true): () => navigate(0),
+        const SingleActivator(LogicalKeyboardKey.digit2, alt: true): () => navigate(1),
+      },
+      child: FocusTraversalGroup(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final layout = AdaptivePolicy.forWidth(constraints.maxWidth);
+            final compact = layout == LayoutSize.compact;
+            return Scaffold(
+              appBar: AppBar(title: Text(config.displayName)),
+              body: SafeArea(
+                top: false,
+                bottom: !compact,
+                child: Row(
+                  children: [
+                    if (!compact)
+                      WideNavigation(
+                        expanded: layout == LayoutSize.expanded,
+                        selected: selected,
+                        onSelected: navigate,
+                      ),
+                    Expanded(child: child),
+                  ],
+                ),
+              ),
+              bottomNavigationBar: compact
+                  ? NavigationBar(
+                      selectedIndex: selected,
+                      onDestinationSelected: navigate,
+                      destinations: [
+                        Identified(
+                          id: UiTestIds.homeNavigation,
+                          merge: true,
+                          child: NavigationDestination(
+                            icon: const Icon(Icons.home_outlined),
+                            selectedIcon: const Icon(Icons.home),
+                            label: strings.home,
+                          ),
+                        ),
+                        Identified(
+                          id: UiTestIds.environmentNavigation,
+                          merge: true,
+                          child: NavigationDestination(
+                            icon: const Icon(Icons.info_outline),
+                            selectedIcon: const Icon(Icons.info),
+                            label: strings.environment,
+                          ),
+                        ),
+                      ],
+                    )
+                  : null,
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// The wider shell exposes identifiers on actual controls, including their label
+/// and tap semantics. Icon-only semantic identifiers would be lost by a rail.
+class WideNavigation extends StatelessWidget {
+  const WideNavigation({
+    required this.expanded,
+    required this.selected,
+    required this.onSelected,
+    super.key,
+  });
+
+  final bool expanded;
+  final int selected;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final items = [
+      (UiTestIds.homeNavigation, strings.home, Icons.home_outlined),
+      (UiTestIds.environmentNavigation, strings.environment, Icons.info_outline),
+    ];
+    return SizedBox(
+      width: expanded ? 208 : 112,
+      child: ColoredBox(
+        color: const Color(0xfff5f6f8),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              for (var index = 0; index < items.length; index++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Identified(
+                    id: items[index].$1,
+                    merge: true,
+                    child: Semantics(
+                      selected: selected == index,
+                      child: TextButton(
+                        autofocus: index == 0,
+                        onPressed: () => onSelected(index),
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 64),
+                          backgroundColor: selected == index ? colors.primaryContainer : null,
+                          padding: const EdgeInsets.all(12),
+                        ),
+                        child: expanded
+                            ? Row(
+                                children: [
+                                  Icon(items[index].$3),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: Text(items[index].$2)),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  Icon(items[index].$3),
+                                  const SizedBox(height: 4),
+                                  Text(items[index].$2, textAlign: TextAlign.center),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

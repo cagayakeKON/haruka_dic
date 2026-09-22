@@ -1,0 +1,379 @@
+{
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RevisionConflictDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field_errors": {
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "title": "Field Errors",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "message_args": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Message Args",
+            "type": "object"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ApiError",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "enum": [
+          "BAD_REQUEST",
+          "INPUT_INVALID",
+          "AUTH_REQUIRED",
+          "AUTH_LOGIN_FAILED",
+          "ACCESS_EXPIRED",
+          "SESSION_REVOKED",
+          "SESSION_INVALID",
+          "PERMISSION_DENIED",
+          "CSRF_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "REVISION_CONFLICT",
+          "IDEMPOTENCY_CONFLICT",
+          "STATE_CONFLICT",
+          "KEY_REQUIRED",
+          "REFRESH_SUPERSEDED",
+          "RESOURCE_EXPIRED",
+          "PAYLOAD_TOO_LARGE",
+          "MEDIA_TYPE_UNSUPPORTED",
+          "CAPABILITY_UNSUPPORTED",
+          "RATE_LIMITED",
+          "QUOTA_EXCEEDED",
+          "INTERNAL_ERROR",
+          "DEPENDENCY_ERROR",
+          "SERVICE_UNAVAILABLE",
+          "DEPENDENCY_TIMEOUT",
+          "EXTERNAL_RESULT_UNKNOWN"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "FieldError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/FieldErrorCode"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "message_args": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Message Args",
+            "type": "object"
+          },
+          "path": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Path",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "body",
+              "query",
+              "path",
+              "header",
+              "cookie"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "path",
+          "code",
+          "message"
+        ],
+        "title": "FieldError",
+        "type": "object"
+      },
+      "FieldErrorCode": {
+        "enum": [
+          "VALIDATION_REQUIRED",
+          "VALIDATION_TYPE",
+          "VALIDATION_FORMAT",
+          "VALIDATION_TOO_LONG",
+          "VALIDATION_OUT_OF_RANGE",
+          "VALIDATION_UNKNOWN_FIELD",
+          "VALIDATION_INVALID"
+        ],
+        "title": "FieldErrorCode",
+        "type": "string"
+      },
+      "HealthRead": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "HealthRead",
+        "type": "object"
+      },
+      "ResponseMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "ResponseMeta",
+        "type": "object"
+      },
+      "RevisionConflictDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "current_revision": {
+            "minimum": 0.0,
+            "title": "Current Revision",
+            "type": "integer"
+          },
+          "kind": {
+            "const": "revision_conflict",
+            "default": "revision_conflict",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_revision"
+        ],
+        "title": "RevisionConflictDetails",
+        "type": "object"
+      },
+      "SuccessResponse_HealthRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/HealthRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[HealthRead]",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Haruka API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "get_liveness",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_HealthRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Liveness",
+        "tags": [
+          "health"
+        ],
+        "x-haruka-access": "public-health"
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "get_readiness",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_HealthRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Readiness",
+        "tags": [
+          "health"
+        ],
+        "x-haruka-access": "public-health"
+      }
+    }
+  }
+}

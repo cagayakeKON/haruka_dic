@@ -1,0 +1,28 @@
+include: package:flutter_lints/flutter.yaml
+analyzer:
+  exclude:
+    - build/**
+    - .dart_tool/**
+    - lib/generated/**
+    - android/**
+    - web/**
+    - windows/**
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    unused_import: error
+    dead_code: error
+    avoid_print: error
+linter:
+  rules:
+    avoid_print: true
+    avoid_dynamic_calls: true
+    cancel_subscriptions: true
+    close_sinks: true
+    discarded_futures: true
+    unawaited_futures: true
+    use_build_context_synchronously: true
+formatter:
+  page_width: 100

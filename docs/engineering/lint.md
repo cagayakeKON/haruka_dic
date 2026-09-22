@@ -1,6 +1,6 @@
 # 格式、静态分析与文档检查规则
 
-状态：Draft v0.1，2026-09-22。以下配置与命令是未来工程初始化合同，尚未创建配置文件或执行这些工具；不得将此文档当作检查通过记录。
+状态：2026-09-22，B0-foundation已创建Python/Dart/Markdown配置及局部检查入口；本文中数据库、业务结构及完整门禁仍是后续实施合同。实测见 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)，不能将本文当作完整检查通过记录。
 
 配套：[代码规范](coding.md)、[本地开发](development.md)、[测试](testing/strategy.md)、[交付验收](../delivery/acceptance.md)。
 

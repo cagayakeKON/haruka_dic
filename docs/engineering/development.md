@@ -1,6 +1,28 @@
 # 开发环境与日常操作
 
-状态：Draft v0.2，2026-09-22。当前仅有文档；backend/、frontend/、deploy/、scripts/、锁文件及 CI 尚未建立。本文是后续实施手册，不是当前可直接执行的安装指南。
+状态：2026-09-22，已建立backend/、frontend/、scripts/、tools/及锁文件，当前交付范围为B0-foundation。deploy/、持久依赖、业务流程与CI尚未建立；下面“当前可运行”区仅适用于本切片，其余章节继续维护后续完整实施合同。
+
+## 当前可运行：B0-foundation
+
+前提以根 [工具清单](../../tools/toolchain.json) 为准：Python3.13.6、uv0.12.17、Flutter3.47.3及锁定revision。此次Windows机器的PATH中python为3.9，不能直接用于开发入口；以下用仓库内固定uv选择已安装的3.13.6。干净检出须先安装清单指定uv（可置于`.tools/uv/uv.exe`；Linux为`.tools/uv/uv`或PATH），不会提交或自动升级全局SDK。
+
+在仓库根执行：
+
+```powershell
+.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py doctor --scope all
+.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py bootstrap --scope backend
+.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py bootstrap --scope web
+.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py bootstrap --scope docs
+.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py codegen --check
+.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py check --stage B0-foundation
+.tools/uv/uv.exe run --project backend --locked haruka-api --config backend/.env.example
+```
+
+doctor当前只核对工具/工程前提，不证明服务依赖或运行验收。bootstrap按锁安装、保留已有配置，不迁移或生成账号。check的backend/frontend/tooling/docs范围均为局部检查；B0-foundation组合这些实际范围，不签署完整B0，输出报告在忽略目录artifacts/dev。`check --stage B0/B1/B2`及`dev --profile core/jobs`在完整能力交付前明确失败，不能把缺少实现默认为成功。
+
+前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200，ready在持久依赖接入前返回503；没有账号、权限、任务或模型能力。Worker/Outbox实际运行、manage迁移/种子/管理员均未开放。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
+
+制品安装检查可用锁定Python运行`backend/tools/verify_distribution.py --uv .tools/uv/uv.exe`，执行干净缓存wheel/sdist构建、运行依赖单独安装、独立工作目录CLI/生命周期与错误构建哈希拒绝。它不执行PG迁移或真实模型调用。实测、review和仍欠缺的B0门禁统一见 [交付记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。
 
 配套：[项目结构](../architecture/project-structure.md)、[代码规范](coding.md)、[静态检查](lint.md)、[测试规范](testing/strategy.md)、[交付验收](../delivery/acceptance.md)、[MyHome 复用](../operations/myhome-integration.md)。
 
@@ -10,7 +32,7 @@
 
 新增Flutter页面按 [开发与适配规范](flutter.md) 先对齐共享状态/动作，再选择独立layout与平台adapter；紧凑/宽屏、键盘/触控及状态切换证据随功能切片交付，不能只做桌面页面后缩小窗口视为移动端完成。
 
-前端测试实施先读 [Test ID与E2E](testing/frontend-e2e.md)，环境准备先读 [测试数据](testing/data.md)。check按已声明执行键协调各runner和受控工厂；日常流程为选择场景→核对隔离资源→准备合法前置→正常UI动作→持久结果断言→脱敏证据→安全清理。相关目录、依赖和命令尚未建立，当前不能运行。
+前端业务测试实施先读 [Test ID与E2E](testing/frontend-e2e.md)，环境准备先读 [测试数据](testing/data.md)。后续完整check按声明执行键协调各runner和受控工厂；业务流程为选择场景→核对隔离资源→准备合法前置→正常UI动作→持久结果断言→脱敏证据→安全清理。当前只有应用壳的局部测试，不能执行尚未实现的业务工厂与持久结果验收。
 
 ## 1. 工作边界与约束等级
 
@@ -128,4 +150,4 @@ HTTP Cookie本地调试如需开发例外，仅限绑定回环地址的dev配置
 - [ ] 常规测试不调用真实模型、不连接 MyHome 生产数据，真实集成与费用调用有独立明确范围。
 - [ ] API/Worker/Outbox、前端三端/管理端、数据库日志与 info 埋点均可关联；实际未覆盖的原生能力明确登记。
 
-以上均为未来实施清单，当前不勾选。
+以上为完整初始化清单，当前只取得基础切片证据，仍不勾选整项通过。

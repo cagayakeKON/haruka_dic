@@ -1,0 +1,13 @@
+{
+  "name": "haruka-document-tools",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Locked development tools; no Node production service.",
+  "engines": {
+    "node": "24.18.0",
+    "npm": "11.16.0"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "0.23.3"
+  }
+}

@@ -1,6 +1,6 @@
 # 后端开发手册
 
-状态：设计基线 v0.1，2026-09-22。本文是未来 Python/FastAPI 工程的开发方法，当前没有 backend 工程或可运行示例。目录归属由 [项目结构](../architecture/project-structure.md) 定义；语言和静态规则见 [代码规范](coding.md)、[Lint](lint.md)，HTTP 模型和多语言以 [统一返回契约](../contracts/api-responses.md) 为唯一正文。
+状态：2026-09-22，backend工程已建立公共响应、错误接线、配置与进程入口，实际可用边界见 [后端入口](../../backend/README.md)。本文的材料/收藏与事务示例仍是后续业务开发方法。目录归属由 [项目结构](../architecture/project-structure.md) 定义；语言和静态规则见 [代码规范](coding.md)、[Lint](lint.md)，HTTP模型和多语言以 [统一返回契约](../contracts/api-responses.md) 为唯一正文。
 
 ## 1. 新增功能的顺序
 

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "static": {
+    "adminPage": "admin.shell.home.page",
+    "backHome": "client.shell.navigation.back_home",
+    "configurationError": "client.shell.configuration.error",
+    "environmentNavigation": "client.shell.navigation.environment",
+    "environmentPage": "client.shell.environment.page",
+    "homeNavigation": "client.shell.navigation.home",
+    "homePage": "client.shell.home.page",
+    "notFoundPage": "client.shell.not_found.page"
+  },
+  "templates": {}
+}

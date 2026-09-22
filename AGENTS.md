@@ -11,18 +11,18 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 ## 开始工作前
 
 1. 阅读 [README](README.md) 和 [文档目录](docs/README.md)。
-2. 根据任务读取 [PRD](docs/product/PRD.md)、[架构](docs/architecture/OVERVIEW.md) 和对应专题。
-3. 认证、数据库、文件、缓存、任务或 AI 相关改动必须参考 [认证与隔离](docs/architecture/AUTH_AND_ISOLATION.md)。
-4. CSV 改动以 [单词 CSV 规范](docs/features/VOCABULARY_CSV.md) 为准；接入共享服务前查看 [MyHome 复用](docs/engineering/MYHOME_REUSE.md)。
+2. 根据任务读取 [PRD](docs/product/overview.md)、[架构](docs/architecture/overview.md) 和对应专题。
+3. 认证、数据库、文件、缓存、任务或 AI 相关改动必须参考 [认证与隔离](docs/architecture/authentication.md)。
+4. CSV 改动以 [单词 CSV 规范](docs/contracts/vocabulary-csv.md) 为准；接入共享服务前查看 [MyHome 复用](docs/operations/myhome-integration.md)。
 5. 检查实际文件和工作区变更，保留用户已有工作。不要假定未来目录、命令或 Git 仓库已经存在。
-6. Agent、模型调用、卡片或会话相关工作读取 [Pydantic AI 运行层](docs/architecture/AGENT_RUNTIME.md)。
-7. 前端、API、Worker、数据库或部署相关工作读取 [统一日志与前端埋点](docs/engineering/OBSERVABILITY.md)，新功能同时维护采集与事件契约。
-8. 材料导入、考试、答题或评分相关工作读取 [试卷模式](docs/features/EXAM_MODE.md)，区分普通练习与整卷考试的提交/反馈规则。
-9. 所有页面/接口/业务动作与账号管理相关工作读取 [管理后台与 RBAC](docs/architecture/ADMIN_AND_RBAC.md)，维护权限代码、两端显示与服务端执行的一致映射。
-10. 用 [功能覆盖索引](docs/planning/FEATURE_COVERAGE.md) 定位详细流程；具体权限/接口/事务分别以 [权限目录](docs/architecture/PERMISSION_CATALOG.md)、[API契约](docs/architecture/API_CONTRACTS.md)、[数据与任务](docs/architecture/DATA_AND_JOBS.md) 为准。
-11. 工程开始前读取 [项目结构](docs/architecture/PROJECT_STRUCTURE.md)、[代码规范](docs/engineering/CODE_STANDARDS.md)、[Lint](docs/engineering/LINT_RULES.md)、[测试](docs/engineering/TESTING.md)、[交付验收](docs/engineering/DELIVERY_ACCEPTANCE.md)。配置/部署读取运行规范；未决产品选项见决策清单。
-12. 工程初始化、包/CLI、构建身份或生成流程读取 [脚手架蓝图](docs/engineering/SCAFFOLD_BLUEPRINT.md) 和 [阶段验收](docs/engineering/SCAFFOLD_ACCEPTANCE.md)，按B0/B1/B2提供实际证据，不把未来命令当现有工具。
-13. 前端控件、测试定位、浏览器/原生 E2E 或夹具改动读取 [前端测试](docs/engineering/FRONTEND_E2E.md) 和 [测试数据](docs/engineering/TEST_DATA.md)，同步标识来源、平台覆盖与场景隔离。
+6. Agent、模型调用、卡片或会话相关工作读取 [Pydantic AI 运行层](docs/architecture/agent-runtime.md)。
+7. 前端、API、Worker、数据库或部署相关工作读取 [统一日志与前端埋点](docs/operations/observability.md)，新功能同时维护采集与事件契约。
+8. 材料导入、考试、答题或评分相关工作读取 [试卷模式](docs/modules/exams.md)，区分普通练习与整卷考试的提交/反馈规则。
+9. 所有页面/接口/业务动作与账号管理相关工作读取 [管理后台与 RBAC](docs/architecture/authorization.md)，维护权限代码、两端显示与服务端执行的一致映射。
+10. 用 [功能覆盖索引](docs/delivery/coverage.md) 定位详细流程；具体权限/接口/事务分别以 [权限目录](docs/contracts/permissions.md)、[API契约](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) 为准。
+11. 工程开始前读取 [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[测试](docs/engineering/testing/strategy.md)、[交付验收](docs/delivery/acceptance.md)。配置/部署读取运行规范；未决产品选项见决策清单。
+12. 工程初始化、包/CLI、构建身份或生成流程读取 [脚手架蓝图](docs/engineering/scaffold.md) 和 [阶段验收](docs/delivery/milestones/scaffold.md)，按B0/B1/B2提供实际证据，不把未来命令当现有工具。
+13. 前端控件、测试定位、浏览器/原生 E2E 或夹具改动读取 [前端测试](docs/engineering/testing/frontend-e2e.md) 和 [测试数据](docs/engineering/testing/data.md)，同步标识来源、平台覆盖与场景隔离。
 
 ## 已确认的产品边界
 
@@ -39,7 +39,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 
 ## 文档组织与实现约定
 
-- product 放产品需求；architecture 放系统设计；features 放功能契约；engineering 放开发/部署；planning 放路线图和验收。
+- product放产品范围，modules放功能流程，architecture放公共设计，contracts放协议说明，engineering放开发与测试，operations放运行配置与观测，delivery放阶段与验收，decisions放决策及待决项。
 - PRD 定义需求，专题文档定义详细协议；避免复制同一字段表或状态机到多处。
 - 使用相对 Markdown 链接，移动或重命名后修复引用；删除过时方案时同步导航和计划。
 - 将已确认、推荐、待验证和已实现分开标注。中文用于产品文档和沟通，代码标识保持清晰一致。
@@ -77,7 +77,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 
 ## 开发节奏、并行协作与提交
 
-- 大阶段指 [路线图](docs/planning/ROADMAP.md) 的阶段1～6及明确登记的发布大节点；小阶段指大阶段内可独立验收的工作单元，例如B0/B1/B2或一项功能切片。开始工作时明确所属阶段、交付范围和必要检查，不能为触发全量测试临时把小改动称作大节点。
+- 大阶段指 [路线图](docs/delivery/roadmap.md) 的阶段1～6及明确登记的发布大节点；小阶段指大阶段内可独立验收的工作单元，例如B0/B1/B2或一项功能切片。开始工作时明确所属阶段、交付范围和必要检查，不能为触发全量测试临时把小改动称作大节点。
 - 前端与后端并行开发：先对齐API、DTO、权限/错误/事件契约与验收行为，再由不同Agent或开发者分别实现前端和后端，按小阶段联调。分工标明文件归属和共享契约负责人，避免并发覆盖同一文件；有依赖的契约/迁移变更先协调，不能让双方各自定义不兼容协议。文档任务不因此创建应用工程。
 - 每个小阶段完成后必须创建一次本地Git commit，包含该阶段实现、相关测试和文档；先完成必要检查及本阶段review，说明行为变化与实际验证，再提交。不得积攒多个已完成小阶段到最后一起提交，也不默认push。
 - 提交前检查工作区和暂存区，只暂存本阶段归属明确的改动，不夹带用户或并行Agent未完成的修改，不用无差别git add .。不要重写既有提交或伪造Git身份；尚未初始化Git或提交失败时如实报告，不能声称已提交。工程初始化必须建立版本控制，后续小阶段以实际commit哈希作为完成证据。

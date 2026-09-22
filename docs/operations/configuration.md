@@ -1,0 +1,81 @@
+# 配置、部署与运行操作
+
+状态：设计基线 v0.1，2026-09-22，未执行。开发步骤见 [开发指南](../engineering/development.md)，MyHome已调查事实见 [复用方案](myhome-integration.md)，发布门禁见 [交付验收](../delivery/acceptance.md)。本篇规定配置与运维应如何实现，不包含真实连接信息或可直接用于生产的秘密。
+
+工程包/正式CLI、开发profile、客户端安装身份与环境构建矩阵由 [脚手架蓝图](../engineering/scaffold.md) 维护；这里的INSTANCE_ID始终指部署实例，不用客户端包名或release替代。
+
+## 1. 配置来源与隔离
+
+推荐使用pydantic-settings解析后端类型化配置；部署Secret高于普通环境配置，测试只使用明确测试配置。来源/优先级在初始化时固定，不允许本地.env悄悄覆盖生产Secret。能力依据见 [Pydantic Settings](https://pydantic.dev/docs/validation/latest/concepts/pydantic_settings/)。
+
+配置分成部署基础项、受审计管理策略、个人模型配置和客户端本地偏好，不能互相回退：
+
+| 类别 | 示例设计键/内容 | 来源与失败策略 |
+| --- | --- | --- |
+| 应用识别 | APP_ENV、INSTANCE_ID、PUBLIC_BASE_URL、RELEASE、允许Origin | 部署配置；INSTANCE_ID稳定区分缓存，不随重启随机变化；生产域名缺失不启动公开服务 |
+| 数据库 | DATABASE_URL、连接池/超时、DB_APPLICATION_NAME | Haruka专用账号/数据库，秘密不进镜像；连接失败readiness不通过 |
+| 会话/权限 | REDIS_URL、HARUKA_NAMESPACE、session TTL、issuer、原生JWT算法/签名key版本 | 签名秘密独立；Cookie名/受众固定；Redis/PG失败关闭认证 |
+| 加密 | CREDENTIAL_KEYRING、ACTIVE_ENCRYPTION_KEY_VERSION、挑战/回执用途隔离密钥 | 独立Secret，版本对应encryption_key_version而非用户credential_version；未知版本不当明文读取或换公共Key |
+| 队列 | KAFKA_BOOTSTRAP、topics/groups、ack/retry/lease参数 | Haruka namespace；不可达保留Outbox，不丢已受理Job |
+| 对象存储 | S3_ENDPOINT、PUBLIC_S3_ENDPOINT、bucket、应用凭据、签名TTL | 私有Haruka Bucket；地址需三端可达；不能使用MyHome root凭据 |
+| 邮件（条件） | MAIL_ENABLED、发件身份、服务认证、challenge URL允许域 | 只有完整配置/投递演练通过才启用邮件模式；缺失时不能显示“已发送” |
+| 工作限额 | upload/解压/文本/图片大小、用户/全局并发、预算、任务/HTTP超时 | 部署硬上限；管理界面不能调高至超过硬上限 |
+| 观测 | project/environment/service、日志级别、接收/队列上限 | 生产启用正常埋点，脱敏；客户端无Loki写密钥 |
+| 管理策略 | 注册开放/审批/默认角色、feature flags、配额、模型目录 | PG带revision/审计，不随容器重启恢复旧环境默认值 |
+| 个人AI | 用户provider/model/voice/credential引用 | 用户库密文/设置；缺Key就暂停，不回退到环境全局付费Key |
+| Flutter | API同源或明确实例地址、发布版本、非秘密功能协议版本 | 编译/公开运行配置；禁止数据库、签名、加密、供应商秘密进入包 |
+
+日志只输出配置是否齐备、Secret版本标识和安全的组件状态，不输出整份settings对象或完整连接串。生产/测试数据库、Bucket、Topic、Redis前缀和加密材料分别设置，测试启动时拒绝生产目标。
+
+## 2. 初始边界与验证
+
+下面是原型起点，必须经MyHome资源余量与实际样本验证后写入发布清单，不是已确认容量承诺：
+
+- 业务文件限额沿用PRD的MD/TXT 20MB、EPUB 50MB、获准PDF 80MB，按1MB=1,000,000字节配置；网关可以设更高传输硬上限但不能放宽业务限额。单张识词图推荐10MiB；EPUB解压总量250MiB、条目10,000、深度/压缩比设限，拒绝路径穿越、符号链接、外部脚本/主动网络引用。扫描试卷规模依最终格式决策再定。
+- API请求体按用途限长；普通JSON不能沿用文件上传上限。字段长度、批量ID数、分页上限、SSE连接数分别控制。
+- Worker分解析/AI/TTS配额，即时解释保留容量；每用户初始一个批量任务并发，全局数按压测收敛，不能凭共享Kafka存在就无限消费。
+- Cookie/Token、离线租约、刷新回执初值以账号/RBAC专题为准，不在配置文档复制第二套数字。签名URL建议数分钟内，敏感即时撤权下载走代理。
+- 外部网络出口只允许已配置供应商和必要服务，不接受用户任意base_url或解析文档中的内网URL，避免导入与模型测试成为SSRF入口。
+
+解析文件在有资源上限的临时目录/隔离进程执行，下载和解码有时间/内存限制；生成路径由应用分配，不能拼接上传文件名形成宿主路径。
+
+## 3. 运行进程与健康
+
+haruka-web提供Flutter静态内容与同源API代理；haruka-api、worker、outbox使用同一构建版本；migrate一次性运行。共享PG/Redis/Kafka/MinIO/Alloy/Loki/Grafana仍由原运维责任方管理，Haruka重启/卸载不停止共享服务。
+
+| 检查 | 定义 |
+| --- | --- |
+| liveness | 进程事件循环/主循环存活，不做外部付费调用 |
+| readiness | 必需配置、PG/会话Redis与schema兼容可用；队列/存储故障按受影响能力返回降级，不能谎报全功能健康 |
+| Worker心跳 | 类型、版本、最后领取/租约进度、可用容量；不是每条任务成功保证 |
+| 端到端探针 | 无秘密小事件从API到Grafana可查询，任务探针使用测试专用无付费handler |
+| 用户体验 | 只读、导入、AI、TTS、日志链路分别显示状态；日志宕机不停止学习，审计DB故障阻止管理写 |
+
+反向代理设置TLS、上传上限、SSE缓冲/超时、Range、私有缓存头与请求ID。CORS只允许部署白名单；Web静态缓存区分版本化assets与入口HTML，避免旧壳请求不兼容API。移动端/Windows必须识别最低客户端版本并引导升级。
+
+## 4. 发布与故障操作逻辑
+
+| 场景 | 有序处理 | 成功证据 |
+| --- | --- | --- |
+| 初次部署 | 独立资源/Secret→迁移→权限种子→受控首管理员→启动进程→最小闭环 | 管理/learner分别登录，数据/权限隔离和日志探针通过 |
+| 常规发布 | 验证制品/配置→数据保护点→兼容迁移→灰度或小批切换→检查→扩大 | schema/API兼容、活跃任务可恢复、三端必要烟测、可查release日志 |
+| 回滚 | 停止新受理高影响任务→确认迁移兼容→切上版制品→恢复消费/核对 | 不能执行破坏性downgrade假装总能回滚；不兼容时前向修复或演练恢复 |
+| PG故障 | 停止身份与写入，保留已有本地授权缓存边界；恢复主库/检查迁移 | 新请求重验身份，Outbox/幂等未重复，已提交数据可核对 |
+| Redis丢失 | 认证失败并要求重新登录；重建非权威缓存 | 无绕过PG撤销，业务数据仍在 |
+| Kafka/Worker故障 | Job queued/running租约状态可见，Outbox保留；按阶段恢复 | fence阻止旧Worker迟到写入，unknown收费调用不盲重跑 |
+| MinIO故障 | 读媒体/导入相关能力报错，未完成对象不可见 | 对象/DB引用核对，GC不删除仍使用对象 |
+| Loki/Alloy故障 | Docker本地日志/平台外探针定位；积压/缺口计数，审计Outbox补发 | 恢复后event_id可追溯，不把普通日志描述成零丢失 |
+| 部署加密主密钥轮换 | 加入新encryption_key_version→写新密文→有界重加密→核对→按需移除旧在线解密版本；归档恢复密钥另管 | 不改变用户credential_version；在线旧密文清零不代表可销毁归档密钥，所有依赖备份过期或重加密并恢复验证后才可销毁旧归档版本 |
+| 管理锁出 | 受控运维身份→恢复命令→审计→重新登录与权限核对 | 无匿名修复接口、无默认密码、恢复流程有演练记录 |
+
+业务任务不能依赖后台线程在API进程退出时继续完成。停机先停止新领取，已在途调用有截止处理和结果/unknown记录；租约到期由其他Worker恢复，不因强退假设供应商未计费。
+
+## 5. 数据保护与留存
+
+用户侧备份仍只有单词CSV。部署方必须另行记录数据库/MinIO/加密密钥的运维保护范围、恢复步骤、负责人、RPO/RTO目标和恢复演练证据；目标尚未压测，不能在本文件填入未验证的“零丢失/分钟恢复”。Key备份与密文备份要能配对，日志和元数据不替代业务备份。
+
+会话/挑战过期清理、幂等回执、无引用对象GC、日志7天窗口、数据库管理审计留存分别配置。管理审计首版建议至少180天并受控归档，最终按部署空间/要求确定；不得沿用Loki过期策略删除授权历史。恢复后的session epoch需推进或撤销旧会话，不能让历史快照复活已经撤销的凭据。
+
+## 6. 验收
+
+OPS-01：生产配置缺Secret/跨项目连接/错误Origin时不能启动危险默认；OPS-02：从干净隔离环境部署并初始化管理员不泄密；OPS-03：逐项故障演练验证真实状态/恢复/日志缺口；OPS-04：制品回滚和不兼容迁移的前向/恢复方案可执行；OPS-05：数据库+对象+加密材料恢复演练及会话失效成立；OPS-06：MyHome原有运行和查询保持可用，实际资源余量/限额在发布证据中记录。

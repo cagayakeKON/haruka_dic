@@ -1,6 +1,6 @@
 # 脚手架阶段验收与参考闭环
 
-状态：2026-09-22，B0正在实施；已建立 [基础壳](../reviews/2026-09-22-scaffold-foundation.md) 和 [基础设施](../reviews/2026-09-22-scaffold-infrastructure.md) 两个切片，完整B0/B1/B2均未签署通过。本文把 [实施计划阶段1](../roadmap.md) 拆成B0/B1/B2三个工程子里程碑，不改变P0范围，也不表示完成任一子里程碑就能公开发布。
+状态：2026-09-22，B0正在实施；已建立 [基础壳](../reviews/2026-09-22-scaffold-foundation.md) 和 [基础设施](../reviews/2026-09-22-scaffold-infrastructure.md) 切片，并补齐[数据库与受控初始化](../reviews/2026-09-22-b0-identity.md)；完整B0/B1/B2均未签署通过。本文把 [实施计划阶段1](../roadmap.md) 拆成B0/B1/B2三个工程子里程碑，不改变P0范围，也不表示完成任一子里程碑就能公开发布。
 
 包装、命令、构建身份和生成协议由 [脚手架蓝图](../../engineering/scaffold.md) 定义；本文只定义应取得的行为与证据。测试层级、必需用例和覆盖率算法以 [测试规范](../../engineering/testing/strategy.md) 为准，CI、评审、制品和发布门禁以 [交付验收](../acceptance.md) 为准，不维护第二套阈值或豁免机制。
 

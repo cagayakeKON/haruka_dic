@@ -43,7 +43,7 @@ async def test_real_transports_and_release(integration_settings: Settings) -> No
     async with bootstrap(integration_settings) as runtime:
         resources = runtime.resources
         assert resources is not None
-        assert not runtime.ready
+        assert runtime.ready
         # Separate sessions and physical connections, no implicit DDL or seed.
         async with resources.database.sessions() as first, resources.database.sessions() as second:
             first_id = await first.scalar(text("SELECT pg_backend_pid()"))

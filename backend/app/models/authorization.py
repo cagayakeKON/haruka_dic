@@ -1,0 +1,371 @@
+"""Release catalogs and authorization metadata; no business authorization bypasses."""
+
+from uuid import UUID
+
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Index, String, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.models.base import Base, IdentityMixin, TimestampMixin, column_info, relation, table_info
+
+
+class PermissionCatalog(TimestampMixin, Base):
+    __tablename__ = "permission_catalog"
+    __table_args__ = (
+        CheckConstraint("audience IN ('client', 'admin')", name="audience"),
+        CheckConstraint("data_scope IN ('self', 'platform_metadata')", name="data_scope"),
+        {
+            "comment": "发布注册的权限目录；权限存在不代表接口已实现",
+            "info": {
+                **table_info("system_catalog"),
+                "natural_key": "immutable release permission code",
+            },
+        },
+    )
+    code: Mapped[str] = mapped_column(
+        String(100),
+        primary_key=True,
+        nullable=False,
+        comment="不可由后台任意创建的权限代码",
+        info=column_info("release catalog"),
+    )
+    audience: Mapped[str] = mapped_column(
+        String(10), nullable=False, comment="登录受众", info=column_info("release catalog")
+    )
+    data_scope: Mapped[str] = mapped_column(
+        String(24), nullable=False, comment="允许的数据范围", info=column_info("release catalog")
+    )
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, comment="权限是否启用", info=column_info("controlled policy")
+    )
+
+
+class Role(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "roles"
+    __table_args__ = (
+        UniqueConstraint("code"),
+        CheckConstraint("revision >= 1", name="revision_positive"),
+        {
+            "comment": "角色定义；种子只创建缺失角色，不覆盖人工授权",
+            "info": table_info("system_catalog"),
+        },
+    )
+    code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        comment="稳定角色代码",
+        info=column_info("seed or controlled admin"),
+    )
+    protected: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        comment="受保护角色标记",
+        info=column_info("controlled security policy"),
+    )
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, comment="角色是否启用", info=column_info("controlled policy")
+    )
+    revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="角色并发修改版本",
+        info=column_info("authorization transaction"),
+    )
+
+
+class RolePermission(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "role_permissions"
+    __table_args__ = (
+        UniqueConstraint("role_id", "permission_code", "effect"),
+        CheckConstraint("effect IN ('allow', 'deny')", name="effect"),
+        Index(
+            "ix_role_permissions_permission_code_role_id",
+            "permission_code",
+            "role_id",
+            info={"purpose": "permission retirement checks for referencing roles"},
+        ),
+        {
+            "comment": "角色显式允许或拒绝；匹配的拒绝优先",
+            "info": table_info(
+                "system_catalog",
+                relations=(
+                    relation("role_id", "roles.id"),
+                    relation("permission_code", "permission_catalog.code"),
+                ),
+            ),
+        },
+    )
+    role_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="锁定并核对的角色标识",
+        info=column_info("locked role"),
+    )
+    permission_code: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        comment="已注册的权限代码",
+        info=column_info("locked permission catalog"),
+    )
+    effect: Mapped[str] = mapped_column(
+        String(8), nullable=False, comment="允许或显式拒绝", info=column_info("controlled grant")
+    )
+
+
+class UserRole(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "user_roles"
+    __table_args__ = (
+        UniqueConstraint("user_id", "role_id"),
+        Index(
+            "ix_user_roles_role_id_user_id",
+            "role_id",
+            "user_id",
+            info={"purpose": "protected role member and last administrator checks"},
+        ),
+        {
+            "comment": "账号角色关联；受控事务内校验身份与受保护角色",
+            "info": table_info(
+                "user_owned",
+                owner="user_id",
+                relations=(relation("user_id", "users.id"), relation("role_id", "roles.id")),
+            ),
+        },
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="已锁定账号标识",
+        info=column_info("locked user", "personal_reference"),
+    )
+    role_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="已锁定角色标识",
+        info=column_info("locked role"),
+    )
+
+
+class Menu(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "menus"
+    __table_args__ = (
+        UniqueConstraint("code"),
+        CheckConstraint("audience IN ('client', 'admin')", name="audience"),
+        CheckConstraint("revision >= 1", name="revision_positive"),
+        {
+            "comment": "绑定发布路由键的菜单目录；B0管理菜单不可用",
+            "info": table_info(
+                "system_catalog",
+                relations=(relation("permission_code", "permission_catalog.code"),),
+            ),
+        },
+    )
+    code: Mapped[str] = mapped_column(
+        String(64), nullable=False, comment="菜单代码", info=column_info("release menu catalog")
+    )
+    route_key: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        comment="前端已注册路由键",
+        info=column_info("release route registry"),
+    )
+    audience: Mapped[str] = mapped_column(
+        String(10), nullable=False, comment="菜单受众", info=column_info("release menu catalog")
+    )
+    permission_code: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        comment="显示所需权限；不代替接口授权",
+        info=column_info("locked permission catalog"),
+    )
+    enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        comment="菜单是否提供可用入口",
+        info=column_info("controlled policy"),
+    )
+    revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="菜单配置版本",
+        info=column_info("authorization transaction"),
+    )
+
+
+class AuthPolicy(TimestampMixin, Base):
+    __tablename__ = "auth_policies"
+    __table_args__ = (
+        CheckConstraint("code = 'registration'", name="code"),
+        CheckConstraint(
+            "registration_mode IN ('closed', 'approval', 'open')", name="registration_mode"
+        ),
+        CheckConstraint("revision >= 1", name="revision_positive"),
+        {
+            "comment": "注册策略；B0默认关闭注册，不决定后续开放方式",
+            "info": {
+                **table_info(
+                    "system_catalog", relations=(relation("default_role_id", "roles.id"),)
+                ),
+                "natural_key": "singleton registration policy",
+            },
+        },
+    )
+    code: Mapped[str] = mapped_column(
+        String(32),
+        primary_key=True,
+        nullable=False,
+        comment="固定策略代码",
+        info=column_info("release seed"),
+    )
+    registration_mode: Mapped[str] = mapped_column(
+        String(16), nullable=False, comment="注册入口策略", info=column_info("controlled policy")
+    )
+    default_role_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="普通注册初始角色，不允许受保护角色",
+        info=column_info("locked role"),
+    )
+    revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="策略并发修改版本",
+        info=column_info("authorization transaction"),
+    )
+
+
+class AuthorizationRevision(TimestampMixin, Base):
+    __tablename__ = "authorization_revisions"
+    __table_args__ = (
+        CheckConstraint("code = 'global'", name="code"),
+        CheckConstraint("revision >= 1", name="revision_positive"),
+        {
+            "comment": "授权目录全局版本与共同父行锁",
+            "info": {
+                **table_info("system_operation"),
+                "natural_key": "singleton global authorization revision",
+            },
+        },
+    )
+    code: Mapped[str] = mapped_column(
+        String(16),
+        primary_key=True,
+        nullable=False,
+        comment="固定授权锁行标识",
+        info=column_info("release seed"),
+    )
+    revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="授权修改单调版本",
+        info=column_info("authorization transaction"),
+    )
+
+
+class SeedVersion(TimestampMixin, Base):
+    __tablename__ = "seed_versions"
+    __table_args__ = (
+        CheckConstraint("version >= 1", name="version_positive"),
+        CheckConstraint("payload_sha256 ~ '^[a-f0-9]{64}$'", name="digest"),
+        {
+            "comment": "已应用种子版本与摘要；拒绝同版本内容漂移",
+            "info": {**table_info("system_operation"), "natural_key": "reviewed seed release code"},
+        },
+    )
+    code: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        nullable=False,
+        comment="种子发布代码",
+        info=column_info("release seed"),
+    )
+    version: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, comment="种子协议版本", info=column_info("release seed")
+    )
+    payload_sha256: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        comment="权威种子内容摘要",
+        info=column_info("release seed sha256"),
+    )
+
+
+class AdminAuditEvent(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "admin_audit_events"
+    __table_args__ = (
+        CheckConstraint("action IN ('seed.applied', 'admin.created')", name="action"),
+        CheckConstraint("authorization_revision >= 1", name="authorization_revision_positive"),
+        {
+            "comment": "受控初始化追加审计，不包含密码、邮箱或私有材料",
+            "info": table_info(
+                "system_operation",
+                append_only=True,
+                relations=(relation("target_user_id", "users.id", nullable=True, historical=True),),
+            ),
+        },
+    )
+    action: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        comment="已注册的维护动作",
+        info=column_info("maintenance service"),
+    )
+    actor: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        comment="固定受控维护主体",
+        info=column_info("validated maintenance scope"),
+    )
+    target_user_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="目标账号引用；目录种子为空",
+        info=column_info("locked user", "personal_reference"),
+    )
+    authorization_revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        comment="同事务提交的授权版本",
+        info=column_info("authorization transaction"),
+    )
+
+
+class OutboxEvent(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "outbox_events"
+    __table_args__ = (
+        UniqueConstraint("audit_event_id"),
+        CheckConstraint("event_type = 'authorization.changed'", name="event_type"),
+        CheckConstraint("status IN ('pending', 'published')", name="status"),
+        CheckConstraint("authorization_revision >= 1", name="authorization_revision_positive"),
+        {
+            "comment": "授权变更持久通知；B0只提交，B2实现投递",
+            "info": table_info(
+                "system_operation",
+                relations=(relation("audit_event_id", "admin_audit_events.id", historical=True),),
+            ),
+        },
+    )
+    event_type: Mapped[str] = mapped_column(
+        String(48),
+        nullable=False,
+        comment="已注册事件类型",
+        info=column_info("authorization transaction"),
+    )
+    audit_event_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="同事务追加的审计标识",
+        info=column_info("authorization transaction"),
+    )
+    authorization_revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        comment="待通知的授权版本",
+        info=column_info("authorization transaction"),
+    )
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, comment="投递状态", info=column_info("outbox service")
+    )

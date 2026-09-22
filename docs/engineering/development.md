@@ -35,7 +35,7 @@
 
 普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号。check各scope均为局部检查；B0-foundation仍保留首轮组合，不签署完整B0，报告在忽略目录artifacts/dev。`check --stage B0/B1/B2`及`dev --profile core/jobs`在完整应用编排交付前明确失败；当前基础设施使用infra命令。
 
-前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200，ready在schema及业务安全接线完成前返回503；基础设施连通不等于业务就绪。没有账号、权限、任务或模型能力。Worker/Outbox业务运行、manage迁移/种子/管理员均未开放。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
+前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200；基础设施配置下ready重新检查数据库schema及依赖，成功200、失败503；离线壳仍返回503。没有公开登录、业务授权或模型接口。Worker/Outbox尚不处理业务；受控迁移、种子和首管理员入口已开放，首次启动API前按后端指南执行迁移。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
 
 制品安装检查可用锁定Python运行`backend/tools/verify_distribution.py --uv .tools/uv/uv.exe`，执行干净缓存wheel/sdist构建、运行依赖单独安装、独立工作目录CLI/生命周期与错误构建哈希拒绝。它不执行PG迁移或真实模型调用。实测、review和仍欠缺的B0门禁统一见 [交付记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。
 

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "head": "0001_b0_identity",
+  "files": {
+    "env.py": "778bc7c6f4d917cc610dafbb3cf88e55b7e65afc7d44158b37b3ef3ec1000f2b",
+    "versions/0001_b0_identity.py": "32a61198fdaf75fb357173f0b70a4c9230e8b61f516f26c06ee04b4c8fdc6467"
+  }
+}

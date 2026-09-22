@@ -47,7 +47,9 @@ def check_resources(settings: Settings, role: Literal["worker", "outbox", "manag
 
     async def check() -> None:
         async with bootstrap(settings, role=role):
-            sys.stdout.write("Infrastructure connected; schema and business handlers not ready.\n")
+            sys.stdout.write(
+                "Infrastructure connected and schema compatible; business handlers are not enabled.\n"
+            )
 
     try:
         asyncio.run(check())

@@ -1,6 +1,6 @@
 # 脚手架实施蓝图
 
-状态：2026-09-22，B0基础壳及基础设施切片已建立。已有Flutter工程、可安装Python包、真实PG/Redis/Kafka/MinIO资源组装及dev/隔离Compose；完整合同中的迁移/种子、Dart API生成器、业务常驻进程与质量门禁仍未交付。当前命令见 [开发指南](development.md)，本轮证据见 [基础设施记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)；本文仍维护完整B0/B1/B2目标，不以切片缩减验收。
+状态：2026-09-22，B0基础壳及基础设施切片已建立。已有Flutter工程、可安装Python包、真实PG/Redis/Kafka/MinIO资源组装及dev/隔离Compose；[数据库切片](../delivery/reviews/2026-09-22-b0-identity.md)已补齐迁移/种子、首管理员和schema检查；完整开发编排、Dart兼容、平台与质量矩阵仍在实施。当前命令见 [开发指南](development.md)，本轮证据见 [基础设施记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)；本文仍维护完整B0/B1/B2目标，不以切片缩减验收。
 
 配套：[项目结构](../architecture/project-structure.md)、[开发指南](development.md)、[脚手架验收](../delivery/milestones/scaffold.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md)、[配置运维](../operations/configuration.md)。本文维护工程载体与入口，业务规则仍由各专题维护；检查阈值与必需测试仍以 [测试规范](testing/strategy.md) 为准。
 

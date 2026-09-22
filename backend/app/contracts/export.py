@@ -6,8 +6,10 @@ import json
 from pathlib import Path
 
 from app.contracts.errors import ERRORS, FIELD_MESSAGES
+from app.contracts.permissions import permission_document
 from app.core.logging import EVENTS
 from app.main import create_app
+from app.models.dictionary import database_document
 
 
 def canonical_json(value: object) -> str:
@@ -17,6 +19,8 @@ def canonical_json(value: object) -> str:
 def documents() -> dict[str, object]:
     """Export implemented protocol surfaces only; absence is not a capability grant."""
     payloads: dict[str, object] = {
+        "permissions.json": permission_document(),
+        "database-schema.json": database_document(),
         "openapi.json": create_app(schema_only=True).openapi(),
         "errors.json": {
             "schema_version": 1,
@@ -63,7 +67,7 @@ def documents() -> dict[str, object]:
     }
     payloads["version.json"] = {
         "schema_version": 1,
-        "scope": "B0-infrastructure",
+        "scope": "B0-identity-foundation",
         "sha256": {
             name: hashlib.sha256(canonical_json(value).encode()).hexdigest()
             for name, value in sorted(payloads.items())

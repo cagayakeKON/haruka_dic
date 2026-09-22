@@ -1,0 +1,95 @@
+{
+  "database_checks": {
+    "admin_audit_events": {
+      "ck_admin_audit_events_action": "action::text = ANY (ARRAY['seed.applied'::character varying, 'admin.created'::character varying]::text[])",
+      "ck_admin_audit_events_authorization_revision_positive": "authorization_revision >= 1"
+    },
+    "auth_policies": {
+      "ck_auth_policies_code": "code::text = 'registration'::text",
+      "ck_auth_policies_registration_mode": "registration_mode::text = ANY (ARRAY['closed'::character varying, 'approval'::character varying, 'open'::character varying]::text[])",
+      "ck_auth_policies_revision_positive": "revision >= 1"
+    },
+    "authorization_revisions": {
+      "ck_authorization_revisions_code": "code::text = 'global'::text",
+      "ck_authorization_revisions_revision_positive": "revision >= 1"
+    },
+    "libraries": {},
+    "menus": {
+      "ck_menus_audience": "audience::text = ANY (ARRAY['client'::character varying, 'admin'::character varying]::text[])",
+      "ck_menus_revision_positive": "revision >= 1"
+    },
+    "outbox_events": {
+      "ck_outbox_events_authorization_revision_positive": "authorization_revision >= 1",
+      "ck_outbox_events_event_type": "event_type::text = 'authorization.changed'::text",
+      "ck_outbox_events_status": "status::text = ANY (ARRAY['pending'::character varying, 'published'::character varying]::text[])"
+    },
+    "permission_catalog": {
+      "ck_permission_catalog_audience": "audience::text = ANY (ARRAY['client'::character varying, 'admin'::character varying]::text[])",
+      "ck_permission_catalog_data_scope": "data_scope::text = ANY (ARRAY['self'::character varying, 'platform_metadata'::character varying]::text[])"
+    },
+    "role_permissions": {
+      "ck_role_permissions_effect": "effect::text = ANY (ARRAY['allow'::character varying, 'deny'::character varying]::text[])"
+    },
+    "roles": {
+      "ck_roles_revision_positive": "revision >= 1"
+    },
+    "seed_versions": {
+      "ck_seed_versions_digest": "payload_sha256::text ~ '^[a-f0-9]{64}$'::text",
+      "ck_seed_versions_version_positive": "version >= 1"
+    },
+    "user_roles": {},
+    "users": {
+      "ck_users_authz_version_positive": "authz_version >= 1",
+      "ck_users_email_length": "length(email_normalized::text) >= 3 AND length(email_normalized::text) <= 254",
+      "ck_users_security_epochs_nonnegative": "client_security_epoch >= 0 AND admin_security_epoch >= 0",
+      "ck_users_status": "status::text = ANY (ARRAY['pending'::character varying, 'active'::character varying, 'disabled'::character varying]::text[])"
+    }
+  },
+  "model_checks": {
+    "admin_audit_events": {
+      "ck_admin_audit_events_action": "action IN ('seed.applied', 'admin.created')",
+      "ck_admin_audit_events_authorization_revision_positive": "authorization_revision >= 1"
+    },
+    "auth_policies": {
+      "ck_auth_policies_code": "code = 'registration'",
+      "ck_auth_policies_registration_mode": "registration_mode IN ('closed', 'approval', 'open')",
+      "ck_auth_policies_revision_positive": "revision >= 1"
+    },
+    "authorization_revisions": {
+      "ck_authorization_revisions_code": "code = 'global'",
+      "ck_authorization_revisions_revision_positive": "revision >= 1"
+    },
+    "libraries": {},
+    "menus": {
+      "ck_menus_audience": "audience IN ('client', 'admin')",
+      "ck_menus_revision_positive": "revision >= 1"
+    },
+    "outbox_events": {
+      "ck_outbox_events_authorization_revision_positive": "authorization_revision >= 1",
+      "ck_outbox_events_event_type": "event_type = 'authorization.changed'",
+      "ck_outbox_events_status": "status IN ('pending', 'published')"
+    },
+    "permission_catalog": {
+      "ck_permission_catalog_audience": "audience IN ('client', 'admin')",
+      "ck_permission_catalog_data_scope": "data_scope IN ('self', 'platform_metadata')"
+    },
+    "role_permissions": {
+      "ck_role_permissions_effect": "effect IN ('allow', 'deny')"
+    },
+    "roles": {
+      "ck_roles_revision_positive": "revision >= 1"
+    },
+    "seed_versions": {
+      "ck_seed_versions_digest": "payload_sha256 ~ '^[a-f0-9]{64}$'",
+      "ck_seed_versions_version_positive": "version >= 1"
+    },
+    "user_roles": {},
+    "users": {
+      "ck_users_authz_version_positive": "authz_version >= 1",
+      "ck_users_email_length": "length(email_normalized) BETWEEN 3 AND 254",
+      "ck_users_security_epochs_nonnegative": "client_security_epoch >= 0 AND admin_security_epoch >= 0",
+      "ck_users_status": "status IN ('pending', 'active', 'disabled')"
+    }
+  },
+  "revision": "0001_b0_identity"
+}

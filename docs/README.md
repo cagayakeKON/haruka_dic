@@ -1,6 +1,6 @@
 # 文档导航
 
-当前进入阶段1，Flutter/Python应用壳、锁文件、局部检查入口以及 [本地基础设施](../dev/README.md) 已建立；范围与实测分别见 [基础壳记录](delivery/reviews/2026-09-22-scaffold-foundation.md) 和 [基础设施记录](delivery/reviews/2026-09-22-scaffold-infrastructure.md)。完整B0尚未验收，B1/B2未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
+当前进入阶段1，Flutter/Python应用壳、锁文件、局部检查入口以及 [本地基础设施](../dev/README.md) 已建立；范围与实测分别见 [基础壳记录](delivery/reviews/2026-09-22-scaffold-foundation.md) 和 [基础设施记录](delivery/reviews/2026-09-22-scaffold-infrastructure.md)。新增[数据库切片](delivery/reviews/2026-09-22-b0-identity.md)已落实迁移、受控初始化和schema检查；完整B0尚未验收，B1/B2未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
 
 ## 1. 按任务阅读
 
@@ -62,6 +62,8 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [原型审查](delivery/reviews/2026-09-22-prototype.md)：独立原型工作记录，不代表本轮重组执行过原型测试。
 - [首个脚手架切片](delivery/reviews/2026-09-22-scaffold-foundation.md)：B0-foundation的实现、局部验证、review与未完成门禁。
 - [基础设施切片](delivery/reviews/2026-09-22-scaffold-infrastructure.md)：真实客户端生命周期、隔离Compose、正常日志采集、运行与维护账号边界。
+
+- [数据库与受控初始化](delivery/reviews/2026-09-22-b0-identity.md)：基础表/字典、迁移锁、幂等种子、首管理员与动态readiness。
 
 ## 5. 维护规则
 

@@ -23,14 +23,14 @@ python scripts/dev.py infra down
 | Loki | `http://127.0.0.1:13100` | 隔离的本地日志查询端点 |
 | Grafana | `http://127.0.0.1:13000` | 已配置 Haruka Local Loki 数据源 |
 
-所有发布端口只绑定 loopback。Kafka 的本机和容器 listener 分开广播地址，自动创建 Topic 关闭；初始化只创建 `haruka-local-dev.smoke` 和 `haruka-test-integration.smoke`。单节点 PLAINTEXT Kafka、Redis DB 编号及名称前缀是本机开发设置，不构成生产鉴权或用户数据隔离。当前不预建业务 Topic、Job/Outbox、账号、迁移表或业务表。
+所有发布端口只绑定 loopback。Kafka 的本机和容器 listener 分开广播地址，自动创建 Topic 关闭；基础设施初始化只创建两个smoke Topic。单节点 PLAINTEXT Kafka、Redis DB 编号及名称前缀不构成生产鉴权或用户隔离。Compose不建业务表或用户；数据库结构和授权种子另经 [后端受控维护入口](../backend/README.md) 执行，普通API启动不迁移。
 
 ## 配置与凭据
 
 首次运行生成随机本机凭据，保存在 Git 忽略的 `.local/` 中，不输出到控制台。保留该目录和对应数据卷的配套关系；有旧卷但缺失凭据时拒绝重新生成，避免新密码与已有数据不一致。
 
 - `.local/backend.env`、`.local/test.env`：应用配置，仅包含各环境运行账号、私有 Bucket 凭据和日志文件路径；由后端显式 `--config` 读取。
-- `.local/dev-maintenance.env`、`.local/test-maintenance.env`：单独的数据库维护账号配置，只供后续受控迁移入口使用。
+- `.local/dev-maintenance.env`、`.local/test-maintenance.env`：单独的数据库维护账号配置，只供受控迁移/种子/管理员入口使用。
 - `.local/secrets/grafana_password`：Grafana 用户 `haruka` 的密码。
 - `.local/secrets/minio_password`：MinIO Console 用户 `haruka_local_root` 的密码；应用不使用该账号。
 - `.local/credentials.json`、`.local/minio/`、`.local/secrets/`：初始化凭据材料，不应复制到应用发布包或日志。

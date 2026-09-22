@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import uuid
 from pathlib import Path
@@ -44,9 +45,19 @@ def main() -> None:
         type=Path,
         help="explicit local infrastructure config for installed lifecycle checks",
     )
+    parser.add_argument(
+        "--maintenance-config",
+        type=Path,
+        help="isolated maintenance target for installed read-only status check",
+    )
     args = parser.parse_args()
     uv = str(args.uv.resolve(strict=True))
     infrastructure_config = args.config.resolve(strict=True) if args.config is not None else None
+    maintenance_config = (
+        args.maintenance_config.resolve(strict=True)
+        if args.maintenance_config is not None
+        else None
+    )
     run_id = uuid.uuid4().hex
     work = Path(tempfile.gettempdir()) / "haruka-package-check" / run_id
     work.mkdir(parents=True)
@@ -66,6 +77,10 @@ def main() -> None:
         env,
     )
     wheel = next((work / "dist").glob("*.whl"))
+    # The migration bundle is a same-version sdist attachment, not a checkout path.
+    with tarfile.open(next((work / "dist").glob("*.tar.gz"))) as source:
+        source.extractall(work / "source-bundle", filter="data")
+    migration_bundle = next((work / "source-bundle").glob("*/alembic"))
     requirements = work / "requirements.txt"
     run(
         [
@@ -109,6 +124,35 @@ def main() -> None:
     ).strip()
     if not Path(location).resolve().is_relative_to((work / "runtime").resolve()):
         raise RuntimeError("application imported from outside installed environment")
+    run(
+        [
+            str(python),
+            "-I",
+            "-c",
+            "from app.maintenance.schema import load_constraint_baseline; "
+            "from app.maintenance.migrations import load_migration_resources; "
+            "from pathlib import Path; import sys; "
+            "load_constraint_baseline(); load_migration_resources(Path(sys.argv[1]))",
+            str(migration_bundle),
+        ],
+        outside,
+        env,
+    )
+    if maintenance_config is not None:
+        manage = str(binaries / ("haruka-manage.exe" if os.name == "nt" else "haruka-manage"))
+        run(
+            [
+                manage,
+                "db",
+                "status",
+                "--maintenance-config",
+                str(maintenance_config),
+                "--migrations-dir",
+                str(migration_bundle),
+            ],
+            outside,
+            env,
+        )
     config = outside / "shell.env"
     config.write_text(
         "HARUKA_APP_ENV=test\nHARUKA_INSTANCE_ID=haruka-test-wheel\n"
@@ -179,8 +223,11 @@ def main() -> None:
         "lifespan": "started-and-stopped",
         "wrong_build_hash": "rejected",
         "infrastructure_lifespans": 4 if infrastructure_config else 0,
+        "migration_bundle": "validated from built sdist, outside checkout",
+        "packaged_constraint_baseline": "validated",
+        "installed_database_status": maintenance_config is not None,
         "limitations": [
-            "No migrations/schema readiness",
+            "Schema readiness validated only when explicit infrastructure configuration was supplied",
             "No worker/outbox business execution",
             "Windows host only",
         ],

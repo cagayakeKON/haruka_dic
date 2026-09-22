@@ -1,6 +1,6 @@
 # 数据库设计与建表规范
 
-状态：2026-09-22，DB1文档基线，尚未创建表、ORM、迁移或检查器。用户已明确：不使用数据库外键；所有业务表具备创建和更新时间，沿用MyHome的字段命名与公共Mixin思路。其余规则是后续工程的统一实施基线，不代表MyHome或Haruka已通过运行验证。
+状态：2026-09-22，B0已建立12张账号/授权初始化基础表、UTC公共Mixin、受控迁移与字典检查器，局部证据见 [数据库切片](../delivery/reviews/2026-09-22-b0-identity.md)。不使用数据库外键；后续业务表仍按本文实施，未实现的隔离/删除/任务验收不计为通过。
 
 本文维护物理结构、公共字段、无外键关联、隔离与数据库变更规则。业务聚合/事务/任务状态以 [数据与任务](../architecture/data-jobs.md) 为准，身份和授权分别以 [认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准；操作流程见 [部署与恢复](../operations/deployment-recovery.md)，测试执行频率以根 [AGENTS.md](../../AGENTS.md) 为准。
 
@@ -138,7 +138,7 @@ Base统一使用MetaData.naming_convention。命名模板包含全部组合列�
 
 ## 10. ORM公共模板
 
-以下仅为未来backend/app/models中的示意，当前不创建Python文件。TimestampMixin用于全部业务表；IdentityMixin、库归属Mixin、revision和软删按表类别组合，不能用一个万能基类塞入所有字段。所有模型集中登记，离线schema导出时不连接服务。
+以下是结构示意；现有实现见backend/app/models。TimestampMixin用于全部业务表；IdentityMixin、库归属Mixin、revision和软删按表类别组合，不能用一个万能基类塞入所有字段。所有模型集中登记，离线schema导出时不连接服务。
 
 ~~~python
 from datetime import datetime

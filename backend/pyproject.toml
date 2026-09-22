@@ -10,6 +10,8 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
+  "alembic==1.20.0",
+  "argon2-cffi==25.1.0",
   "asyncpg==0.31.0",
   "confluent-kafka==2.15.1",
   "fastapi==0.141.1",
@@ -37,7 +39,7 @@ dev = [{include-group = "lint"}, {include-group = "test"}, {include-group = "cod
 packages = ["app"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/app", "/pyproject.toml", "/README.md"]
+include = ["/app", "/alembic", "/pyproject.toml", "/README.md"]
 
 [tool.uv]
 required-version = "==0.12.17"

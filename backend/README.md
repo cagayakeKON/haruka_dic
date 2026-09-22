@@ -1,6 +1,6 @@
 # Haruka 后端
 
-阶段1已有B0基础壳和基础设施切片。可安装包、四个正式CLI、PG/Redis/Kafka/MinIO客户端、统一资源组装与HTTP返回、离线OpenAPI导出已建立；完整B0尚未完成，实测见 [交付记录](../docs/delivery/reviews/2026-09-22-scaffold-infrastructure.md)。
+阶段1已有B0基础壳、基础设施及数据库初始化切片。可安装包、四个正式CLI、资源组装、统一HTTP返回、受控迁移/种子/首管理员和离线契约导出已建立；完整B0尚未完成，实测见 [数据库交付记录](../docs/delivery/reviews/2026-09-22-b0-identity.md)。
 
 先用Python3.13.6运行统一bootstrap。该命令按锁安装，不更新依赖。当前仓库内uv为`.tools/uv/uv.exe`，版本必须与工具清单一致；其他环境先安装清单指定版本。本机PATH的Python3.9不适用，以下显式选择锁定版本。
 
@@ -8,14 +8,18 @@
 .tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py bootstrap --scope backend
 .tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py check --stage backend
 .tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py infra up
+.tools/uv/uv.exe run --project backend --locked haruka-manage db upgrade --maintenance-config dev/.local/dev-maintenance.env --migrations-dir "$PWD/backend/alembic"
+.tools/uv/uv.exe run --project backend --locked haruka-manage seed apply --maintenance-config dev/.local/dev-maintenance.env
 .tools/uv/uv.exe run --project backend --locked haruka-api --config dev/.local/backend.env
 ```
 
 `--config` 显式指定配置文件；环境变量优先，不自动读取当前目录的 `.env`。配置检查只输出是否通过，不输出输入值。API 默认仅绑定回环地址。此切片仅允许 dev/test，staging/production 在持久依赖及安全接线完成前拒绝启动。
 
-`GET /health/live` 表示应用循环存活；`GET /health/ready` 仍返回503，直到后续具备schema兼容检查及业务安全基础。基础设施配置启用时，启动会真实验证PG/Redis/Kafka/私有Bucket；失败清理此前取得的资源并停止启动。`backend/.env.example` 明确为不连接基础设施的离线壳模式，不能用于通过连接验收。
+`GET /health/live` 表示应用循环存活；`GET /health/ready` 实查数据库结构与PG/Redis/Kafka/私有Bucket，成功200、失败503。启动时也执行只读schema检查；失败清理此前资源并停止启动。`backend/.env.example` 是不连接基础设施的离线壳模式，始终不报告ready。基础设施就绪不代表登录或业务授权已实现。
 
-没有业务API，`/api/v1/*` 返回统一404。Worker/Outbox的 `--check-startup` 共用真实资源生命周期，Worker额外创建并关闭不自动提交offset的Consumer；尚不领取任务或发送Outbox。manage的db/seed/admin仍明确未实现，普通启动不建表、迁移、建Bucket或种子。
+没有业务API，`/api/v1/*` 返回统一404。Worker/Outbox的 `--check-startup` 共用资源生命周期，Worker额外创建并关闭不自动提交offset的Consumer；尚不领取任务或发送Outbox。普通启动不建表、迁移、建Bucket或种子。
+
+维护使用独立凭据：`haruka-manage db status/upgrade`还要求`--migrations-dir`为绝对路径；`seed apply`只创建缺失初始目录，不覆盖人工授权。`admin init --maintenance-config <文件> --email <邮箱>`在受控终端隐藏输入密码，拒绝回显回退、已有普通账号提权或第二次首管理员创建。已初始化同一账号的重放不修改密码。迁移通过同一物理PG连接持锁和执行DDL，禁止裸Alembic绕过；同版本sdist包含alembic附件，安装运行不依赖checkout。
 
 ```powershell
 .tools/uv/uv.exe run --project backend --locked haruka-worker --config dev/.local/backend.env --check-startup

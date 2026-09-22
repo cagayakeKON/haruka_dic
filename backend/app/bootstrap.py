@@ -12,6 +12,7 @@ from app.adapters.database import Database
 from app.adapters.queue import KafkaConsumer, KafkaProducer
 from app.adapters.storage import ObjectStorage
 from app.core.settings import Settings
+from app.maintenance.schema import check_schema
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +58,33 @@ class Runtime:
     settings: Settings
     resources: Resources | None = None
     active: bool = True
+    schema_compatible: bool = False
 
     @property
     def ready(self) -> bool:
-        # Schema compatibility, durable auth and migrations remain separate B0 work.
-        return False
+        return self.active and self.resources is not None and self.schema_compatible
+
+    async def check_readiness(self) -> bool:
+        """Revalidate required dependencies and schema under a single bounded probe."""
+        if not self.active or self.resources is None:
+            return False
+        try:
+            async with asyncio.timeout(5), asyncio.TaskGroup() as probes:
+                probes.create_task(self.resources.database.check())
+                probes.create_task(_check_database_schema(self.resources.database))
+                probes.create_task(self.resources.cache.check())
+                probes.create_task(self.resources.kafka.check())
+                probes.create_task(self.resources.storage.check())
+        except Exception:
+            self.schema_compatible = False
+            logger.warning("infrastructure.unavailable")
+            return False
+        self.schema_compatible = True
+        return True
+
+
+async def _check_database_schema(database: Database) -> None:
+    await check_schema(database.engine)
 
 
 @asynccontextmanager
@@ -82,6 +105,8 @@ async def bootstrap(
                     database = Database(configuration)
                     stack.push_async_callback(database.aclose)
                     await database.check()
+                    await _check_database_schema(database)
+                    runtime.schema_compatible = True
                     cache = Cache(configuration)
                     stack.push_async_callback(cache.aclose)
                     await cache.check()

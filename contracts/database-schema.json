@@ -1,0 +1,1543 @@
+{
+  "excluded_internal_tables": [
+    "alembic_version"
+  ],
+  "migration_revision": "0001_b0_identity",
+  "schema_version": 1,
+  "source": "backend/app/models",
+  "source_sha256": "0e2a4d7121e3c93946252a025f0b49808710314396bc03d1af7dafa294c72d0a",
+  "tables": [
+    {
+      "columns": [
+        {
+          "comment": "已注册的维护动作",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "maintenance service"
+          },
+          "name": "action",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "固定受控维护主体",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated maintenance scope"
+          },
+          "name": "actor",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "目标账号引用；目录种子为空",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked user"
+          },
+          "name": "target_user_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "同事务提交的授权版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "authorization_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "受控初始化追加审计，不包含密码、邮箱或私有材料",
+      "constraints": [
+        {
+          "definition": "action IN ('seed.applied', 'admin.created')",
+          "kind": "check",
+          "name": "ck_admin_audit_events_action"
+        },
+        {
+          "definition": "authorization_revision >= 1",
+          "kind": "check",
+          "name": "ck_admin_audit_events_authorization_revision_positive"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_admin_audit_events"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "append_only",
+        "logical_relations": [
+          {
+            "column": "target_user_id",
+            "deletion": "retain historical reference",
+            "nullable": true,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "users.id",
+            "tests": "tests/integration/test_initialization.py"
+          }
+        ],
+        "module": "identity_foundation",
+        "owner_column": null,
+        "scope_kind": "system_operation"
+      },
+      "name": "admin_audit_events"
+    },
+    {
+      "columns": [
+        {
+          "comment": "固定策略代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release seed"
+          },
+          "name": "code",
+          "nullable": false,
+          "primary_key": true,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "注册入口策略",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled policy"
+          },
+          "name": "registration_mode",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "普通注册初始角色，不允许受保护角色",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked role"
+          },
+          "name": "default_role_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "策略并发修改版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "注册策略；B0默认关闭注册，不决定后续开放方式",
+      "constraints": [
+        {
+          "definition": "code = 'registration'",
+          "kind": "check",
+          "name": "ck_auth_policies_code"
+        },
+        {
+          "definition": "registration_mode IN ('closed', 'approval', 'open')",
+          "kind": "check",
+          "name": "ck_auth_policies_registration_mode"
+        },
+        {
+          "definition": "revision >= 1",
+          "kind": "check",
+          "name": "ck_auth_policies_revision_positive"
+        },
+        {
+          "definition": [
+            "code"
+          ],
+          "kind": "primary_key",
+          "name": "pk_auth_policies"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "default_role_id",
+            "deletion": "restrict",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "roles.id",
+            "tests": "tests/integration/test_initialization.py"
+          }
+        ],
+        "module": "identity_foundation",
+        "natural_key": "singleton registration policy",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "auth_policies"
+    },
+    {
+      "columns": [
+        {
+          "comment": "固定授权锁行标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release seed"
+          },
+          "name": "code",
+          "nullable": false,
+          "primary_key": true,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "授权修改单调版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "授权目录全局版本与共同父行锁",
+      "constraints": [
+        {
+          "definition": "code = 'global'",
+          "kind": "check",
+          "name": "ck_authorization_revisions_code"
+        },
+        {
+          "definition": "revision >= 1",
+          "kind": "check",
+          "name": "ck_authorization_revisions_revision_positive"
+        },
+        {
+          "definition": [
+            "code"
+          ],
+          "kind": "primary_key",
+          "name": "pk_authorization_revisions"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [],
+        "module": "identity_foundation",
+        "natural_key": "singleton global authorization revision",
+        "owner_column": null,
+        "scope_kind": "system_operation"
+      },
+      "name": "authorization_revisions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "服务根据已验证账号派生的库所有者",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked user"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "每个账号唯一的私有资料库根",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_libraries"
+        },
+        {
+          "definition": [
+            "owner_user_id"
+          ],
+          "kind": "unique",
+          "name": "uq_libraries_owner_user_id"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "users.id",
+            "tests": "tests/integration/test_initialization.py"
+          }
+        ],
+        "module": "identity_foundation",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_root"
+      },
+      "name": "libraries"
+    },
+    {
+      "columns": [
+        {
+          "comment": "菜单代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release menu catalog"
+          },
+          "name": "code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "前端已注册路由键",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release route registry"
+          },
+          "name": "route_key",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "菜单受众",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release menu catalog"
+          },
+          "name": "audience",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(10)"
+        },
+        {
+          "comment": "显示所需权限；不代替接口授权",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked permission catalog"
+          },
+          "name": "permission_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "菜单是否提供可用入口",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled policy"
+          },
+          "name": "enabled",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "菜单配置版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "绑定发布路由键的菜单目录；B0管理菜单不可用",
+      "constraints": [
+        {
+          "definition": "audience IN ('client', 'admin')",
+          "kind": "check",
+          "name": "ck_menus_audience"
+        },
+        {
+          "definition": "revision >= 1",
+          "kind": "check",
+          "name": "ck_menus_revision_positive"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_menus"
+        },
+        {
+          "definition": [
+            "code"
+          ],
+          "kind": "unique",
+          "name": "uq_menus_code"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "permission_code",
+            "deletion": "restrict",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "permission_catalog.code",
+            "tests": "tests/integration/test_initialization.py"
+          }
+        ],
+        "module": "identity_foundation",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "menus"
+    },
+    {
+      "columns": [
+        {
+          "comment": "已注册事件类型",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "event_type",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(48)"
+        },
+        {
+          "comment": "同事务追加的审计标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "audit_event_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "待通知的授权版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "authorization_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "投递状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "outbox service"
+          },
+          "name": "status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "授权变更持久通知；B0只提交，B2实现投递",
+      "constraints": [
+        {
+          "definition": "authorization_revision >= 1",
+          "kind": "check",
+          "name": "ck_outbox_events_authorization_revision_positive"
+        },
+        {
+          "definition": "event_type = 'authorization.changed'",
+          "kind": "check",
+          "name": "ck_outbox_events_event_type"
+        },
+        {
+          "definition": "status IN ('pending', 'published')",
+          "kind": "check",
+          "name": "ck_outbox_events_status"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_outbox_events"
+        },
+        {
+          "definition": [
+            "audit_event_id"
+          ],
+          "kind": "unique",
+          "name": "uq_outbox_events_audit_event_id"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "audit_event_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "admin_audit_events.id",
+            "tests": "tests/integration/test_initialization.py"
+          }
+        ],
+        "module": "identity_foundation",
+        "owner_column": null,
+        "scope_kind": "system_operation"
+      },
+      "name": "outbox_events"
+    },
+    {
+      "columns": [
+        {
+          "comment": "不可由后台任意创建的权限代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release catalog"
+          },
+          "name": "code",
+          "nullable": false,
+          "primary_key": true,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "登录受众",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release catalog"
+          },
+          "name": "audience",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(10)"
+        },
+        {
+          "comment": "允许的数据范围",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release catalog"
+          },
+          "name": "data_scope",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "权限是否启用",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled policy"
+          },
+          "name": "enabled",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "发布注册的权限目录；权限存在不代表接口已实现",
+      "constraints": [
+        {
+          "definition": "audience IN ('client', 'admin')",
+          "kind": "check",
+          "name": "ck_permission_catalog_audience"
+        },
+        {
+          "definition": "data_scope IN ('self', 'platform_metadata')",
+          "kind": "check",
+          "name": "ck_permission_catalog_data_scope"
+        },
+        {
+          "definition": [
+            "code"
+          ],
+          "kind": "primary_key",
+          "name": "pk_permission_catalog"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [],
+        "module": "identity_foundation",
+        "natural_key": "immutable release permission code",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "permission_catalog"
+    },
+    {
+      "columns": [
+        {
+          "comment": "锁定并核对的角色标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked role"
+          },
+          "name": "role_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "已注册的权限代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked permission catalog"
+          },
+          "name": "permission_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "允许或显式拒绝",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled grant"
+          },
+          "name": "effect",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(8)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "角色显式允许或拒绝；匹配的拒绝优先",
+      "constraints": [
+        {
+          "definition": "effect IN ('allow', 'deny')",
+          "kind": "check",
+          "name": "ck_role_permissions_effect"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_role_permissions"
+        },
+        {
+          "definition": [
+            "role_id",
+            "permission_code",
+            "effect"
+          ],
+          "kind": "unique",
+          "name": "uq_role_permissions_role_id_permission_code_effect"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "permission_code",
+            "role_id"
+          ],
+          "metadata": {
+            "purpose": "permission retirement checks for referencing roles"
+          },
+          "name": "ix_role_permissions_permission_code_role_id",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "role_id",
+            "deletion": "restrict",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "roles.id",
+            "tests": "tests/integration/test_initialization.py"
+          },
+          {
+            "column": "permission_code",
+            "deletion": "restrict",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "permission_catalog.code",
+            "tests": "tests/integration/test_initialization.py"
+          }
+        ],
+        "module": "identity_foundation",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "role_permissions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "稳定角色代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "seed or controlled admin"
+          },
+          "name": "code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "受保护角色标记",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled security policy"
+          },
+          "name": "protected",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "角色是否启用",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled policy"
+          },
+          "name": "enabled",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "角色并发修改版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "角色定义；种子只创建缺失角色，不覆盖人工授权",
+      "constraints": [
+        {
+          "definition": "revision >= 1",
+          "kind": "check",
+          "name": "ck_roles_revision_positive"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_roles"
+        },
+        {
+          "definition": [
+            "code"
+          ],
+          "kind": "unique",
+          "name": "uq_roles_code"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [],
+        "module": "identity_foundation",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "roles"
+    },
+    {
+      "columns": [
+        {
+          "comment": "种子发布代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release seed"
+          },
+          "name": "code",
+          "nullable": false,
+          "primary_key": true,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "种子协议版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release seed"
+          },
+          "name": "version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "权威种子内容摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release seed sha256"
+          },
+          "name": "payload_sha256",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "已应用种子版本与摘要；拒绝同版本内容漂移",
+      "constraints": [
+        {
+          "definition": "payload_sha256 ~ '^[a-f0-9]{64}$'",
+          "kind": "check",
+          "name": "ck_seed_versions_digest"
+        },
+        {
+          "definition": "version >= 1",
+          "kind": "check",
+          "name": "ck_seed_versions_version_positive"
+        },
+        {
+          "definition": [
+            "code"
+          ],
+          "kind": "primary_key",
+          "name": "pk_seed_versions"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [],
+        "module": "identity_foundation",
+        "natural_key": "reviewed seed release code",
+        "owner_column": null,
+        "scope_kind": "system_operation"
+      },
+      "name": "seed_versions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "已锁定账号标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked user"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "已锁定角色标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked role"
+          },
+          "name": "role_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "账号角色关联；受控事务内校验身份与受保护角色",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_roles"
+        },
+        {
+          "definition": [
+            "user_id",
+            "role_id"
+          ],
+          "kind": "unique",
+          "name": "uq_user_roles_user_id_role_id"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "role_id",
+            "user_id"
+          ],
+          "metadata": {
+            "purpose": "protected role member and last administrator checks"
+          },
+          "name": "ix_user_roles_role_id_user_id",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "users.id",
+            "tests": "tests/integration/test_initialization.py"
+          },
+          {
+            "column": "role_id",
+            "deletion": "restrict",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "roles.id",
+            "tests": "tests/integration/test_initialization.py"
+          }
+        ],
+        "module": "identity_foundation",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_roles"
+    },
+    {
+      "columns": [
+        {
+          "comment": "账号显示邮箱",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "maintenance input"
+          },
+          "name": "email",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(254)"
+        },
+        {
+          "comment": "按账号规则规范化的唯一邮箱",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "validated email"
+          },
+          "name": "email_normalized",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(254)"
+        },
+        {
+          "comment": "Argon2id密码哈希，不存明文",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret_hash",
+            "source": "argon2id"
+          },
+          "name": "password_hash",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(512)"
+        },
+        {
+          "comment": "账号状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "账号授权版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "authz_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "用户端持久撤销代次",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "client_security_epoch",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "管理端持久撤销代次",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "admin_security_epoch",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "独立账号身份；B0只支持受控首管理员初始化",
+      "constraints": [
+        {
+          "definition": "authz_version >= 1",
+          "kind": "check",
+          "name": "ck_users_authz_version_positive"
+        },
+        {
+          "definition": "length(email_normalized) BETWEEN 3 AND 254",
+          "kind": "check",
+          "name": "ck_users_email_length"
+        },
+        {
+          "definition": "client_security_epoch >= 0 AND admin_security_epoch >= 0",
+          "kind": "check",
+          "name": "ck_users_security_epochs_nonnegative"
+        },
+        {
+          "definition": "status IN ('pending', 'active', 'disabled')",
+          "kind": "check",
+          "name": "ck_users_status"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_users"
+        },
+        {
+          "definition": [
+            "email_normalized"
+          ],
+          "kind": "unique",
+          "name": "uq_users_email_normalized"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled maintenance initialization"
+        ],
+        "deletion_policy": "retain; no public physical deletion in B0",
+        "lifecycle": "mutable",
+        "logical_relations": [],
+        "module": "identity_foundation",
+        "owner_column": null,
+        "scope_kind": "identity"
+      },
+      "name": "users"
+    }
+  ]
+}

@@ -37,7 +37,7 @@ async def liveness(request: Request) -> SuccessResponse[HealthRead]:
 )
 async def readiness(request: Request) -> SuccessResponse[HealthRead]:
     runtime: object = getattr(request.app.state, "runtime", None)
-    if not isinstance(runtime, Runtime) or not runtime.active or not runtime.ready:
+    if not isinstance(runtime, Runtime) or not await runtime.check_readiness():
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     return SuccessResponse[HealthRead](
         data=HealthRead(), meta=ResponseMeta(request_id=get_request_id(request))

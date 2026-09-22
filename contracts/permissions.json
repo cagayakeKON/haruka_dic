@@ -1,0 +1,632 @@
+{
+  "catalog_version": "b0-identity-v2",
+  "implemented_business_routes": [],
+  "menus": [
+    {
+      "audience": "admin",
+      "code": "administration",
+      "enabled": false,
+      "permission_code": "admin.login",
+      "route_key": "/admin"
+    }
+  ],
+  "permissions": [
+    {
+      "audience": "admin",
+      "code": "admin.audit.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.auth_policy.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.auth_policy.update",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.dashboard.view",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.diagnostics.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.grant_boundary.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.grant_boundary.update",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.job.cancel",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.job.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.job.retry",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.login",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.menu.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.menu.update",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.model_catalog.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.model_catalog.update",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.permission.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.protected_role.manage",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.quota.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.quota.update",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.resource_metadata.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.role.create",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.role.delete",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.role.permission.assign",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.role.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.role.update",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.session.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.session.revoke",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.user.approve",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.user.create",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.user.disable",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.user.enable",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.user.read",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.user.role.assign",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "admin",
+      "code": "admin.user.update",
+      "data_scope": "platform_metadata"
+    },
+    {
+      "audience": "client",
+      "code": "client.agent.delete",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.agent.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.agent.use",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.ai.explain",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.ai.feedback",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.bookmark.create",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.bookmark.delete",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.bookmark.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.collection.create",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.collection.delete",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.collection.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.collection.update",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.credential.manage",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.credential.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.credential.test",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.diagnosis.generate",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.diagnosis.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam.edit",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam.import",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam.list",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam_grade.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam_grade.regrade",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam_grade.request",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam_session.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam_session.save",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam_session.start",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.exam_session.submit",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.job.cancel",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.job.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.job.retry",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.login",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.material.analyze",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.material.delete",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.material.import",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.material.list",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.material.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.material.reparse",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.material.update",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.practice.answer",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.practice.generate",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.practice.grade.request",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.practice.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.practice.review.request",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.practice.start",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.profile.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.profile.update",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.reading.progress.update",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.speech.generate",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.speech.play",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.vocabulary.csv.export",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.vocabulary.csv.import",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.vocabulary.photo.import",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.vocabulary_notebook.create",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.vocabulary_notebook.delete",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.vocabulary_notebook.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.vocabulary_notebook.update",
+      "data_scope": "self"
+    }
+  ],
+  "registration_policy": {
+    "default_role": "learner",
+    "mode": "closed"
+  },
+  "role_templates": {
+    "account_admin": [
+      "admin.login",
+      "admin.role.read",
+      "admin.session.read",
+      "admin.session.revoke",
+      "admin.user.approve",
+      "admin.user.create",
+      "admin.user.disable",
+      "admin.user.enable",
+      "admin.user.read",
+      "admin.user.role.assign",
+      "admin.user.update"
+    ],
+    "auditor": [
+      "admin.audit.read",
+      "admin.diagnostics.read",
+      "admin.login"
+    ],
+    "client_readonly": [
+      "client.agent.read",
+      "client.bookmark.read",
+      "client.collection.read",
+      "client.credential.read",
+      "client.diagnosis.read",
+      "client.exam.list",
+      "client.exam.read",
+      "client.exam_grade.read",
+      "client.exam_session.read",
+      "client.job.read",
+      "client.login",
+      "client.material.list",
+      "client.material.read",
+      "client.practice.read",
+      "client.profile.read",
+      "client.speech.play",
+      "client.vocabulary.csv.export",
+      "client.vocabulary_notebook.read"
+    ],
+    "learner": [
+      "client.agent.delete",
+      "client.agent.read",
+      "client.agent.use",
+      "client.ai.explain",
+      "client.ai.feedback",
+      "client.bookmark.create",
+      "client.bookmark.delete",
+      "client.bookmark.read",
+      "client.collection.create",
+      "client.collection.delete",
+      "client.collection.read",
+      "client.collection.update",
+      "client.credential.manage",
+      "client.credential.read",
+      "client.credential.test",
+      "client.diagnosis.generate",
+      "client.diagnosis.read",
+      "client.exam.edit",
+      "client.exam.import",
+      "client.exam.list",
+      "client.exam.read",
+      "client.exam_grade.read",
+      "client.exam_grade.regrade",
+      "client.exam_grade.request",
+      "client.exam_session.read",
+      "client.exam_session.save",
+      "client.exam_session.start",
+      "client.exam_session.submit",
+      "client.job.cancel",
+      "client.job.read",
+      "client.job.retry",
+      "client.login",
+      "client.material.analyze",
+      "client.material.delete",
+      "client.material.import",
+      "client.material.list",
+      "client.material.read",
+      "client.material.reparse",
+      "client.material.update",
+      "client.practice.answer",
+      "client.practice.generate",
+      "client.practice.grade.request",
+      "client.practice.read",
+      "client.practice.review.request",
+      "client.practice.start",
+      "client.profile.read",
+      "client.profile.update",
+      "client.reading.progress.update",
+      "client.speech.generate",
+      "client.speech.play",
+      "client.vocabulary.csv.export",
+      "client.vocabulary.csv.import",
+      "client.vocabulary.photo.import",
+      "client.vocabulary_notebook.create",
+      "client.vocabulary_notebook.delete",
+      "client.vocabulary_notebook.read",
+      "client.vocabulary_notebook.update"
+    ],
+    "operator": [
+      "admin.dashboard.view",
+      "admin.diagnostics.read",
+      "admin.job.cancel",
+      "admin.job.read",
+      "admin.job.retry",
+      "admin.login",
+      "admin.resource_metadata.read"
+    ],
+    "security_admin": [
+      "admin.auth_policy.read",
+      "admin.auth_policy.update",
+      "admin.login",
+      "admin.menu.read",
+      "admin.menu.update",
+      "admin.permission.read",
+      "admin.role.create",
+      "admin.role.delete",
+      "admin.role.permission.assign",
+      "admin.role.read",
+      "admin.role.update"
+    ],
+    "super_admin": [
+      "admin.audit.read",
+      "admin.auth_policy.read",
+      "admin.auth_policy.update",
+      "admin.dashboard.view",
+      "admin.diagnostics.read",
+      "admin.grant_boundary.read",
+      "admin.grant_boundary.update",
+      "admin.job.cancel",
+      "admin.job.read",
+      "admin.job.retry",
+      "admin.login",
+      "admin.menu.read",
+      "admin.menu.update",
+      "admin.model_catalog.read",
+      "admin.model_catalog.update",
+      "admin.permission.read",
+      "admin.protected_role.manage",
+      "admin.quota.read",
+      "admin.quota.update",
+      "admin.resource_metadata.read",
+      "admin.role.create",
+      "admin.role.delete",
+      "admin.role.permission.assign",
+      "admin.role.read",
+      "admin.role.update",
+      "admin.session.read",
+      "admin.session.revoke",
+      "admin.user.approve",
+      "admin.user.create",
+      "admin.user.disable",
+      "admin.user.enable",
+      "admin.user.read",
+      "admin.user.role.assign",
+      "admin.user.update"
+    ]
+  },
+  "schema_version": 1
+}

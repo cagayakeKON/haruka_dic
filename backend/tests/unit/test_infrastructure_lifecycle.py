@@ -13,13 +13,20 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "failure", ["database", "cache", "kafka", "storage", "body", "cancel", "close", "none"]
+    "failure",
+    ["database", "schema", "cache", "kafka", "storage", "body", "cancel", "close", "none"],
 )
 async def test_cleanup_in_reverse_order(
     infrastructure_settings: Settings, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
     acquired: list[str] = []
     closed: list[str] = []
+
+    async def schema_check(_database: object) -> None:
+        if failure == "schema":
+            raise OSError("private-schema-sentinel")
+
+    monkeypatch.setattr(assembly, "_check_database_schema", schema_check)
 
     class Resource:
         def __init__(self, name: str, _settings: InfrastructureSettings) -> None:
@@ -46,7 +53,7 @@ async def test_cleanup_in_reverse_order(
     async def exercise() -> None:
         async with assembly.bootstrap(infrastructure_settings) as runtime:
             assert runtime.resources is not None
-            assert not runtime.ready
+            assert runtime.ready
             if failure == "body":
                 raise ValueError("body failure")
             if failure == "cancel":
@@ -103,6 +110,11 @@ async def test_cancel_during_resource_shutdown_completes_every_close(
     entered = asyncio.Event()
     release = asyncio.Event()
     closed: list[str] = []
+
+    async def schema_check(_database: object) -> None:
+        pass
+
+    monkeypatch.setattr(assembly, "_check_database_schema", schema_check)
 
     class Resource:
         def __init__(self, name: str, _settings: InfrastructureSettings) -> None:

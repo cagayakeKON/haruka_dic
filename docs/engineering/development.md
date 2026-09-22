@@ -33,7 +33,7 @@
 .tools/uv/uv.exe run --project backend --locked haruka-api --config backend/.env.example
 ```
 
-普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号。`B0-foundation`和backend/frontend等scope是局部检查；`check --stage B0`要求显式`--identity`与全部`--report`，调用既有必需用例检查器核对完整候选矩阵。缺项、失败、身份不符或procedure缺独立签收均拒绝，B1/B2仍拒绝。报告保存在忽略目录artifacts/dev；详见 [报告合同](../../tools/ci/README.md)。
+普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号；后端范围还会写入虚拟环境字节码禁用钩子，避免在源码目录生成 `__pycache__`。`B0-foundation`和backend/frontend等scope是局部检查；`check --stage B0`要求显式`--identity`与全部`--report`，调用既有必需用例检查器核对完整候选矩阵。缺项、失败、身份不符或procedure缺独立签收均拒绝，B1/B2仍拒绝。报告保存在忽略目录artifacts/dev；详见 [报告合同](../../tools/ci/README.md)。
 
 前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200；基础设施配置下ready重新检查数据库schema及依赖，成功200、失败503；离线壳仍返回503。没有公开登录、业务授权或模型接口。Worker/Outbox尚不处理业务；受控迁移、种子和首管理员入口已开放，首次启动API前按后端指南执行迁移。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
 

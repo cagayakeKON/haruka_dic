@@ -197,7 +197,12 @@ def run(
             timeout=timeout,
             check=False,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
-            env={**os.environ, "PYTHONUTF8": "1", **(environment or {})},
+            env={
+                **os.environ,
+                "PYTHONUTF8": "1",
+                "PYTHONDONTWRITEBYTECODE": "1",
+                **(environment or {}),
+            },
         )
     except (OSError, subprocess.TimeoutExpired) as error:
         report.record(name, "failed", arguments=list(arguments), reason=type(error).__name__)
@@ -540,6 +545,34 @@ def runtime_doctor(
     return public
 
 
+BYTECODE_GUARD_NAME = "haruka-no-bytecode.pth"
+BYTECODE_GUARD = "import sys; sys.dont_write_bytecode = True\n"
+
+
+def backend_site_packages(root: Path) -> Path | None:
+    venv = root / "backend" / ".venv"
+    if not venv.is_dir():
+        return None
+    if os.name == "nt":
+        site = venv / "Lib" / "site-packages"
+    else:
+        found = sorted((venv / "lib").glob("python*/site-packages"))
+        site = found[-1] if found else venv / "lib" / "python3.13" / "site-packages"
+    if not site.is_dir():
+        raise DevError("Backend virtualenv is missing site-packages")
+    return site
+
+
+def install_bytecode_guard(root: Path) -> None:
+    site = backend_site_packages(root)
+    if site is None:
+        return
+    target = site / BYTECODE_GUARD_NAME
+    if target.is_file() and target.read_text(encoding="utf-8") == BYTECODE_GUARD:
+        return
+    target.write_text(BYTECODE_GUARD, encoding="utf-8", newline="\n")
+
+
 def bootstrap(report: Report, scope: str) -> None:
     doctor(report, scope)
     scopes: set[str] = set(BOOTSTRAP_SCOPES[:-1]) if scope == "all" else {scope}
@@ -552,6 +585,7 @@ def bootstrap(report: Report, scope: str) -> None:
         )
     if "backend" in scopes:
         run(report, "uv", ["sync", "--locked", "--group", "dev"], cwd=ROOT / "backend", timeout=600)
+        install_bytecode_guard(ROOT)
         template = ROOT / "backend/.env.example"
         target = ROOT / "backend/.env"
         if not target.exists():
@@ -1094,6 +1128,7 @@ def dev(report: Report, arguments: argparse.Namespace) -> None:
     owner = processes.ProcessOwner(report.run_id, public.namespace)
     environment = {
         **os.environ,
+        "PYTHONDONTWRITEBYTECODE": "1",
         "HARUKA_RESOURCE_PROFILE": arguments.profile,
         "HARUKA_PUBLIC_BASE_URL": public.api_origin,
     }

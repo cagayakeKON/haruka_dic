@@ -187,6 +187,38 @@ class ResultGates(unittest.TestCase):
                 dev.bootstrap(dev.Report("bootstrap", "backend"), "backend")
             self.assertEqual(target.read_text(encoding="utf-8"), "LOCAL_VALUE=preserve\n")
 
+    def test_bootstrap_disables_bytecode_beside_backend_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "backend").mkdir()
+            (root / "backend/.env.example").write_text("LOCAL_VALUE=template\n", encoding="utf-8")
+            if os.name == "nt":
+                site = root / "backend/.venv/Lib/site-packages"
+            else:
+                site = root / "backend/.venv/lib/python3.13/site-packages"
+            site.mkdir(parents=True)
+            with (
+                patch("scripts.dev.ROOT", root),
+                patch("scripts.dev.doctor"),
+                patch("scripts.dev.run"),
+            ):
+                dev.bootstrap(dev.Report("bootstrap", "backend"), "backend")
+                dev.bootstrap(dev.Report("bootstrap", "backend"), "backend")
+            self.assertEqual(
+                (site / dev.BYTECODE_GUARD_NAME).read_text(encoding="utf-8"),
+                dev.BYTECODE_GUARD,
+            )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "backend/.venv").mkdir(parents=True)
+            with (
+                patch("scripts.dev.ROOT", root),
+                patch("scripts.dev.doctor"),
+                patch("scripts.dev.run"),
+                self.assertRaisesRegex(dev.DevError, "site-packages"),
+            ):
+                dev.bootstrap(dev.Report("bootstrap", "backend"), "backend")
+
     def test_unimplemented_milestones_never_pass(self) -> None:
         for stage in ("B0", "B1", "B2"):
             with self.subTest(stage=stage), self.assertRaises(dev.DevError):

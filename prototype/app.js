@@ -1,6 +1,8 @@
 "use strict";
 
 const ICONS = {
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  filter: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor" stroke="none"/><circle cx="15" cy="17" r="3" fill="currentColor" stroke="none"/>',
   book: '<path d="M3 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H3zM12 7a3 3 0 0 1 3-3h6v15h-5a4 4 0 0 0-4 2"/>',
   bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
   practice: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v4H9zM9 12h6M9 16h4"/>',
@@ -77,6 +79,7 @@ function searchBox(id, label, value) {
 }
 
 function renderLibrary() {
+  if (isMobile()) { renderMobileLibrary(); return; }
   main.innerHTML = `<section class="editorial-heading"><div><p class="eyebrow">THE PERSONAL LIBRARY</p><h1>我的书库<span class="heading-dot">。</span></h1><p class="heading-description">把喜欢的故事，读成自己的语言。</p></div><div class="heading-right"><p class="editorial-quote">Read what you love.<br>Love what you learn.</p><button class="primary" data-action="import">${icon("plus")}导入材料</button></div></section>
     <section aria-label="书库材料"><div class="library-toolbar"><div class="filter-tabs" aria-label="材料类型">${["全部材料", "小说", "教材", "试卷", "其他"].map((type) => `<button class="filter-tab ${state.filter === type ? "active" : ""}" data-action="filter" data-value="${type}" aria-pressed="${state.filter === type}">${type}${type === "全部材料" ? `<span class="tiny-count">${String(state.books.length).padStart(2, "0")}</span>` : ""}</button>`).join("")}</div>${searchBox("library-search", "搜索你的书库…", state.query)}</div>
     <div class="shelf-meta"><p id="material-count" role="status" aria-live="polite"></p><div class="shelf-tools"><select id="language-filter" aria-label="材料语言">${["全部语言", "日语", "英语"].map((value) => `<option ${value === state.language ? "selected" : ""}>${value}</option>`).join("")}</select><select id="sort-order" aria-label="材料排序"><option value="default" ${state.sort === "default" ? "selected" : ""}>默认排序</option><option value="title" ${state.sort === "title" ? "selected" : ""}>标题排序</option></select><div class="view-toggle" aria-label="书库布局"><button class="icon-button ${state.view === "grid" ? "active" : ""}" data-action="view" data-value="grid" aria-label="封面视图" aria-pressed="${state.view === "grid"}">${icon("grid")}</button><button class="icon-button ${state.view === "list" ? "active" : ""}" data-action="view" data-value="list" aria-label="列表视图" aria-pressed="${state.view === "list"}">${icon("list")}</button></div></div></div>
@@ -87,6 +90,7 @@ function renderLibrary() {
 function renderBookList() {
   let books = state.books.filter((book) => (state.filter === "全部材料" || state.filter === book.type) && (state.language === "全部语言" || state.language === book.language) && `${book.title} ${book.subtitle}`.toLowerCase().includes(state.query.trim().toLowerCase()));
   if (state.sort === "title") books = [...books].sort((a, b) => a.title.localeCompare(b.title, "zh"));
+  if (isMobile()) { renderMobileBooks(books); return; }
   const list = document.querySelector("#book-list");
   list.className = state.view === "grid" ? "book-grid" : "book-list";
   list.innerHTML = books.length ? books.map((book) => {
@@ -110,6 +114,7 @@ function readingParagraph(text, paragraph) {
 }
 
 function renderReader() {
+  if (isMobile()) { renderMobileReader(); return; }
   const book = bookById(state.bookId);
   const chapter = book.chapters[state.chapter];
   main.innerHTML = `<div class="reader-toolbar"><a href="#library" class="text-button">${icon("back")}返回书库</a><div class="reader-controls"><button class="icon-button" data-action="font" aria-label="调整阅读字号" title="调整字号">${icon("type")}</button><button class="icon-button ${state.focus ? "active" : ""}" data-action="focus" aria-label="专注阅读" aria-pressed="${state.focus}" title="专注阅读">${icon("focus")}</button><button class="secondary" data-action="tts">${icon("sound")}朗读</button></div></div>
@@ -124,10 +129,17 @@ function selectionStart(entry) {
   const text = bookById(entry.bookId).chapters[entry.chapter].paragraphs[entry.paragraph];
   return [...text.slice(0, text.indexOf(entry.text))].length;
 }
+function sourceSentence(entry) {
+  const text = bookById(entry.bookId).chapters[entry.chapter].paragraphs[entry.paragraph];
+  const offset = [...text].slice(0, selectionStart(entry)).join("").length;
+  const sentence = [...text.matchAll(/[^。.!?！？]+[。.!?！？]?/gu)].find((match) => match.index <= offset && match.index + match[0].length > offset);
+  return sentence ? sentence[0].trim() : text;
+}
 function isSaved(entry) {
   return state.collections.some((saved) => saved.bookId === entry.bookId && saved.chapter === entry.chapter && saved.paragraph === entry.paragraph && saved.text === entry.text && selectionStart(saved) === entry.start);
 }
 function renderExplanation() {
+  if (isMobile()) { renderMobileExplanation(); return; }
   const entry = state.explanation;
   const info = DICTIONARY[entry.text];
   const panel = document.querySelector("#explanation");
@@ -137,17 +149,20 @@ function renderExplanation() {
 }
 function closeExplanation() {
   state.explanation = null;
+  if (isMobile()) { if (dialog.open) dialog.close(); return; }
   document.querySelector("#explanation").hidden = true;
   document.querySelector("#reader-layout").classList.remove("with-explanation");
   if (explanationTrigger?.isConnected) explanationTrigger.focus({ preventScroll: true });
 }
 
 function renderCollections() {
+  if (isMobile()) { renderMobileCollections(); return; }
   main.innerHTML = `<section class="editorial-heading"><div><p class="eyebrow">WORDS WORTH KEEPING</p><h1>词句收藏<span class="heading-dot">。</span></h1><p class="heading-description">让偶然遇见的词，成为表达的一部分。</p></div><div class="heading-right"><p class="collection-count"><strong>${String(state.collections.length).padStart(2, "0")}</strong> 条收藏</p></div></section><section aria-label="收藏词句"><div class="library-toolbar"><div class="filter-tabs" aria-label="收藏筛选">${["全部词句", "未掌握", "已掌握"].map((type) => `<button class="filter-tab ${state.collectionFilter === type ? "active" : ""}" data-action="collection-filter" data-value="${type}" aria-pressed="${state.collectionFilter === type}">${type}</button>`).join("")}</div>${searchBox("collection-search", "搜索词句或释义…", state.collectionQuery)}</div><div id="collection-list" class="collection-grid"></div></section>`;
   renderCollectionList();
 }
 function renderCollectionList() {
   const entries = state.collections.filter((entry) => (state.collectionFilter === "全部词句" || (state.collectionFilter === "已掌握" ? entry.mastered : !entry.mastered)) && `${entry.text} ${DICTIONARY[entry.text].meaning}`.toLowerCase().includes(state.collectionQuery.trim().toLowerCase()));
+  if (isMobile()) { renderMobileCollectionList(entries); return; }
   document.querySelector("#collection-list").innerHTML = entries.length ? entries.map((entry) => {
     const info = DICTIONARY[entry.text];
     const book = bookById(entry.bookId);
@@ -155,10 +170,13 @@ function renderCollectionList() {
   }).join("") : `<div class="empty-state">${icon("bookmark")}<h2>这里还没有词句</h2><p>试试其他筛选，或去书里发现一个新词。</p><a class="secondary" href="#library">去书库看看 ${icon("arrow")}</a></div>`;
 }
 
-function openDialog(title, body) {
+function openDialog(title, body, kind = "info") {
   if (!dialog.open) dialogTrigger = document.activeElement;
+  dialog.dataset.kind = kind;
+  dialog.classList.toggle("mobile-sheet", isMobile());
   dialog.innerHTML = `<div class="dialog-heading"><h2 id="dialog-title" tabindex="-1">${title}</h2><button class="icon-button" data-action="close-dialog" aria-label="关闭弹窗">${icon("close")}</button></div>${body}`;
   if (!dialog.open) dialog.showModal();
+  document.body.classList.add("dialog-open");
   dialog.querySelector("#dialog-title").focus();
 }
 function infoDialog(title, text, note = "") {
@@ -181,6 +199,7 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action]");
   if (!button || button.disabled) return;
   const { action, value, id } = button.dataset;
+  if (action.startsWith("mobile-") && handleMobileAction(action, button, event)) return;
   if (action === "filter") { state.filter = value; setFilterButtons(action, value); renderBookList(); }
   else if (action === "view") { state.view = value; setFilterButtons(action, value); renderBookList(); }
   else if (action === "reset-filters") { state.query = ""; state.filter = "全部材料"; state.language = "全部语言"; renderLibrary(); document.querySelector("#library-search").focus(); }
@@ -206,17 +225,17 @@ document.addEventListener("click", (event) => {
     explanationTrigger = button;
     state.explanation = { text: button.dataset.word, paragraph: Number(button.dataset.paragraph), start: Number(button.dataset.start), bookId: state.bookId, chapter: state.chapter };
     state.focus = false; document.body.classList.remove("focus-mode");
-    const focusButton = main.querySelector('[data-action="focus"]'); focusButton.setAttribute("aria-pressed", "false"); focusButton.classList.remove("active");
+    const focusButton = main.querySelector('[data-action="focus"]');
+    if (focusButton) { focusButton.setAttribute("aria-pressed", "false"); focusButton.classList.remove("active"); }
     renderExplanation();
-    const panel = document.querySelector("#explanation"); panel.tabIndex = -1; panel.focus({ preventScroll: true });
-    if (window.innerWidth <= 680) panel.scrollIntoView({ block: "start" });
+    if (!isMobile()) { const panel = document.querySelector("#explanation"); panel.tabIndex = -1; panel.focus({ preventScroll: true }); }
   }
   else if (action === "close-explanation") closeExplanation();
   else if (action === "save-word") {
     if (!state.explanation || isSaved(state.explanation)) return;
     state.collections.unshift({ ...state.explanation, id: `saved-${state.nextId++}`, mastered: false });
     renderNavigation(); renderExplanation();
-    document.querySelector('[data-action="close-explanation"]').focus({ preventScroll: true });
+    (isMobile() ? dialog.querySelector('[data-action="close-dialog"]') : document.querySelector('[data-action="close-explanation"]')).focus({ preventScroll: true });
     toast("已收藏这个词，并保留原文出处。");
   }
   else if (action === "font") {
@@ -262,7 +281,12 @@ document.addEventListener("change", (event) => {
   if (event.target.id === "sort-order") { state.sort = event.target.value; renderBookList(); }
   if (event.target.id === "font-setting") { state.fontSize = Number(event.target.value); document.body.style.setProperty("--reading-size", `${state.fontSize}px`); }
 });
-dialog.addEventListener("close", () => { if (dialogTrigger?.isConnected) dialogTrigger.focus({ preventScroll: true }); });
+dialog.addEventListener("close", () => {
+  if (dialog.open) return;
+  document.body.classList.remove("dialog-open");
+  if (dialog.dataset.kind === "word") state.explanation = null;
+  if (dialogTrigger?.isConnected) dialogTrigger.focus({ preventScroll: true });
+});
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !dialog.open && state.explanation && state.page === "reader") closeExplanation(); });
 
 function route() {
@@ -271,6 +295,7 @@ function route() {
   let book = parts[0] === "reader" ? bookById(parts[1]) : source ? bookById(source.bookId) : null;
   if (book && !book.chapters.length) book = null;
   state.page = book ? "reader" : parts[0] === "collections" ? "collections" : "library";
+  document.body.dataset.page = state.page;
   state.explanation = null; state.focus = false; document.body.classList.remove("focus-mode");
   if (dialog.open) dialog.close();
   if (book) {
@@ -293,8 +318,64 @@ function route() {
       toast("已回到这个词的原文出处。");
     }
   } else if (parts[0] === "source") toast("这条示例收藏已不存在，请重新选择。");
+  renderedMobile = isMobile(); layoutWidth = window.innerWidth;
+  rememberReadingAnchor();
+}
+
+// Keep a content position rather than a scroll offset: phone and desktop have different line lengths.
+let renderedMobile = isMobile();
+let layoutWidth = window.innerWidth;
+let readingAnchor = null;
+let restoringAnchor = false;
+let reflowFrame = 0;
+function readingTop() {
+  return isMobile() ? (main.querySelector(".m-reader-header")?.getBoundingClientRect().bottom || 62) + 18 : 100;
+}
+function rememberReadingAnchor() {
+  if (state.page !== "reader") { readingAnchor = null; return; }
+  if (restoringAnchor || dialog.open || layoutWidth !== window.innerWidth || renderedMobile !== isMobile()) return;
+  const top = readingTop();
+  const paragraphs = [...main.querySelectorAll(".reading-text p")];
+  const paragraph = paragraphs.find((item) => item.getBoundingClientRect().bottom > top) || paragraphs.at(-1);
+  if (!paragraph) return;
+  const rect = paragraph.getBoundingClientRect();
+  readingAnchor = { bookId: state.bookId, chapter: state.chapter, id: paragraph.id, fraction: Math.max(0, Math.min(1, (top - rect.top) / rect.height)), atTop: window.scrollY < 5 };
+}
+function restoreReadingAnchor(anchor) {
+  if (!anchor || anchor.bookId !== state.bookId || anchor.chapter !== state.chapter) return;
+  const paragraph = document.getElementById(anchor.id);
+  if (!paragraph) return;
+  restoringAnchor = true;
+  const rect = paragraph.getBoundingClientRect();
+  window.scrollTo(0, anchor.atTop ? 0 : window.scrollY + rect.top + rect.height * anchor.fraction - readingTop());
+  // Retain the requested paragraph if the shorter desktop page clamps the scroll position.
+  readingAnchor = anchor;
+  requestAnimationFrame(() => requestAnimationFrame(() => { restoringAnchor = false; }));
+}
+function reflowLayout() {
+  cancelAnimationFrame(reflowFrame);
+  reflowFrame = requestAnimationFrame(() => {
+    const modeChanged = renderedMobile !== isMobile();
+    if (!modeChanged && layoutWidth === window.innerWidth) return;
+    const anchor = readingAnchor;
+    if (modeChanged) {
+      if (dialog.open) dialog.close();
+      state.explanation = null; state.focus = false;
+      document.body.classList.remove("focus-mode");
+      if (state.page === "reader") renderReader();
+      else if (state.page === "collections") renderCollections();
+      else renderLibrary();
+      renderNavigation();
+      main.focus({ preventScroll: true });
+    }
+    renderedMobile = isMobile(); layoutWidth = window.innerWidth;
+    if (state.page === "reader") restoreReadingAnchor(anchor);
+  });
 }
 
 document.querySelectorAll("[data-icon]").forEach((element) => { element.innerHTML = icon(element.dataset.icon); });
 window.addEventListener("hashchange", route);
+window.addEventListener("scroll", rememberReadingAnchor, { passive: true });
+window.addEventListener("resize", reflowLayout);
+mobileMedia.addEventListener("change", reflowLayout);
 route();

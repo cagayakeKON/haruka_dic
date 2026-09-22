@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "platform": "linux/amd64",
+  "base_image": "python@sha256:2a928e11761872b12003515ea59b3c40bb5340e2e5ecc1108e043f92be7e473d",
+  "debian_snapshot": "20260921T000000Z",
+  "artifacts": [
+    {
+      "name": "uv",
+      "version": "0.12.17",
+      "kind": "wheel",
+      "filename": "uv-0.12.17-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/0d/8d/e45565a046bd2592b75cb96fded9a7ab0cd6d470152fec713c82ee83ddbb/uv-0.12.17-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "9e25bb39e1674799c408345a6397ebc2c7c719d498be0ce9d935466d36ceacf5"
+    },
+    {
+      "name": "node",
+      "version": "24.18.0",
+      "kind": "tar",
+      "filename": "node-v24.18.0-linux-x64.tar.xz",
+      "url": "https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-x64.tar.xz",
+      "sha256": "55aa7153f9d88f28d765fcdad5ae6945b5c0f98a36881703817e4c450fa76742"
+    },
+    {
+      "name": "flutter",
+      "version": "3.47.3",
+      "revision": "e8113bf45620cbeb8aff64947ee4c93e16adb4cf",
+      "kind": "tar",
+      "filename": "flutter_linux_3.47.3-stable.tar.xz",
+      "url": "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.3-stable.tar.xz",
+      "sha256": "988665565cad9091db1baa54bf6d3868bb40e29719592f3c3a164deefd4208e1"
+    }
+  ]
+}

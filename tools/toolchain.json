@@ -62,6 +62,14 @@
     "status": "centralized_handwritten_transition_B0_B1",
     "decision": "tools/codegen/dart-api/transition.json"
   },
+  "linux_validation": {
+    "dockerfile": "dev/ci/Dockerfile",
+    "lock": "dev/ci/toolchain.lock.json",
+    "base_image": "python@sha256:2a928e11761872b12003515ea59b3c40bb5340e2e5ecc1108e043f92be7e473d",
+    "debian_snapshot": "20260921T000000Z",
+    "platform": "linux/amd64",
+    "shell": "/bin/bash"
+  },
   "pending": [
     "Production container image digests",
     "Locked long-term Dart API generator before B2",

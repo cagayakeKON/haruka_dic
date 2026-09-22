@@ -828,11 +828,69 @@ def check_infrastructure(report: Report) -> None:
     )
 
 
-def check(report: Report, stage: str) -> None:
-    if stage in {"B0", "B1", "B2"}:
+def check(
+    report: Report,
+    stage: str,
+    *,
+    identity: Path | None = None,
+    evidence_reports: Sequence[Path] = (),
+) -> None:
+    if stage in {"B1", "B2"}:
         raise DevError(
             f"{stage} has not passed its complete required evidence matrix. Use an explicit implemented local scope; a partial check does not sign off the milestone."
         )
+    if stage != "B0" and (identity is not None or evidence_reports):
+        raise DevError("--identity and --report are accepted only for check --stage B0")
+    if stage == "B0":
+        if identity is None or not evidence_reports:
+            raise DevError("B0 requires an explicit --identity and one or more --report paths")
+        candidate = identity.resolve(strict=True)
+        inputs = [path.resolve(strict=True) for path in evidence_reports]
+        matrix_path = ROOT / "artifacts/dev" / f"check-{report.run_id}-matrix.json"
+        if matrix_path.exists():
+            raise DevError("Refusing to overwrite an existing B0 matrix report")
+        matrix_path.parent.mkdir(parents=True, exist_ok=True)
+        arguments = [
+            "-m",
+            "scripts.quality.cases",
+            "--root",
+            str(ROOT),
+            "--manifest",
+            str(ROOT / "scripts/quality/required_cases.json"),
+            "--scope",
+            "B0",
+            "--phase",
+            "result",
+            "--identity",
+            str(candidate),
+            "--output",
+            str(matrix_path),
+        ]
+        for path in inputs:
+            arguments.extend(("--report", str(path)))
+        run(report, "python", arguments, cwd=ROOT)
+        matrix = json_object(json.loads(matrix_path.read_text(encoding="utf-8")))
+        if (
+            matrix.get("passed") is not True
+            or matrix.get("scope") != "B0"
+            or matrix.get("phase") != "result"
+        ):
+            raise DevError("The required-case gate did not produce a passing B0 result matrix")
+        report.record(
+            "acceptance_scope",
+            "passed",
+            scope="B0",
+            full_milestone=True,
+            acceptance_target="explicit_candidate_identity",
+            candidate_identity=json_object(matrix.get("identity")),
+            identity_file=str(candidate),
+            report_files=[str(path) for path in inputs],
+            matrix_report=str(matrix_path),
+            current_head_automatically_accepted=False,
+            ci_executed=False,
+            tests_reexecuted=False,
+        )
+        return
     if stage in {"tooling", "infrastructure", "B0-foundation"}:
         doctor(report, "backend")
         run(
@@ -1226,6 +1284,16 @@ def parser() -> argparse.ArgumentParser:
         ),
         required=True,
     )
+    command.add_argument(
+        "--identity", type=Path, help="B0 only: explicit candidate evidence identity"
+    )
+    command.add_argument(
+        "--report",
+        type=Path,
+        action="append",
+        default=[],
+        help="B0 only: repeat for every evidence report",
+    )
     command = commands.add_parser("codegen")
     mode = command.add_mutually_exclusive_group()
     mode.add_argument("--write", action="store_true")
@@ -1287,7 +1355,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif arguments.command == "bootstrap":
             bootstrap(report, arguments.scope)
         elif arguments.command == "check":
-            check(report, arguments.stage)
+            check(
+                report,
+                arguments.stage,
+                identity=arguments.identity,
+                evidence_reports=arguments.report,
+            )
         elif arguments.command == "codegen":
             codegen(report, write=arguments.write)
         elif arguments.command == "infra":

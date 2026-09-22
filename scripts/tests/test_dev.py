@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -190,6 +191,137 @@ class ResultGates(unittest.TestCase):
         for stage in ("B0", "B1", "B2"):
             with self.subTest(stage=stage), self.assertRaises(dev.DevError):
                 dev.check(dev.Report("check", stage), stage)
+
+    def test_b0_requires_explicit_identity_and_reports_and_other_scopes_refuse_them(self) -> None:
+        for identity, reports in (
+            (None, ()),
+            (Path("identity.json"), ()),
+            (None, (Path("report.json"),)),
+        ):
+            with self.subTest(identity=identity, reports=reports), patch("scripts.dev.run") as run:
+                with self.assertRaisesRegex(dev.DevError, "explicit --identity"):
+                    dev.check(
+                        dev.Report("check", "B0"), "B0", identity=identity, evidence_reports=reports
+                    )
+                run.assert_not_called()
+        for stage in (
+            "docs",
+            "tooling",
+            "backend",
+            "frontend",
+            "infrastructure",
+            "B0-foundation",
+            "B1",
+            "B2",
+        ):
+            with self.subTest(stage=stage), patch("scripts.dev.run") as run:
+                with self.assertRaises(dev.DevError):
+                    dev.check(
+                        dev.Report("check", stage),
+                        stage,
+                        identity=Path("identity.json"),
+                        evidence_reports=[Path("report.json")],
+                    )
+                run.assert_not_called()
+
+    def test_b0_cli_forwards_only_explicit_reports_and_records_candidate_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            identity = root / "identity.json"
+            identity.write_text('{"commit":"explicit-candidate"}', encoding="utf-8")
+            reports = [root / "one.json", root / "two.json"]
+            for path in (*reports, root / "not-selected.json"):
+                path.write_text("{}", encoding="utf-8")
+            calls: list[list[str]] = []
+
+            def gate(
+                _report: dev.Report, name: str, arguments: Sequence[str], **_kwargs: object
+            ) -> str:
+                self.assertEqual(name, "python")
+                calls.append(list(arguments))
+                target = Path(arguments[arguments.index("--output") + 1])
+                target.write_text(
+                    json.dumps(
+                        {
+                            "passed": True,
+                            "scope": "B0",
+                            "phase": "result",
+                            "identity": {"commit": "explicit-candidate"},
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                return ""
+
+            with patch("scripts.dev.ROOT", root), patch("scripts.dev.run", side_effect=gate):
+                code = dev.main(
+                    [
+                        "check",
+                        "--stage",
+                        "B0",
+                        "--identity",
+                        str(identity),
+                        "--report",
+                        str(reports[0]),
+                        "--report",
+                        str(reports[1]),
+                    ]
+                )
+            self.assertEqual(code, 0)
+            self.assertEqual(len(calls), 1)
+            command = calls[0]
+            self.assertEqual(command[:2], ["-m", "scripts.quality.cases"])
+            self.assertEqual(command[command.index("--scope") + 1], "B0")
+            self.assertEqual(command[command.index("--identity") + 1], str(identity.resolve()))
+            self.assertEqual(
+                [command[index + 1] for index, value in enumerate(command) if value == "--report"],
+                [str(path.resolve()) for path in reports],
+            )
+            outputs = list((root / "artifacts/dev").glob("check-*-matrix.json"))
+            self.assertEqual(len(outputs), 1)
+            report = json.loads(
+                outputs[0].with_name(outputs[0].name.replace("-matrix", "")).read_text()
+            )
+            record = report["records"][-1]
+            self.assertEqual(record["candidate_identity"], {"commit": "explicit-candidate"})
+            self.assertEqual(record["acceptance_target"], "explicit_candidate_identity")
+            self.assertFalse(record["current_head_automatically_accepted"])
+            self.assertFalse(record["ci_executed"])
+            self.assertFalse(record["tests_reexecuted"])
+            self.assertEqual(identity.read_text(), '{"commit":"explicit-candidate"}')
+            self.assertTrue(all(path.read_text() == "{}" for path in reports))
+
+    def test_b0_downstream_failure_and_missing_output_remain_failed(self) -> None:
+        for gate_exit in (0, 1):
+            with self.subTest(gate_exit=gate_exit), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                identity, evidence = root / "identity.json", root / "evidence.json"
+                identity.write_text("{}", encoding="utf-8")
+                evidence.write_text("{}", encoding="utf-8")
+                with (
+                    patch("scripts.dev.ROOT", root),
+                    patch(
+                        "scripts.dev.subprocess.run",
+                        return_value=subprocess.CompletedProcess([], gate_exit, "", ""),
+                    ),
+                ):
+                    code = dev.main(
+                        [
+                            "check",
+                            "--stage",
+                            "B0",
+                            "--identity",
+                            str(identity),
+                            "--report",
+                            str(evidence),
+                        ]
+                    )
+                self.assertEqual(code, 1)
+                report = json.loads(next((root / "artifacts/dev").glob("check-*.json")).read_text())
+                self.assertEqual(report["result"], "failed")
+                self.assertFalse(
+                    any(record["name"] == "acceptance_scope" for record in report["records"])
+                )
 
     def test_missing_executable_and_failed_subprocess_do_not_succeed(self) -> None:
         with patch("scripts.dev.shutil.which", return_value=None), self.assertRaises(dev.DevError):

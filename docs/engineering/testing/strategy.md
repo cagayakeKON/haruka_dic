@@ -149,6 +149,7 @@ def override_dependency(
 | VISION_OCR | 文本层免调用、扫描/混合页范围、显式阶段/Key/预算、首次识别与重识别版本、截断/漏页/错误坐标、页面重试与unknown结果、无传统OCR回退 | 页计划/校验单测 + Fake视觉/Job/作用域集成；真实识别质量另行授权样本评估，OCR验收按获准格式分期 |
 | NOVEL | 章序/对话/脚注、句词边界与原文范围、标注失败降级、专用阅读器 | 人工标注样本 + controller/widget + 三端相关流程，NOV |
 | TEXTBOOK | 单元/角色/词表列与题目答案关联、缺结构降级、位置与Attempt分离、逐题反馈 | 独立课本结构样本 + 专用页面/普通练习集成，TBK |
+| LEARNING_PRESENTATION | [PRES-01～PRES-08](../../contracts/learning-presentation.md)：八类内容关系/顺序、五类输入及题组、原文与题面投影、未知结构/媒体降级、跨布局状态 | 人工标注源样本 + 类型化校验/API资产授权 + controller/widget；当期三端目标流程，分别证明解析与消费，不为文档改动运行应用用例 |
 | READING | 稳定出处/Unicode、重解析与删除后的快照、进度冲突、离线租期和重联撤权 | 跨端相同样本 + 缓存/版本单测 |
 | COLLECTION | 新增/编辑/删除及标签，重复提交、出处回跳、删除原文后保留上下文，失权不写入 | API + 控制器/组件 |
 | VOCABULARY_NOTEBOOK | [VNB验收](../../modules/vocabulary-notebooks.md)：多本/多对多去重、语种/父锁、删本保留词、批量筛选快照、只读派生字段与CSV v2权限 | 规则/真实PG事务 + API/Flutter组件；三端仅选目标流程 |

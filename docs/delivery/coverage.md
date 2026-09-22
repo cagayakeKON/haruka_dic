@@ -11,6 +11,7 @@
 | [统一视觉模型OCR](../architecture/vision-recognition.md) | [运行层](../architecture/agent-runtime.md)、[来源定位](../contracts/content-locator.md)、对应材料/照片模块 | OCR-01～OCR-05，按获准格式/消费功能执行；本人Key/预算、页覆盖、识别稿/版本、失败恢复、定位粒度与日志 |
 | [小说：预处理与连续阅读](../modules/novels.md) | [材料类型](../contracts/material-types.md)、[出处](../contracts/content-locator.md) | NOV；章序/段落/对话、分句分词、专用阅读和标注降级 |
 | [课本：单元结构与学习](../modules/textbooks.md) | [材料类型](../contracts/material-types.md)、[普通练习](../modules/vocabulary-practice.md) | TBK；内容角色/词表/题目关联、单元位置、逐题反馈与独立状态 |
+| [教材/试卷解析展示](../contracts/learning-presentation.md) | [课本](../modules/textbooks.md)、[考试](../modules/exams.md)、[出处](../contracts/content-locator.md)、[Flutter](../engineering/flutter.md) | PRES-01～PRES-08；八类内容/五类输入/题组、原始顺序与关系、原文投影、未知结构和媒体故障、三端状态；阶段2解析展示、3学习辅助、4作答复盘分别验收 |
 | [学习：收藏、照片、练习、评分和诊断](../modules/vocabulary-practice.md) | [权限](../contracts/permissions.md)、[数据与任务](../architecture/data-jobs.md) | COL/PHOTO/PRA/DIAG；重复与来源、规则/AI评分、有效贡献 |
 | [按单词本/时间/记忆生成练习](../modules/vocabulary-practice.md#按单词本时间和记忆情况生成) | [学习状态](../architecture/vocabulary-learning.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md) | PGEN-01～PGEN-06；筛选组合/时间空值、稳定预览与确认、词数不足、撤权/版本/幂等、生成与学习分离；阶段4验收 |
 | [多单词本与每日学习](../modules/vocabulary-notebooks.md) | [学习证据/掌握/调度](../architecture/vocabulary-learning.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-10、VL-01～VL-10；多对多归属、删本/删词、跨本去重、自动掌握、日额度/辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |

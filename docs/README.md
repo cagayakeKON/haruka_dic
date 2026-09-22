@@ -9,6 +9,7 @@
 | 了解产品 | [产品总览](product/overview.md) | [待决事项](decisions/pending.md) |
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |
+| 实现教材/试卷解析与展示 | [解析展示契约](contracts/learning-presentation.md) | [课本](modules/textbooks.md)、[考试](modules/exams.md)、[出处](contracts/content-locator.md)、[Flutter适配](engineering/flutter.md) |
 | 实现私有解释/TTS缓存和全局单词发音 | [学习结果缓存](architecture/learning-cache.md) | [AI与朗读](modules/ai-speech.md)、[收藏](modules/vocabulary-practice.md)、[设置](modules/settings.md)、[数据与任务](architecture/data-jobs.md) |
 | 实现多单词本、自动掌握与每日复习 | [单词本](modules/vocabulary-notebooks.md) | [学习证据与调度](architecture/vocabulary-learning.md)、[普通练习](modules/vocabulary-practice.md)、[CSV](contracts/vocabulary-csv.md) |
 | 初始化工程 | [脚手架](engineering/scaffold.md) | [项目结构](architecture/project-structure.md)、[B0/B1/B2](delivery/milestones/scaffold.md)、[开发指南](engineering/development.md) |

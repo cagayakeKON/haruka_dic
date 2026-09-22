@@ -30,6 +30,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 表中方法/路径为待落地草案；`{id}`均验证归属和用途。明确的action子资源用于提交/重试等状态转移，不用任意`action`字符串做万能执行器。权限代码按 [中央目录](permissions.md) 展开。
 
+教材内容与试卷题面的类型化载荷遵循[解析展示契约](learning-presentation.md)：TextbookManifest 的八类角色和考试五类交互/题组分别定义，保留源顺序、关系、版本和消费能力要求，不返回模型生成的页面代码。原文对照复用受控源读取/文件签名，试卷完整原件与题面媒体按各自权限/用途投影；通用材料、出处、缓存及媒体接口不扩大考试内容可见范围。
+
 | 资源/方法 | 关键输入/返回与业务动作 | 权限/规范 |
 | --- | --- | --- |
 | GET meta；GET model-capabilities | 公共instance_id/兼容版本/材料类型与格式能力；已登录者模型/声音/输出格式能力 | meta不带凭据探测；模型能力目录是client登录基础只读，不含Key/管理字段；能力支持不代表个人获权 |
@@ -74,6 +76,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从exam材料准备/校对/冻结；不能直接把novel/textbook当试卷 | exam动作+实际AI分析/导入权限；其他类型先显式重新处理 |
 | POST exams/{id}/sessions；GET exam-sessions/{id}；POST {id}/takeover | 开考/恢复/显式编辑端接管 | exam_session.start/read/save、edit_epoch |
 | PUT exam-sessions/{id}/responses；POST {id}/submit | response_revision/edit_epoch；最后答案与submit_reason | save/submit；服务端时间/锁卷 |
+| POST exam-sessions/{id}/media-reports | 冻结题面asset引用、edit_epoch与幂等键；服务端受控复核后返回未确认/确认事实及revision，不接受客户端自判故障或任意URL | session.read+save、活动状态/截止/edit_epoch；只读题面不授予报告写入，服务端推导受影响叶子；确认持久化及锁卷/评分门槛见[考试故障处理](../modules/exams.md#必要媒体故障的场次处理) |
 | POST exam-sessions/{id}/grading-runs；GET {id}/results | 初次批改或新generation重评；部分/有效成绩 | exam_grade.request/regrade/read |
 | GET jobs/{id}；POST {id}/cancel/retry | 当前阶段、可操作状态、结果引用 | read的结果另验来源read；cancel只需本人范围/可取消状态和job.cancel；仅retry重验原业务权限/付费意图 |
 | GET runs/{id}/events | Agent/解释/Job进度的统一应用事件流 | run类型所需read，不能只因有run_id放行 |

@@ -59,6 +59,8 @@ Pydantic 输入、持久化和返回 DTO 分开定义。注册/授权/Key 等敏
 
 ## 4. Flutter 状态、交互与异步
 
+独立页面、适配决策、平台接口与移动端优化的实施细则见 [Flutter开发与适配规范](flutter.md)，目录见项目结构。共享业务状态，复杂页面可分紧凑/宽屏layout；不强制界面复用率，也不把操作系统类型当布局断点。
+
 1. 页面明确区分 initial/loading/empty/data/error，以及 submitting、conflict、permission_denied；无权限和无数据不能混成同一提示。
 2. Riverpod 的账号、受众和账号代次是私有状态的作用域。退出/切换时释放播放器、订阅、下载及旧缓存；异步结果到达时核对代次与资源版本。
 3. 页面守卫等待服务端 AccessSnapshot；菜单和按钮由有效权限推导。业务暂不可用显示原因，未授权不提前请求或渲染私有数据。

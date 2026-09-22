@@ -22,7 +22,7 @@ haruka_dic/
     lib/
       main.dart                     初始化、错误钩子、依赖组装
       app/                          App、启动恢复、路由、主题、两端布局
-      core/                         auth、access、network、telemetry、storage、platform
+      core/                         auth、access、network、telemetry、storage、layout、platform
       features/
         account/ library/ reader/ collections/ practice/ exams/
         agent/ speech/ settings/ admin/
@@ -80,6 +80,30 @@ haruka_dic/
 | PlatformServices | 文件、音频、安全存储、生命周期 | 平台分支散落每个页面 |
 
 管理 feature 下按 users、roles、menus、policies、operations、audit 划分；数据取管理 DTO，不复用用户材料详情接口来浏览其他用户。共享按钮组件只能复用交互外观，不能决定业务权限。
+
+### 独立布局与平台代码
+
+页面拆分、空间/输入/能力决策、状态恢复及移动端优化以 [Flutter开发与适配规范](../engineering/flutter.md) 为准。以下是复杂feature的目标示例，当前未创建；简单页面不机械增加多套layout或空目录：
+
+~~~text
+frontend/lib/
+  app/                            路由、全局壳与账号/受众作用域
+  core/layout/adaptive_policy.dart  可用空间分类和公共适配策略；阈值单一来源
+  core/platform/                  类型化能力接口与条件选择/插件适配
+  features/reader/
+    application/reader_controller.dart  共享状态/业务动作，生命周期在layout分支以上
+    domain/                       纯阅读规则与业务类型
+    data/                         API/缓存仓储
+    presentation/
+      reader_page.dart            路由页面协调与布局选择
+      layouts/reader_compact.dart  紧凑/触控优先结构
+      layouts/reader_expanded.dart 宽屏结构
+      widgets/                    本功能可复用的小组件
+~~~
+
+platform实现按实际能力拆文件，例如files、audio、secure_storage；Web与原生依赖通过条件导入/独立bootstrap隔离，Android/Windows的插件缺口才增加必要宿主代码。compact/expanded表示空间结构，不能与Android/Windows硬绑定；medium默认复用紧凑布局，只有验证后才增加第三种结构。
+
+两个layout消费同一controller的状态/动作，不互相import对方页面，也不复制repository或直接调用平台插件。page级视图协调器可保存跨layout的焦点/滚动恢复信息，domain/controller不持有Widget、BuildContext或界面控制器。账号切换释放整个私有feature作用域；窗口重排不创建新业务会话。
 
 ## 3. Python 内部分层
 

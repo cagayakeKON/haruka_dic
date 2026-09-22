@@ -92,6 +92,8 @@ Android以flavor与对应applicationId配置表达环境；具体Gradle/JDK/Flut
 
 Flutter保持一个工程：Web注册用户与管理布局，Windows/Android构建不注册管理路由；统一bootstrap组装公开配置、日志、错误钩子与平台适配。平台区分通过编译条件/适配模块处理；构建目标校验必须实际检测深链和路由注册结果，不能只隐藏入口按钮。dev、production是环境轴，debug、release是优化轴，不能把release构建自动等同生产服务；dev环境也要能构建release用于平台验证。
 
+B0按 [Flutter适配规范](flutter.md) 建立core/layout策略、平台能力入口与共享状态之上的布局切换；目录只按项目结构创建实际使用部分。阈值先验证再锁定，原型CSS值不直接继承。B1在登录/合法选区收藏闭环验证独立紧凑/宽屏视图、系统键盘/返回和账号切换，后续阅读/考试/媒体按所属阶段扩展，不因搭壳提前创建全部功能。
+
 Web Nginx把/api/v1与私有媒体/事件请求优先转发到后端，未知API路径返回API错误，不能回退成HTML。前端/admin和用户深链在其余页面范围内回退到同一SPA入口，静态资源缺失返回404；入口HTML与版本化assets采用不同缓存策略。实际测试硬刷新、资源路径、Cookie/CSRF、SSE和旧壳兼容。[Flutter Web路径策略](https://docs.flutter.dev/ui/navigation/url-strategies)
 
 目标清单只能保存公开API默认地址、环境/构建标识、支持的能力与版本；用户自选服务仍走设置专题的无凭据探测与账号切换规则。凭据、加密主密钥、签名材料不打入清单。dev/test默认只允许已声明隔离实例，地址配置缺失/环境冲突时失败，不回退生产。所有平台验证安全存储、Drift、文件选择保存、音频与日志适配；Web的WASM/worker等资源按锁定插件的实际要求打包并验证，不假定原生插件自动支持Web。

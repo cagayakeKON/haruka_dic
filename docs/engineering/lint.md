@@ -200,6 +200,7 @@ Markdownlint 不能代替以下检查，未来 scripts/ 检查入口须实现并
 5. 数据库变更对受影响模型/迁移及共同Base执行DB结构检查；新增或修改检查器时验证漏时间字段、漏scope/逻辑关系、误加物理外键、重复索引、字典漂移与空模型清单等坏样本。实际PG catalog、时间写入和隔离/锁竞争属于[DB验收](database.md)，不能用Ruff、文本搜索或ORM导入成功替代。
 6. 按 [统一返回契约](../contracts/api-responses.md) 检查实际路由注册及导出OpenAPI：JSON成功泛型具体化、错误模型/状态声明齐全、默认422已替换、流/空体例外明确；错误码/参数/本地化占位符目录一致。静态声明不能替代API-07～API-10的真实错误响应与跨端解码验证。
 7. 按 [模块边界](../architecture/project-structure.md) 检查受影响Python导入关系、domain禁依赖和循环依赖；跨模块仓储/模型联合查询例外需登记。规则用AST或实际导入图实现，不只靠搜索类名；首次建立/改变检查器时提供违法依赖样本证明能阻断。
+8. Flutter按 [适配规范](flutter.md) 检查feature/UI不直接导入原生库或调用MethodChannel，平台依赖只在声明适配边界出现；布局阈值集中、业务controller不持有界面对象。静态检查/代码review只能证明边界，三端编译、状态切换与原生交互仍需对应FLT证据，不把检测到kIsWeb当兼容通过。
 
 CLI、配置语法与规则以 [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) 和 [markdownlint 规则](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) 为准。初始化时在独立文档工具清单锁定 Node、包版本与 lockfile，CI 调用已安装的 markdownlint-cli2，不临时下载 latest。现在仅能报告实际执行的链接/围栏等文档检查。
 

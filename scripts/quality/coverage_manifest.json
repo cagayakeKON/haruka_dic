@@ -120,6 +120,13 @@
         "backend-foundation"
       ]
     },
+    "backend/app/cli/lifecycle.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
     "backend/app/cli/outbox.py": {
       "language": "python",
       "kind": "core",
@@ -437,6 +444,7 @@
         "backend/app/api/",
         "backend/app/schemas/responses.py",
         "backend/app/schemas/scalars.py",
+        "backend/app/cli/lifecycle.py",
         "backend/app/maintenance/",
         "backend/app/models/",
         "backend/app/services/",

@@ -8,7 +8,7 @@ from redis.asyncio import Redis
 from redis.asyncio.retry import Retry
 from redis.backoff import NoBackoff
 
-from app.core.settings import InfrastructureSettings
+from app.core.settings import CoreInfrastructureSettings
 
 
 class _RedisPing(Protocol):
@@ -22,7 +22,7 @@ async def _ping(client: _RedisPing) -> bool:
 
 
 class Cache:
-    def __init__(self, settings: InfrastructureSettings) -> None:
+    def __init__(self, settings: CoreInfrastructureSettings) -> None:
         self.namespace = settings.namespace
         address = urlsplit(settings.redis_url.get_secret_value())
         self.client = Redis(

@@ -25,7 +25,7 @@ def infrastructure_settings() -> Settings:
         public_base_url="http://127.0.0.1:8000",
         infrastructure_enabled=True,
         database_url=SecretStr(
-            "postgresql+asyncpg://runtime:test-only@127.0.0.1:15432/haruka_test"
+            "postgresql+asyncpg://haruka_test_runtime:test-only@127.0.0.1:15432/haruka_test"
         ),
         redis_url=SecretStr("redis://:test-only@127.0.0.1:16379/1"),
         resource_namespace="haruka-test-unit",

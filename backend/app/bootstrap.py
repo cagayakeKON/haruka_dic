@@ -41,16 +41,18 @@ async def _close_resources(stack: AsyncExitStack) -> None:
 class Resources:
     database: Database
     cache: Cache
-    kafka: KafkaProducer
-    storage: ObjectStorage
+    kafka: KafkaProducer | None
+    storage: ObjectStorage | None
     consumer: KafkaConsumer | None
 
     async def check(self) -> None:
         """Read-only connectivity checks, not schema or business readiness."""
         await self.database.check()
         await self.cache.check()
-        await self.kafka.check()
-        await self.storage.check()
+        if self.kafka is not None:
+            await self.kafka.check()
+        if self.storage is not None:
+            await self.storage.check()
 
 
 @dataclass
@@ -73,8 +75,10 @@ class Runtime:
                 probes.create_task(self.resources.database.check())
                 probes.create_task(_check_database_schema(self.resources.database))
                 probes.create_task(self.resources.cache.check())
-                probes.create_task(self.resources.kafka.check())
-                probes.create_task(self.resources.storage.check())
+                if self.resources.kafka is not None:
+                    probes.create_task(self.resources.kafka.check())
+                if self.resources.storage is not None:
+                    probes.create_task(self.resources.storage.check())
         except Exception:
             self.schema_compatible = False
             logger.warning("infrastructure.unavailable")
@@ -100,7 +104,9 @@ async def bootstrap(
     async with AsyncExitStack() as stack:
         try:
             if settings.infrastructure_enabled:
-                configuration = settings.infrastructure()
+                if role in {"worker", "outbox"} and settings.resource_profile != "jobs":
+                    raise InfrastructureUnavailable("worker and outbox require the jobs profile")
+                configuration = settings.core_infrastructure()
                 try:
                     database = Database(configuration)
                     stack.push_async_callback(database.aclose)
@@ -110,18 +116,20 @@ async def bootstrap(
                     cache = Cache(configuration)
                     stack.push_async_callback(cache.aclose)
                     await cache.check()
-                    kafka = KafkaProducer(configuration)
-                    stack.push_async_callback(kafka.aclose)
-                    await kafka.check()
-                    storage = ObjectStorage(configuration)
-                    stack.push_async_callback(storage.aclose)
-                    await storage.check()
+                    kafka = None
+                    storage = None
                     consumer = None
-                    if role == "worker":
-                        consumer = KafkaConsumer(
-                            configuration, group=f"{configuration.namespace}.worker"
-                        )
-                        stack.push_async_callback(consumer.aclose)
+                    if settings.resource_profile == "jobs":
+                        jobs = settings.infrastructure()
+                        kafka = KafkaProducer(jobs)
+                        stack.push_async_callback(kafka.aclose)
+                        await kafka.check()
+                        storage = ObjectStorage(jobs)
+                        stack.push_async_callback(storage.aclose)
+                        await storage.check()
+                        if role == "worker":
+                            consumer = KafkaConsumer(jobs, group=f"{jobs.namespace}.worker")
+                            stack.push_async_callback(consumer.aclose)
                     runtime.resources = Resources(database, cache, kafka, storage, consumer)
                 except Exception:
                     logger.error("infrastructure.unavailable")

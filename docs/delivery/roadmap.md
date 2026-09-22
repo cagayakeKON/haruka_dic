@@ -46,7 +46,7 @@ OCR已确认统一走 [视觉模型识别](../architecture/vision-recognition.md
 - [ ] B1：三端正式登录/access、合法选区收藏新增/列表、最小管理受众边界和日志查询通过；最终注册恢复策略另行落实。
 - [ ] B2：从收藏经正式Job/Outbox/Kafka/Worker/SSE生成一个练习，dev/test Fake、撤权/故障/重复与模拟日志口径通过；真实AI验证仍待执行。
 
-B0-foundation已落地两端工程、公共边界和局部检查；[B0-infrastructure](reviews/2026-09-22-scaffold-infrastructure.md) 补齐PG/Redis/Kafka/MinIO客户端生命周期与dev/隔离Compose、日志采集。[B0数据库切片](reviews/2026-09-22-b0-identity.md)补齐迁移/种子/首管理员、schema检查及字典；开发编排、完整生成兼容、平台与质量矩阵仍需完成，局部切片不等于完整B0通过。
+B0-foundation已落地两端工程、公共边界和局部检查；[B0-infrastructure](reviews/2026-09-22-scaffold-infrastructure.md) 补齐PG/Redis/Kafka/MinIO客户端生命周期与dev/隔离Compose、日志采集。[数据库切片](reviews/2026-09-22-b0-identity.md)补齐迁移/种子/首管理员、schema检查及字典；[前端契约](reviews/2026-09-22-b0-frontend.md)和[质量检查器](reviews/2026-09-22-b0-quality.md)已完成局部review与验证。[开发编排](reviews/2026-09-22-b0-development.md)已取得core/jobs Web真实启停证据；干净检出、Linux完整应用、Windows安装隔离及最终程序/平台矩阵仍需收口，局部切片不等于完整B0通过。
 
 参考收藏与出题只提前实现最小业务链路，阶段3/4仍负责其完整功能与最终验收；不能因参考流程通过就勾选整项功能。
 

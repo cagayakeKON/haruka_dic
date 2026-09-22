@@ -10,14 +10,16 @@
 .tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py infra up
 .tools/uv/uv.exe run --project backend --locked haruka-manage db upgrade --maintenance-config dev/.local/dev-maintenance.env --migrations-dir "$PWD/backend/alembic"
 .tools/uv/uv.exe run --project backend --locked haruka-manage seed apply --maintenance-config dev/.local/dev-maintenance.env
-.tools/uv/uv.exe run --project backend --locked haruka-api --config dev/.local/backend.env
+.tools/uv/uv.exe run --project backend --locked haruka-api --config dev/.local/backend.env --port 18080
 ```
 
 `--config` 显式指定配置文件；环境变量优先，不自动读取当前目录的 `.env`。配置检查只输出是否通过，不输出输入值。API 默认仅绑定回环地址。此切片仅允许 dev/test，staging/production 在持久依赖及安全接线完成前拒绝启动。
 
-`GET /health/live` 表示应用循环存活；`GET /health/ready` 实查数据库结构与PG/Redis/Kafka/私有Bucket，成功200、失败503。启动时也执行只读schema检查；失败清理此前资源并停止启动。`backend/.env.example` 是不连接基础设施的离线壳模式，始终不报告ready。基础设施就绪不代表登录或业务授权已实现。
+`GET /health/live` 表示应用循环存活；`GET /health/ready` 实查数据库结构与当前profile所需依赖，成功200、失败503。`HARUKA_RESOURCE_PROFILE=core`只要求PG/Redis，默认jobs另检查Kafka/私有Bucket。运行账号必须是对应数据库的专用runtime角色，启动时检查实际连接身份、禁止的DDL/审计修改权限和schema；失败清理此前资源并停止启动。`backend/.env.example` 是不连接基础设施的离线壳模式，始终不报告ready。基础设施就绪不代表登录或业务授权已实现。
 
 没有业务API，`/api/v1/*` 返回统一404。Worker/Outbox的 `--check-startup` 共用资源生命周期，Worker额外创建并关闭不自动提交offset的Consumer；尚不领取任务或发送Outbox。普通启动不建表、迁移、建Bucket或种子。
+
+需要保持进程时使用 `--lifecycle-only`，它要求启用jobs资源，并明确报告 `business_handlers=false`；API/Worker/Outbox支持独立绝对未来文件 `--shutdown-file` 供开发编排请求优雅退出。日常前后端联合启动使用[统一开发入口](../docs/engineering/development.md#当前可运行开发进程编排)，优先选择已登记的备用18080，避免本机8000系统保留段。
 
 维护使用独立凭据：`haruka-manage db status/upgrade`还要求`--migrations-dir`为绝对路径；`seed apply`只创建缺失初始目录，不覆盖人工授权。`admin init --maintenance-config <文件> --email <邮箱>`在受控终端隐藏输入密码，拒绝回显回退、已有普通账号提权或第二次首管理员创建。已初始化同一账号的重放不修改密码。迁移通过同一物理PG连接持锁和执行DDL，禁止裸Alembic绕过；同版本sdist包含alembic附件，安装运行不依赖checkout。
 

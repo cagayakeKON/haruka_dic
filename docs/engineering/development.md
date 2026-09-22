@@ -1,6 +1,6 @@
 # 开发环境与日常操作
 
-状态：2026-09-22，已建立backend/、frontend/、scripts/、tools/、dev/及锁文件，当前交付包含B0基础壳与基础设施切片。生产deploy/、业务流程与CI尚未建立；下文“当前可运行”区按实际范围执行，其余章节继续维护完整实施合同。
+状态：2026-09-22，已建立backend/、frontend/、scripts/、tools/、dev/及锁文件，B0已交付基础壳、基础设施、数据库初始化、前端契约与质量检查器；开发编排已实测，完整干净环境/平台矩阵仍在补齐。CI参考工作流已建立，未发生远端运行；生产deploy/与B1/B2业务流程尚未建立。下文“当前可运行”区按实际范围执行，其余章节继续维护完整实施合同。
 
 ## 当前可运行：基础设施
 
@@ -10,7 +10,7 @@
 .tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py doctor --scope infra
 .tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py infra up
 .tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py infra status
-.tools/uv/uv.exe run --project backend --locked haruka-api --config dev/.local/backend.env
+.tools/uv/uv.exe run --project backend --locked haruka-api --config dev/.local/backend.env --port 18080
 ```
 
 启动前生成Git忽略的dev/.local/backend.env及test.env；配置中的基础设施开关启用真实连接，不能从其他环境回退。重复up保留已有配置和卷，down也不删卷。端口、凭据位置、镜像摘要与受限账号说明见dev/README。管理连接检查为 `haruka-manage --config dev/.local/backend.env check-infrastructure`，Worker/Outbox使用同一配置的 `--check-startup` 检验生命周期，不领取业务任务。
@@ -33,7 +33,7 @@
 .tools/uv/uv.exe run --project backend --locked haruka-api --config backend/.env.example
 ```
 
-普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号。check各scope均为局部检查；B0-foundation仍保留首轮组合，不签署完整B0，报告在忽略目录artifacts/dev。`check --stage B0/B1/B2`及`dev --profile core/jobs`在完整应用编排交付前明确失败；当前基础设施使用infra命令。
+普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号。check各scope均为局部检查；B0-foundation仍保留首轮组合，不签署完整B0，报告在忽略目录artifacts/dev。`check --stage B0/B1/B2`在完整必需矩阵签署前仍明确失败。质量切片已有[独立报告检查入口](../../tools/ci/README.md)，不把缺少平台结果转换成通过。
 
 前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200；基础设施配置下ready重新检查数据库schema及依赖，成功200、失败503；离线壳仍返回503。没有公开登录、业务授权或模型接口。Worker/Outbox尚不处理业务；受控迁移、种子和首管理员入口已开放，首次启动API前按后端指南执行迁移。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
 
@@ -48,6 +48,22 @@
 新增Flutter页面按 [开发与适配规范](flutter.md) 先对齐共享状态/动作，再选择独立layout与平台adapter；紧凑/宽屏、键盘/触控及状态切换证据随功能切片交付，不能只做桌面页面后缩小窗口视为移动端完成。
 
 前端业务测试实施先读 [Test ID与E2E](testing/frontend-e2e.md)，环境准备先读 [测试数据](testing/data.md)。后续完整check按声明执行键协调各runner和受控工厂；业务流程为选择场景→核对隔离资源→准备合法前置→正常UI动作→持久结果断言→脱敏证据→安全清理。当前只有应用壳的局部测试，不能执行尚未实现的业务工厂与持久结果验收。
+
+## 当前可运行：开发进程编排
+
+首次运行先用后端受控入口完成迁移，再从根目录选择一个profile与平台。以下是Windows PowerShell示例：
+
+```powershell
+$runtimeConfig = (Resolve-Path 'dev/.local/backend.env').Path
+.tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py doctor --scope backend --config $runtimeConfig --profile jobs --target web --api-port 18080
+.tools/uv/uv.exe run --python 3.13.6 python scripts/dev.py dev --profile jobs --target web --config $runtimeConfig --api-port 18080
+```
+
+打开 `http://localhost:5173`，环境页点击“检查连接”验证实际就绪。`core`只组装PG/Redis并启动API和Flutter；`jobs`增加Kafka/MinIO及独立Worker/Outbox资源生命周期，明确没有B2任务handler。`windows`和`android`使用相应目标；Android必须加`--device <实际设备ID>`，不会自动选用其他任务设备。
+
+默认API端口8000在部分Windows机器处于系统保留段；显式`--api-port 18080`只选择已登记备用地址，不改变系统排除段、不结束端口占用者、不改秘密配置。Web来源固定localhost:5173。所有继承的`HARUKA_*`覆盖都会被编排入口拒绝，避免doctor和子进程指向不同资源。
+
+Ctrl+C只停止本次应用进程，Compose及数据卷保留；自动烟测可用`--run-seconds 2`，或提供父目录存在、尚不存在的绝对`--stop-file`，随后创建该文件发出停止请求。API/Worker/Outbox先释放资源，Flutter接收app.stop，有界等待后仍需强制回收则报告失败。实际Windows core/jobs启动、UI联调、子进程所有权及Linux进程分支证据见[开发编排记录](../delivery/reviews/2026-09-22-b0-development.md)，这不代替完整Linux应用与三端矩阵。
 
 ## 1. 工作边界与约束等级
 
@@ -122,7 +138,7 @@ uv sync --locked按锁安装且不静默重新解析；未匹配则修复清单/
 先按 [AGENTS.md](../../AGENTS.md) 划分大小阶段及文件责任；前后端在契约对齐后并行开发、按小阶段联调。小阶段/bug只跑必要测试，review控制在1～2轮，完成即本地commit；大阶段完成再做全量测试和全盘review。没有Git仓库时先在工程初始化建立版本控制，不伪造commit记录。
 
 1. 启动所需隔离依赖，经维护入口完成必要迁移/种子，再启动应用；API、Worker、Outbox分别使用蓝图的正式CLI，普通启动不执行DDL。
-2. 根目录未来入口python scripts/dev.py dev选择core/jobs与web/windows/android目标，按build_targets清单显式传递dev身份、API配置与平台参数。Android使用--device-id指定flutter devices返回的实际设备ID；不直接复制省略环境/flavor的启动命令。底层设备与命令见 [Flutter CLI](https://docs.flutter.dev/reference/flutter-cli)。
+2. 根目录入口python scripts/dev.py dev选择core/jobs与web/windows/android目标，按build_targets清单显式传递dev身份、API配置与平台参数。Android使用--device指定flutter devices返回的实际设备ID；不直接复制省略环境/flavor的启动命令。底层设备与命令见 [Flutter CLI](https://docs.flutter.dev/reference/flutter-cli)。
 3. 从合成账号登录，先验证权限快照/日志关联，再实现正常、加载/空、失败/冲突、无权和恢复状态。
 4. 同次维护 API/字段/权限/事件字典与相关测试。变更数据库时生成候选迁移并人工检查，不能直接修改线上表。
 5. 根据风险运行相关 lint/类型/测试；检查产物不含私有内容与秘密，整理实际验证证据后交给独立 reviewer。

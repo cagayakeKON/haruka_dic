@@ -6,6 +6,7 @@ import argparse
 import datetime
 import io
 import json
+import math
 import os
 import re
 import shutil
@@ -17,12 +18,15 @@ import typing
 import uuid
 import xml.etree.ElementTree as ET
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 if __package__:
+    from . import development, processes
     from .quality.docs import inspect, markdown_files
 else:
+    import development
+    import processes
     from quality.docs import inspect, markdown_files
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,7 +59,9 @@ def configure_console() -> None:
     """Keep piped Windows stdout/stderr Unicode-safe regardless of the host code page."""
     for stream in (sys.stdout, sys.stderr):
         if isinstance(stream, io.TextIOWrapper):
-            stream.reconfigure(encoding="utf-8", errors="backslashreplace", newline="\n")
+            stream.reconfigure(
+                encoding="utf-8", errors="backslashreplace", newline="\n", line_buffering=True
+            )
 
 
 @dataclass
@@ -128,6 +134,9 @@ def load_toolchain() -> dict[str, object]:
 def tool(name: str) -> list[str]:
     if name == "python":
         return [sys.executable]
+    if name == "haruka-manage":
+        # Diagnostics must not invoke a resolver or create/synchronize the environment.
+        return [str(backend_entry("manage"))]
     if name == "uv":
         local = ROOT / ".tools" / "uv" / ("uv.exe" if os.name == "nt" else "uv")
         if local.is_file():
@@ -187,6 +196,7 @@ def run(
             errors="replace",
             timeout=timeout,
             check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
             env={**os.environ, "PYTHONUTF8": "1", **(environment or {})},
         )
     except (OSError, subprocess.TimeoutExpired) as error:
@@ -263,7 +273,16 @@ def validate_project_versions(manifest: dict[str, object], scopes: set[str]) -> 
                 raise DevError("Build constraint lacks an exact version or a SHA-256 hash")
 
 
-def doctor(report: Report, scope: str) -> None:
+def doctor(
+    report: Report,
+    scope: str,
+    *,
+    config: Path | None = None,
+    profile: str = "core",
+    target: str | None = None,
+    device: str | None = None,
+    api_port: int | None = None,
+) -> None:
     manifest = load_toolchain()
     scopes: set[str] = set(SCOPES[:-1]) if scope == "all" else {scope}
     checks: list[tuple[str, list[str], str]] = []
@@ -414,6 +433,111 @@ def doctor(report: Report, scope: str) -> None:
         "ready",
         note="Tool prerequisites and selected Docker daemon only; service readiness, devices, and runtime acceptance are not implied",
     )
+    if config is not None:
+        runtime_doctor(
+            report, config, profile=profile, target=target, device=device, api_port=api_port
+        )
+
+
+def backend_entry(name: str) -> Path:
+    if name not in {"api", "worker", "outbox", "manage"}:
+        raise DevError("Unknown installed backend entry")
+    directory = ROOT / "backend/.venv" / ("Scripts" if os.name == "nt" else "bin")
+    path = directory / (f"haruka-{name}.exe" if os.name == "nt" else f"haruka-{name}")
+    if not path.is_file():
+        raise DevError("Installed backend entry missing; run bootstrap --scope backend")
+    return path
+
+
+def runtime_doctor(
+    report: Report,
+    config: Path,
+    *,
+    profile: str,
+    target: str | None,
+    device: str | None,
+    api_port: int | None = None,
+) -> development.DevelopmentConfig:
+    if profile not in {"core", "jobs"}:
+        raise DevError("Unsupported development resource profile")
+    public = development.read_public_config(config)
+    targets = json_object(
+        json.loads((ROOT / "frontend/config/build_targets.json").read_text(encoding="utf-8"))
+    )
+    dev_target = json_object(json_object(targets.get("environments")).get("dev"))
+    allowed = string_list(dev_target.get("allowed_api_base_urls"))
+    if api_port is not None:
+        if not 1 <= api_port <= 65535:
+            raise DevError("API port must be between 1 and 65535")
+        public = replace(public, api_origin=f"http://127.0.0.1:{api_port}")
+    if public.api_origin not in allowed:
+        raise DevError("API origin is not declared in frontend/config/build_targets.json")
+    if target is not None:
+        if public.environment != "dev":
+            raise DevError(
+                "Flutter's declared local development target cannot be bound to the test namespace"
+            )
+        development.require_free_port(public.api_port)
+        report.record("api_port", "ready", port=public.api_port)
+        if target == "web":
+            if "http://localhost:5173" not in public.allowed_origins:
+                raise DevError(
+                    "Web development requires the declared http://localhost:5173 CORS origin"
+                )
+            development.require_free_port(5173)
+            report.record("web_port", "ready", port=5173)
+        if target == "android":
+            if f"http://10.0.2.2:{public.api_port}" not in allowed:
+                raise DevError(
+                    "Android emulator API origin is not in the declared development targets"
+                )
+            if not device:
+                raise DevError(
+                    "Android development requires an explicit --device; no implicit device selection"
+                )
+            devices = json.loads(
+                run(report, "flutter", ["devices", "--machine"], show_output=False)
+            )
+            if not is_json_list(devices) or not any(
+                is_json_object(item)
+                and item.get("id") == device
+                and isinstance(item.get("targetPlatform"), str)
+                and str(item.get("targetPlatform")).startswith("android")
+                for item in devices
+            ):
+                raise DevError(
+                    "Selected Android device is unavailable; other devices will not be touched"
+                )
+            report.record("android_device", "ready", device=device)
+    # The installed backend owns full dotenv validation, live dependencies and schema checks.
+    run(
+        report,
+        "haruka-manage",
+        ["--config", str(public.path), "--check-config"],
+        cwd=ROOT / "backend",
+        show_output=False,
+        environment={
+            "HARUKA_RESOURCE_PROFILE": profile,
+            "HARUKA_PUBLIC_BASE_URL": public.api_origin,
+        },
+    )
+    report.record(
+        "runtime_configuration", "ready", environment=public.environment, namespace=public.namespace
+    )
+    run(
+        report,
+        "haruka-manage",
+        ["--config", str(public.path), "check-infrastructure"],
+        cwd=ROOT / "backend",
+        timeout=120,
+        show_output=False,
+        environment={
+            "HARUKA_RESOURCE_PROFILE": profile,
+            "HARUKA_PUBLIC_BASE_URL": public.api_origin,
+        },
+    )
+    report.record("dependencies_and_schema", "ready", profile=profile, namespace=public.namespace)
+    return public
 
 
 def bootstrap(report: Report, scope: str) -> None:
@@ -624,7 +748,7 @@ def check_frontend(report: Report) -> None:
     output = run(
         report,
         "python",
-        ["-m", "unittest", "discover", "-s", "frontend/tool", "-p", "test_generate.py", "-v"],
+        ["-m", "unittest", "discover", "-s", "frontend/tool", "-p", "test_*.py", "-v"],
     )
     report.record("frontend_generator_test_results", "passed", passed=unittest_results(output))
     run(report, "python", [str(frontend / "tool/generate.py"), "--check"])
@@ -707,7 +831,7 @@ def check_infrastructure(report: Report) -> None:
 def check(report: Report, stage: str) -> None:
     if stage in {"B0", "B1", "B2"}:
         raise DevError(
-            f"{stage} is not delivered. B0 still requires real PG migration/seed, complete quality gates, and three-platform runtime evidence. Use an explicit implemented local scope."
+            f"{stage} has not passed its complete required evidence matrix. Use an explicit implemented local scope; a partial check does not sign off the milestone."
         )
     if stage in {"tooling", "infrastructure", "B0-foundation"}:
         doctor(report, "backend")
@@ -825,6 +949,46 @@ def codegen(report: Report, *, write: bool) -> None:
         "python",
         [str(ROOT / "frontend/tool/generate.py"), "--write" if write else "--check"],
     )
+    fixture_dir = ROOT / "tools/codegen/dart-api/fixtures"
+    with tempfile.TemporaryDirectory(prefix="haruka-compatibility-") as temporary:
+        target = Path(temporary)
+        run(
+            report,
+            "uv",
+            [
+                "run",
+                "--locked",
+                "--group",
+                "dev",
+                "python",
+                "-m",
+                "tools.export_compatibility",
+                "--output",
+                str(target),
+            ],
+            cwd=ROOT / "backend",
+        )
+        expected = {"manifest.json", "openapi.json", "samples.json"}
+        existing = (
+            {path.name for path in fixture_dir.iterdir() if path.is_file()}
+            if fixture_dir.exists()
+            else set[str]()
+        )
+        if existing - expected or fixture_dir.is_symlink():
+            raise DevError("Unknown or linked managed compatibility fixtures")
+        for name in sorted(expected):
+            destination = fixture_dir / name
+            if destination.is_symlink():
+                raise DevError("Managed compatibility fixtures must not be symlinks")
+            different = (
+                not destination.is_file()
+                or destination.read_bytes() != (target / name).read_bytes()
+            )
+            if write and different:
+                fixture_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(target / name, destination)
+            elif different:
+                raise DevError("Generated compatibility fixture drift: " + name)
     report.record(
         "codegen",
         "passed",
@@ -834,12 +998,182 @@ def codegen(report: Report, *, write: bool) -> None:
 
 
 def dev(report: Report, arguments: argparse.Namespace) -> None:
-    report.record(
-        "development_profile", "not_implemented", profile=arguments.profile, target=arguments.target
+    for value, maximum in (
+        (arguments.startup_timeout, 900),
+        (arguments.shutdown_timeout, 60),
+        (arguments.run_seconds, 86400),
+    ):
+        if value is not None and (not math.isfinite(value) or not 0 < value <= maximum):
+            raise DevError(
+                "Development timeouts must be finite positive values within the documented bounds"
+            )
+    if arguments.stop_file is not None and (
+        not arguments.stop_file.is_absolute()
+        or not arguments.stop_file.parent.is_dir()
+        or arguments.stop_file.exists()
+    ):
+        raise DevError(
+            "Development stop file must be absent, absolute, and have an existing parent"
+        )
+    doctor(report, "backend")
+    doctor(report, arguments.target)
+    public = runtime_doctor(
+        report,
+        arguments.config,
+        profile=arguments.profile,
+        target=arguments.target,
+        device=arguments.device,
+        api_port=arguments.api_port,
     )
-    raise DevError(
-        "core/jobs application orchestration is not implemented: migrations, seeds, and durable workers remain B0/B1/B2 work. Use 'infra up' for isolated infrastructure and the documented per-process API and Flutter shell commands."
-    )
+    directory = ROOT / "artifacts/dev" / report.run_id
+    directory.mkdir(parents=True, exist_ok=False)
+    owner = processes.ProcessOwner(report.run_id, public.namespace)
+    environment = {
+        **os.environ,
+        "HARUKA_RESOURCE_PROFILE": arguments.profile,
+        "HARUKA_PUBLIC_BASE_URL": public.api_origin,
+    }
+    planned_stop = False
+    cleanup: list[dict[str, object]] = []
+    try:
+        api = owner.start(
+            "api",
+            [
+                str(backend_entry("api")),
+                "--config",
+                str(public.path),
+                "--port",
+                str(public.api_port),
+                "--shutdown-file",
+                str(directory / "api.stop"),
+            ],
+            cwd=ROOT / "backend",
+            shutdown_file=directory / "api.stop",
+            environment=environment,
+        )
+        report.record("owned_process", "started", **api.identity)
+        report.save()
+        deadline = time.monotonic() + arguments.startup_timeout
+        while not development.endpoint_ready(public.api_origin, "/health/ready"):
+            owner.require_running()
+            if time.monotonic() >= deadline:
+                raise DevError("API did not become schema-ready before startup timeout")
+            time.sleep(0.1)
+        report.record("api_readiness", "ready", namespace=public.namespace)
+        if arguments.profile == "jobs":
+            for role in ("worker", "outbox"):
+                child = owner.start(
+                    role,
+                    [
+                        str(backend_entry(role)),
+                        "--config",
+                        str(public.path),
+                        "--lifecycle-only",
+                        "--shutdown-file",
+                        str(directory / f"{role}.stop"),
+                    ],
+                    cwd=ROOT / "backend",
+                    shutdown_file=directory / f"{role}.stop",
+                    environment=environment,
+                )
+                report.record("owned_process", "started", **child.identity)
+                report.save()
+            deadline = time.monotonic() + arguments.startup_timeout
+            while not all(
+                child.lifecycle_ready
+                for child in owner.children
+                if child.name in {"worker", "outbox"}
+            ):
+                owner.require_running()
+                if time.monotonic() >= deadline:
+                    raise DevError(
+                        "Worker/Outbox lifecycle readiness was not confirmed before startup timeout"
+                    )
+                time.sleep(0.1)
+            emit(
+                "jobs profile starts resource lifecycles only; business_handlers=false (B2 remains unavailable)."
+            )
+        flutter_arguments = [
+            *tool("flutter"),
+            "run",
+            "--machine",
+            "--no-pub",
+            "--dart-define=HARUKA_ENV=dev",
+        ]
+        if arguments.target == "web":
+            flutter_arguments.append(f"--dart-define=HARUKA_API_BASE_URL={public.api_origin}")
+            flutter_arguments.extend(
+                ["-d", "web-server", "--web-hostname", "localhost", "--web-port", "5173"]
+            )
+        elif arguments.target == "android":
+            flutter_arguments.extend(
+                [
+                    "-d",
+                    arguments.device,
+                    "--flavor",
+                    "dev",
+                    f"--dart-define=HARUKA_API_BASE_URL=http://10.0.2.2:{public.api_port}",
+                ]
+            )
+        else:
+            flutter_arguments.append(f"--dart-define=HARUKA_API_BASE_URL={public.api_origin}")
+            flutter_arguments.extend(["-d", "windows"])
+        frontend = owner.start("frontend", flutter_arguments, cwd=ROOT / "frontend")
+        report.record("owned_process", "started", **frontend.identity)
+        report.save()
+        deadline = time.monotonic() + arguments.startup_timeout
+        while not frontend.app_started:
+            owner.require_running()
+            if time.monotonic() >= deadline:
+                raise DevError("Flutter did not report app.started before startup timeout")
+            time.sleep(0.1)
+        if arguments.target == "web":
+            while not development.endpoint_ready("http://localhost:5173", "/"):
+                owner.require_running()
+                if time.monotonic() >= deadline:
+                    raise DevError(
+                        "Flutter reported startup but the development web server is not reachable"
+                    )
+                time.sleep(0.1)
+        report.record(
+            "development_profile",
+            "ready",
+            profile=arguments.profile,
+            target=arguments.target,
+            business_handlers=False,
+        )
+        report.save()
+        emit(
+            f"Development {arguments.profile}/{arguments.target} is ready. Ctrl+C stops only this run's application processes; infrastructure data stays intact."
+        )
+        if arguments.target == "web":
+            emit("Open http://localhost:5173 to use the application.")
+        end = (
+            time.monotonic() + arguments.run_seconds if arguments.run_seconds is not None else None
+        )
+        while end is None or time.monotonic() < end:
+            owner.require_running()
+            if arguments.stop_file is not None and arguments.stop_file.exists():
+                report.record("development_stop_file", "requested")
+                break
+            time.sleep(0.1)
+        planned_stop = True
+    except KeyboardInterrupt:
+        planned_stop = True
+        report.record("development_interrupt", "requested")
+    finally:
+        cleanup = owner.stop(grace_seconds=arguments.shutdown_timeout)
+        for result in cleanup:
+            report.record(
+                "owned_process_shutdown",
+                "failed" if result["forced"] or result["exit_code"] != 0 else "passed",
+                process_name=result["name"],
+                **{key: value for key, value in result.items() if key != "name"},
+            )
+    if not planned_stop or any(result["forced"] or result["exit_code"] != 0 for result in cleanup):
+        raise DevError(
+            "Development shutdown required forced cleanup or a process exited unsuccessfully; inspect the owned-process report"
+        )
 
 
 def parser() -> argparse.ArgumentParser:
@@ -850,6 +1184,24 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument(
             "--scope", choices=SCOPES if name == "doctor" else BOOTSTRAP_SCOPES, required=True
         )
+        if name == "doctor":
+            command.add_argument(
+                "--config",
+                type=Path,
+                help="explicit absolute runtime env file; also checks live dependencies/schema",
+            )
+            command.add_argument("--profile", choices=("core", "jobs"), default="core")
+            command.add_argument(
+                "--target",
+                choices=("web", "windows", "android"),
+                help="also diagnose startup ports and the selected device",
+            )
+            command.add_argument("--device")
+            command.add_argument(
+                "--api-port",
+                type=int,
+                help="explicit selection from the registered development API origins",
+            )
     command = commands.add_parser("infra")
     command.add_argument("action", choices=INFRA_ACTIONS)
     command = commands.add_parser("check")
@@ -876,7 +1228,22 @@ def parser() -> argparse.ArgumentParser:
     command.add_argument("--profile", choices=("core", "jobs"), default="core")
     command.add_argument("--target", choices=("web", "windows", "android"), required=True)
     command.add_argument("--device")
-    command.add_argument("--config", type=Path, default=ROOT / "backend/.env")
+    command.add_argument(
+        "--api-port",
+        type=int,
+        help="explicit selection from the registered development API origins",
+    )
+    command.add_argument("--config", type=Path, default=ROOT / "dev/.local/backend.env")
+    command.add_argument("--startup-timeout", type=float, default=180)
+    command.add_argument("--shutdown-timeout", type=float, default=20)
+    command.add_argument(
+        "--run-seconds",
+        type=float,
+        help="bounded development smoke after startup; otherwise runs until Ctrl+C",
+    )
+    command.add_argument(
+        "--stop-file", type=Path, help="absolute future marker to stop only this development run"
+    )
     return result
 
 
@@ -902,7 +1269,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     try:
         if arguments.command == "doctor":
-            doctor(report, arguments.scope)
+            doctor(
+                report,
+                arguments.scope,
+                config=arguments.config,
+                profile=arguments.profile,
+                target=arguments.target,
+                device=arguments.device,
+                api_port=arguments.api_port,
+            )
         elif arguments.command == "bootstrap":
             bootstrap(report, arguments.scope)
         elif arguments.command == "check":
@@ -915,7 +1290,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             dev(report, arguments)
         report.result = "passed"
         return 0
-    except (DevError, OSError, ValueError) as error:
+    except (
+        DevError,
+        development.DevelopmentError,
+        processes.ProcessError,
+        OSError,
+        ValueError,
+    ) as error:
         report.record("result", "failed", reason=redact(str(error)))
         emit(f"FAILED: {error}")
         return 1

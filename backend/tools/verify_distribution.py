@@ -216,6 +216,7 @@ def main() -> None:
         raise RuntimeError("incorrect build hash did not reject the build")
     report = {
         "scope": "B0-infrastructure-package" if infrastructure_config else "B0-foundation-package",
+        "platform": sys.platform,
         "wheel": wheel.name,
         "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
         "runtime": "non-editable; runtime-only locked dependencies; isolated cwd and Python import",
@@ -229,7 +230,7 @@ def main() -> None:
         "limitations": [
             "Schema readiness validated only when explicit infrastructure configuration was supplied",
             "No worker/outbox business execution",
-            "Windows host only",
+            "Results apply only to the recorded execution platform",
         ],
     }
     evidence = ROOT / "artifacts" / "package-check" / run_id

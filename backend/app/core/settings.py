@@ -15,6 +15,7 @@ class SettingsInput(TypedDict, total=False):
     allowed_origins: tuple[str, ...]
     release: str
     infrastructure_enabled: bool
+    resource_profile: Literal["core", "jobs"]
     database_url: SecretStr
     redis_url: SecretStr
     resource_namespace: str
@@ -28,7 +29,7 @@ class SettingsInput(TypedDict, total=False):
     _env_file_encoding: str
 
 
-class InfrastructureSettings(BaseModel):
+class CoreInfrastructureSettings(BaseModel):
     """Validated process credentials, never a user or model credential container."""
 
     model_config = ConfigDict(frozen=True, hide_input_in_errors=True)
@@ -36,6 +37,11 @@ class InfrastructureSettings(BaseModel):
     database_url: SecretStr
     redis_url: SecretStr
     namespace: str
+
+
+class InfrastructureSettings(CoreInfrastructureSettings):
+    """The jobs profile adds broker and object storage to the core resources."""
+
     kafka_bootstrap_servers: str
     s3_endpoint: str
     s3_access_key: SecretStr
@@ -60,6 +66,7 @@ class Settings(BaseSettings):
     allowed_origins: tuple[str, ...] = ()
     release: str = Field(default="0.1.0", pattern=r"^[a-zA-Z0-9._-]{1,64}$")
     infrastructure_enabled: bool = False
+    resource_profile: Literal["core", "jobs"] = "jobs"
     database_url: SecretStr | None = None
     redis_url: SecretStr | None = None
     resource_namespace: str | None = None
@@ -99,7 +106,7 @@ class Settings(BaseSettings):
         if self.log_file is not None and not self.log_file.is_absolute():
             raise ValueError("log file must be an explicit absolute path")
         if self.infrastructure_enabled:
-            infrastructure = self.infrastructure()
+            infrastructure = self.core_infrastructure()
             database = urlsplit(infrastructure.database_url.get_secret_value())
             redis = urlsplit(infrastructure.redis_url.get_secret_value())
             expected_database = "/haruka_dev" if self.app_env == "dev" else "/haruka_test"
@@ -118,14 +125,16 @@ class Settings(BaseSettings):
                     or parsed.fragment
                 ):
                     raise ValueError("infrastructure target must match the local environment")
-            if not database.username:
-                raise ValueError("a dedicated database account is required")
-            if (
-                infrastructure.namespace != self.instance_id
-                or infrastructure.s3_bucket != self.instance_id
-            ):
-                raise ValueError("resource namespace and bucket must match the instance")
-            endpoint = urlsplit(infrastructure.s3_endpoint)
+            if database.username != f"{expected_database.removeprefix('/')}_runtime":
+                raise ValueError("a dedicated unprivileged runtime database account is required")
+            if infrastructure.namespace != self.instance_id:
+                raise ValueError("resource namespace must match the instance")
+            if self.resource_profile == "core":
+                return self
+            jobs = self.infrastructure()
+            if jobs.s3_bucket != self.instance_id:
+                raise ValueError("bucket must match the instance")
+            endpoint = urlsplit(jobs.s3_endpoint)
             if (
                 endpoint.scheme not in {"http", "https"}
                 or endpoint.hostname not in {"127.0.0.1", "localhost", "::1"}
@@ -137,7 +146,7 @@ class Settings(BaseSettings):
                 or endpoint.fragment
             ):
                 raise ValueError("object storage must use a local origin")
-            for broker in infrastructure.kafka_bootstrap_servers.split(","):
+            for broker in jobs.kafka_bootstrap_servers.split(","):
                 address = urlsplit(f"//{broker}")
                 if (
                     address.hostname not in {"127.0.0.1", "localhost", "::1"}
@@ -151,14 +160,28 @@ class Settings(BaseSettings):
                     raise ValueError("Kafka bootstrap must contain local host:port entries")
         return self
 
-    def infrastructure(self) -> InfrastructureSettings:
-        """Produce a complete typed resource configuration or fail before connecting."""
+    def core_infrastructure(self) -> CoreInfrastructureSettings:
+        """Core startup does not require unused Kafka/MinIO credentials or clients."""
         if (
             not self.infrastructure_enabled
             or self.database_url is None
             or self.redis_url is None
             or self.resource_namespace is None
-            or self.kafka_bootstrap_servers is None
+        ):
+            raise ValueError("complete core infrastructure configuration is required")
+        return CoreInfrastructureSettings(
+            database_url=self.database_url,
+            redis_url=self.redis_url,
+            namespace=self.resource_namespace,
+        )
+
+    def infrastructure(self) -> InfrastructureSettings:
+        """Produce a complete jobs configuration or fail before connecting."""
+        if self.resource_profile != "jobs":
+            raise ValueError("job resources are not enabled in the core profile")
+        core = self.core_infrastructure()
+        if (
+            self.kafka_bootstrap_servers is None
             or self.s3_endpoint is None
             or self.s3_access_key is None
             or self.s3_secret_key is None
@@ -168,9 +191,9 @@ class Settings(BaseSettings):
         ):
             raise ValueError("complete infrastructure configuration is required")
         return InfrastructureSettings(
-            database_url=self.database_url,
-            redis_url=self.redis_url,
-            namespace=self.resource_namespace,
+            database_url=core.database_url,
+            redis_url=core.redis_url,
+            namespace=core.namespace,
             kafka_bootstrap_servers=self.kafka_bootstrap_servers,
             s3_endpoint=self.s3_endpoint,
             s3_access_key=self.s3_access_key,

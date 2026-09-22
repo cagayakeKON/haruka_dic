@@ -43,6 +43,8 @@ async def test_real_transports_and_release(integration_settings: Settings) -> No
     async with bootstrap(integration_settings) as runtime:
         resources = runtime.resources
         assert resources is not None
+        assert resources.kafka is not None and resources.storage is not None
+        bucket = resources.storage.bucket
         assert runtime.ready
         # Separate sessions and physical connections, no implicit DDL or seed.
         async with resources.database.sessions() as first, resources.database.sessions() as second:
@@ -76,7 +78,7 @@ async def test_real_transports_and_release(integration_settings: Settings) -> No
 
             def anonymous_read() -> None:
                 endpoint = integration_settings.infrastructure().s3_endpoint
-                address = f"{endpoint}/{resources.storage.bucket}/{object_key}"
+                address = f"{endpoint}/{bucket}/{object_key}"
                 with (
                     pytest.raises(HTTPError) as failure,
                     urlopen(address, timeout=5),  # noqa: S310 - validated loopback HTTP endpoint and generated path.

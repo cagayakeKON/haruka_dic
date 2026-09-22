@@ -1,6 +1,6 @@
 # 项目结构与模块职责
 
-状态：设计基线 v0.2，2026-09-22。以下是正式工程创建时的目标结构；当前已有文档，旧 HTML 原型已按用户要求删除，正式工程尚未创建。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，具体初始化载体见 [脚手架蓝图](../engineering/scaffold.md)。
+状态：设计基线 v0.2，2026-09-22。以下是正式工程创建时的目标结构；当前已有文档和独立 [HTML 原型](../../prototype/README.md)，正式工程尚未创建。选型见 [架构总览](overview.md)，代码约束见 [代码规范](../engineering/coding.md)，具体初始化载体见 [脚手架蓝图](../engineering/scaffold.md)。
 
 ## 1. 仓库结构
 
@@ -8,7 +8,8 @@
 haruka_dic/
   README.md / AGENTS.md
   .editorconfig / .gitattributes / .gitignore
-  docs/                             产品、契约、规范、验收与审查记录
+  docs/                             product/modules/architecture/contracts/engineering/operations/delivery/decisions
+  prototype/                        已有独立 HTML/CSS/JS 原型，不作为正式前端工程
   contracts/                        后端导出的版本化OpenAPI/权限/错误/事件目录
   tools/                            toolchain.json、锁定Node工具、codegen配置/清单
     e2e/                            Playwright浏览器测试、页面对象及独立Node依赖锁
@@ -58,6 +59,8 @@ haruka_dic/
 ~~~
 
 项目初期不拆微服务或 Dart 多包。API、Worker、Outbox 使用同一 Python 包和版本的不同入口；Web 管理端先复用 Flutter 工程，原生构建禁用管理路由注册和入口，服务端仍严格检查 admin audience。路径省略号代表模块分组，不表示需要立即创建所有空目录。
+
+文档分类和阅读入口由 [文档导航](../README.md) 维护。docs/contracts是人工维护的协议说明；根contracts是工程建立后由后端schema/注册定义导出的机器契约，两者职责不同，不能复制维护两份完整字段表。具体功能开发从modules进入，不按前端/后端再复制两份功能规格。
 
 后端推荐以Hatchling构建haruka-backend发行包，显式包含app导入包；使用haruka-api、haruka-worker、haruka-outbox、haruka-manage入口。CLI不依赖调用者工作目录；迁移作为配套发布资源显式定位。运行/开发lock与隔离构建依赖约束分别固定，入口初始化/关闭、wheel验证、命令退出行为和三端应用身份由脚手架蓝图维护。
 

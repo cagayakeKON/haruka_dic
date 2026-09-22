@@ -135,7 +135,7 @@ codegen顺序固定为：锁工具与输入 → 离线导出schema/目录 → �
 
 haruka-manage提供db status、db upgrade、seed apply、admin init等明确子命令。受控密码通过隐藏输入或Secret注入，不进入命令参数历史。显式加载目标配置，显示脱敏环境/实例/数据库指纹；开发runner拒绝生产配置，运维部署另用该维护入口与已批准目标。
 
-执行顺序为：隔离资源就绪 → 检查只有一个Alembic head及制品资源 → 取得Haruka数据库级迁移锁 → 在锁内重查实际revision与预期起点 → 升级 → 核对schema兼容 → 应用版本化系统目录/初始模板 → 单独初始化首管理员 → 启动进程。迁移锁键在同一Haruka数据库内稳定，不含run_id、进程或revision，避免不同发布各自加锁。使用独立于业务连接池、但同时承载迁移DDL的同一物理PG连接持有session advisory lock，并将该Connection通过Alembic Config.attributes传入env.py；不能另开无锁连接执行DDL。锁超时或持锁连接断开即本次失败，禁止透明重连后继续迁移；重试重新取得锁并检查实际revision/部分DDL状态。不能把每个进程自动执行迁移当并发协调。具体DDL/不可逆项继续按 [交付验收](../delivery/acceptance.md) 的前滚/恢复策略处理。
+执行顺序为：隔离资源就绪 → 检查只有一个Alembic head及制品资源 → 取得Haruka数据库级迁移锁 → 在锁内重查实际revision与预期起点 → 升级 → 核对schema兼容 → 应用版本化系统目录/初始模板 → 单独初始化首管理员 → 启动进程。迁移锁键在同一Haruka数据库内稳定，不含run_id、进程或revision，避免不同发布各自加锁。使用独立于业务连接池、但同时承载迁移DDL的同一物理PG连接持有session advisory lock，并将该Connection通过Alembic Config.attributes传入env.py；不能另开无锁连接执行DDL。锁超时或持锁连接断开即本次失败，禁止透明重连后继续迁移；重试重新取得锁并检查实际revision/部分DDL状态。不能把每个进程自动执行迁移当并发协调。具体DDL/不可逆项按 [部署与恢复](../operations/deployment-recovery.md) 的前滚/恢复流程处理，证据按 [交付验收](../delivery/acceptance.md) 归档。
 
 这项约束依赖session结束会释放锁的语义，见 [PostgreSQL advisory lock](https://www.postgresql.org/docs/current/explicit-locking.html#ADVISORY-LOCKS)；同一Connection交给迁移环境的接口见 [Alembic连接共享](https://alembic.sqlalchemy.org/en/latest/cookbook.html#sharing-a-connection-across-one-or-more-programmatic-migration-commands)。验收包含双维护进程争锁及持锁/DDL连接中断，不能只测正常串行升级。
 

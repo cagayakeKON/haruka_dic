@@ -8,7 +8,7 @@
 - ID 推荐应用生成 UUID；客户端生成 request/operation/idempotency ID 不等于业务对象所有权。每个私有聚合具有 owner_user_id、library_id；引用采用组合唯一键/外键确保同一资料库，不能只靠调用者记得加过滤。
 - 时间采用服务端 UTC timestamptz，API 为带 Z 的 ISO 8601。客户端时间只用于体验，考试截止、Token、幂等过期由服务端判断。版本/revision 使用单调整数。
 - 计分用 PostgreSQL NUMERIC 与 Python Decimal；协议以十进制字符串传输，推荐最多两位小数，ROUND_HALF_UP 仅在契约指定的评分边界执行。禁止浮点累加后展示错误满分；修改精度需要协议迁移。
-- 内容原文与出处 ID 不由模型生成，稳定偏移/Unicode 转换以 [材料阅读](../modules/materials-reading.md) 为准。JSONB 用于版本化可变题型/卡片载荷，不把用户、外键、状态与幂等约束全部藏在 JSON。
+- 内容原文与出处 ID 不由模型生成，稳定偏移/Unicode 转换以 [出处协议](../contracts/content-locator.md) 为准。JSONB 用于版本化可变题型/卡片载荷，不把用户、外键、状态与幂等约束全部藏在 JSON。
 - 常见索引从 owner/library + 列表排序/状态开始；不能上线无限无条件 count/全表管理查询。最终 DDL 和 EXPLAIN 基于样本确认，不在文档阶段猜测性能已达标。
 
 ## 2. 领域关系与必要约束
@@ -33,6 +33,18 @@
 | AdminAuditEvent | actor、target、动作、版本/安全差异、结果 | 与成功变更同事务；应用不可更新/删除；留存独立于Loki |
 
 状态细分见各功能；表名是逻辑职责。数据库迁移可以把小型值对象合表，但不能省略这些完整性约束。
+
+### 公共逻辑关系与来源
+
+以下保留产品逻辑模型中的跨功能关系，不复制模块 DTO，也不把字段示意当最终 DDL：
+
+- User 拥有私有 Library，StudyProfile 是该用户的学习偏好；界面 locale、母语与 target_languages 分开。LearnerProfile 按学习者与目标语派生词汇、语法和技能统计，并保留更新时间/事实版本；修改语言偏好不改写原 Attempt 或删除历史。设置字段和诊断口径分别见 [设置](../modules/settings.md)、[收藏与练习](../modules/vocabulary-practice.md)。
+- Material 的来源格式、导入模式、内容类型、语言与导入报告分开；MaterialRevision 下的 StructureNode、ContentBlock、Sentence 组成版本化结构，Sentence 关联原文 span 与语言。物理原文件和结构内容分离；重新解析产生新版本，收藏尽力重绑失败时保留快照，不因重解析丢失已存学习记录。保留/删除期限仍按第 7 节处理。
+- Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
+- CollectionItem 维护 kind、词句/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词允许为空，不能伪造材料出处。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
+- Exercise 区分 extracted/generated，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至 CollectionItem、Attempt 或 ContentBlock，引用均受同库约束。Attempt 关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
+- AgentMessage 保存结构化文字与卡片结果；Card 保存类型、版本化载荷及合法来源。消息保存和卡片成为可收藏业务结果不是同一成功条件；用户内容、模型候选和生成例句的标识按 [AI 与朗读](../modules/ai-speech.md) 维护。
+- CsvImportBatch 保存用户/资料库、协议版本、批次状态、进度与结果引用，不能用外部 CSV ID 决定所有者；导入的 preview/confirm/重复策略字段以 [CSV 契约](../contracts/vocabulary-csv.md) 为准。Job/外部调用记录和 CSV 批次各自表达领域状态，不互相代替。
 
 ## 3. 事务边界
 
@@ -60,7 +72,7 @@ UploadIntent从created/uploading到finalizing时取得completion_generation/租�
 
 ## 4. PG 与 Redis 会话一致性
 
-会话元数据/撤销属于 PG，刷新摘要/空闲状态属于 Redis，具体传输见 [账号流程](../modules/accounts.md)。身份成立必须同时满足两者；不是双写最终一致后暂时放行。
+会话元数据/撤销属于 PG，刷新摘要/空闲状态属于 Redis，具体传输见 [认证设计](authentication.md)。身份成立必须同时满足两者；不是双写最终一致后暂时放行。
 
 新建会话先登记 PG，再初始化 Redis，全部完成才向客户端发凭据；部分失败留不可使用的记录并清理。单会话强退写 revoked_at；所有会话、改密或端登录撤权增加相应安全 epoch。成功响应表示 PG 撤销事务已提交，新请求必须核对它，所以 Redis 删除失败不延迟撤销。后台清理 Redis 只负责收敛和空间，不承担正确性。
 
@@ -106,7 +118,7 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 
 原文件/历史revision不被永久无条件保留：只有仍被活跃场次/成绩/收藏必要回跳策略或在途安全处理引用的对象才retain；没有引用的对象进入延迟GC候选。首版推荐7天宽限，删除前再次检查tombstone、引用计数/实际引用、generation和任务租约；GC权限只针对明确对象键与Haruka Bucket。MinIO删除失败重试，不在一个SQL事务中假装对象和数据库原子删除。
 
-未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他同账号资源引用的对象；不跨用户内容去重。数据库迁移和运维备份保留策略见运行说明，不属于用户单词CSV功能。
+未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他同账号资源引用的对象；不跨用户内容去重。数据库迁移和运维恢复步骤见 [部署与恢复](../operations/deployment-recovery.md)，保留参数见 [运行配置](../operations/configuration.md)，不属于用户单词CSV功能。
 
 ## 8. 验收
 

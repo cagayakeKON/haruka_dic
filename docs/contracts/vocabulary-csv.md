@@ -1,6 +1,6 @@
 # 单词 CSV 导出与导入
 
-状态：Draft v0.2，2026-09-22，未实现。产品依据：[PRD 第 8.3.5、8.9 节](../product/overview.md)；权限依据：[认证与隔离](../architecture/authentication.md)、[管理后台与 RBAC](../architecture/authorization.md)。
+状态：2026-09-22，未实现。本文维护单词CSV格式、转义、匹配/分批写入和往返验收的唯一契约；产品边界见 [产品总览](../product/overview.md)，界面入口见 [收藏与练习模块](../modules/vocabulary-practice.md)，授权机制见 [认证与隔离](../architecture/authentication.md)、[RBAC](../architecture/authorization.md)。
 
 ## 1. 功能边界
 
@@ -36,6 +36,8 @@ CSV 包含单词笔记与上下文，属于用户自己的学习数据；不包�
 | updated_at | 带时区的修改时间 | 保留历史信息，不用于绕过当前记录版本检查 |
 
 原始表面词和词典形不因去重被自动改写；用于匹配的规范化值与展示值分开保存。完整原样往返保留协议定义的业务字段，不保证服务端主键、系统修改时间或内部审计记录保持相同。
+
+source_locator的字段、偏移单位、文本规范化与重绑校验统一引用 [出处协议](content-locator.md)，本篇只定义CSV中的序列化与导入处理。
 
 ## 3. 导出与表格兼容
 

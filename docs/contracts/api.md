@@ -2,6 +2,8 @@
 
 状态：设计基线 v0.1，2026-09-22，未实现。本文固定跨模块约定与接口分组，功能载荷由专题定义；后端初始化时将设计展开为OpenAPI/契约测试，不把本表误称已存在接口。
 
+协议归属：认证传输与会话轮换见 [认证设计](../architecture/authentication.md)，权限代码见 [权限目录](permissions.md)，选区/来源字段见 [出处协议](content-locator.md)，CSV文件格式见 [CSV契约](vocabulary-csv.md)。模块只引用这些协议并描述用户行为，不再定义另一套字段；未来根contracts中的生成OpenAPI由后端schema单向导出，不与本文手工双向维护字段表。
+
 ## 1. HTTP与数据格式
 
 REST前缀/api/v1；管理业务在/api/v1/admin。请求/响应JSON使用snake_case，Dart DTO做显式映射。UUID使用字符串，日期UTC ISO 8601，分数/金额等固定精度数字用十进制字符串；未知枚举客户端显示安全“不支持”状态，不能自动映射成功。

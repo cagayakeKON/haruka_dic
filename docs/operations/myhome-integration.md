@@ -91,7 +91,7 @@ MyHome 的 React 前端、原生 Android UI、账本和餐食业务不是复用�
 
 MyHome 已检查的角色机制是固定等级比较。Haruka 需要新增关系化角色/权限策略与 AuthorizationService，推荐以 PyCasbin 执行版本化策略投影；不能把 member/admin/owner 数值比较扩展成前后端各自硬编码角色。Haruka 不继承 MyHome 的角色分配或管理员身份。
 
-本次细化还明确：Haruka以PG会话撤销/安全epoch保障管理审计与强制下线一致，Redis保存可丢失的会话材料；Web采用opaque会话Cookie，原生使用短JWT/轮换refresh。这些是Haruka自己的设计，不宣称MyHome源码已实现同样协议，见 [账号流程](../modules/accounts.md)。
+本次细化还明确：Haruka以PG会话撤销/安全epoch保障管理审计与强制下线一致，Redis保存可丢失的会话材料；Web采用opaque会话Cookie，原生使用短JWT/轮换refresh。这些是Haruka自己的设计，不宣称MyHome源码已实现同样协议，见 [认证设计](../architecture/authentication.md)。
 
 ## 3. 网络与部署
 

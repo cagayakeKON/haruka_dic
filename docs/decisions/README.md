@@ -1,6 +1,6 @@
-# 决策、推荐基线与待确认项
+# 决策与推荐基线
 
-状态：2026-09-22设计记录，不代表工程验证。需求冲突时用户最新明确要求优先；[PRD](../product/overview.md)定义范围，各专题定义详细契约。
+状态：2026-09-22 设计记录，未代表工程验证。本页保存已确认边界、DEC 选择/理由与导航；OPEN 项及尚未满足的就绪门禁统一在 [待决清单](pending.md)。需求冲突时用户最新明确要求优先；[产品总览](../product/overview.md) 定义范围，各专题维护详细契约。
 
 ## 1. 已确认
 
@@ -24,25 +24,20 @@ Flutter用户端Windows/Web/Android；Python前后端分离；复用MyHome基础
 | DEC-12 | flutter_test/integration_test为主，Playwright补Web、Patrol补Android；Windows原生驱动原型或明确人工验收 | 分工见[前端E2E](../engineering/testing/frontend-e2e.md)；Patrol已有Web能力但不支持Windows，版本与具体定位/系统能力仍须实测 |
 | DEC-13 | UI Test ID前端JSON单源生成Dart并供Playwright读取；测试数据分资产/场景/执行实例 | 见[测试数据](../engineering/testing/data.md)；按执行身份隔离，工厂不代做目标动作，秘密另传，清理先处理在途写入 |
 
-## 3. 开放产品选项与安全默认边界
+## 3. 决策导航与变更
 
-这些不是已知文档缺陷；共同流程已设计，最终选择进入对应专题与验收范围。未选择时不得自行声称某项已经确认或实现。
+| 阅读目的 | 权威正文 |
+| --- | --- |
+| 系统图、组件职责和技术基线 | [系统架构](../architecture/overview.md)、[项目结构](../architecture/project-structure.md) |
+| 会话、RBAC、数据与持久任务 | [认证](../architecture/authentication.md)、[授权](../architecture/authorization.md)、[数据与任务](../architecture/data-jobs.md) |
+| 接口、权限代码与出处 | [API](../contracts/api.md)、[权限目录](../contracts/permissions.md)、[出处契约](../contracts/content-locator.md) |
+| 工程入口、生成与阶段边界 | [脚手架](../engineering/scaffold.md)、[B0/B1/B2 验收](../delivery/milestones/scaffold.md) |
+| 配置、发布与恢复 | [运行配置](../operations/configuration.md)、[部署与恢复](../operations/deployment-recovery.md) |
+| 未选方案、缺少的工程契约及最晚锁定点 | [待决清单](pending.md) |
 
-| ID | 待明确 | 当前建议/未确定时的边界 | 最晚锁定 |
-| --- | --- | --- | --- |
-| OPEN-01 | 试卷首版格式 | 推荐MD/EPUB+文本PDF；扫描/多图暂P1；用户尚未确认文本PDF提前 | 解析样本与首版工期冻结前 |
-| OPEN-02 | 注册开放/审批、邮箱验证和恢复方式 | 已请求选择；推荐开放注册+邮箱验证/邮件找回；未有邮件服务则不公开承诺邮件能力，封闭开发用受控测试账号 | 账号工程契约冻结、公开注册前 |
-| OPEN-03 | EPUB竖排/复杂注音还原要求 | 首版横排内容块、保留必要注音；不承诺高保真排版 | 阅读器样本/引擎选型前 |
-| OPEN-04 | 默认供应商/具体模型与声音 | 推荐OpenRouter统一入口，Gemini直连可选；能力按实际验证结果启用 | 模型/TTS兼容测试前 |
-| OPEN-05 | 普通教材无答案处理 | 显示待依据/AI参考来源，不伪装原答案；是否导入时生成由授权步骤配置，试卷按冻结依据规则 | 教材评分验收冻结前 |
-| OPEN-06 | 实际部署网络/TLS/容量/恢复目标 | 仅核对MyHome源码，没有连接生产；任何资源上限/耗时目标均为待验证 | 接入/发布前 |
-| OPEN-07 | Flutter/SDK依赖版本、Windows音频插件、代码生成器与CI托管 | 由原型兼容测试锁文件；当前不指定未经验证最新版 | 工程初始化阶段 |
-| OPEN-08 | 应用发行身份、Windows安装格式与签名主体 | Android/Windows逻辑身份建议及dev/production隔离见脚手架蓝图；安装格式经原型选择，渠道身份不得当作已经注册 | B0固定开发构建矩阵；正式安装/签名发布前锁定发行项 |
-| OPEN-09 | E2E工具具体版本、Web语义定位/性能、Android系统交互与Windows原生驱动 | 已确定工具分工，原型验证输入/焦点/文件/权限后锁定；Windows无驱动时采用结构化人工证据 | B0/B1定位与runner原型；具体原生能力交付前 |
+DEC 编号保持稳定，方案变化时更新理由、影响和验证条件，并同步对应权威专题；不另复制接口字段或运行步骤。被选中、文档化与已实现/实测分别记录，推荐组件不能因写入本表就变成用户已确认或工程已验证。
 
-无需等这些答案才能完成文档共同契约，但依赖项未锁定时不能签署相应工程交付通过。UI母语当前中文，目标语英/日；“中文在MVP支持”指界面/母语支持，不扩大成三套界面翻译承诺。
-
-新增工程建议的具体入口与验收见 [脚手架蓝图](../engineering/scaffold.md) 和 [阶段验收](../delivery/milestones/scaffold.md)。B0/B1允许的生成器评估/手写DTO过渡有明确期限，B2前必须锁定长期方案；待选库与未实现状态不等于功能已验收。
+B0/B1 允许的生成器评估/集中手写 DTO 过渡以脚手架的明确期限为准，B2 前必须锁定长期方案；待选库与未实现状态不等于功能已验收。开放选择不阻止无关工作，但依赖项未决不能签署相应就绪或交付门禁。
 
 ## 4. 设计假设与状态维护
 

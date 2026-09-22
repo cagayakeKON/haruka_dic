@@ -2,7 +2,7 @@
 
 状态：Draft v0.1，2026-09-22，待实现设计。框架已经确定为 Pydantic AI；运行依赖、持久化和费用恢复以 [Agent 运行层](../architecture/agent-runtime.md)、[数据与任务](../architecture/data-jobs.md) 为准。本文定义用户动作、输出和播放器行为；接口和授权统一由 [API 契约](../contracts/api.md)、[权限目录](../contracts/permissions.md) 维护。
 
-## 1. 首版能力和依赖
+## 1. 范围、入口与权限
 
 | 能力 | P0 | 后续 |
 | --- | --- | --- |
@@ -17,7 +17,9 @@
 
 新增权限草案为 `client.ai.feedback`、`client.agent.read/delete`；`client.ai.explain`、`client.agent.use`、`client.speech.generate/play` 和工具对应业务动作继续独立。已有解释读取仍需 explain；agent.read 允许读取本人历史，agent.use 才允许发起新轮次。所有能力还需来源读取权限、当前账号/受众与 owner 校验。
 
-## 2. 即时解释的操作逻辑
+## 2. 流程、状态与异常
+
+### 2.1 即时解释
 
 1. 用户从阅读、教材、收藏、卡片或已交卷复盘选择文本，点击“解释”；服务端根据引用重取原文和有限前后句。手工输入明确没有材料出处，不能由模型补一个不存在的引用。
 2. 请求包含 selection/source_ref、目标语、解释语言、详细程度及模型配置引用，客户端不能指定 user_id/credential_owner。服务器验证 explain、源对象读取/状态、选区版本和长度；活动考试题面不通过考试入口取得解释/答案提示，遵循 [试卷模式](exams.md)。
@@ -35,11 +37,13 @@
 | 句子 | 母语翻译、意群、最多 3 个主要语法点，可选自然改写 | 意群引用原句合法 span；翻译和改写不能当作原文覆盖 |
 | 摘录 | 摘要、关键表达、理解难点/段落关系 | 以结构化解释结果承载，可链接词句卡；超长选区要求缩小，不能无提示截掉末尾 |
 
+可选信息按问题和证据提供：词的搭配、近反义、词源、语体和常见错误；短语的同义表达；句子的语气/自然改写；摘录的段落逻辑。它们不要求每次生成齐全，也不允许缺少证据时编造确定结论。解释默认用母语，用户可切到目标语。
+
 解释细节可选简短/标准/极客，但不会改变原始引用。模型无法可靠判断的内容显示不确定/需要更多上下文，不用 schema 通过宣称解释正确。目标首内容等待沿用 PRD 的正常网络下 3 秒，具体模型、网络、样本和百分位记录在验收证据，不把文档目标当已达成。
 
-## 3. 对话、多轮记忆与工具
+### 2.2 Agent 对话与工具动作
 
-### 会话入口与状态
+#### 会话入口与状态
 
 Agent 页面列出本人会话，提供新建、继续、删除；从阅读“问 Agent”先显示携带的材料/选区摘要，发送才启动模型。创建空会话只检查 agent.use/read 与身份，不调用模型也不要求 Key；发起需要推理的新 run 才检查本人 Key/预算，实际工具再次检查其付费动作权限。没有 agent.use 时仍可按 agent.read 浏览允许的历史，但新建/发送按钮受控。会话列表按更新时间稳定分页，不把其他账号/目标语的会话当当前记忆。
 
@@ -47,11 +51,11 @@ Agent 页面列出本人会话，提供新建、继续、删除；从阅读“�
 
 短即时运行状态依照公共 AiRun 协议；UI 视图为等待、生成、工具处理中、已完成、用户停止、中断、失败和结果未知。重连先用 run_id 查询状态/结果，已完成不重跑；无法续接的中断轮次需明确重试，同一已提交工具业务动作仍幂等。删除会话需要 agent.delete；有活动运行时提示先停止并查询结束，再事务删除可见历史，不悄悄取消用户其他独立 Job。
 
-### 上下文和动作边界
+#### 上下文和动作边界
 
 每轮上下文包含已授权选区、有限前后文、当前目标语、相关收藏/错题、有限消息和版本化摘要。摘要是辅助记忆，不能覆盖业务统计；早前消息中的敏感源对象失权后不得重新装载。用户切目标语时新一轮显式绑定新语言，历史保留原语言，不把英语错题合入日语诊断。
 
-“那和 make 有什么区别”可以继承上一张词卡及其语境；系统记录引用来源，不只拼接上一轮无结构文本。上下文超预算时先裁剪非必要历史，再生成/读取有来源的摘要；无法保留必要证据则要求缩小任务，不让模型编造缺失历史。纯闲聊提供简短回复与学习动作，不能开启无关管理工具。
+“那和 make 有什么区别”可以继承上一张词卡及其语境；系统记录引用来源，不只拼接上一轮无结构文本。上下文超预算时先裁剪非必要历史，再生成/读取有来源的摘要；无法保留必要证据则要求缩小任务，不让模型编造缺失历史。纯闲聊提供简短回复和“解释刚才那句”“出题”等快捷动作，不能开启无关管理工具。识别意图不准时先展示最接近且已支持的结果，并给“单词还是整句”等轻量澄清；用户修正后保持原来源。未上线的专用卡片不能因为意图识别到该类型就假装可用。
 
 | 工具类型 | 输入和结果 | 额外权限/执行边界 |
 | --- | --- | --- |
@@ -67,25 +71,7 @@ Agent 页面列出本人会话，提供新建、继续、删除；从阅读“�
 
 本人运行取消使用 `client.job.cancel` 对应的本人执行控制接口，不要求仍具有 agent.use；用于停止后续调用，不授予重试/读取/新调用能力。账号或登录资格撤销时服务端自行停止后续未授权步骤，不依赖被撤权客户端成功点击停止。在途供应商可能已收费；停止不是退款，也不删除已经提交的练习或学习数据。
 
-## 4. 类型化卡片与流式事件
-
-卡片通用字段建议为 `card_id/type/schema_version/payload/source_refs/provenance/created_at`。来源引用由应用验证；provenance 区分材料引用、用户输入、AI 生成例和推断。卡片内容、生成时版本与出处一并保存，不能仅保存一段最终 Markdown。
-
-| 卡片 | P0 payload 要求 | 动作 |
-| --- | --- | --- |
-| WordCard | lexical_kind、词/短语、读音、词性、本语境义、可折叠其他义、例句、可选活用；短语子型增加整体/字面义与可拆分性 | 朗读、收藏、按词/短语生成练习、查看有权来源、反馈 |
-| SentenceCard | 原句、翻译、合法意群范围、主要语法点、可选改写 | 朗读/收藏句子、展开语法卡、句译练习、来源、反馈 |
-| GrammarCard | 母语/目标语规则名、当前句主例、带标签的 2 个对比例、考察点 | 打开规则例句、生成 3 题、朗读/收藏可选文本、来源、反馈 |
-
-卡片的“收藏”选择其词/句文本，不把整张组件硬塞为 word；GrammarCard 可以收藏例句/摘录。收藏时保留已存在材料来源，不能因为入口是 Agent 而改成无出处对话。每轮默认最多 3 张，额外解释可折叠或提出继续，不偷偷生成大量卡片。
-
-应用事件使用 `accepted/progress/text_delta/tool_status/card_ready/completed/failed/cancelled`，携带 run_id、单调 sequence、schema_version 与关联 ID，完整信封以 API 契约为准。最终数据库结果是权威，SSE 中间 delta 不能直接视为持久成功。断线后按 Last-Event-ID/sequence 去重；若事件保留窗口已过，查询已授权最终快照，不补跑模型来“重放”。
-
-未知卡片类型/新 schema 在旧客户端显示“需更新才能展示”与允许的安全文字摘要，不动态执行模型 HTML/JavaScript 或任意组件。结构校验失败进行预算内有限修复；仍失败时显示失败/普通安全说明，不把半截 JSON 暴露为可点击按钮。前端使用原生卡片控件，文字渲染过滤外部资源和主动脚本。
-
-## 5. TTS：合成、缓存和播放分工
-
-### 用户操作和模型选择
+### 2.3 朗读选择与播放
 
 所有朗读入口共用同一 SpeechService/播放器，不为阅读器、卡片、Agent 各建一套缓存。输入可为已验证词句/选区、生成卡片的文本引用或当前章节。语种来自句子/目标语，混合语种或无法确定时展示选择；声音来自该 provider/model 的能力目录。没有支持的组合时要求修改设置，不悄悄把日语用英语声音读出，也不回退到系统 TTS。
 
@@ -93,7 +79,51 @@ Agent 页面列出本人会话，提供新建、继续、删除；从阅读“�
 
 章节朗读先构建不可变 PlaybackManifest，绑定 material_revision、顺序、sentence_id 和合成配置版本。P0 优先每句一个 AudioSegment；特别长句按可追溯短段拆分，高亮只能精确到实际片段范围。段内多句若没有可靠对齐，不宣称逐词/逐句时间戳；以真实播放 segment 的状态驱动高亮。
 
-### 服务端执行
+### 2.4 播放状态、取消与故障恢复
+
+播放器区分 `idle/resolving/buffering/playing/paused/stopped/completed/error`。开始播放需要实际播放器报告 ready/playing；首音频等待从用户点击计到可听开始，不能拿服务端合成结束替代。暂停保留当前位置，停止终止当前队列与后续预取调度；重复点击播放复用现有请求/音频。
+
+快进到未生成句子显示等待和明确生成状态；跳章或更换声音增加本地播放代次，迟到的旧片段不能插回新队列。暂停后不继续扩张预取窗口；停止后取消尚未调用供应商的专属预取任务，若同任务仍被本人其他活动播放请求引用则不能误取消共享工作。独立明确提交的整章后台生成任务通过任务中心取消，不因离开页面自动终止。
+
+网络失败优先重试下载；媒体 401/403 先处理会话/权限而非无限刷新 URL；404/对象丢失报告缓存失效，经用户明确同意才重新合成。音频解码失败标记不支持/损坏，保留诊断类别，不能重复下载失败后暗中反复收费。
+
+退出、换账号、切服务实例、在线撤销 play 权限时停止播放并清除授权音频队列；离线仅在有效权限租期内播放本账号已完整下载音频。签发地址的到期前残余访问与离线无法即时撤权的限制见认证/RBAC，产品不承诺远程擦除用户已导出的文件。
+
+## 3. 前端职责
+
+### 3.1 类型化卡片与流式呈现
+
+卡片通用字段建议为 `card_id/type/schema_version/payload/source_refs/provenance/created_at`。来源引用由应用验证；provenance 区分材料引用、用户输入、AI 生成例和推断。卡片内容、生成时版本与出处一并保存，不能仅保存一段最终 Markdown。
+
+| 卡片 | P0 payload 要求 | 动作 |
+| --- | --- | --- |
+| WordCard | lexical_kind、词/短语、读音、词性、本语境义、可折叠其他义、2 个短例句、可选活用；短语子型增加整体/字面义、可拆分性与常用程度 | 朗读、收藏、按词/短语生成练习、查看有权来源、反馈 |
+| SentenceCard | 原句、翻译、合法意群范围（每块可点开解释）、主要语法点、可选改写 | 朗读/收藏句子、展开语法卡、句译练习、来源、反馈 |
+| GrammarCard | 母语/目标语规则名、当前句主例、带标签的 2 个对比例、考察点 | 打开规则例句、生成 3 题、朗读/收藏可选文本、来源、反馈 |
+
+每张卡显示类型标签，使用原生组件；朗读、收藏、出题、来源与有用/不准反馈均按各自权限和内容范围提供。卡片的“收藏”选择其词/句文本，不把整张组件硬塞为 word；GrammarCard 可以收藏例句/摘录。收藏时保留已存在材料来源，不能因为入口是 Agent 而改成无出处对话。每轮默认最多 3 张，额外解释可折叠或提出继续，不偷偷生成大量卡片。
+
+应用事件使用 `accepted/progress/text_delta/tool_status/card_ready/completed/failed/cancelled`，携带 run_id、单调 sequence、schema_version 与关联 ID，完整信封以 API 契约为准。最终数据库结果是权威，SSE 中间 delta 不能直接视为持久成功。断线后按 Last-Event-ID/sequence 去重；若事件保留窗口已过，查询已授权最终快照，不补跑模型来“重放”。
+
+未知卡片类型/新 schema 在旧客户端显示“需更新才能展示”与允许的安全文字摘要，不动态执行模型 HTML/JavaScript 或任意组件。结构校验失败进行预算内有限修复；仍失败时显示失败/普通安全说明，不把半截 JSON 暴露为可点击按钮。前端使用原生卡片控件，文字渲染过滤外部资源和主动脚本。
+
+### 3.2 三平台播放器
+
+| 平台 | 专项行为与验证 |
+| --- | --- |
+| Windows | 锁定并验证 just_audio 的 Windows 平台实现与编解码；设备切换/睡眠后恢复安全状态，播放器停止后旧事件不重启 |
+| Web | 浏览器用户手势/自动播放限制下显示点击播放；媒体 CORS/同源凭据、Range、刷新和多标签页取消不绕过授权 |
+| Android | 音频焦点、耳机拔出/来电、后台/进程重建明确暂停或恢复；P0 不默认承诺锁屏常驻播放服务 |
+
+所有平台都验证句间停顿、声音一致性、首音频等待与连续播放缓存，不把模拟音频测试当成真实供应商朗读效果验收。
+
+## 4. 后端职责
+
+后端使用 Pydantic AI 执行文本理解、上下文重取、预算控制、工具授权和类型化输出校验；保存 Explanation、AgentThread/Message、Card 与版本化出处。工具只发出受控业务动作，不能代替数据库事务或自行创建身份。模型与 Key 按当前用户依赖注入，模型内容不能改变用户权限。
+
+解释、对话与 TTS 复用各自已完成结果时不要求重新提供 Key；真正的新付费阶段再检查当前 Key、动作权限与预算。缓存命中是读取已有产物，不是下一次未命中时自动收费的授权。短即时运行和长 Job 的执行恢复采用 Agent 运行层，不承诺任意模型步骤自动续跑。
+
+### 4.1 TTS 生成与媒体发布
 
 1. 解析受控文本引用，验证权限、来源版本、语种、模型/声音/格式和长度。只朗读允许的文本，生成提示和输入正文分开，不允许朗读内容成为任意工具指令。
 2. 以本人范围的合成键查 ready 音频；相同键的并发请求合并到一个有效生成任务，其他请求引用同一结果。键包含 user/library、文本摘要、语种、provider/model、声音、支持的合成参数、提示版本、音频格式/采样配置；不记录 Key 明文。
@@ -106,54 +136,22 @@ AudioAsset/Segment 的领域状态为 `queued/generating/ready/failed/cancelled/
 
 缓存身份不包含播放器倍速：0.7–1.5 倍速只在客户端改变播放速率，不新合成。若用户修改的是供应商支持的合成语速/风格，则构成不同配置和新合成键，点击前说明会重新生成；不支持的参数禁用并解释，不默默忽略。
 
-### 播放器状态和取消
+## 5. 公共契约与依赖
 
-播放器区分 `idle/resolving/buffering/playing/paused/stopped/completed/error`。开始播放需要实际播放器报告 ready/playing；首音频等待从用户点击计到可听开始，不能拿服务端合成结束替代。暂停保留当前位置，停止终止当前队列与后续预取调度；重复点击播放复用现有请求/音频。
+[API 契约](../contracts/api.md) 统一 `/api/v1` 的 explanations、agent/threads、runs 与 speech 资源和 SSE 信封；[权限目录](../contracts/permissions.md) 定义来源读取、各业务动作和本人取消的依赖。本篇不重复维护 API 路由表。卡片来源字段使用 [出处协议](../contracts/content-locator.md)，生成、取消、重试和不确定结果使用 [Agent 运行层](../architecture/agent-runtime.md) 与 [数据与任务](../architecture/data-jobs.md)。
 
-快进到未生成句子显示等待和明确生成状态；跳章或更换声音增加本地播放代次，迟到的旧片段不能插回新队列。暂停后不继续扩张预取窗口；停止后取消尚未调用供应商的专属预取任务，若同任务仍被本人其他活动播放请求引用则不能误取消共享工作。独立明确提交的整章后台生成任务通过任务中心取消，不因离开页面自动终止。
-
-网络失败优先重试下载；媒体 401/403 先处理会话/权限而非无限刷新 URL；404/对象丢失报告缓存失效，经用户明确同意才重新合成。音频解码失败标记不支持/损坏，保留诊断类别，不能重复下载失败后暗中反复收费。
-
-退出、换账号、切服务实例、在线撤销 play 权限时停止播放并清除授权音频队列；离线仅在有效权限租期内播放本账号已完整下载音频。签发地址的到期前残余访问与离线无法即时撤权的限制见认证/RBAC，产品不承诺远程擦除用户已导出的文件。
-
-## 6. API、事件与平台差异
-
-以下为未来路径草案，省略项同属 `/api/v1`，最终 DTO/公共状态以 API 契约为准。
-
-| 操作 / API 草案 | 权限 | 数据与事件 |
+| 业务操作 | 持久结果/执行 | 事件 |
 | --- | --- | --- |
-| `POST /api/v1/explanations`、`GET /explanations/{id}` | ai.explain + 来源 read | Explanation/Card/AiRun；explanation.requested/completed/failed |
-| `POST /api/v1/explanations/{id}/feedback`、`POST /cards/{id}/feedback` | ai.feedback + 被反馈对象 read | ExplanationFeedback/CardFeedback；ai.feedback.submitted，不记录正文 |
-| `GET/POST /api/v1/agent/threads`、`GET/DELETE /agent/threads/{id}` | agent.read/use/delete 分动作 | AgentThread/Message；agent.thread.created/deleted |
-| `POST /api/v1/agent/threads/{id}/runs`、`GET /runs/{id}` | agent.use / agent.read；其他 run 按所属能力 read，执行工具追加原动作 | AiRun/Message/Card；agent.message.submitted、agent.run.completed/failed |
-| `GET /api/v1/runs/{id}/events`、`POST /runs/{id}/cancel` | 所属 run 能力 read / job.cancel，本人范围 | 应用 SSE；取消后无新付费调用，查询不重跑 |
-| `POST /api/v1/speech/resolve` | speech.play + 来源 read | 只读缓存解析，返回 manifest/缺失片段，不创建付费任务 |
-| `POST /api/v1/speech/requests`、`GET /speech/requests/{id}` | speech.generate / speech.play，来源 read | PlaybackManifest、AudioAsset/Segment、Job；speech.requested/generated/cache.hit |
-| `GET /api/v1/speech/assets/{id}/manifest`、`GET /speech/assets/{id}/media` | speech.play，当前内容范围 | 元数据/受控音频；playback.started/failed 与服务端生成分开 |
+| 解释/反馈 | Explanation、Card、AiRun、版本化反馈 | explanation.requested/completed/failed、ai.feedback.submitted |
+| 会话与轮次 | AgentThread/Message、Card、AiRun | agent.thread.created/deleted、agent.message.submitted、agent.run.completed/failed |
+| 运行进度/取消 | 公共 AiRun SSE、本人执行控制 | accepted/progress/text_delta/tool_status/card_ready/completed/failed/cancelled |
+| 只读音频解析 | 已有 manifest/缺失片段，不创建付费任务 | speech.cache.hit |
+| 音频生成 | PlaybackManifest、AudioAsset/Segment、Job | speech.requested/generated |
+| 媒体访问与播放体验 | 已授权媒体，不隐式重生成 | playback.started/failed；与服务端生成分开 |
 
-即时解释的事件/取消通过公共 AiRun 控制入口收口，不能因入口命名不同绕过所属能力权限；后台 Job 控制遵循中央目录。所有事件只含类型、状态、耗时、计数/用量和资源引用；不含 Prompt、对话、原词句、工具正文、Key 或媒体签名 URL。通过 operation/request/job/ai_run/model_call 关联同一 [日志平台](../operations/observability.md)。
+即时解释和 Agent 的事件/取消由公共 AiRun 控制入口收口；后台 Job 控制遵循中央目录。事件只含类型、状态、耗时、计数/用量和受控资源引用，不含 Prompt、对话、原词句、工具正文、Key 或媒体签名 URL。通过 operation/request/job/ai_run/model_call 关联同一 [日志平台](../operations/observability.md)。
 
-| 平台 | 专项行为与验证 |
-| --- | --- |
-| Windows | 锁定并验证 just_audio 的 Windows 平台实现与编解码；设备切换/睡眠后恢复安全状态，播放器停止后旧事件不重启 |
-| Web | 浏览器用户手势/自动播放限制下显示点击播放；媒体 CORS/同源凭据、Range、刷新和多标签页取消不绕过授权 |
-| Android | 音频焦点、耳机拔出/来电、后台/进程重建明确暂停或恢复；P0 不默认承诺锁屏常驻播放服务 |
-
-所有平台都验证句间停顿、声音一致性、首音频等待与连续播放缓存，不把模拟音频测试当成真实供应商朗读效果验收。
-
-## 7. 后续功能与官方能力依据
-
-P1 生词减速/重复和收藏列表朗读通过已有 manifest 播放队列实现，默认改变播放安排；真正改变合成参数时仍需生成权限和明确付费意图。先听后显示只控制学习布局，不声称考试保密。P1 专用对比/发音/错题卡需独立 schema、实际权限映射、渲染和旧客户端兼容；P2 跟读评分另外需要录音/识别/评价契约，TTS 能播放不意味着能评口语。
-
-2026-09-22 核对的官方资料仅用于确认接入方向：
-
-- [Gemini TTS 官方说明](https://ai.google.dev/gemini-api/docs/speech-generation)：专门的文本转音频能力；输出格式、流式接口与声音取决于具体 TTS 模型/版本，实现时验证。
-- [OpenRouter TTS 官方说明](https://openrouter.ai/docs/guides/overview/multimodal/tts)：提供独立 audio/speech 接口，返回音频字节；模型目录和声音/速度支持需按供应商能力筛选。
-- [just_audio 官方包说明](https://pub.dev/packages/just_audio)：Windows 需另外选择平台实现；音频格式和服务端媒体头也影响实际播放。
-
-这些资料不构成本项目已连接供应商、已实测平台或支持目录中全部模型的证明；具体模型 ID、声音、编码和依赖版本在技术验证后锁定。
-
-## 8. 可判定验收
+## 6. 验收
 
 | ID | 操作与通过标准（均未执行） |
 | --- | --- |
@@ -172,3 +170,27 @@ P1 生词减速/重复和收藏列表朗读通过已有 manifest 播放队列实
 | TTS-006 | 在线撤权/换账号停止音频并清理队列；离线租约限制生效，签名 URL/音频正文不进入日志 |
 | AI-P1-01 | 新卡片未知版本有安全回退，旧客户端不会执行任意内容；相关生成动作遵守权限和费用边界 |
 | TTS-P1-01 | 重复/减速/收藏队列不重复合成未变配置，音频缺失时明确请求生成；暂停与取消仍有界 |
+
+## 7. 待决与后续
+
+后续卡片保留原产品内容要求；启用前须新增受版本控制的业务 schema 和实际验收，不能只把当前 Markdown 改名为组件：
+
+| 能力 | 内容与边界 |
+| --- | --- |
+| P1 ContrastCard | 两个或多个形式并排，说明何时用 A/B、易错点及对比练习入口 |
+| P1 PronunciationCard | 读音符号、常速/慢速 TTS、对母语者的近似发音提示；跟读评分另属 P2 |
+| P1 ExerciseReviewCard | 用户答案与参考对照、错因、相关规则/词和再练入口，引用当时作答 |
+| 后续独立 PhraseCard | 整体义、字面义、可拆分性、常用程度和例句；P0 已由 WordCard phrase 子型承载 |
+| 后续 DiagnosisCard | 诊断报告的压缩呈现并可展开；P0 使用独立结构化报告，不能据此要求第四种首版卡片 |
+
+P1 生词减速/重复和收藏列表朗读通过已有 manifest 播放队列实现，默认改变播放安排；真正改变合成参数时仍需生成权限和明确付费意图。先听后显示只控制学习布局，不声称考试保密。P1 专用对比/发音/错题卡需独立 schema、实际权限映射、渲染和旧客户端兼容；P2 跟读评分另外需要录音/识别/评价契约，TTS 能播放不意味着能评口语。
+
+2026-09-22 核对的官方资料仅用于确认接入方向：
+
+- [Gemini TTS 官方说明](https://ai.google.dev/gemini-api/docs/speech-generation)：专门的文本转音频能力；输出格式、流式接口与声音取决于具体 TTS 模型/版本，实现时验证。
+- [OpenRouter TTS 官方说明](https://openrouter.ai/docs/guides/overview/multimodal/tts)：提供独立 audio/speech 接口，返回音频字节；模型目录和声音/速度支持需按供应商能力筛选。
+- [just_audio 官方包说明](https://pub.dev/packages/just_audio)：Windows 需另外选择平台实现；音频格式和服务端媒体头也影响实际播放。
+
+这些资料不构成本项目已连接供应商、已实测平台或支持目录中全部模型的证明；具体模型 ID、声音、编码和依赖版本在技术验证后锁定。
+
+默认 OpenRouter 统一入口或 Gemini 官方直连、具体模型/声音/格式和成本上限仍见 [待决清单](../decisions/pending.md)。官方资料确认接入方向，最终能力需要工程验证。

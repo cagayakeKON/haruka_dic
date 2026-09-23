@@ -2,41 +2,30 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#ffffff">
-  <title>Haruka · 我的书库</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%232563EB'/%3E%3Cpath d='M18 15v34m28-34v34M18 32h28' stroke='%23ffffff' stroke-width='8'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=0.5">
-  <link rel="stylesheet" href="mobile.css?v=0.5">
-  <link rel="stylesheet" href="notebooks.css?v=0.5">
-  <script src="data.js?v=0.5" defer></script>
-  <script src="notebooks-data.js?v=0.5" defer></script>
-  <script src="mobile.js?v=0.5" defer></script>
-  <script src="notebooks.js?v=0.5" defer></script>
-  <script src="notebooks-study.js?v=0.5" defer></script>
-  <script src="app.js?v=0.5" defer></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haruka · 选择原型</title>
+  <link rel="stylesheet" href="styles.css?v=0.6">
+  <style>
+    body { min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: #f7f9fd; }
+    main { width: min(100%, 720px); }
+    h1 { font-size: clamp(28px, 5vw, 42px); margin-bottom: 8px; }
+    p { color: var(--muted); margin-bottom: 28px; }
+    .entries { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .entries a { display: flex; flex-direction: column; gap: 10px; min-height: 160px; padding: 26px; border: 1px solid #dce6f7; border-radius: 18px; background: #fff; }
+    .entries a:hover, .entries a:focus-visible { border-color: var(--primary); box-shadow: 0 10px 30px #265ad615; }
+    .entries strong { font-size: 22px; }
+    .entries span { color: var(--muted); font-size: 13px; }
+    @media (max-width: 520px) { .entries { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
-  <a href="#main" class="skip-link">跳到主要内容</a>
-  <aside class="sidebar" aria-label="主导航">
-    <a href="#library" class="brand" aria-label="Haruka 书库"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>haruka<span class="brand-period">.</span></span></a>
-    <p class="sidebar-caption">YOUR LEARNING SPACE</p>
-    <nav id="navigation"></nav>
-    <div class="sidebar-note" aria-hidden="true"><span class="note-star">✳</span><p>小小的好奇心，<br>去往大大的世界。</p><small>STAY CURIOUS.</small></div>
-    <div class="sidebar-bottom">
-      <button class="nav-item" data-action="settings" aria-label="偏好设置" title="偏好设置"><span data-icon="settings"></span><span>偏好设置</span></button>
-      <button class="profile" data-action="about" aria-label="查看原型说明"><span class="avatar">K</span><span class="profile-name">我的学习空间<small>示例账号</small></span><span data-icon="chevron"></span></button>
+  <main>
+    <h1>Haruka 原型</h1>
+    <p>分别打开手机端与电脑端页面。</p>
+    <div class="entries">
+      <a href="phone.html#collections"><strong>手机端 →</strong><span>触控导航、分层页面与底部操作</span></a>
+      <a href="desktop.html#library"><strong>电脑端 →</strong><span>侧边导航、宽屏书库与阅读布局</span></a>
     </div>
-  </aside>
-  <div class="workspace">
-    <header class="topbar"><div class="breadcrumbs"><span>我的学习</span><span class="crumb-slash">/</span><strong id="breadcrumb">书库</strong></div><div class="topbar-right"><span class="demo-badge"><i></i>交互原型</span><button class="icon-button mobile-settings" data-action="settings" aria-label="偏好设置" title="偏好设置"><span data-icon="settings"></span></button><button class="icon-button" data-action="about" aria-label="原型说明" title="原型说明"><span data-icon="help"></span></button></div></header>
-    <main id="main" tabindex="-1"></main>
-    <footer class="page-footer"><span>HARUKA <span class="footer-dot">·</span> A LITTLE EVERY DAY.</span><span>示例数据 · 刷新后重置</span></footer>
-  </div>
-  <nav id="mobile-navigation" class="mobile-navigation" aria-label="手机主导航"></nav>
-  <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <noscript><p class="noscript">请启用 JavaScript 以体验这个交互原型。</p></noscript>
+  </main>
 </body>
 </html>

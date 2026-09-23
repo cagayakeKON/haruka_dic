@@ -1,5 +1,7 @@
 "use strict";
 
+const isMobile = () => document.documentElement.dataset.platform === "phone";
+
 const ICONS = {
   more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
   filter: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor" stroke="none"/><circle cx="15" cy="17" r="3" fill="currentColor" stroke="none"/>',
@@ -53,7 +55,6 @@ function renderNavigation() {
   const desktopNavigation = document.querySelector("#navigation");
   const phoneNavigation = document.querySelector("#mobile-navigation");
   if (isMobile()) {
-    desktopNavigation.innerHTML = "";
     phoneNavigation.innerHTML = [
       ["library", "book", "书库", "我的书库"],
       ["collections", "bookmark", "单词本", "单词本"]
@@ -61,8 +62,7 @@ function renderNavigation() {
       `<button class="m-nav-item" data-action="nb-plan" aria-label="开始词汇复习"><span class="m-nav-icon">${icon("practice")}</span><span>练习</span></button><button class="m-nav-item" data-action="planned" data-feature="agent" aria-label="AI 助手，查看规划"><span class="m-nav-icon">${icon("spark")}</span><span>助手</span></button>`;
     return;
   }
-  phoneNavigation.innerHTML = "";
-  document.querySelector("#navigation").innerHTML = [
+  desktopNavigation.innerHTML = [
     ["library", "book", "我的书库", state.books.length],
     ["collections", "bookmark", "单词本", state.collections.length]
   ].map(([route, symbol, label, count]) => `<a class="nav-item ${route === active ? "active" : ""}" href="#${route}" aria-label="${label}" title="${label}" ${route === active ? 'aria-current="page"' : ""}>${icon(symbol)}<span>${label}</span><span class="nav-count">${String(count).padStart(2, "0")}</span></a>`).join("") +
@@ -269,7 +269,7 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 
 function route() {
   notebookState.readingEntry = null;
-  const parts = location.hash.slice(1).split("/");
+  const parts = (location.hash || (isMobile() ? "#collections" : "#library")).slice(1).split("/");
   if (handleNotebookRoute(parts)) return;
   document.body.classList.remove("nb-selecting");
   const source = parts[0] === "source" ? state.collections.find((entry) => entry.id === parts[1]) : null;
@@ -288,7 +288,7 @@ function route() {
   else renderLibrary();
   renderNavigation();
   const title = state.page === "reader" ? book.title : state.page === "collections" ? "词句收藏" : "书库";
-  document.querySelector("#breadcrumb").textContent = title;
+  if (!isMobile()) document.querySelector("#breadcrumb").textContent = title;
   document.title = `Haruka · ${title}`;
   main.focus({ preventScroll: true }); window.scrollTo(0, 0);
   if (source) {
@@ -361,5 +361,4 @@ document.querySelectorAll("[data-icon]").forEach((element) => { element.innerHTM
 window.addEventListener("hashchange", route);
 window.addEventListener("scroll", rememberReadingAnchor, { passive: true });
 window.addEventListener("resize", reflowLayout);
-mobileMedia.addEventListener("change", reflowLayout);
 route();

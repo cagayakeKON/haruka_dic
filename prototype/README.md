@@ -1,16 +1,16 @@
 # Haruka HTML 交互原型
 
-状态：v0.5，2026-09-22。独立的视觉与交互验证，不是 Flutter/Python 应用交付，不计入 B0/B1/B2 或正式 VB1 验收。
+状态：v0.6，2026-09-23。独立的视觉与交互验证，不是 Flutter/Python 应用交付，不计入 B0/B1/B2 或正式 VB1 验收。
 
 ## 打开方式
 
-从 [phone.html](phone.html) 直接体验手机单词本首页。桌面窗口展示390px手机视口，手机浏览器使用可用宽度；内嵌同一份交互页面，没有业务状态副本。[完整页面](index.html#collections)支持桌面与手机。无外部字体、CDN或网络API，可直接打开，也可在仓库根目录启动本机预览：
+分别打开[手机端](phone.html#collections)与[电脑端](desktop.html#library)；[入口页](index.html)提供两个链接。手机端是真实的独立页面，没有 iframe：拥有自己的页面壳、触控导航、页面样式和手机阅读视图；电脑端拥有自己的侧栏与宽屏页面。两端只共享示例数据、词本业务规则和部分基础样式/脚本。窗口宽度不会把一端自动变成另一端。桌面窗口打开手机端时，手机画布保持390px；电脑端宽度不足980px时保留宽屏画布，可横向查看。无外部字体、CDN或网络API，可直接打开，也可在仓库根目录启动本机预览：
 
 ```powershell
 python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 ```
 
-访问 <http://127.0.0.1:8765/phone.html?v=0.5>；旧标签页需刷新。示例状态只保存在当前页面内存，刷新重置。
+手机端访问 <http://127.0.0.1:8765/phone.html?v=0.6>，电脑端访问 <http://127.0.0.1:8765/desktop.html?v=0.6>。旧标签页需刷新；两个页面各有独立的内存示例状态，互不自动同步，刷新重置。
 
 ## 本轮设计与依据
 
@@ -18,7 +18,7 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 
 - 单词本首页展示按目标语计算的到期词、新词、系统视图及个人词本。多本共用词条和学习进度；首页汇总去重，本内各自计数。
 - 手机为“首页→本内词表→单词详情→复习”独立页面层级，使用专属顶栏、返回和底部导航。表单、归本、筛选使用底部面板，批量整理和详情主操作放在底部。
-- 桌面使用侧栏和本内导航；小于1024px使用紧凑结构。切换结构保留筛选、表单、作答草稿与本次会话。
+- 电脑端使用侧栏和本内导航，手机端使用触控导航与专属阅读页；在各自页面内调整窗口不切换另一端结构，当前筛选、表单、作答草稿与本次会话仍保留。
 - 移除旧手动“已掌握”按钮。学习状态只读，暂停/恢复是独立操作；修改笔记、标签、归属不重置学习，实质词条修改创建新学习版本并保留旧记录。
 
 ## 可体验范围
@@ -48,11 +48,11 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 
 ## 文件与移植约束
 
-- [index.html](index.html)、[phone.html](phone.html)：应用外壳及手机预览。
-- [styles.css](styles.css)、[mobile.css](mobile.css)：公共样式及既有手机书库/阅读样式。
-- [notebooks.css](notebooks.css)：单词本、词表、详情、表单、复习与结果的桌面/手机样式。
+- [index.html](index.html)：选择手机端或电脑端的入口页；[phone.html](phone.html)、[desktop.html](desktop.html)：两个独立的交互页面和导航结构。
+- [styles.css](styles.css)：共用基础样式；[phone.css](phone.css)和[desktop.css](desktop.css)：分别属于手机端与电脑端的布局。
+- [notebooks.css](notebooks.css)：词本共用视觉；[notebooks-phone.css](notebooks-phone.css)：手机词本专属排版和触控操作。
 - [data.js](data.js)：原创材料与预置解释；[notebooks-data.js](notebooks-data.js)：14个虚构词条、3本及标注的示例历史。
-- [app.js](app.js)、[mobile.js](mobile.js)：公共路由、弹窗、导航及书库/阅读。
+- [app.js](app.js)：共享路由/动作与电脑端书库/阅读；[phone.js](phone.js)：手机端书库、阅读、面板与页头。入口显式选择平台，不靠窗口宽度推断。
 - [notebooks.js](notebooks.js)：词本、词条、筛选、批量、归本和示例导入。
 - [notebooks-study.js](notebooks-study.js)：冻结本轮题目、局部作答规则和会话记录；不是正式调度器。
 
@@ -68,6 +68,6 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 
 ## 验证记录
 
-本轮验证与两轮独立审查见[单词本v0.5](../docs/delivery/reviews/2026-09-22-notebooks-prototype.md)。此前记录：[手机主页与导航v0.4](../docs/delivery/reviews/2026-09-22-mobile-home.md)、[手机重设计v0.3](../docs/delivery/reviews/2026-09-22-mobile-prototype.md)、[桌面与配色v0.2](../docs/delivery/reviews/2026-09-22-prototype.md)。
+本轮双入口拆分与审查见[手机/电脑端分离v0.6](../docs/delivery/reviews/2026-09-23-prototype-platform-split.md)。前一轮交互见[单词本v0.5](../docs/delivery/reviews/2026-09-22-notebooks-prototype.md)；更早记录见[手机主页与导航v0.4](../docs/delivery/reviews/2026-09-22-mobile-home.md)、[手机重设计v0.3](../docs/delivery/reviews/2026-09-22-mobile-prototype.md)及[桌面与配色v0.2](../docs/delivery/reviews/2026-09-22-prototype.md)。
 
 浏览器模拟手机尺寸不等于Android真机、软键盘或Flutter平台验收。

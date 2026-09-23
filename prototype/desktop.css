@@ -1,0 +1,2 @@
+/* The desktop prototype keeps its own wide composition when the window narrows. */
+html, body { min-width: 980px; }

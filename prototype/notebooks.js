@@ -280,7 +280,7 @@ function handleNotebookRoute(parts) {
   document.body.classList.toggle("nb-selecting", state.page === "words" && notebookState.selecting);
   if (dialog.open) dialog.close();
   refreshNotebookPage();
-  document.querySelector("#breadcrumb").textContent = state.page === "review" ? "每日复习" : "单词本";
+  if (!isMobile()) document.querySelector("#breadcrumb").textContent = state.page === "review" ? "每日复习" : "单词本";
   document.title = `Haruka · ${state.page === "review" ? "每日复习" : "单词本"}`;
   main.focus({ preventScroll: true }); window.scrollTo(0, 0);
   return true;

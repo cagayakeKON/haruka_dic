@@ -1,9 +1,7 @@
 @charset "UTF-8";
 
-body.dialog-open { overflow: hidden; }
-
-/* Phone composition: list browsing, contextual reader, and modal bottom sheets. */
-@media (max-width: 1023px) {
+/* Phone composition: this stylesheet is loaded only by phone.html. */
+@media all {
   body { background: #fff; font-size: 15px; }
   .workspace { margin-left: 0; padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
   .topbar, .page-footer, .sidebar { display: none; }
@@ -213,3 +211,11 @@ body.dialog-open { overflow: hidden; }
   .dialog-actions { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; }
   .dialog-heading h2 { font-size: 18px; }
 }
+
+/* Keep the standalone phone page at a real phone width in a wide browser window. */
+html { background: #eef1f6; }
+body { max-width: 390px; min-height: 100dvh; margin: 0 auto; box-shadow: 0 12px 44px #263b6018; }
+.mobile-navigation, .m-reader-dock { left: 50%; right: auto; width: min(390px, 100vw); transform: translateX(-50%); }
+.mobile-navigation { padding-left: 12px; padding-right: 12px; }
+dialog.mobile-sheet { left: 50%; right: auto; width: min(390px, 100vw); transform: translateX(-50%); }
+.toast { max-width: min(354px, calc(100vw - 36px)); overflow-wrap: anywhere; }

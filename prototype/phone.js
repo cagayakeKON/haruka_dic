@@ -1,8 +1,6 @@
 "use strict";
 
 // Phone screens share data and actions with desktop, but use their own composition.
-const mobileMedia = window.matchMedia("(max-width: 1023px)");
-const isMobile = () => mobileMedia.matches;
 
 function mobileHeader() {
   return `<header class="m-app-header"><a href="#library" class="m-brand" aria-label="Haruka 书库"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>haruka<span>.</span></a><div class="m-header-actions"><span class="m-demo">原型体验</span><button class="m-profile" data-action="settings" aria-label="偏好设置"><span>K</span></button></div></header>`;

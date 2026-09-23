@@ -1,0 +1,81 @@
+/* Phone-only notebook layout and touch controls. */
+@media all {
+  .nb-page { padding: 0 20px 20px; }
+  .nb-header { padding: calc(15px + env(safe-area-inset-top)) 0 20px; gap: 10px; }
+  .nb-header h1 { font-size: 25px; }
+  .nb-header p { font-size: 12px; line-height: 1.7; margin-top: 4px; }
+  .nb-header-actions { gap: 1px; }
+  .nb-header>.icon-button { padding: 12px 8px; margin-left: -10px; min-width: 38px; }
+  .nb-brand-dot { display: none; }
+  .nb-today { padding: 15px 19px 18px; border-radius: 17px; }
+  .nb-today-top { font-size: 12px; }
+  .nb-today-numbers { gap: 21px; margin: 6px 0 15px; }
+  .nb-today-numbers>div { flex-direction: column; gap: 1px; align-items: flex-start; }
+  .nb-today-numbers strong { font-size: 42px; }
+  .nb-today-numbers>div>span { font-size: 12px; }
+  .nb-today-art svg { width: 53px; height: 53px; }
+  .nb-today-actions { gap: 16px; }
+  .nb-today-actions .primary { min-width: 0; flex: 1; font-size: 13px; padding: 12px 15px; }
+  .nb-today-actions>a { font-size: 12px; gap: 2px; }
+  .nb-today-actions>a svg { width: 13px; }
+  .nb-system-views { margin: 17px 0 20px; padding: 12px 0; }
+  .nb-system-views strong { font-size: 20px; }
+  .nb-books { grid-template-columns: 1fr; gap: 12px; }
+  .nb-book-card { padding: 16px; gap: 15px; border-radius: 14px; }
+  .nb-notebook-cover { width: 61px; height: 83px; }
+  .nb-book-copy h3 { font-size: 16px; }
+  .nb-book-copy>p { font-size: 11px; margin: 5px 0 10px; }
+  .nb-book-copy>small { font-size: 10px; }
+  .nb-language-tag { font-size: 10px; }
+  .nb-section-heading { margin-bottom: 10px; }
+  .nb-section-heading h2 { font-size: 17px; }
+  .nb-demo-note { font-size: 11px; margin-top: 22px; }
+  .nb-workspace { display: block; }
+  .nb-list-actions { margin: 16px 0 18px; }
+  .nb-list-actions>* { flex: 1; font-size: 13px; padding: 10px 13px; }
+  .nb-list-tools { position: sticky; top: 0; z-index: 10; padding-top: 8px; }
+  .nb-filter-tabs { gap: 5px; padding-top: 9px; }
+  .nb-filter-tabs>button { min-height: 46px; padding: 8px 10px; }
+  .nb-word-row { padding: 17px 0; gap: 7px; }
+  .nb-word-first h2 { font-size: 21px; }
+  .nb-word-meta { gap: 10px; }
+  .nb-batch-bar { position: fixed; bottom: calc(85px + env(safe-area-inset-bottom)); left: max(12px,calc((100% - 660px)/2)); right: max(12px,calc((100% - 660px)/2)); }
+  body.nb-selecting .nb-word-list { padding-bottom: 155px; }
+  .nb-detail-columns { display: block; }
+  .nb-word-hero { padding-top: 10px; }
+  .nb-word-hero h2 { font-size: 40px; }
+  .nb-word-hero .nb-detail-meaning { font-size: 18px; }
+  .nb-detail-section { padding: 21px 0; }
+  .nb-learning-panel { padding: 19px; margin-top: 4px; }
+  .nb-detail-bottom { position: sticky; bottom: 75px; padding: 13px 0; gap: 10px; }
+  .nb-detail-bottom>* { flex: 1; }
+  .nb-form input:not([type="checkbox"]), .nb-form select,.nb-form textarea { font-size: 16px; }
+  .nb-form .dialog-actions { margin-top: 4px; }
+  .nb-menu-item { min-height: 60px; }
+  body[data-page="review"] .mobile-navigation { display: none; }
+  body[data-page="review"] .workspace { padding-bottom: env(safe-area-inset-bottom); }
+  .nb-quiz-header { padding: calc(12px + env(safe-area-inset-top)) 0 17px; gap: 10px; }
+  .nb-quiz-header>.icon-button { margin-left: -10px; }
+  .nb-quiz-header strong { font-size: 14px; }
+  .nb-quiz-header .nb-quiz-mode { font-size: 10px; }
+  .nb-question { padding: 39px 1px 24px; }
+  .nb-question h1 { font-size: 25px; }
+  #nb-answer { font-size: 20px; }
+  .nb-results>h2 { font-size: 22px; }
+  .nb-result-stats { margin: 26px 0; }
+  .nb-results .nb-header h1 { font-size: 23px; }
+}
+@media (max-width: 360px) {
+  .nb-page { padding-left: 16px; padding-right: 16px; }
+  .nb-header h1 { font-size: 23px; }
+  .nb-header-actions>.icon-button { min-width: 40px; }
+  .nb-today { padding: 14px 15px 17px; }
+  .nb-today-actions { gap: 8px; }
+  .nb-today-actions .primary { padding: 11px; }
+  .nb-book-card { gap: 11px; padding: 13px; }
+  .nb-notebook-cover { width: 53px; height: 76px; }
+  .nb-book-copy>div:first-child { gap: 4px; }
+  .nb-book-copy h3 { font-size: 15px; }
+  .nb-form-pair { grid-template-columns: 1fr; }
+}
+.nb-batch-bar { left: max(12px, calc(50% - 183px)); right: max(12px, calc(50% - 183px)); }

@@ -1,29 +1,31 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-platform="phone">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Haruka · 手机原型预览</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; background: #eef1f6; color: #202124; font: 14px/1.5 "Segoe UI", "Microsoft YaHei", sans-serif; }
-    .preview-bar { min-height: 64px; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #dfe5ee; background: #fff; }
-    .preview-bar h1 { font-size: 15px; font-weight: 600; margin: 0; }
-    .preview-bar a { display: inline-flex; align-items: center; min-height: 44px; color: #2563eb; text-decoration: none; }
-    .preview-bar a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
-    .preview-stage { padding: 20px; display: flex; justify-content: center; }
-    iframe { display: block; width: 390px; max-width: 100%; height: min(844px, calc(100dvh - 106px)); min-height: 320px; border: 1px solid #cdd5e2; border-radius: 26px; background: #fff; box-shadow: 0 12px 40px #263b6012; }
-    @media (max-width: 520px) {
-      .preview-bar { min-height: 56px; padding: 6px 16px; }
-      .preview-bar h1 { font-size: 14px; }
-      .preview-bar a { font-size: 12px; }
-      .preview-stage { padding: 0; }
-      iframe { width: 100%; height: calc(100dvh - 57px); min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffffff">
+  <title>Haruka · 手机端原型</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%232563EB'/%3E%3Cpath d='M18 15v34m28-34v34M18 32h28' stroke='%23ffffff' stroke-width='8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css?v=0.6">
+  <link rel="stylesheet" href="phone.css?v=0.6">
+  <link rel="stylesheet" href="notebooks.css?v=0.6">
+  <link rel="stylesheet" href="notebooks-phone.css?v=0.6">
+  <script src="data.js?v=0.6" defer></script>
+  <script src="notebooks-data.js?v=0.6" defer></script>
+  <script src="phone.js?v=0.6" defer></script>
+  <script src="notebooks.js?v=0.6" defer></script>
+  <script src="notebooks-study.js?v=0.6" defer></script>
+  <script src="app.js?v=0.6" defer></script>
 </head>
 <body>
-  <header class="preview-bar"><h1>Haruka · 手机交互原型</h1><a href="index.html?v=0.5#collections" target="_blank" rel="noopener">打开完整页面 ↗</a></header>
-  <main class="preview-stage"><iframe title="Haruka 手机端交互预览" src="index.html?v=0.5#collections"></iframe></main>
+  <a href="#main" class="skip-link">跳到主要内容</a>
+  <div class="workspace">
+    <main id="main" tabindex="-1"></main>
+  </div>
+  <nav id="mobile-navigation" class="mobile-navigation" aria-label="手机主导航"></nav>
+  <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="noscript">请启用 JavaScript 以体验这个交互原型。</p></noscript>
 </body>
 </html>

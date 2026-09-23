@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 | --- | --- |
 | 决策 | Haruka 全部日志和埋点接入 MyHome 的 Alloy → Loki → Grafana |
-| 状态 | Draft v0.3，2026-09-22；dev/本地Alloy/Loki/Grafana及后端/容器日志采集已验证，管理端/RBAC审计与MyHome正式接入尚未实现 |
+| 状态 | Draft v0.4，2026-09-23；dev/本地Alloy/Loki/Grafana及后端/容器日志采集已验证，管理端/RBAC审计与MyHome正式接入尚未实现 |
 | 范围 | Flutter Windows/Web/Android、管理 Web、API、Worker、AI/TTS、数据库、网关与共享基础设施 |
 | 配套 | [架构总览](../architecture/overview.md)、[认证与隔离](../architecture/authentication.md)、[管理后台与 RBAC](../architecture/authorization.md)、[Agent 运行层](../architecture/agent-runtime.md)、[MyHome 复用](myhome-integration.md) |
 
@@ -121,11 +121,12 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 | 解释/收藏 | explanation.requested、explanation.completed、collection.saved | 内容类别、语言、引用、耗时；不记录原词句、笔记或解释正文 |
 | 单词本 | notebook.created/updated/deleted、notebook.members.changed | 本/操作类型、计数、受控引用、提交结果；无本名/简介/词内容，删本不计作删词 |
 | 词汇学习 | vocabulary.evidence.accepted/replaced/invalidated、vocabulary.learning.updated/rebuild_failed | 证据/投影受控引用、策略版本、结果类别/耗时/数量；不记答案或逐人掌握明细；埋点不作为学习成绩，重评重放不计新作答 |
-| TTS/播放 | speech.requested、speech.generated、speech.cache.hit、playback.started、playback.failed | 模型/声音、缓存结果、首音频耗时、时长、平台错误 |
+| TTS/播放 | speech.requested、speech.generated、speech.cache.hit、playback.started、playback.failed | 模型/声音、缓存结果、首音频耗时、时长、平台错误；试卷仅记录受控exam/script/audio binding引用与播放策略类别，不含稿文、媒体URL或答案 |
 | 学习结果复用 | learning.cache.resolved、learning.result.persisted、learning.result.persistence_failed、learning.generation.joined | 缓存层/结果种类、private/global_word、命中/缺失原因、配置是否不同、条目数/耗时及受控引用；不记录词句/上下文/完整文本hash，命中和等待不重复累计模型调用；全局词音费用只归生产者，等待者事件绑定本人，不下发他人Job/身份 |
 | 练习 | practice.started、answer.submitted、answer.scored、practice.completed | 题型、来源、题数、规则/AI 评分方式；答案与学习事实留在业务库 |
 | AI习题/错题 | ai_exercise.selection_previewed、ai_exercise.generation_requested/generated/failed、mistake.recorded/status_changed/favorite_changed | 来源/时间/掌握/错误条件类型枚举、候选/排除/实际题数、错题状态与收藏动作、冲突类别、耗时、受控快照/Job/occurrence引用；不记录本名、日期区间原值、词表、题目、答案或逐人掌握明细；预览不计模型调用/习题完成，前端事件不作为错题事实 |
-| 试卷考试 | exam.import.reviewed、exam.session.started、exam.response.saved、exam.session.submitted、exam.grading.started/completed/failed、exam.result.viewed | 场次/试卷版本/评分运行引用、题数、状态、耗时、manual/timeout；详细口径见试卷专题 |
+| 试卷准备/听力 | exam.import.reviewed、exam.listening.script_uploaded、exam.listening.analysis.requested/completed/failed、exam.listening.review.committed、exam.listening.audio.generated/failed | 试卷/脚本版本、候选/确认/拒绝/冲突/缺稿/缺音频数量、来源类别、Job/AI/TTS引用、状态与耗时；不含题干、听力稿、说话人正文、答案、Prompt、音频URL或本地路径，AI候选不计作人工确认 |
+| 试卷考试 | exam.session.started、exam.listening.playback.started/completed/closed/failed、exam.response.saved、exam.session.submitted、exam.grading.started/completed/failed、exam.result.viewed | 场次/试卷版本/冻结AudioBinding/评分运行引用、题数、播放策略类别/attempt状态/剩余次数、状态、耗时、manual/timeout；`playback.started`只由服务端首字节消费事实产生，completed与交付未知的closed分开，reserved/void/拒绝和客户端播放意图分开，Range/签名刷新不重复计开始，详细口径见试卷专题 |
 | Agent | agent.message.submitted、agent.run.completed、agent.run.failed、agent.card.action | run 引用、卡片类型、操作类型、耗时、失败类别；不记录消息正文 |
 | CSV | vocabulary.csv.export.completed、vocabulary.csv.import.previewed、vocabulary.csv.import.completed | 导出/有效/错误/重复/新增行数、处理策略、耗时；不含 CSV 内容 |
 
@@ -133,7 +134,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 业务库继续承担已提交学习数据和业务统计的权威来源。埋点用于使用路径、成功率和性能分析；客户端事件可重试、缺失或被伪造，不能直接用作权限、账单或评分依据。PRD 的学习活跃与导入后转化指标需结合服务端记录计算。
 
-试卷过程按 [试卷模式](../modules/exams.md) 关联 exam_session_id、exam_paper_version_id、grading_run_id 和 Job/AiRun；这些 ID 不作索引标签。保存/交卷以服务端确认事件为准，超时自动交卷也必须记录；原卷题干、作答、参考答案、rubric 与个人成绩明细不进入日志。批改失败/待复核单独统计，不记为答错或零分。
+试卷过程按 [试卷模式](../modules/exams.md) 关联 exam_session_id、exam_paper_version_id、受控script/audio binding、grading_run_id 和 Job/AiRun；这些 ID 不作索引标签。文字稿上传、AI候选、人工确认、TTS生成和场次播放分别计数，不能把候选产生或客户端点击当作已确认/已播放/已ready。保存/交卷以服务端确认事件为准，超时自动交卷也必须记录；原卷题干、听力稿/片段、说话人正文、作答、参考答案、rubric、媒体URL与个人成绩明细不进入日志。批改失败/待复核及听力媒体故障单独统计，不记为答错或零分。
 
 ### 队列与批量上送
 

@@ -142,7 +142,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | --- | --- | --- | --- |
 | 登录/注册/会话 | account、core/auth | AuthService、User/AuthSession/Challenge | 邮件、安全撤销通知 |
 | 两端 RBAC/管理 | core/access、admin | AuthorizationService、AdminUser/PolicyService | 缓存通知、审计投递 |
-| 材料公共能力 | library | MaterialImport/MaterialService、共用出处/阅读位置服务 | 不可变文件、格式提取、类型分派、清理 |
+| 材料公共能力 | library | MaterialImport/MaterialSourceService、共用出处/阅读位置服务 | 不可变文件、SourceUnit/ContentBlock提取、类型分派、清理；不发布大一统领域树 |
 | 视觉OCR基础能力 | 各消费feature的任务/质量页 | VisionRecognitionService、本人ModelFactory、页/区域识别记录 | Pydantic AI视觉调用、页批次恢复；类型输出/就绪仍由各模块负责 |
 | 小说 | novels | NovelProcessing/NovelReadingService、小说manifest/章节与标注引用 | 小说结构、分句/分词及语言标注 |
 | 课本 | textbooks | TextbookProcessing/TextbookStudyService、单元/角色及Exercise引用 | 单元分析、词表/习题关联；评分复用Practice公开服务 |
@@ -150,7 +150,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | 多单词本/成员 | collections的notebooks子功能 | NotebookService、Notebook/NotebookItem；CollectionService拥有词内容/版本 | 有界批量、已有Job机制；不复制学习进度 |
 | AI习题/自动掌握/错题 | ai_exercises与collections只读状态组件 | AiExerciseService、MistakeService、VocabularyLearningService；选择/生成、错题事实/收藏、证据/掌握投影 | Job/Outbox、Pydantic AI、有效评分事务与确定性重算；无复习调度 |
 | AI习题/公共作答/诊断 | ai_exercises、practice | AiExercise/Mistake/Practice/Grading/LearnerService | 显式出题、全部错题账本/收藏、作答、主观评分、诊断 |
-| 试卷/考试 | exams | ExamPaper/Session/GradeService | 结构抽取、截止扫描、逐题批改 |
+| 试卷/考试 | exams | ExamPreparationService、ExamListeningService、ExamSession/GradeService | 独立试卷结构抽取；文字听力稿、AI候选/人工校对、私有TTS绑定；截止扫描、逐题批改 |
 | 对话/解释 | agent | Agent/ExplanationService | 按即时/持久路径处理 |
 | 朗读 | speech、core/platform | SpeechService、AudioRepository | 合成、封装、音频存储 |
 | 个人资料/学习偏好/个人 Key | settings | ProfileService、AvatarService、SettingsService、CredentialService | 字段/revision校验、头像安全发布/GC、受控连接测试、配置失效 |
@@ -160,7 +160,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 
 词本在collections中组织紧凑/宽屏页面；AI习题使用独立controller并复用PracticeSession/Attempt作答能力，掌握规则由后端唯一计算。Python中词本用例归services/vocabulary_notebooks，AI选择/生成与错题账本归对应应用服务，纯证据规则归domain/vocabulary_learning；不引入py-fsrs、调度适配器、ReviewOpportunity或日额度。评分发布有效证据和错题事实，投影服务通过既有事务/Outbox重算。以上为目标职责，不在文档阶段生成空目录或新微服务；依据见[AI习题](../modules/ai-exercises.md)与[学习证据](vocabulary-learning.md)。
 
-小说/课本/试卷在 api/routes、schemas、services、domain、repositories 中按 novels/textbooks/exams 分组；adapters/parsers 按 markdown/epub 及获准后的 pdf/txt 划分。格式适配器返回源结构，类型处理器返回各自领域产物，Worker handler 显式分派；不建立万能 MaterialProcessor 加一套通用阅读 DTO，也不因此拆微服务或提前生成空文件。
+小说/课本/试卷在 api/routes、schemas、services、domain、repositories 中按 novels/textbooks/exams 分组；adapters/parsers 按 markdown/epub 及获准后的 pdf/txt 划分。格式适配器只返回SourceAsset/SourceUnit/ContentBlock源事实，类型处理器分别返回NovelManifest、TextbookManifest或ExamPaperVersion领域产物，Worker handler 显式分派；详细边界见[解析数据结构](../contracts/material-structures.md)。不建立万能 MaterialProcessor 加一套通用阅读 DTO，也不因此拆微服务或提前生成空文件。试卷文字听力稿属于exams专用上传/准备用例，ExamListeningService负责候选、人工确认和TTS绑定编排；音频合成仍调用SpeechService公开能力，不让exams直接访问TTS适配器。
 
 [视觉OCR](vision-recognition.md)在services负责页计划/授权/预算/提交编排，ai负责类型化视觉调用与各业务识别配置，adapters只负责图像预处理/PDF渲染；不增加传统OCR引擎目录或独立部署服务。页面识别稿不是领域ready，仍由小说/课本/试卷各自校验后发布。
 

@@ -22,6 +22,8 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 
 用户进一步要求补全登录注册、改密、头像、年龄、性别、母语/学习语言等基础设置。当前设计保持注册为最小身份流程；显示名/头像、出生年份/性别和学习档案登录后可选填写，资料默认仅本人可见且人口字段默认不进入AI。年龄不存会过期的整数值，P0以可选出生年份派生粗粒度年龄段。
 
+同日确认三类材料采用公共不可变来源层和分别独立的小说、课本、试卷领域结构。试卷首版接收文字版听力稿或从试卷正文/已发布视觉转写提取脚本候选；AI必须标记疑似听力题并提出脚本—题组/小题候选匹配，用户确认后才用本人TTS生成冻结音频。用户上传原始音频、转写/切段及自动绑定列为P1待办，P0不接受该上传用途。
+
 ## 2. 当前实现建议
 
 | ID | 选择与理由 | 验证/变更条件 |
@@ -47,6 +49,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | DEC-19 | 已被DEC-20取代：原方案为多单词本+effective掌握+py-fsrs间隔 | 仅供历史追踪；未实现，不得恢复其复习/SRS部分 |
 | DEC-20 | 多单词本只负责组织和选源；effective习题结果驱动只读掌握，不做时间调度。独立AI习题经预览确认后使用本人Key生成；所有可靠错题自动留档，收藏与当前错误状态独立 | [AI习题](../modules/ai-exercises.md)AIX、[单词本](../modules/vocabulary-notebooks.md)VNB及[学习证据](../architecture/vocabulary-learning.md)VL验收；OPEN-11只锁定结果阈值，阶段3组织、4闭环、5CSV，均未实现 |
 | DEC-21 | 账号基础资料采用UserProfile/StudyProfile/Settings分离：最小注册，可跳过引导；可选birth_year代替整数年龄，人口字段默认不进AI；头像专用安全发布，语言档案与UI语言/权限分离 | [账号](../modules/accounts.md)ACC-11/12与[设置](../modules/settings.md)PROFILE验收；阶段1实现，精确生日/未成年人、公开资料、邮箱变更/销号另立范围，均未实现 |
+| DEC-22 | 材料解析采用公共SourceUnit/ContentBlock来源层+NovelManifest/TextbookManifest/ExamPaperVersion三套领域结构；P0考试听力只处理文字稿/正文候选，经AI标记匹配和人工确认后生成私有TTS | [解析数据结构](../contracts/material-structures.md)MSTR、[考试](../modules/exams.md)与PRES验收；原始音频上传/自动绑定按OPEN-12进入P1前置设计，全部未实现 |
 
 ## 3. 决策导航与变更
 
@@ -54,7 +57,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | --- | --- |
 | 系统图、组件职责和技术基线 | [系统架构](../architecture/overview.md)、[项目结构](../architecture/project-structure.md) |
 | 会话、RBAC、数据与持久任务 | [认证](../architecture/authentication.md)、[授权](../architecture/authorization.md)、[数据与任务](../architecture/data-jobs.md) |
-| 接口、权限代码与出处 | [API](../contracts/api.md)、[权限目录](../contracts/permissions.md)、[出处契约](../contracts/content-locator.md) |
+| 接口、权限代码、解析结构与出处 | [API](../contracts/api.md)、[权限目录](../contracts/permissions.md)、[解析数据结构](../contracts/material-structures.md)、[出处契约](../contracts/content-locator.md) |
 | 工程入口、生成与阶段边界 | [脚手架](../engineering/scaffold.md)、[B0/B1/B2 验收](../delivery/milestones/scaffold.md) |
 | 配置、发布与恢复 | [运行配置](../operations/configuration.md)、[部署与恢复](../operations/deployment-recovery.md) |
 | 未选方案、缺少的工程契约及最晚锁定点 | [待决清单](pending.md) |

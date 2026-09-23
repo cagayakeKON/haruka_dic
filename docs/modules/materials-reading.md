@@ -1,12 +1,12 @@
 # 材料导入、书库与公共阅读能力
 
-状态：设计基线，2026-09-22；全部为待实现设计。需求依据为 [PRD](../product/overview.md)，公共响应、版本冲突及幂等以 [API 契约](../contracts/api.md) 为准，执行与事务以 [数据与任务](../architecture/data-jobs.md) 为准。本文只维护三类材料共用的导入/书库及小说、课本共用的出处/阅读位置操作；专用流程分别见 [小说](novels.md)、[课本](textbooks.md)、[试卷](exams.md)，类型字段与分派规则见 [三类材料契约](../contracts/material-types.md)。
+状态：设计基线，2026-09-23；全部为待实现设计。需求依据为 [PRD](../product/overview.md)，公共响应、版本冲突及幂等以 [API 契约](../contracts/api.md) 为准，执行与事务以 [数据与任务](../architecture/data-jobs.md) 为准。本文只维护三类材料共用的导入/书库及小说、课本共用的出处/阅读位置操作；上传后的公共来源层与三套领域对象见[解析数据结构](../contracts/material-structures.md)，专用流程分别见 [小说](novels.md)、[课本](textbooks.md)、[试卷](exams.md)，类型字段与分派规则见 [三类材料契约](../contracts/material-types.md)。
 
 ## 1. 范围、入口与权限
 
 | 功能 | P0 | 后续边界 |
 | --- | --- | --- |
-| 文件导入 | 显式选择小说/课本/试卷，MD、EPUB 基础格式 | 小说/课本 PDF/OCR/TXT 为 P1；文本 PDF/扫描试卷的首版范围仍待确认 |
+| 文件导入 | 显式选择小说/课本/试卷，MD、EPUB基础格式；既有本人试卷可追加专用UTF-8文字听力稿 | 小说/课本PDF/OCR/TXT为P1；文本PDF/扫描试卷范围仍待确认；原始听力音频上传/自动绑定为P1 |
 | 书库 | 三类/语言筛选、标题搜索、分页、详情、改标题、显式按另一类型重新处理、删除 | 不增加其他材料类型、共享书库、公开市场或整库导出 |
 | 小说 | 独立连续阅读器，目录/选区/进度/书签 | 专用处理和后续范围见小说模块 |
 | 课本 | 独立单元学习页，课文/词表/习题分区与逐题反馈 | 专用处理和后续范围见课本模块；试卷必要校对仍为 P0 |
@@ -30,6 +30,12 @@
 6. 小说发布可靠正文后可阅读，已有目录不等模型重新切章；课本发布可靠内容后可在专用单元页学习，未分类内容标“待整理”、未准备题目单独受限；试卷进入准备/校对，必须冻结通过才能开考。三类质量门槛分别由其模块定义，解析不完整不能静默标成完整成功。
 7. 已明确请求的视觉OCR和进一步AI结构建议/语言提示/抽题分别记阶段，另需 `client.material.analyze`、本人Key和预算，付费前重新检查后异步执行；使用各类型专用输出模型和质量校验。OCR按应用生成的源页/区域引用，后续分析仅引用已发布正文块。复合请求缺权限受理前拒绝，可另选“仅直接提取”，不得静默付费或默默只做一半。尚无Key可明确保存为“待配置后由我继续”，补Key不自动启动旧付费阶段。用户类型/手动标题不被模型结果覆盖。
 8. 质量页按小说章节/语言标注、课本单元/角色/题目、试卷题号/分值/答案关联分别展示异常与可用能力。选错类型走显式重新处理，不以切换皮肤代替。
+
+#### 试卷文字听力稿
+
+文字听力稿不是新的MaterialImport，也不替换主试卷文件。用户从本人试卷准备页选择UTF-8纯文本/Markdown文件，前端申请purpose=`exam_listening_script`的专用UploadIntent；后端重查exam.read+exam.edit、所有者、当前草稿版本、格式/字符/容量和配额，仍经staging→独占final对象→实际字节校验后发布`ExamListeningScriptSource`。上传完成最多创建无付费的规范化任务，不自动发起模型调用；“AI自动解析/匹配”由准备页在用户明确提交后调用独立analysis-run，重新检查material.read+material.analyze、本人Key/预算并创建Job/Outbox。相同幂等键重复完成返回同一脚本源，换文件或修订文本创建新脚本版本。
+
+P0上传能力目录不发布`exam_listening_audio`，后端也拒绝audio MIME、外链URL、普通FileObject ID或把材料附件purpose改成音频。脚本上传完成只生成“待解析/待绑定”状态：AI须提出听力题标记和脚本—题组/小题匹配候选，用户在试卷校对流程确认后才能生成TTS或参与ready；详细对象和门槛见[解析数据结构](../contracts/material-structures.md#5-文字听力稿ai候选与tts绑定)。
 
 推荐文件上限沿用 PRD：MD 20 MB、EPUB 50 MB；PDF 80 MB/TXT 20 MB 只在对应格式获准上线时生效。服务端配置同时限制解包文件数、解压后总量/单项体积、解析时间、图片尺寸和层级；具体值通过样本与容量测试定版，不能只限制压缩包字节数。上传限额按用户预留，完成/取消/超时释放，防止并行意图绕过配额。
 
@@ -127,7 +133,7 @@ EPUB/嵌入 HTML 不执行脚本、不加载远程 CSS/图片、不允许解包�
 
 ## 5. 公共契约与依赖
 
-[API 契约](../contracts/api.md) 是 `/api/v1` 路由、请求/响应、游标、幂等与版本冲突的唯一目录；[权限目录](../contracts/permissions.md) 维护实际动作代码。[出处协议](../contracts/content-locator.md) 维护完整定位字段、Unicode/文本规范化、回跳与版本重绑；本模块仅保留相应用户操作。
+[API 契约](../contracts/api.md) 是 `/api/v1` 路由、请求/响应、游标、幂等与版本冲突的唯一目录；[权限目录](../contracts/permissions.md) 维护实际动作代码。[解析数据结构](../contracts/material-structures.md)维护SourceUnit/ContentBlock与三类领域对象，[出处协议](../contracts/content-locator.md)维护完整定位字段、Unicode/文本规范化、回跳与版本重绑；本模块仅保留相应用户操作。
 
 执行依赖 [数据与任务](../architecture/data-jobs.md) 的不可变对象发布及 Job/Outbox，[认证与隔离](../architecture/authentication.md) 的文件/账号边界，以及 [日志与埋点](../operations/observability.md) 的事件白名单。材料转考试由 [试卷模块](exams.md) 接管；普通练习、解释/朗读与离线缓存分别见对应模块。
 
@@ -137,7 +143,9 @@ EPUB/嵌入 HTML 不执行脚本、不加载远程 CSS/图片、不允许解包�
 | 书库/详情打开、元数据更新/删除 | Material、阅读进度与计数投影、revision/tombstone | screen.viewed、material.opened/updated/deleted |
 | 重解析与版本列表 | MaterialRevision、解析 Job | material.reparse.requested/completed |
 | AI 分析 | 类型化分析结果、AiRun、Job | material.analysis.requested/completed/failed |
-| 章节读取与来源解析 | StructureNode、ContentBlock、Sentence、AnchorMapping | reading.chapter.opened、source.navigation.result |
+| 试卷文字听力稿上传 | UploadIntent/FileObject、ExamListeningScriptSource、可选规范化Job | exam.listening.script_uploaded；只记录格式/长度区间和状态，不含脚本正文/文件名 |
+| 试卷听力候选分析 | 冻结输入版本、AiRun、分析Job与候选代次 | exam.listening.analysis.requested/completed/failed；候选不算人工确认，不含脚本/题面正文 |
+| 章节读取与来源解析 | SourceUnit/ContentBlock、类型专用节点、Sentence、AnchorMapping | reading.chapter.opened、source.navigation.result |
 | 阅读位置与历史 | ReadingProgress、ReadingHistory | reading.progress.saved、reading.session.ended |
 | 书签 | Bookmark | bookmark.created/deleted |
 
@@ -157,6 +165,7 @@ EPUB/嵌入 HTML 不执行脚本、不加载远程 CSS/图片、不允许解包�
 | MAT-006 | 删除与 Worker 完成竞争不会让材料重新出现；收藏和既有作答保留快照；旧文件下载签发被阻断 |
 | MAT-007 | 撤销 material.analyze 后，仍有登录与本人 job.cancel 的用户能停止既有分析任务；不能借取消读取结果、重试或新建付费步骤 |
 | MAT-008 | 重复预签名 PUT、校验前后覆盖、复制中改源、完成/取消竞争和发布失败符合 DAT-08：Worker只读验证后的final对象，孤立对象可回收 |
+| MAT-009 | 本人试卷可通过专用用途上传UTF-8文字听力稿且不替换主文件；A/B脚本ID、audio MIME/外链/普通FileObject用途均拒绝，完成后只进入待解析/校对而不自动ready或收费生成 |
 | READ-001 | 日/英/中、组合字符、emoji、ruby 基础字、跨块选区在三端保存并回跳同一文本，越界或 quote 不符拒绝 |
 | READ-002 | 小说/课本各自重排或改字号/主题不改正文 ID；课本原生题块保持关联，不能通过切皮肤进入另一类型业务 |
 | READ-003 | 同账号多端进度冲突显式处理，回读不被最远进度覆盖；无写权限可读且不能更新进度/书签 |
@@ -173,6 +182,7 @@ EPUB/嵌入 HTML 不执行脚本、不加载远程 CSS/图片、不允许解包�
 | P1 分页/双语/翻译层 | 视图分页不改变锚点；原文对照与生成翻译分开标识；句级翻译需本人 Key、版本与独立预算 | READ-P1-01：字体变化/翻页后选区一致，翻译缺失可继续原文阅读 |
 | P1 阅读热力图 | 仅本人已授权的阅读/解释/收藏业务聚合，原文不进埋点；无数据不等于未读 | READ-P1-02：跨用户无数据泄漏、计数不因补传重复、删材料显示安全状态 |
 | P1 教材完成度/讲练分屏 | 从已提交阅读/Attempt 计算，未评分单独显示；分屏复用同一题目/来源状态 | READ-P1-03：切布局不重复作答，重评后更新一次统计 |
+| P1 原始试卷听力音频 | 上传/校验/转码原音，必要时转写/切段并提出题目绑定；与P0文字稿/TTS版本分开 | OPEN-12与MSTR-10：格式/时长/隐私/对齐/歧义/原音优先级和迁移契约完成前不开放 |
 
 后续还保留三类范围内的跨材料检索（例如查找已收藏的被动句原文）、可选教材难度曲线；它们属于 v0.3+，不成为 P0 书库搜索或可靠等级判断的承诺。英语/日语之外的语言质量按语种适配验证后启用。原 MAT-P2-01 字幕导入验收随三类范围收敛停用，不进入当前交付矩阵；以后新增类型需重新确认。
 

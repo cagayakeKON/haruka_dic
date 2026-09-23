@@ -108,7 +108,7 @@ Web 与 API 优先同源，原始文件和媒体地址须从三端可达；MinIO
 
 ## 7. 继续阅读与验证依据
 
-功能流程分别见 [账号](../modules/accounts.md)、[材料公共能力](../modules/materials-reading.md)、[小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[收藏与练习](../modules/vocabulary-practice.md)、[考试](../modules/exams.md)、[AI 与朗读](../modules/ai-speech.md)、[管理后台](../modules/admin.md) 和 [设置](../modules/settings.md)。它们维护操作/异常/平台体验；公共协议由架构和 contracts 维护，类型/格式及专用边界见 [三类材料](../contracts/material-types.md)。
+功能流程分别见 [账号](../modules/accounts.md)、[材料公共能力](../modules/materials-reading.md)、[小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[收藏与练习](../modules/vocabulary-practice.md)、[考试](../modules/exams.md)、[AI 与朗读](../modules/ai-speech.md)、[管理后台](../modules/admin.md) 和 [设置](../modules/settings.md)。它们维护操作/异常/平台体验；公共协议由架构和 contracts 维护，类型/格式及专用边界见 [三类材料](../contracts/material-types.md)，不可变SourceUnit/ContentBlock与NovelManifest、TextbookManifest、ExamPaperVersion的分层见[解析数据结构](../contracts/material-structures.md)。试卷P0的听力输入为专用文字稿或试卷正文脚本候选：AI标记疑似听力题并提出脚本与题组/小题匹配，用户确认后用本人TTS生成私有冻结音频；原始音频上传与自动绑定留到P1。
 
 工程目录和依赖方向见 [项目结构](project-structure.md)，B0/B1/B2 及完整交付证据见 [路线图](../delivery/roadmap.md) 和 [交付验收](../delivery/acceptance.md)。Flutter/Python 应用仍未实现；HTML 视觉原型不计作应用、平台或供应商验收。
 

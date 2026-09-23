@@ -17,7 +17,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 | 产品/功能 | [产品总览](docs/product/overview.md)、对应modules规格、[功能与验收追踪](docs/delivery/coverage.md) |
 | 身份、页面、业务动作与数据 | [认证](docs/architecture/authentication.md)、[RBAC](docs/architecture/authorization.md)、[权限目录](docs/contracts/permissions.md)、[API](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) |
 | 建表、ORM、逻辑关联、数据隔离与迁移 | [数据库规范](docs/engineering/database.md)、相关数据/认证设计；按DB验收证明已实现范围 |
-| 阅读、选区、导入、CSV或考试 | 对应[小说](docs/modules/novels.md)/[课本](docs/modules/textbooks.md)/[考试](docs/modules/exams.md)模块，以及[三类材料](docs/contracts/material-types.md)、[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)所涉及的契约 |
+| 阅读、选区、导入、CSV或考试 | 对应[小说](docs/modules/novels.md)/[课本](docs/modules/textbooks.md)/[考试](docs/modules/exams.md)模块，以及[三类材料](docs/contracts/material-types.md)、[解析数据结构](docs/contracts/material-structures.md)、[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)所涉及的契约 |
 | Agent、卡片、会话、AI或TTS | [Agent运行层](docs/architecture/agent-runtime.md)、[AI与朗读模块](docs/modules/ai-speech.md) |
 | 编码、初始化或构建 | [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[脚手架](docs/engineering/scaffold.md)、[B0/B1/B2](docs/delivery/milestones/scaffold.md) |
 | 后端接口、模块、返回/异常与多语言 | [后端开发手册](docs/engineering/backend.md)、[统一返回契约](docs/contracts/api-responses.md)、相关API/权限/数据设计 |
@@ -33,6 +33,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 - OCR统一使用用户配置的视觉模型，经过Pydantic AI与统一任务/预算/日志入口；不建立或静默回退传统OCR。文件渲染/可用文本层直接提取仍是确定性处理，三类专用校验保持独立，详见[视觉OCR](docs/architecture/vision-recognition.md)。
 - 应用内 Agent 框架已确定为 Pydantic AI；使用 Pydantic 业务输出模型，不另建 LangChain/LangGraph Agent 执行路径。
 - 支持导入时选择试卷模式、整卷作答、交卷后 AI 判断/评分；试卷首版文件格式范围仍待明确，不能将推荐的 PDF/OCR 优先级当作已确认。
+- 试卷P0可为既有试卷上传UTF-8文字听力稿，或从试卷正文/已发布视觉转写提取听力脚本候选；AI必须为疑似听力题给出有证据的类型标记并提出脚本与题组/小题候选匹配，用户校对确认后才使用本人Gemini/OpenRouter TTS生成并冻结私有音频。原始音频上传、转写、切段和自动绑定列为P1待办，P0接口必须拒绝。
 - 多用户注册登录，资料、学习记录、任务、私有缓存与模型 Key 按用户隔离；收藏库标准单词独立发音为同实例跨用户共享目录，匹配语种/读音/声音配置，个人关联和费用仍隔离。
 - 注册仅要求当前身份策略字段；头像、出生年份/性别、母语/解释语言/学习语言、水平/目标和时区属于可选本人资料/学习档案，不得成为登录门槛。资料默认不公开，人口字段默认不进AI；头像走专用临时上传、受限解码/去元数据/重编码和每次鉴权的private/no-store读取，应用副本按实例/账号/资产分区，详见[账号](docs/modules/accounts.md)与[设置](docs/modules/settings.md)。
 - 用户可创建多个单词本，一词条可入多本但共用学习状态；删本只移除归类。单词掌握由有效习题证据自动计算，禁止UI/API/CSV手改mastery。用户端不支持词汇复习、每日/到期队列、SRS/FSRS、ReviewOpportunity或新词额度；单词本只负责组织和AI习题选源，见[单词本](docs/modules/vocabulary-notebooks.md)与[学习证据](docs/architecture/vocabulary-learning.md)。
@@ -42,7 +43,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 - 用户侧备份恢复仅为单词 CSV 导出与导入，不新增整库 ZIP、原书/音频打包或全库恢复。
 - 复用 MyHome 基础设施与可适配机制，Haruka 维护独立业务、数据库、凭据、账号和部署。
 - 所有前端/后端/数据库/AI/TTS 日志及前端业务埋点统一进入 MyHome 的 Alloy/Loki/Grafana；正常事件也要采集，不能仅上报 warn/error。
-- 首版离线范围为当前账号有效权限租期内已有阅读、词句解释和音频副本，按实际来源与动作权限读取；管理后台必须在线，不扩展成完整离线编辑同步。
+- 首版离线范围为当前账号有效权限租期内已有阅读、词句解释和允许离线的音频副本，按实际来源与动作权限读取；有限播放次数的试卷听力必须走在线场次attempt账本，不进入通用持久离线音频缓存。管理后台必须在线，不扩展成完整离线编辑同步。
 
 ## 文档组织与实现约定
 

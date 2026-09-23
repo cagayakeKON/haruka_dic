@@ -19,8 +19,8 @@
 | User/Library/UserProfile/StudyProfile/Settings | User的email_normalized/status/password_version/安全epoch/authz_version；Library.owner；本人资料、语言档案和设置各自revision | 邮箱唯一、每用户一个Library及每类单例聚合；注册同事务初始化；任何密码哈希替换推进password_version；登录身份与可选资料/学习偏好分离，普通用户无跨用户资料读取 |
 | AuthSession/AuthChallenge | user、audience、绝对期限、epoch、撤销/消费状态、purpose、摘要 | 会话/挑战不得跨用户/受众/用途；PG 撤销先于任何缓存失效通知 |
 | Role/权限关系/Revision | 见 RBAC | 继承 DAG、合法范围、唯一绑定、版本、授予边界、最后管理员约束 |
-| Material/Revision/StructureNode/ContentBlock | 固定material_type、当前版本指针、状态、delete_generation、源结构/原文/定位 | revision 不可变；同库引用；节点不能跨版本拼接；AI 不覆盖原文/类型，共用内容不直接构成万能阅读器 |
-| NovelManifest/Chapter、TextbookManifest/Unit/Lesson | 各自的内容版本、领域节点、源块/课本Exercise引用与质量状态 | 两套专用产物，只引用匹配类型/版本/所有者的来源；试卷使用下方独立Exam聚合 |
+| Material/Revision/SourceAsset/SourceUnit/ContentBlock | 固定material_type、当前版本指针、状态、delete_generation、不可变源资产/结构/规范文本/定位 | revision不可变；同库引用；节点不能跨版本拼接；AI不覆盖原文/类型，共用来源层不直接构成万能阅读器，完整契约见[解析数据结构](../contracts/material-structures.md) |
+| NovelManifest/Chapter/Block、TextbookManifest/Unit/Lesson/ContentNode/Edge | 各自的内容版本、领域节点、源块/课本Exercise引用与质量状态 | 两套专用产物，只引用匹配类型/版本/所有者的来源；试卷使用下方独立Exam聚合 |
 | LinguisticAnalysis/Sentence/Token | 内容版本、分析/规则/词典版本、语言、原文span | 派生标注不改canonical_text；新切句不能静默改变旧sentence_id的含义 |
 | FileObject/UploadIntent | owner、临时staging_key、独占final_key、用途、最终摘要/实际大小、状态、到期 | 客户端仅写临时对象；后端固定不可变final对象并验证后才发布；完成幂等 |
 | AvatarAsset | owner、源UploadIntent、受控格式/像素/摘要、final_key、revision/状态 | 只从avatar用途临时对象真实解码、去元数据、限制像素并重编码发布；资料指针原子替换，外链/材料对象/他人资产不能充当头像，旧资产受控GC |
@@ -30,8 +30,10 @@
 | MistakeOccurrence/MistakeProjection/MistakeFavorite | 每次可靠错误事实、根题/考察点当前状态、用户独立收藏关系 | [AI习题](../modules/ai-exercises.md)按effective评分幂等记录；重评/纠正重算不删历史，收藏不改错误状态 |
 | Exercise/PracticeSession/Attempt/GradeRun | 冻结题目与依据、答案、提交幂等键、评分代次 | 同一提交不重复 Attempt；规则/AI 成绩有来源；有效成绩与历史分开 |
 | ExerciseSelectionSnapshot/AiExercisePlan | 本人规范化单词本/收藏/教材/错题/诊断及时间/掌握/错误条件、as_of/时区、候选/版本/抽样/expiry；不可变生成计划 | [AI习题](../modules/ai-exercises.md)中预览计数/明细同一快照，确认短事务重验后与Job/Outbox提交；无复习计划/机会/日额度 |
-| ExamPaper/Version/Item/GradingBasis | 题面/题序/分值与依据版本 | ready 版本不可变；题面 DTO 不含答案/rubric |
-| ExamSession/Response/GradeRun | 固定版本、deadline、edit_epoch、response_revision、grade_generation | 保存/交卷在场次行锁内；单题答案唯一；提交后不可修改 |
+| ExamPaper/Version/Section/Stimulus/Item/GradingBasis | 题面/题序/共享材料/交付方式/分值与依据版本 | ready版本不可变；题面DTO不含答案/rubric/隐藏听力稿 |
+| ExamListeningScriptSource/Version/Candidate/Binding/PreparationIssue | 文字稿或试卷文本来源、脚本段、听力题标记、脚本—题目候选/generation、人工确认revision与待办 | AI必须标记疑似听力题并给证据，但候选不能直接发布；同owner/material/version，迟到run不覆盖人工结果；P0无原始音频输入 |
+| ExamListeningSynthesisSpec/AudioBinding/PlaybackPolicy | 已确认script/binding、本人TTS配置摘要、私有AudioAsset/Manifest、播放/稿件可见规则 | 生成另验speech.generate/Key/预算；ready绑定精确音频，场次冻结；不能用global_word、任意FileObject或系统TTS |
+| ExamSession/Response/ListeningUsage/PlayAttempt/GradeRun | 固定版本、deadline、edit_epoch、response_revision、每场次×Stimulus的播放上限/占用/消耗、播放幂等键、reservation/resume期限、交付游标及首字节/终段事实、grade_generation | 保存/交卷和有限次数播放领取在场次/usage锁内；单题答案唯一；终态attempt不重开，刷新/跨端不重置次数，提交后不可修改 |
 | LearnerContribution/Profile | source_kind + session/attempt + item 的唯一贡献键、effective_grade_id | 重评替换贡献不追加重复错误；needs_review 不进入正式统计 |
 | AgentThread/Message/AiRun/Card | owner、SDK/协议/模型/Prompt版本、run状态、结果引用 | 单线程轮次占用/版本校验；消息与可收藏卡片的提交状态分离 |
 | Explanation/SourceResultBinding/MaterialLearningIndex/LearningLookupState/GenerationSlot | 完整结果、源/语境/用途、查阅键/严格生成键；LookupState维护跨配置的选用run/effective/代次 | 成功后同事务建历史绑定，通过共同查阅代次才更新当前索引；不同语境不误用，严格键slot只合并调用；已有结果不依赖Redis或本机存续 |
@@ -49,7 +51,8 @@
 以下保留产品逻辑模型中的跨功能关系，不复制模块 DTO，也不把字段示意当最终 DDL：
 
 - User拥有私有Library并承载不可由资料接口修改的登录/状态字段；UserProfile保存显示名、头像引用及可选出生年份/性别，StudyProfile保存母语/解释语言、target_languages及各语言水平/目标，Settings保存模型、时区、显示/阅读等偏好，三者各自revision。界面locale、母语与target_languages分开；可选人口字段默认不进入AI。LearnerProfile按学习者与目标语派生词汇、语法和技能统计，并保留更新时间/事实版本；修改语言偏好不改写原Attempt或删除历史。设置字段和诊断口径分别见[设置](../modules/settings.md)、[收藏与练习](../modules/vocabulary-practice.md)。
-- Material 的来源格式、唯一业务类型 material_type、语言与导入报告分开。MaterialRevision 保留不可变源结构/ContentBlock，各类型独立编排 NovelManifest、TextbookManifest 或 ExamPaperVersion；语言分析版本中的 Sentence/Token 引用原文 span。类型固定、另类型重新处理及内容/标注版本边界唯一维护在 [三类材料契约](../contracts/material-types.md)。重新解析失败不切当前版本，收藏重绑失败保留快照；保留/删除期限仍按第 7 节处理。
+- Material的来源格式、唯一业务类型material_type、语言与导入报告分开。MaterialRevision保留不可变SourceAsset/SourceUnit/ContentBlock，各类型独立编排NovelManifest、TextbookManifest或ExamPaperVersion；具体对象关系唯一维护在[解析数据结构](../contracts/material-structures.md)，类型固定和重新处理边界见[三类材料](../contracts/material-types.md)。语言分析版本中的Sentence/Token引用原文span；重新解析失败不切当前版本，收藏重绑失败保留快照。
+- ExamPaperVersion通过ExamStimulusItemBinding关联共享阅读/图片/表格/听力材料。文字听力稿和试卷正文提取分别建立ScriptSource，AI候选、人工确认、TTS AudioBinding和播放策略分层；隐藏稿件、答案和rubric不进入题面投影。场次冻结paper/script/audio/policy版本，后续修订不改变旧场次；P0不建立原始音频上传/转写关系。
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
 - CollectionItem 维护 kind、词句/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词允许为空，不能伪造材料出处。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
 - Exercise 区分 extracted/generated/derived_from_mistake，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至CollectionItem、MistakeOccurrence、Attempt或ContentBlock，引用由服务事务校验同库归属及版本/状态。Attempt关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
@@ -66,6 +69,11 @@
 | 撤销/改密/禁用 | 改密锁内复核password_version/security_epoch/当前会话；哈希替换、版本/epoch、持久会话撤销或状态/权限版本、审计、Outbox | 密码验证与新哈希计算、Redis删除、客户端通知；提交确认丢失不自动重放 |
 | 角色/菜单/策略管理 | 范围检查、预期revision、修改、版本、审计、Outbox | 快照预热/通知/Loki投递 |
 | 上传完成/导入 | UploadIntent状态、FileObject验证引用、Material/Job/Outbox | 文件内容解析、AI、对象读取 |
+| 听力稿上传完成 | exam专用UploadIntent/FileObject、当前试卷草稿版本/权限、规范化受理状态与Outbox | 在短事务外按字符/格式限制确定性解码；通过后发布ScriptSource/Version，可创建不收费的规范化Job；不创建AI分析Job，P0拒绝audio purpose |
+| 听力候选分析受理 | exam/material当前权限、本人Key/预算、冻结的试卷/脚本输入版本、幂等记录、AiRun/Job/Outbox | Worker显式执行AI听力标记/脚本—题目匹配；上传完成不能代替本次付费意图 |
+| 听力候选确认 | 当前candidate generation、ExamVersion草稿、ScriptVersion、Stimulus/Item归属、expected_revision、人工Binding/Issue状态、Outbox | TTS生成；确认不能和外部调用放在同一事务 |
+| 听力音频发布 | generation/spec、当前人工Binding/Policy、验证后的私有AudioAsset/Manifest、AudioBinding状态、Outbox | 客户端预载/通知；模型调用、转码/解码在短事务外完成 |
+| 听力播放领取/计次 | 当前场次/编辑端/截止/权限、冻结policy和资产、每场次×Stimulus usage锁、幂等PlayAttempt；新领取先reserved并设短租期，媒体端首字节前CAS为active、计入consumed并写resume期限 | Manifest/签名签发和媒体传输；持久更新交付游标，终段交付为completed，期限/回执不确定为closed_unknown；从未领取的过期reservation或可证明零字节的故障才void释放。只有active在期限内可按策略续播，终态/显式重播必须新领次数；接管失效旧edit_epoch |
 | 收藏/CSV批次 | 权限/归属/版本/幂等、业务记录、批次游标 | 下一批处理、日志转发 |
 | AI习题确认 | 本人选择快照/所选来源和错题投影版本/权限、幂等、不可变AiExercisePlan、Job/Outbox | 模型生成；Worker不重跑动态筛选或补入未选来源，开始习题另建会话 |
 | 考试保存/交卷 | 场次锁、权限/截止/edit_epoch、最终答案、锁卷、唯一评分请求/Outbox | AI批改与客户端推送 |

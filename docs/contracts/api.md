@@ -75,10 +75,18 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
 | POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新付费另验Key/预算；显式再解析使用expected_lookup_revision取得新查阅代次 |
 | GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；run引用与流 | agent.read/use/delete，每工具独立授权 |
-| POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；global_word生产者Job/Key/费用不返回给其他等候者，缺失不自动换用户Key |
-| POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 只读匹配/本人等待状态/音频传输；global_word响应含asset_kind及实际profile，不含贡献者/他人Job/使用人数 | resolve/play不收费、不要求Key；全局媒体也须验证本人收藏来源/版本/读音/profile与资产匹配；新生成只走requests且需generate |
+| POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；试卷隐藏听力稿不能作为任意客户端文本提交，须走试卷专用生成入口；ExamListeningAudioBinding不从此通用manifest端点交付，有限场次只走PlayAttempt；global_word生产者Job/Key/费用不返回给其他等候者，缺失不自动换用户Key |
+| POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 只读匹配/本人等待状态/普通音频传输；global_word响应含asset_kind及实际profile，不含贡献者/他人Job/使用人数 | resolve/play不收费、不要求Key；全局媒体也须验证本人收藏来源/版本/读音/profile与资产匹配；试卷听力资产ID在通用resolve/media拒绝，防止绕过场次策略；新生成只走requests且需generate |
 | GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从exam材料准备/校对/冻结；不能直接把novel/textbook当试卷 | exam动作+实际AI分析/导入权限；其他类型先显式重新处理 |
-| POST exams/{id}/sessions；GET exam-sessions/{id}；POST {id}/takeover | 开考/恢复/显式编辑端接管 | exam_session.start/read/save、edit_epoch |
+| POST exams/{id}/listening-script-upload-intents；POST exams/{id}/listening-script-upload-intents/{intent_id}/complete | 为本人试卷草稿上传UTF-8纯文本/Markdown听力稿并发布不可变脚本源版本 | exam.read+exam.edit、expected_revision与本人试卷范围；只接受声明的文字稿用途，P0拒绝音频MIME、外链和任意FileObject ID |
+| POST exam-versions/{id}/listening-analysis-runs | 从已发布试卷正文/视觉转写或文字稿生成听力题、脚本片段及题组/小题绑定候选 | exam.read+exam.edit+material.read+material.analyze、本人Key/预算和当前试卷版本；创建Job使用幂等键，模型输出只形成候选，不能发布正式绑定或把模型置信度当确认 |
+| GET exam-versions/{id}/listening-review-items | 读取当前候选证据、未决项和人工决定，不触发模型调用 | exam.read+exam.edit、本人试卷/候选代次；失去analyze后仍可处理已产生的候选，不返回答案投影或他人Job |
+| PATCH exam-versions/{id}/listening-review-items/{review_id} | 用户确认、编辑、重绑或拒绝听力题/脚本/题目候选，形成正式ExamStimulus与ExamListeningBinding | exam.read+exam.edit、expected_revision和候选代次；不调用模型、不直接生成音频，人工决定优先于同代次迟到结果，冲突要求重新加载 |
+| POST exam-versions/{id}/listening-audio-generations | 按已确认脚本/绑定/声音配置创建私有TTS任务；缓存命中返回已有结果 | exam.read+exam.edit+speech.generate；新调用需本人Key/预算，每个付费阶段重验；只允许确认且未泄露答案的脚本版本，资产不得进入global_word，发布需匹配试卷/脚本/生成代次 |
+| GET exam-versions/{id}/listening-audio-bindings | 准备页读取已确认题组的音频状态/清单与受控播放信息，不触发合成 | exam.read+exam.edit+speech.play、本人版本/绑定；不要求generate或Key，不返回隐藏稿件/贡献凭据 |
+| POST exams/{id}/sessions；GET exam-sessions/{id}；POST {id}/takeover | 开考/恢复/显式编辑端接管；开考冻结题面、听力稿版本、音频资产与播放策略；场次快照返回每个Stimulus的冻结策略、剩余次数和仍在期限内的active attempt摘要 | exam_session.start/read/save、edit_epoch；含必需听力题时另需speech.play且服务端ready预检已通过，不能在开考后隐式重合成或切换声音 |
+| POST exam-sessions/{id}/listening-playbacks | `stimulus_id + edit_epoch + Idempotency-Key`领取一次新播放；返回play_attempt_id、冻结Manifest引用、`reserved/active/终态`、续播期限和剩余次数 | exam_session.read+save+speech.play、本人活动场次/当前编辑端/未截止/冻结资产；服务端锁定usage并先占位，同键丢响应重试返回同一attempt，有限次数并发不能超领；显式重播或终态后从头播放须新键/新attempt |
+| GET exam-sessions/{id}/listening-playbacks/{play_attempt_id}/manifest；GET .../media | 携带当前edit_epoch读取该attempt的清单/媒体；只有active且未过期限可按持久交付游标/seek策略刷新签名、Range重连或续播；终段交付写completed，期限或回执不确定写closed_unknown | exam_session.read+speech.play、本人场次/当前编辑端/匹配Stimulus和冻结资产/attempt可用；接管后旧端授权失效，新端只恢复同一active attempt；终态拒绝继续签发/从头读取且不退次数，不返回脚本文本；仅可证明零字节的服务端故障可void |
 | PUT exam-sessions/{id}/responses；POST {id}/submit | response_revision/edit_epoch；最后答案与submit_reason | save/submit；服务端时间/锁卷 |
 | POST exam-sessions/{id}/media-reports | 冻结题面asset引用、edit_epoch与幂等键；服务端受控复核后返回未确认/确认事实及revision，不接受客户端自判故障或任意URL | session.read+save、活动状态/截止/edit_epoch；只读题面不授予报告写入，服务端推导受影响叶子；确认持久化及锁卷/评分门槛见[考试故障处理](../modules/exams.md#必要媒体故障的场次处理) |
 | POST exam-sessions/{id}/grading-runs；GET {id}/results | 初次批改或新generation重评；部分/有效成绩 | exam_grade.request/regrade/read |
@@ -89,11 +97,11 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | admin/users、roles、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作 | 管理工作流和admin对应动作、revision/审计 |
 | admin/sessions、resource-metadata、jobs、audit-events、diagnostics | 限定元数据查询、撤销/安全运维 | 不返回私有内容/Key、不接受任意LogQL |
 
-三类内容接口的语义和字段边界见 [三类材料契约](material-types.md)，各专用路径由对应模块 schema 定义，不用大一统阅读 DTO。`model-capabilities` 只负责模型能力，材料支持组合随公共 `meta` 能力段返回，不携带私有数据或个人授权；UI 不用硬编码扩展名表越过后端检查。管理登录/续期/退出/本人安全流程用admin/auth镜像路径，固定admin受众；业务修改用户状态/角色/权限使用独立子资源，不能把通用PATCH映射任意ORM列。最终具体路由表在工程PR中从此契约展开并接受路由保护枚举检查。
+三类内容接口的语义和字段边界见 [三类材料契约](material-types.md)，源层与三类领域对象见 [解析数据结构](material-structures.md)，各专用路径由对应模块 schema 定义，不用大一统阅读 DTO。试卷准备响应必须把正式对象、AI候选、人工校对任务和冻结考试DTO分开；题面接口不返回隐藏听力稿、答案依据、候选内部证据或可推断答案的TTS文本。`model-capabilities` 只负责模型能力，材料支持组合随公共 `meta` 能力段返回，不携带私有数据或个人授权；UI 不用硬编码扩展名表越过后端检查。管理登录/续期/退出/本人安全流程用admin/auth镜像路径，固定admin受众；业务修改用户状态/角色/权限使用独立子资源，不能把通用PATCH映射任意ORM列。最终具体路由表在工程PR中从此契约展开并接受路由保护枚举检查。
 
 ## 4. 文件与流式事件
 
-上传意图只返回临时staging_key的写入能力、格式/大小/摘要规则、期限与传输方式。完成接口领取该意图的提交权后，由后端复制/流式读取到服务端独享的全新final_key，再校验final对象的实际字节/大小/摘要/格式，只有全部通过才在PG事务发布FileObject/Material/Job。客户端永远不获得final_key的PUT权限，Worker只读取这个已验证最终对象；重试不能覆盖已发布final对象。临时对象被重复PUT或复制时改变，最终校验不符就拒绝并清理，不沿用先前HEAD结果。完整状态/竞态合同见数据与任务；头像/照片/试卷等所有上传复用同一不可变发布过程。
+上传意图只返回临时staging_key的写入能力、格式/大小/摘要规则、期限与传输方式。完成接口领取该意图的提交权后，由后端复制/流式读取到服务端独享的全新final_key，再校验final对象的实际字节/大小/摘要/格式，只有全部通过才在PG事务发布FileObject/Material/Job。客户端永远不获得final_key的PUT权限，Worker只读取这个已验证最终对象；重试不能覆盖已发布final对象。临时对象被重复PUT或复制时改变，最终校验不符就拒绝并清理，不沿用先前HEAD结果。完整状态/竞态合同见数据与任务；头像/照片/试卷等所有上传复用同一不可变发布过程。听力文字稿使用试卷专用purpose并发布到ExamListeningScriptSource/Version，不创建第四类Material；P0上传完成端点按真实字节与MIME拒绝原始音频，不能改走通用上传绕过。
 
 私有下载签发前验证业务权限/对象用途，短签名地址到期前的撤权限制必须明确；即时撤权内容采用API鉴权代理。媒体正确设置Content-Type、Range/206、长度与缓存策略，不缓存带会话的私人响应到公共CDN。CSV流失败不显示完整成功，前端收到有效完成后再报告本地保存结果。
 

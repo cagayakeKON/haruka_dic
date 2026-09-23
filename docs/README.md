@@ -9,7 +9,8 @@
 | 了解产品 | [产品总览](product/overview.md) | [待决事项](decisions/pending.md) |
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |
-| 实现教材/试卷解析与展示 | [解析展示契约](contracts/learning-presentation.md) | [课本](modules/textbooks.md)、[考试](modules/exams.md)、[出处](contracts/content-locator.md)、[Flutter适配](engineering/flutter.md) |
+| 实现材料上传、解析数据或版本 | [三类解析数据结构](contracts/material-structures.md) | [三类材料](contracts/material-types.md)、[数据与任务](architecture/data-jobs.md)、对应功能模块 |
+| 实现教材/试卷解析、听力与展示 | [解析展示契约](contracts/learning-presentation.md) | [解析数据结构](contracts/material-structures.md)、[课本](modules/textbooks.md)、[考试](modules/exams.md)、[AI与朗读](modules/ai-speech.md)、[出处](contracts/content-locator.md) |
 | 实现私有解释/TTS缓存和全局单词发音 | [学习结果缓存](architecture/learning-cache.md) | [AI与朗读](modules/ai-speech.md)、[收藏](modules/vocabulary-practice.md)、[设置](modules/settings.md)、[数据与任务](architecture/data-jobs.md) |
 | 实现多单词本与自动掌握 | [单词本](modules/vocabulary-notebooks.md) | [学习证据](architecture/vocabulary-learning.md)、[AI习题](modules/ai-exercises.md)、[CSV](contracts/vocabulary-csv.md) |
 | 实现AI习题与错题库 | [AI习题与错题库](modules/ai-exercises.md) | [公共作答/评分](modules/vocabulary-practice.md)、[数据与任务](architecture/data-jobs.md)、[Agent运行层](architecture/agent-runtime.md) |
@@ -30,13 +31,13 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 | 模块 | 负责的用户行为 | 主要公共依赖 |
 | --- | --- | --- |
 | [账号](modules/accounts.md) | 注册、登录、会话恢复、改密/退出、首次资料引导 | [认证](architecture/authentication.md)、[设置](modules/settings.md)、[授权](architecture/authorization.md) |
-| [材料公共能力](modules/materials-reading.md) | 导入、书库、共用出处/位置/书签操作 | [三类材料](contracts/material-types.md)、[出处协议](contracts/content-locator.md)、[数据与任务](architecture/data-jobs.md) |
+| [材料公共能力](modules/materials-reading.md) | 导入、书库、共用出处/位置/书签操作 | [三类材料](contracts/material-types.md)、[解析数据结构](contracts/material-structures.md)、[出处协议](contracts/content-locator.md)、[数据与任务](architecture/data-jobs.md) |
 | [小说](modules/novels.md) | 章节/语言预处理、连续阅读与选词 | [三类材料](contracts/material-types.md)、[出处](contracts/content-locator.md) |
 | [课本](modules/textbooks.md) | 单元/内容角色、词表、课文与逐题练习 | [三类材料](contracts/material-types.md)、[公共作答](modules/vocabulary-practice.md) |
 | [收藏与公共作答](modules/vocabulary-practice.md) | 词表、CSV/照片、题目作答、评分与诊断 | [CSV](contracts/vocabulary-csv.md)、[API](contracts/api.md) |
 | [单词本](modules/vocabulary-notebooks.md) | 多本组织、单词详情/批量、AI习题选源、自动掌握与历史 | [学习证据](architecture/vocabulary-learning.md)、[AI习题](modules/ai-exercises.md)、[CSV](contracts/vocabulary-csv.md) |
 | [AI习题与错题库](modules/ai-exercises.md) | 显式选源生成、所有可靠错题留档/收藏、针对性题目 | [学习证据](architecture/vocabulary-learning.md)、[公共作答](modules/vocabulary-practice.md)、[数据与任务](architecture/data-jobs.md) |
-| [考试](modules/exams.md) | 试卷校对、整卷答题、保存/交卷、成绩与重评 | [数据与任务](architecture/data-jobs.md)、[出处](contracts/content-locator.md) |
+| [考试](modules/exams.md) | 试卷/文字听力稿校对、TTS准备、整卷答题、保存/交卷、成绩与重评 | [解析数据结构](contracts/material-structures.md)、[数据与任务](architecture/data-jobs.md)、[AI与朗读](modules/ai-speech.md)、[出处](contracts/content-locator.md) |
 | [AI与朗读](modules/ai-speech.md) | 解释、对话、卡片、TTS与播放 | [Agent运行层](architecture/agent-runtime.md)、[API事件](contracts/api.md) |
 | [管理后台](modules/admin.md) | 用户、角色、菜单、策略、任务与审计 | [RBAC](architecture/authorization.md)、[权限目录](contracts/permissions.md) |
 | [设置](modules/settings.md) | 个人资料/头像、语言档案、基础显示、个人Key、服务实例与缓存 | [认证隔离](architecture/authentication.md)、[配置](operations/configuration.md) |

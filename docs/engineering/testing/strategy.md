@@ -1,6 +1,6 @@
 # 测试规范与验证矩阵
 
-状态：2026-09-22，B0已建立后端/前端/工具测试、真实结果收集、必需矩阵和覆盖分母检查器；完整B0结果见 [验收记录](../../delivery/reviews/2026-09-22-b0-acceptance.md)。本小阶段只验证源码清单和覆盖检查器，不声明全仓覆盖阈值达标；B1/B2业务集成、阶段1大节点完整门禁及远端CI仍待交付。
+状态：2026-09-23，B0已建立后端/前端/工具测试、真实结果收集、必需矩阵和覆盖分母检查器；完整B0结果见 [验收记录](../../delivery/reviews/2026-09-22-b0-acceptance.md)。本小阶段只验证源码清单和覆盖检查器，不声明全仓覆盖阈值达标；B1/B2业务集成、阶段1大节点完整门禁及远端CI仍待交付。
 
 配套：[代码规范](../coding.md)、[数据库规范](../database.md)、[静态检查](../lint.md)、[交付验收](../../delivery/acceptance.md)、[实施阶段](../../delivery/roadmap.md)、[RBAC](../../architecture/authorization.md)、[统一日志](../../operations/observability.md)。
 
@@ -29,7 +29,7 @@
 | Flutter 组件 | frontend/test，flutter_test | 加载/空/错误/只读/无权、导航守卫、表单、题目/成绩、无障碍语义 | 真实平台弹窗或浏览器 Cookie |
 | 三端应用内集成 | frontend/integration_test，integration_test | 注册登录、主学习闭环、考试、CSV、退出切账号 | 无法操作原生平台 UI；测试入口包不能代替最终发布包 |
 | 浏览器与原生补充 | tools/e2e 的 Playwright；frontend/patrol_test 的 Android Patrol；Windows 专项驱动或明确人工记录 | Web Cookie/多标签/刷新/管理端、系统权限/文件框/后台恢复及实际候选制品冒烟 | 不复制完整公共用例；未验证平台驱动不能声称覆盖 |
-| AI/TTS 协议测试 | backend/tests/contract，Fake 模型/HTTP/音频 | 类型、工具权限、无 Key、取消/超时、重试预算、音频字节/格式和用量口径 | 模拟输出不能证明模型讲解/批改质量 |
+| AI/TTS 协议测试 | backend/tests/contract，Fake 模型/HTTP/音频 | 类型、工具权限、无 Key、取消/超时、重试预算、听力题/脚本/题目候选、音频字节/格式和用量口径 | 模拟输出不能证明模型讲解/批改、听力匹配或声音质量 |
 | AI/TTS 质量评估 | 受控评估样本与独立运行记录 | 英/日解释、抽题/评分、真实声音/音频和模型能力 | 不加入常规 PR 的隐式付费调用 |
 
 Flutter 官方区分 unit/widget/integration；integration_test 不能操作原生平台 UI，须用实际平台操作或经评估的专用驱动补齐，不把自动测试未覆盖的系统界面写成通过。Patrol 的项目分工为 Android 补充，并不表示该工具没有 Web 能力。依据：[Flutter 测试分层](https://docs.flutter.dev/testing/overview)、[集成测试](https://docs.flutter.dev/testing/integration-tests)。
@@ -81,7 +81,7 @@ Flutter 官方区分 unit/widget/integration；integration_test 不能操作原�
 
 应用业务时钟、随机数据、供应商和网络可替换；注入时钟驱动规则中的考试截止、离线租约与退避，不以等待几分钟证明纯规则边界。API/Worker使用同一场景时间，不能修改共享全局now污染并行用例；Redis TTL、数据库自主时间、JWT库内部时钟和浏览器Cookie/OS不自动跟随业务时钟，另做受控真实期限验证。需要真实并发时用屏障/事件控制竞争顺序，并给等待设有限超时。
 
-英/日材料至少包含组合字符、emoji、假名/汉字、注音、换行和跨块选区。CSV 覆盖多行字段、引号/分隔符、标签、公式前缀、重复词和非法来源。试卷包含共享题干、题图、分值冲突、有/无参考答案、未识别题型和部分批改失败；格式样本按最终范围锁定，不能把待明确的 OCR 当已支持。
+英/日材料至少包含组合字符、emoji、假名/汉字、注音、换行和跨块选区。CSV 覆盖多行字段、引号/分隔符、标签、公式前缀、重复词和非法来源。试卷包含共享题干、题图、分值冲突、有/无参考答案、未识别题型和部分批改失败；听力样本另覆盖正文脚本、上传文字稿、疑似听力题、多脚本竞争、缺稿/答案泄漏嫌疑及冻结TTS。格式样本按最终范围锁定，不能把待明确的 OCR 或P1原始音频当已支持。
 
 公开/自建合成样本入仓库并记录来源和许可；真实个人材料不得默认提交到 fixtures 或 CI 产物。截图、测试日志、录制响应及数据库样本先脱敏。
 
@@ -146,21 +146,21 @@ def override_dependency(
 | ISOLATION | 同库同 schema 的 A/B 交换所有资源/父子 ID，批量混入他人 ID；ScopeContext及服务事务拒绝非法关联，私有文件签名/任务/统计/日志无泄漏 | 每个资源族实际 API/仓储/文件/Worker + 真实 PG；不依赖 FK/RLS |
 | DB | 无物理外键、PK/UNIQUE/NOT NULL/行内 CHECK、字段/时间语义、逻辑关联、父删除竞争、软删唯一、事务/CAS、索引/迁移/字典与数据库账号隔离 | 数据库规范的 DB 验收 + 真实迁移/元数据/服务事务；DAT-01/DAT-06及工厂 TDS 场景 |
 | ACCOUNT_SWITCH | A 退出后 B 登录，旧响应/音频/下载/日志/考试草稿不应用到 B；client/admin 快照和队列不混用 | Flutter 单元/组件 + 三端集成 |
-| IMPORT | 三类/格式分别验证、大小/解压限制、危险路径/外部资源、取消/重投；三类独立就绪/质量门槛、AI不改所选类型、显式另一类型重处理不改旧历史 | 格式与各处理器单测 + 文件/Worker/专用API集成，TYPE/MAT |
+| IMPORT | 三类/格式分别验证、大小/解压限制、危险路径/外部资源、取消/重投；公共源层与三类领域结构分离、独立就绪/质量门槛、AI不改所选类型、显式另一类型重处理不改旧历史；试卷文字稿用途与原始音频拒绝 | 格式与各处理器单测 + 文件/Worker/专用API集成，TYPE/MAT/MSTR |
 | VISION_OCR | 文本层免调用、扫描/混合页范围、显式阶段/Key/预算、首次识别与重识别版本、截断/漏页/错误坐标、页面重试与unknown结果、无传统OCR回退 | 页计划/校验单测 + Fake视觉/Job/作用域集成；真实识别质量另行授权样本评估，OCR验收按获准格式分期 |
 | NOVEL | 章序/对话/脚注、句词边界与原文范围、标注失败降级、专用阅读器 | 人工标注样本 + controller/widget + 三端相关流程，NOV |
 | TEXTBOOK | 单元/角色/词表列与题目答案关联、缺结构降级、位置与Attempt分离、逐题反馈 | 独立课本结构样本 + 专用页面/普通练习集成，TBK |
-| LEARNING_PRESENTATION | [PRES-01～PRES-08](../../contracts/learning-presentation.md)：八类内容关系/顺序、五类输入及题组、原文与题面投影、未知结构/媒体降级、跨布局状态 | 人工标注源样本 + 类型化校验/API资产授权 + controller/widget；当期三端目标流程，分别证明解析与消费，不为文档改动运行应用用例 |
+| LEARNING_PRESENTATION | [PRES-01～PRES-10](../../contracts/learning-presentation.md)：八类内容关系/顺序、五类输入及题组、原文与题面投影、听力标记/脚本题目候选/人工确认、冻结音频与策略、未知结构/媒体降级、跨布局状态 | 人工标注源样本 + 类型化校验/API资产授权 + controller/widget；当期三端目标流程，分别证明解析、校对、生成与消费，不为文档改动运行应用用例 |
 | READING | 稳定出处/Unicode、重解析与删除后的快照、进度冲突、离线租期和重联撤权 | 跨端相同样本 + 缓存/版本单测 |
 | COLLECTION | 新增/编辑/删除及标签，重复提交、出处回跳、删除原文后保留上下文，失权不写入 | API + 控制器/组件 |
 | VOCABULARY_NOTEBOOK | [VNB验收](../../modules/vocabulary-notebooks.md)：多本/多对多去重、语种/父锁、删本保留词、批量筛选快照、只读派生字段与CSV v2权限 | 规则/真实PG事务 + API/Flutter组件；三端仅选目标流程 |
 | VOCABULARY_LEARNING | [VL验收](../../architecture/vocabulary-learning.md)：跨习题集/根题结果窗口、主动回忆、辅助曝光顺序、pending/重评/作废重放与版本/删除竞争；无时间调度 | 纯规则/稳定事件重放 + 真实PG/Outbox；不以工厂预填掌握替代真实有效评分 |
 | AI_AGENT | 工具按权限提供且执行再次校验；伪造 user_id 无效；输出未完成不可保存；并发用户 Key 独立；预算/未知收费/续聊恢复 | Fake 模型/HTTP + 持久化集成 |
-| SPEECH | 私有缓存隔离与global_word标准词音共享、多读音/声音差异、倍速不重新合成、合并/取消/过期链接、实际 PCM/封装/Content-Type、无 Key 与不支持声音 | 适配器 + 三端实际播放；实际发音质量不由可解码/Fake替代 |
+| SPEECH | 私有缓存隔离与global_word标准词音共享、多读音/声音差异、倍速不重新合成、合并/取消/过期链接、实际 PCM/封装/Content-Type、无 Key 与不支持声音；已确认试卷脚本的私有缓存/确切ScriptVersion-Segment映射/迟到代次且绝不进入global_word，有限场次拒绝通用speech manifest/media与完整离线副本旁路 | 适配器 + 真实PG/对象/Job + 三端实际播放；实际发音质量不由可解码/Fake替代 |
 | LEARNING_CACHE | 未收藏的词/句/卡片/TTS持久保存；同词异境与无材料输入不串；清本机/Redis后恢复；模型/Key变更、并发乱序、存储失败/配额/GC和离线租期；全局词音不泄漏私人关系/Job、取消不换Key、删贡献者不删成品 | [LC-01～LC-10](../../architecture/learning-cache.md)；键/版本单测、Fake调用计数与真实PG/对象/任务集成、三端副本与账号切换；只读命中不得新增模型调用 |
 | PRACTICE | 可靠客观题不调用 AI；主观失败不计零分；评分/统计幂等；无依据诊断不虚构事实 | 规则/Fake + API 主路径 |
 | AI_EXERCISE_MISTAKE | [AIX-01～AIX-10](../../modules/ai-exercises.md)：全部可靠错题/收藏/重评投影、来源筛选、稳定预览、显式生成、针对性原题/变式、无复习调度 | 纯选择/投影规则 + 真实PG评分发布/快照/事务/Outbox + Fake模型；三端仅验实际目标流程，不用前端埋点或工厂预置错题 |
-| EXAM | 题面 DTO 无答案/rubric；冻结版本；revision/编辑代次；截止/保存/交卷并发；缺 Key、逐题失败、重评历史/统计去重 | 真并发 DB/Worker + 三端 release |
+| EXAM | 题面 DTO 无答案/rubric/隐藏听力稿；冻结版本；AI标记全部疑似听力题并生成有证据候选，人工确认优先且旧run不覆盖；人工改稿的Unicode/旧版locator；听力ready/播放策略/媒体故障；有限播放账本的双端并发、丢响应、首字节前后失败、Range/签名刷新、active游标/期限、completed/closed_unknown终态重播与接管；revision/编辑代次；截止/保存/交卷并发；缺 Key、逐题失败、重评历史/统计去重 | 类型化Fake + 真并发 DB/Worker/对象存储 + 三端 release，EXAM/MSTR |
 | CSV | 当前用户全部单词、协议往返/可逆转义、映射预览、重复确认、混入他人 ID、导出与实际保存区分 | 规则/API + 三端文件选择保存 |
 | JOB | 业务与 Outbox 原子；消息重复、领取租约过期、提交后进程退出、取消竞争、DLQ 恢复；结果不重复写入 | 真实 DB/Kafka/Worker 进程 |
 | ADMIN | 元数据范围、授予上限/间接提权、菜单隐藏与功能撤销区别、注册默认角色、策略影响预览、审计不可由应用改删 | 真实策略事务 + 管理 Web |

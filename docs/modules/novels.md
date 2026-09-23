@@ -1,6 +1,6 @@
 # 小说导入与阅读
 
-状态：2026-09-22，待实现设计。小说是独立业务模块；类型/格式、重新处理和版本边界见 [三类材料契约](../contracts/material-types.md)，共用上传/书库/进度写入规则见 [材料模块](materials-reading.md)。
+状态：2026-09-23，待实现设计。小说是独立业务模块；类型/格式、重新处理和版本边界见 [三类材料契约](../contracts/material-types.md)，共用上传/书库/进度写入规则见 [材料模块](materials-reading.md)，NovelManifest/Chapter/Block与独立语言分析版本见[解析数据结构](../contracts/material-structures.md#41-小说)。
 
 ## 1. 范围、入口与权限
 
@@ -28,7 +28,7 @@
 
 ## 4. 后端职责
 
-NovelProcessingService 负责小说结构和质量产物，NovelReadingService 提供已发布的章节/内容与阅读状态。二者是同一 Python 工程内的职责划分，不要求新进程。格式适配器只提取源内容，不能决定小说课程结构或考试状态。
+NovelProcessingService负责公共SourceUnit/ContentBlock到NovelManifest、Chapter/ChapterBlock的编排和质量产物，NovelReadingService提供已发布的章节/内容与阅读状态。公共ContentBlock只作来源，不能直接当小说页面，也不能与课本ContentNode或ExamItem合成万能业务表。二者是同一Python工程内的职责划分，不要求新进程；格式适配器只提取源内容，不能决定小说课程结构或考试状态。
 
 语言标注按块/语言执行，记录标注版本、词与句的源范围：英文处理缩写、小数、引号；日文处理句末符号、括号/对话、无空格分词和活用词形；混合语言段落允许局部语言标注。禁止只按空格分词或只用 `.!?` 切全书。跨块句子用 spans 引用，不复制成另一份不可追溯正文；切句不能把脚注文本插入主句。
 

@@ -1,6 +1,6 @@
 # 权限目录与接口/页面映射
 
-状态：设计基线 v0.1，2026-09-22，待工程注册和测试。此文是具体权限代码、依赖与功能映射的唯一目录；[RBAC](../architecture/authorization.md) 定义求值、授予与撤权规则。下面斜线分隔的动作均须展开成独立代码，不能把整串当通配符授予。
+状态：设计基线 v0.2，2026-09-23，待工程注册和测试。此文是具体权限代码、依赖与功能映射的唯一目录；[RBAC](../architecture/authorization.md) 定义求值、授予与撤权规则。下面斜线分隔的动作均须展开成独立代码，不能把整串当通配符授予。
 
 ## 1. 共同求值规则
 
@@ -19,7 +19,7 @@
 | client.material.import | 上传或复用本人原文件建立所选类型的新材料 | 确定性提取；复用源需material.read，exam源另需exam.read+exam.edit完整原件资格；目标exam另需exam.import，视觉OCR/进一步AI分析另验analyze |
 | client.material.update | 改标题等允许的元数据字段，不接受类型修改 | read、expected_revision；另类型重新处理使用import动作，不由update授权 |
 | client.material.reparse | 重解析/重识别并生成新内容版本 | read；新版本不覆盖旧引用；视觉OCR另验analyze，试卷完整原件按exam校对范围检查 |
-| client.material.analyze | 所选类型的视觉OCR、AI结构建议、语义补充与抽取 | read、本人相应能力Key、预算、分别明确阶段意图；允许收费，不能改变material_type；试卷同时按exam实际动作校验 |
+| client.material.analyze | 所选类型的视觉OCR、AI结构建议、语义补充与抽取；试卷听力题标记和脚本/题目候选匹配 | read、本人相应能力Key、预算、分别明确阶段意图；允许收费，不能改变material_type；试卷同时要求exam.read+exam.edit，模型只写候选，人工确认仍由exam.edit控制 |
 | client.material.delete | 从书库移除材料 | read；tombstone/引用保留，不删除成绩/收藏 |
 | client.reading.progress.update | 小说当前位置/最远进度、课本最近单元位置 | material.read；仅novel/textbook，无该权限仍能只读；考试进度使用场次动作 |
 | client.bookmark.read/create/delete | 阅读书签列表/创建/删除 | material.read；本人记录 |
@@ -39,11 +39,11 @@
 | client.ai.explain | 词句解释、只读resolve、本人完整缓存结果与书内已查索引 | 实际来源read，批量索引逐项按业务状态裁剪；仅新外部调用要求Key/预算，缓存命中不收费；不能作为任意工具操作许可 |
 | client.ai.feedback | 对本人解释结果提交反馈 | 该结果当前可读，不授权读取他人内容 |
 | client.agent.read/use/delete | 历史对话；创建空会话/新一轮；删除对话 | use需read；空会话不收费，新run需Key/预算；工具再验具体业务权限；delete不删除已收藏的独立结果 |
-| client.speech.generate | 创建TTS合成请求 | 实际来源read，仅新调用要求本人Key/预算；标准收藏词音全局合并不授予读/取消他人Job或借Key权限，已有结果只读复用不收费 |
-| client.speech.play | 读取音频清单、播放/缓存下载，含受控global_word | 实际来源可读且音频有效；标准词音需本人collection.read、词条/读音/profile匹配，无需生成权限或Key；非匿名全局媒体接口 |
+| client.speech.generate | 创建TTS合成请求 | 实际来源read，仅新调用要求本人Key/预算；试卷听力还需exam.read+exam.edit且只能使用已人工确认的脚本版本/题目绑定，成品保持private；标准收藏词音全局合并不授予读/取消他人Job或借Key权限，已有结果只读复用不收费 |
+| client.speech.play | 读取音频清单、播放/缓存下载，含受控global_word | 实际来源可读且音频有效；试卷场次还需exam_session.read并匹配冻结资产/播放策略，领取新播放另需exam_session.save且由服务端账本计次，ExamListeningAudioBinding不能经通用speech媒体/离线缓存绕过PlayAttempt；开考时由start组合检查；标准词音需本人collection.read、词条/读音/profile匹配，无需生成权限或Key；非匿名全局媒体接口 |
 | client.exam.list/read | 试卷列表/版本题面 | read控制专用题面与状态，答案有独立DTO |
-| client.exam.import/edit | 创建试卷/题目校对/版本确认 | import复用上传需material.import；AI结构化另验material.analyze；edit需exam.read；在本人校对范围使用完整原件另需material.read，普通题面read不授予含答案原件的复用/下载 |
-| client.exam_session.start/read/save/submit | 开考、恢复/答题卡、存草稿、交卷 | start需exam.read；save/submit需session.read与活动状态/edit_epoch；submit不隐含收费批改 |
+| client.exam.import/edit | 创建试卷/题目校对/版本确认；上传文字听力稿、确认听力题/脚本/题目绑定与冻结版本 | import复用上传需material.import；AI结构化/听力候选另验material.analyze；edit需exam.read；文字稿专用上传只接受UTF-8文本/Markdown，P0拒绝原始音频；在本人校对范围使用完整原件另需material.read，普通题面read不授予含答案原件、隐藏听力稿或候选证据的复用/下载 |
+| client.exam_session.start/read/save/submit | 开考、恢复/答题卡、存草稿与领取有限次数听力播放、交卷 | start需exam.read，存在必需听力题时还需speech.play且冻结音频/播放策略ready；save/submit需session.read与活动状态/edit_epoch；新听力play attempt需save+speech.play并锁定场次账本，同attempt续播只需read+speech.play且仍校验状态；submit不隐含收费批改 |
 | client.exam_grade.request/read/regrade | 请求批改、成绩、显式重评 | request/regrade需session.read及已提交答案；需要AI时Key/预算，交卷并批改需同时submit+request |
 | client.profile.read/update | 本人资料、学习语言档案、模型/阅读/显示等服务器设置 | update需read、字段白名单、field mask和expected_revision；不允许改角色/状态/登录邮箱/权限/配额/掌握，出生年份/性别为可选本人数据 |
 | client.profile.avatar.update | 申请/完成本人头像上传、替换或删除当前头像 | 需profile.read；仅avatar用途临时对象及本人资料revision，不能复用材料/题图FileObject或提交外链；读取当前头像仍需profile.read |

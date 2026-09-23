@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 | --- | --- |
 | 已确认 | 增加管理后台；完整 RBAC 控制登录、用户端显示、管理端显示及对应操作 |
-| 状态 | Draft v0.1，2026-09-22；设计方案，尚未实现 |
+| 状态 | Draft v0.2，2026-09-23；设计方案，尚未实现 |
 | 技术建议 | 管理端使用 Flutter Web；FastAPI 统一授权服务，推荐 PyCasbin 执行 RBAC 策略；PostgreSQL 为权限事实来源 |
 | 配套 | [PRD](../product/overview.md)、[架构总览](overview.md)、[认证与隔离](authentication.md)、[Agent 运行层](agent-runtime.md)、[日志与埋点](../operations/observability.md)、[实施计划](../delivery/roadmap.md) |
 
@@ -61,6 +61,8 @@ client 权限固定为 self；admin 权限按管理服务返回 platform_metadat
 
 标准收藏词音复用 [global_word公共目录](learning-cache.md#51-收藏库标准单词发音的全局缓存) 是受控资源依赖：先验证self范围的collection.read、speech.play与本人词条/读音/profile，再由专用目录服务读取匹配音频，不把client的数据范围改为all。合成仍需实际发起人的generate/Key/预算；公共资产不能暴露他人收藏或生产任务，admin会话不凭元数据权限取得用户端播放资格。
 
+试卷听力采用复合动作而不新增万能权限：文字稿上传/人工校对要求exam.read+exam.edit；AI识别听力题和匹配脚本/题目另要求material.read+material.analyze及本人Key/预算；确认后TTS要求speech.generate，播放/开考要求speech.play和对应exam/session读取权限。读取既有候选不要求继续持有analyze，读取既有音频也不要求generate或Key；每一阶段只获得完成该阶段所需的数据投影。material.analyze不能发布正式绑定，speech.generate不能读取任意隐藏听力稿，admin.resource_metadata.read也不能查看稿文、题面或音频。
+
 ### 首批权限目录
 
 下表的斜线列出多个独立权限，不是一个可以直接配置的权限字符串；每个具体代码在阶段 1 注册并映射接口及页面。
@@ -80,7 +82,7 @@ client 权限固定为 self；admin 权限按管理服务返回 platform_metadat
 | 系统策略 | admin.auth_policy.read/update、admin.quota.read/update、admin.model_catalog.read/update | 登录/注册、配额、功能与模型目录配置 |
 | 运维与审计 | admin.resource_metadata.read、admin.job.read/cancel/retry、admin.audit.read、admin.diagnostics.read | 资源/任务状态、管理审计与裁剪诊断 |
 
-页面 view/read 与操作权限单独配置，操作依赖关系也需验证，例如 client.exam_session.save 不能绕过 client.login、场次所有权和 in_progress 状态。客户端不会因为拥有一个写权限就自动获得该页所有其他操作。
+页面 view/read 与操作权限单独配置，操作依赖关系也需验证，例如 client.exam_session.save 不能绕过 client.login、场次所有权和 in_progress 状态；含必需听力题的start还必须验证speech.play、冻结音频及播放策略ready。客户端不会因为拥有一个写权限就自动获得该页所有其他操作。
 
 ## 4. 登录、注册与会话
 

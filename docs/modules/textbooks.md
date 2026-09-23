@@ -1,6 +1,6 @@
 # 课本导入与单元学习
 
-状态：2026-09-22，待实现设计。“课本”与其他文档的“教材”是同一业务类型 `textbook`。类型边界见 [三类材料契约](../contracts/material-types.md)，共用上传/书库/出处操作见 [材料模块](materials-reading.md)；本模块独立于小说阅读和整卷考试。
+状态：2026-09-23，待实现设计。“课本”与其他文档的“教材”是同一业务类型 `textbook`。类型边界见 [三类材料契约](../contracts/material-types.md)，共用上传/书库/出处操作见 [材料模块](materials-reading.md)，TextbookManifest/Unit/Lesson/ContentNode/Edge关系见[解析数据结构](../contracts/material-structures.md#42-课本)；本模块独立于小说阅读和整卷考试。
 
 ## 1. 范围、入口与权限
 
@@ -30,7 +30,7 @@ P0 只恢复单元/内容位置及实际作答状态，讲练同时分屏与单�
 
 ## 4. 后端职责
 
-TextbookProcessingService负责单元、角色和习题引用的校验与发布，TextbookStudyService提供课程结构和当前单元内容。TextbookManifest维护目录与各单元准备摘要，正文引用共用不可变源块；Exercise/Attempt仍由公共作答服务管理，可靠错误统一写入[服务端错题账本](ai-exercises.md#2-服务端错题账本)，课本不复制评分/错题实现。
+TextbookProcessingService负责Unit/Lesson、有序ContentNode、角色间ContentEdge和习题引用的校验与发布，TextbookStudyService提供课程结构和当前单元内容。TextbookManifest维护目录与各单元准备摘要，正文引用公共不可变SourceUnit/ContentBlock；对话轮次、词表行、表格格和答案关系保持专用身份，不能展平为小说段落。Exercise/Attempt仍由公共作答服务管理，可靠错误统一写入[服务端错题账本](ai-exercises.md#2-服务端错题账本)，课本不复制评分/错题实现。
 
 版面关系优先于纯文本分句：表格不能拼成小说段落，图文/编号/共享题干不能按距离随意关联，答案附录不能混进课文。语言标注可复用基础能力，但只在所属正文/例句范围执行；单元、题目与空位 ID 不由分句器或模型生成。
 

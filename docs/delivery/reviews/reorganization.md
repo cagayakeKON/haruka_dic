@@ -219,3 +219,13 @@ architecture_review第1轮独立只读审查发现4项：旧观测事件残留vo
 architecture_review第1轮发现3项P2：ACCSET-01并发改密可复用旧密码验证结果；ACCSET-02把提交成功但响应丢失误归为“失败未修改”；ACCSET-03同一`/users/me/avatar`缺少HTTP缓存隔离。集中修订为password_version/security_epoch/当前会话的提交锁内复核，确定拒绝/回滚与结果未知分流且未知不自动重放，以及头像每次鉴权、`Cache-Control: private, no-store`、应用副本按实例/账号/资产分区；测试矩阵补并发改密/恢复、提交后断连、Web同context A→B及撤权。第2轮定点确认三项全部关闭，无剩余P1/P2，不增加第3轮。
 
 必要文档检查覆盖仓库75份Markdown，本地链接/锚点、代码围栏、冲突标记及可识别私钥材料均无问题；修复一处已被AI习题替代的历史练习章节失效锚点。ACC-01～12、SET-001～008、PROFILE-001～006定义数量和唯一性正确，账号/资料/头像关键API及废弃压缩写法检查通过，仓库无单数或大小写变体代理规范，git diff --check通过。本次只做文档检查，不运行应用测试、真实邮件/对象存储/数据库/三端缓存或密码并发验证；所有能力仍待实现。随本阶段创建独立本地commit，实际哈希以Git日志为证据，不默认push。
+
+## 19. 后续MSTR1：三类解析结构与试卷文字听力
+
+2026-09-23，基线b8f665b。用户要求明确小说、课本、试卷解析后的不同数据结构，并将试卷文字听力稿上传或正文脚本候选、AI听力题标记和脚本—题组/小题匹配、人工校对及TTS冻结写入首版设计；用户上传原始音频、转写/切段和自动绑定登记为P1待办，首版不开放。本阶段新增[解析数据结构](../../contracts/material-structures.md)唯一详细契约，以不可变SourceAsset/SourceUnit/ContentBlock作为公共来源层，分别建立NovelManifest、TextbookManifest和ExamPaperVersion领域结构；同步[出处](../../contracts/content-locator.md)、[考试](../../modules/exams.md)、API/权限/事务/缓存、展示、三类模块、观测/配置、测试、路线图/验收、决策/导航和AGENTS。全部为设计文档，未创建解析器、接口、数据库表或Flutter页面。
+
+首版听力分成四步：专用UTF-8纯文本/Markdown上传或从有权试卷正文/已发布视觉转写取候选范围；用户显式发起付费AI分析，模型必须标记全部疑似听力题并给出脚本—题目候选及证据；用户确认/改稿/改绑/拒绝；本人Gemini/OpenRouter TTS生成私有持久音频，必要资产验证后才冻结试卷。上传完成只可做免费确定性规范化，不自动发起模型调用。脚本版本保存自身不可变规范文本/segment，出处locator用Material ContentBlock与Exam ScriptVersion/Segment两种可辨识分支。场次的有限播放次数另有服务端usage/attempt账本，处理幂等领取、并发、首字节、交付游标、续播期限、跨端接管及completed/closed_unknown终态；它只约束应用内个人模拟流程，不承诺DRM或监考。
+
+architecture_review第1轮发现MSTRR-01～03三项P2及MSTRR-04一项P3：有限播放策略缺少持久计次，独立/人工脚本不能沿用ContentBlock偏移，上传完成错误隐含付费分析Job，且流水线在必要TTS验证前冻结试卷。集中修订后，第2轮定点确认MSTRR-02/03/04关闭，并指出MSTRR-01仍缺consumed attempt终态，完整播放后可能借刷新/接管复用旧attempt。作者在同一问题下补`active/completed/closed_unknown/void`、有界续播期限、持久交付游标和保守未知交付规则：只有active可在期限内续播，终态不退款也不重开，显式重播必须新领次数。按AGENTS小阶段最多两轮review，不机械开启第3轮；最终定点扫描确认权威结构、API、权限、事务、测试和日志均使用该终态规则，未把达到轮数上限当作豁免。
+
+必要检查覆盖76份Markdown的1358个本地链接/页内锚点、37组代码围栏、路径大小写、冲突标记及可识别私钥材料，零问题；MSTR-01～10、PRES-01～10、OPEN-12和DEC-22定义均唯一，旧StructureNode/canonical_text_range、上传即付费分析、TTS前冻结和旧听力事件名扫描无有效残留，仓库仅保留根AGENTS.md，git diff --check通过。未运行Flutter/Python应用测试、真实模型/TTS、数据库/对象存储或三端播放；这些契约和验收均未实现。本小阶段独立本地commit的实际哈希以Git日志为证据，不默认push。

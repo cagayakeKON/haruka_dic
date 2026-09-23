@@ -1,21 +1,22 @@
 # 内容版本、选区与出处协议
 
-状态：2026-09-22，设计基线，尚未实现。本篇为材料、收藏、卡片、题目与CSV共用的出处协议唯一正文；用户操作见 [材料与阅读](../modules/materials-reading.md)，资源归属见 [认证与隔离](../architecture/authentication.md)。
+状态：2026-09-23，设计基线，尚未实现。本篇为材料、收藏、卡片、题目与CSV共用的出处协议唯一正文；用户操作见 [材料与阅读](../modules/materials-reading.md)，源层/三类领域结构见 [解析数据结构](material-structures.md)，资源归属见 [认证与隔离](../architecture/authentication.md)。
 
 ## 1. 不可变内容与选区
 
-推荐 `source_locator` 使用 `locator_schema_version=1`；最低字段如下。字段是业务存储与接口契约，不得作为日志自由属性上传。
+推荐 `source_locator` 使用 `locator_schema_version=1`，并以`target_kind`作为可辨识联合类型。所有分支共用以下信封字段；字段是业务存储与接口契约，不得作为日志自由属性上传。
 
 | 字段 | 含义 |
 | --- | --- |
 | instance_id / library_id | 原始服务实例/资料库标识，仅作为来源提示，绝不授予访问权 |
-| material_id / material_revision_id | 本账号材料与不可变内容版本 |
-| node_id / block_id / sentence_id | 目录、正文块和可选句子；跨块选区使用按顺序的 spans，不能伪造单块偏移 |
-| spans[].start / end | 对对应块 canonical_text 的 Unicode scalar value 偏移；左闭右开，禁止负数、反向和越界 |
+| target_kind | 决定目标分支及必需字段；未知分支拒绝解析，不能靠字段为空猜测 |
 | text_protocol_version | `canonical-text-v1`：解析后实体解码、换行统一 LF；不做隐式 NFC/NFKC 或语义改写 |
-| original_locator | 原格式适配位置，例如 EPUB spine/document/DOM 路径、MD 标题与行区间、未来 PDF 页码/区域 |
 | quote / prefix / suffix | 选区及前后文快照，用于显示和重绑校验；不单凭相同文字跨材料匹配 |
 | source_title / node_title | 显示用标题快照，标题不参与身份和归属判断 |
+
+`material_content`分支必须包含`material_id/material_revision_id`、一个或多个按序`spans[{block_id,start,end}]`以及可选`node_id/sentence_id/original_locator`。start/end是对应ContentBlock `canonical_text`的Unicode scalar value左闭右开偏移，禁止负数、反向和越界；跨块选区不能伪造成单块范围。领域回跳字段按类型附加：小说为`novel_chapter_id/chapter_block_id`，课本为`textbook_lesson_id/content_node_id`，试卷正文为`exam_paper_version_id/stimulus_id/item_id`。这些字段只是回跳提示，服务端仍从MaterialRevision和领域聚合验证归属、版本与可见投影。
+
+`exam_listening_script`分支必须包含`exam_paper_version_id/script_source_id/script_version_id`和一个或多个`spans[{segment_id,start,end}]`；偏移目标是该不可变ExamListeningScriptSegment的`canonical_text`，而不是原试卷ContentBlock或上传FileObject。每个ScriptVersion保存自身权威规范文本/有序segment。来源另存为provenance：正文提取稿可指向原MaterialRevision/ContentBlock locator，上传稿可指向专用purpose的不可变FileObject原始字节范围，人工改稿可指向父ScriptVersion和受控编辑操作；这些出处都不改变当前span目标。正式`ExamListeningBinding`另存stimulus/item稳定ID和确认代次，不把模型候选关系塞入locator。生成音频segment映射只能回指已确认ScriptVersion/Segment及经验证的PlaybackManifest时间边界，不能臆造原始音频时间码。题面投影、普通`POST sources/resolve`和Semantics不返回隐藏听力稿，只有获准的准备/复盘端点按冻结可见性解析。
 
 视觉OCR来源遵循 [识别合同](../architecture/vision-recognition.md)：original_locator保存应用确定的源页/裁切区及坐标变换；模型候选字框未经验证不能成为精确原图锚点。source_method=vision的转写块保存其识别版本，字符偏移指向该已发布规范文本；无可靠字框时只回跳源页/区域，重识别不改旧版含义。
 
@@ -26,14 +27,14 @@ Flutter 的 UTF-16 code unit 索引在平台适配层转换为协议偏移，Pyt
 ## 2. 回跳与重新解析
 
 1. 点击来源先请求授权解析 locator；验证当前用户、材料状态、内容版本、块和范围。
-2. 精确有效时按服务端确认的材料类型，打开对应版本的小说章节、课本 Lesson/内容区或获准考试来源视图并高亮，不用当前版本相同偏移代替旧版；三类分派及考试内容投影见 [材料类型契约](material-types.md)。
-3. 新版本发布后，按原格式位置、文本指纹和上下文寻找重绑候选；唯一且校验通过才保存映射。多候选/不一致标记 `ambiguous/unresolved`，保留原快照，不猜测回跳。
+2. 精确有效时按服务端确认的材料类型，打开对应版本的小说章节、课本 Lesson/内容区或获准考试来源视图并高亮，不用当前版本相同偏移代替旧版；听力稿仅在获准的试卷准备/复盘投影中解析。三类分派及考试内容投影见 [材料类型契约](material-types.md)。
+3. 新MaterialRevision或ScriptVersion发布后，按原格式位置、父版编辑映射、文本指纹和上下文寻找重绑候选；唯一且校验通过才保存映射。替换/插入/删除、组合字符或emoji变化都必须重新计算scalar范围和quote，不能沿用旧数字；多候选/不一致标记 `ambiguous/unresolved`，保留旧版locator和快照，不猜测回跳。
 4. 原版本不可读或材料已删除时显示快照和原因，禁用原文导航；不因书名相同自动关联另一材料。失去权限时不返回私有上下文以解释错误。
 
 重新解析永远创建新 MaterialRevision；在对应类型的源内容完整性校验后原子切换 current_revision_id，失败保留当前可读版本。源版本发布不代替课本习题或试卷冻结版本的就绪检查。阅读位置、书签、收藏、题目和考试场次引用原版本，不在切换时覆盖历史。客户端提示有新版并允许重新加载；选区/音频队列不会在后台无提示切换文本版本。仅升级派生语言标注遵循材料类型契约，不重新解释旧 sentence_id，块级选区不依赖最新分词结果。
 
 ## 3. 消费与验证
 
-材料阅读、收藏/错题/生成题、AI卡片、CSV导入及考试版本共用此协议；字段校验不能替代当前权限、所有者和冻结版本检查。功能文档引用本篇，不另定义偏移单位、规范化版本或重绑规则。
+材料阅读、收藏/错题/生成题、AI卡片、CSV导入及考试版本共用此协议；字段校验不能替代当前权限、所有者、用途投影和冻结版本检查。听力候选、正式绑定和音频资产分别保存自身版本/关系，locator只证明可追溯来源，不能作为AI候选已被人工确认或音频已经ready的证据。至少验证上传稿规范化、正文提取、人工替换/插入、组合字符/emoji、旧版回跳、TTS segment映射和隐藏稿拒绝；功能文档引用本篇，不另定义偏移单位、规范化版本或重绑规则。
 
 验收沿用材料模块READ-001、READ-002、READ-004及CSV/考试对应案例；本次仅迁移原协议，未创建新的实现或通过记录。

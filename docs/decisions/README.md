@@ -12,9 +12,9 @@ Flutter用户端Windows/Web/Android；Python前后端分离；复用MyHome基础
 
 OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用基础；PDF文本提取/渲染可本地完成，不引入传统OCR或静默回退。具体模型仍待OPEN-04验证，格式范围仍按OPEN-01及产品优先级。
 
-用户进一步要求查过的单词、AI解析、句子和TTS都缓存。设计采用服务端持久结果与书内来源索引、可淘汰的Redis/本机副本，未收藏也保存；同词不同语境分开，配置更新不自动丢旧结果或重新收费。
+用户进一步要求查过的单词、AI解析、句子和TTS都缓存。设计采用服务端持久结果与书内来源索引、可淘汰的Redis/本机副本，未收藏也保存；同词不同语境分开，配置更新不自动丢旧结果或重新调用供应商。
 
-用户补充确认收藏库单词发音全局缓存。标准词形/语种/读音/声音profile一致时在同实例跨用户共享成品；个人解释、出处、收藏/使用记录、Job、Key与费用保持隔离。
+用户补充确认收藏库单词发音全局缓存。标准词形/语种/读音/声音profile一致时在同实例跨用户共享成品；个人解释、出处、收藏/使用记录、Job、Key与模型用量保持隔离。
 
 用户确认可创建多个单词本，已掌握/未掌握由习题结果决定。设计采用同一条目多对多归本、共用学习证据；删除本不删词。2026-09-23进一步确认不支持词汇复习，改为独立AI习题功能；因此每日/到期队列、SRS/FSRS、复习计划和新词额度不进入产品。
 
@@ -24,6 +24,8 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 
 同日确认三类材料采用公共不可变来源层和分别独立的小说、课本、试卷领域结构。试卷首版接收文字版听力稿或从试卷正文/已发布视觉转写提取脚本候选；AI必须标记疑似听力题并提出脚本—题组/小题候选匹配，用户确认后才用本人TTS生成冻结音频。用户上传原始音频、转写/切段及自动绑定列为P1待办，P0不接受该上传用途。
 
+2026-09-23确认当前不做应用内商业化。Haruka不维护套餐、应用余额、购买、金额或结算；用户继续使用本人供应商Key。系统保留运行保护上限，并按供应商/模型/attempt持久记录input、output、cache read、cache write及供应商可得的其他用量指标。
+
 ## 2. 当前实现建议
 
 | ID | 选择与理由 | 验证/变更条件 |
@@ -32,7 +34,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | DEC-02 | 管理端先Flutter Web，PyCasbin封装于AuthorizationService | 阶段1验证策略投影、继承/deny/授予边界与两端快照，用户尚未单独确认库 |
 | DEC-03 | PG保存AuthSession撤销/epoch，Redis保存会话材料 | 消除管理审计与异步删缓存之间的失效窗口 |
 | DEC-04 | Web稳定opaque HttpOnly会话Cookie，原生短JWT+轮换refresh | Web普通续期不Set-Cookie，消除刷新迟到回退；身份变更和原生代次仍须竞态验证 |
-| DEC-05 | Job/Outbox/Kafka+数据库阶段恢复，无新持久执行服务 | 供应商unknown结果不承诺恰好收费一次，显式受控重试 |
+| DEC-05 | Job/Outbox/Kafka+数据库阶段恢复，无新持久执行服务 | 供应商unknown结果不承诺恰好只执行一次，显式受控重试 |
 | DEC-06 | 单活动评分run、generation/CAS发布effective成绩 | 新重评失败保留旧结果，防止迟到覆盖与重复统计 |
 | DEC-07 | Unicode scalar value偏移+canonical-text-v1 | 前后端用日文/组合字符/emoji往返验证，规范化升级需版本化 |
 | DEC-08 | 原文与稳定ID由应用维护，AI输出只提供引用/候选 | 模型结构正确不等于来源正确，原文不让模型重写 |
@@ -43,13 +45,14 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | DEC-13 | UI Test ID前端JSON单源生成Dart并供Playwright读取；测试数据分资产/场景/执行实例 | 见[测试数据](../engineering/testing/data.md)；按执行身份隔离，工厂不代做目标动作，秘密另传，清理先处理在途写入 |
 | DEC-14 | 用户确认无物理外键和公共创建/更新时间；工程采用共享表+ScopeContext、事务内逻辑关系校验及共同父行锁，不启用首版RLS | [数据库规范](../engineering/database.md) 的DB验收：UTC带时区、所有写入时间路径、实际PG关联/删除竞争；不宣称DB自动阻止任意SQL跨用户 |
 | DEC-15 | 三类分别处理/建模/展示为用户已确认；设计采用唯一material_type、专用处理器/manifest/controller，选错类型显式创建新材料重新处理 | [三类材料契约](../contracts/material-types.md) TYPE及NOV/TBK/考试验收；保留原文件/出处基础能力，禁止类型换皮与通用接口泄露考试答案；当前未实现 |
-| DEC-16 | 用户确认OCR统一视觉模型；Pydantic AI固定类型化调用，原件/页图准备与三类专用结果校验分开 | [视觉OCR](../architecture/vision-recognition.md) OCR-01～OCR-05按功能/获准格式验收；个人Key/预算、转写版本、定位粒度与失败恢复须验证，不走传统OCR后备 |
-| DEC-17 | 查词/句子/AI解析/TTS成功结果必须缓存；设计以PG/MinIO持久保存为基础，书内语境索引、查阅/生成键分离，Redis/Flutter只作副本 | [学习结果缓存](../architecture/learning-cache.md) LC验收；TTL/本机清理不丢已付费结果，并发/改配置/权限/GC须验证；缓存业务未实现 |
+| DEC-16 | 用户确认OCR统一视觉模型；Pydantic AI固定类型化调用，原件/页图准备与三类专用结果校验分开 | [视觉OCR](../architecture/vision-recognition.md) OCR-01～OCR-05按功能/获准格式验收；个人Key/上限、转写版本、定位粒度与失败恢复须验证，不走传统OCR后备 |
+| DEC-17 | 查词/句子/AI解析/TTS成功结果必须缓存；设计以PG/MinIO持久保存为基础，书内语境索引、查阅/生成键分离，Redis/Flutter只作副本 | [学习结果缓存](../architecture/learning-cache.md) LC验收；TTL/本机清理不丢已保存的模型结果，并发/改配置/权限/GC须验证；缓存业务未实现 |
 | DEC-18 | 收藏标准单词独立发音采用global_word实例级目录，跨用户复用同词/读音/profile音频 | [全局词音](../architecture/learning-cache.md#51-收藏库标准单词发音的全局缓存)及LC-09/10；不共享私人输入/Job/Key，词表与声音范围待阶段3实测锁定，未实现 |
 | DEC-19 | 已被DEC-20取代：原方案为多单词本+effective掌握+py-fsrs间隔 | 仅供历史追踪；未实现，不得恢复其复习/SRS部分 |
 | DEC-20 | 多单词本只负责组织和选源；effective习题结果驱动只读掌握，不做时间调度。独立AI习题经预览确认后使用本人Key生成；所有可靠错题自动留档，收藏与当前错误状态独立 | [AI习题](../modules/ai-exercises.md)AIX、[单词本](../modules/vocabulary-notebooks.md)VNB及[学习证据](../architecture/vocabulary-learning.md)VL验收；OPEN-11只锁定结果阈值，阶段3组织、4闭环、5CSV，均未实现 |
 | DEC-21 | 账号基础资料采用UserProfile/StudyProfile/Settings分离：最小注册，可跳过引导；可选birth_year代替整数年龄，人口字段默认不进AI；头像专用安全发布，语言档案与UI语言/权限分离 | [账号](../modules/accounts.md)ACC-11/12与[设置](../modules/settings.md)PROFILE验收；阶段1实现，精确生日/未成年人、公开资料、邮箱变更/销号另立范围，均未实现 |
 | DEC-22 | 材料解析采用公共SourceUnit/ContentBlock来源层+NovelManifest/TextbookManifest/ExamPaperVersion三套领域结构；P0考试听力只处理文字稿/正文候选，经AI标记匹配和人工确认后生成私有TTS | [解析数据结构](../contracts/material-structures.md)MSTR、[考试](../modules/exams.md)与PRES验收；原始音频上传/自动绑定按OPEN-12进入P1前置设计，全部未实现 |
+| DEC-23 | 当前不建设Haruka商业化系统；个人Key调用只记录按attempt的模型用量，不维护金额。应用缓存命中与供应商Prompt缓存Token分开 | [模型用量统计](../contracts/model-usage.md)USAGE-01～USAGE-09；阶段1建立持久化/聚合基础，实际模型阶段补供应商适配，均未实现 |
 
 ## 3. 决策导航与变更
 
@@ -57,7 +60,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | --- | --- |
 | 系统图、组件职责和技术基线 | [系统架构](../architecture/overview.md)、[项目结构](../architecture/project-structure.md) |
 | 会话、RBAC、数据与持久任务 | [认证](../architecture/authentication.md)、[授权](../architecture/authorization.md)、[数据与任务](../architecture/data-jobs.md) |
-| 接口、权限代码、解析结构与出处 | [API](../contracts/api.md)、[权限目录](../contracts/permissions.md)、[解析数据结构](../contracts/material-structures.md)、[出处契约](../contracts/content-locator.md) |
+| 接口、权限代码、模型用量、解析结构与出处 | [API](../contracts/api.md)、[权限目录](../contracts/permissions.md)、[模型用量统计](../contracts/model-usage.md)、[解析数据结构](../contracts/material-structures.md)、[出处契约](../contracts/content-locator.md) |
 | 工程入口、生成与阶段边界 | [脚手架](../engineering/scaffold.md)、[B0/B1/B2 验收](../delivery/milestones/scaffold.md) |
 | 配置、发布与恢复 | [运行配置](../operations/configuration.md)、[部署与恢复](../operations/deployment-recovery.md) |
 | 未选方案、缺少的工程契约及最晚锁定点 | [待决清单](pending.md) |

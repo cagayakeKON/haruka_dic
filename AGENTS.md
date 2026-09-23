@@ -18,7 +18,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 | 身份、页面、业务动作与数据 | [认证](docs/architecture/authentication.md)、[RBAC](docs/architecture/authorization.md)、[权限目录](docs/contracts/permissions.md)、[API](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) |
 | 建表、ORM、逻辑关联、数据隔离与迁移 | [数据库规范](docs/engineering/database.md)、相关数据/认证设计；按DB验收证明已实现范围 |
 | 阅读、选区、导入、CSV或考试 | 对应[小说](docs/modules/novels.md)/[课本](docs/modules/textbooks.md)/[考试](docs/modules/exams.md)模块，以及[三类材料](docs/contracts/material-types.md)、[解析数据结构](docs/contracts/material-structures.md)、[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)所涉及的契约 |
-| Agent、卡片、会话、AI或TTS | [Agent运行层](docs/architecture/agent-runtime.md)、[AI与朗读模块](docs/modules/ai-speech.md) |
+| Agent、卡片、会话、AI、TTS或模型Token统计 | [Agent运行层](docs/architecture/agent-runtime.md)、[AI与朗读模块](docs/modules/ai-speech.md)、[模型用量统计](docs/contracts/model-usage.md) |
 | 编码、初始化或构建 | [项目结构](docs/architecture/project-structure.md)、[代码规范](docs/engineering/coding.md)、[Lint](docs/engineering/lint.md)、[脚手架](docs/engineering/scaffold.md)、[B0/B1/B2](docs/delivery/milestones/scaffold.md) |
 | 后端接口、模块、返回/异常与多语言 | [后端开发手册](docs/engineering/backend.md)、[统一返回契约](docs/contracts/api-responses.md)、相关API/权限/数据设计 |
 | Flutter页面、移动端交互与跨平台适配 | [Flutter开发与适配规范](docs/engineering/flutter.md)、[项目结构](docs/architecture/project-structure.md)、对应模块及前端测试 |
@@ -30,16 +30,17 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 
 - Flutter：Windows、Web、Android；Python 前后端分离。
 - 导入材料只适配小说、课本、试卷；material_type唯一，三类分别处理、建模和使用专属页面/controller，仅复用基础能力。文件格式单独定范围，不保留“其他/混合/文章/笔记”类型或跨类型皮肤切换；选错类型需显式创建新材料重新处理，保留旧记录。
-- OCR统一使用用户配置的视觉模型，经过Pydantic AI与统一任务/预算/日志入口；不建立或静默回退传统OCR。文件渲染/可用文本层直接提取仍是确定性处理，三类专用校验保持独立，详见[视觉OCR](docs/architecture/vision-recognition.md)。
+- OCR统一使用用户配置的视觉模型，经过Pydantic AI与统一任务/调用上限/日志入口；不建立或静默回退传统OCR。文件渲染/可用文本层直接提取仍是确定性处理，三类专用校验保持独立，详见[视觉OCR](docs/architecture/vision-recognition.md)。
 - 应用内 Agent 框架已确定为 Pydantic AI；使用 Pydantic 业务输出模型，不另建 LangChain/LangGraph Agent 执行路径。
 - 支持导入时选择试卷模式、整卷作答、交卷后 AI 判断/评分；试卷首版文件格式范围仍待明确，不能将推荐的 PDF/OCR 优先级当作已确认。
 - 试卷P0可为既有试卷上传UTF-8文字听力稿，或从试卷正文/已发布视觉转写提取听力脚本候选；AI必须为疑似听力题给出有证据的类型标记并提出脚本与题组/小题候选匹配，用户校对确认后才使用本人Gemini/OpenRouter TTS生成并冻结私有音频。原始音频上传、转写、切段和自动绑定列为P1待办，P0接口必须拒绝。
-- 多用户注册登录，资料、学习记录、任务、私有缓存与模型 Key 按用户隔离；收藏库标准单词独立发音为同实例跨用户共享目录，匹配语种/读音/声音配置，个人关联和费用仍隔离。
+- 多用户注册登录，资料、学习记录、任务、私有缓存与模型 Key 按用户隔离；收藏库标准单词独立发音为同实例跨用户共享目录，匹配语种/读音/声音配置，个人关联和用量仍隔离。
 - 注册仅要求当前身份策略字段；头像、出生年份/性别、母语/解释语言/学习语言、水平/目标和时区属于可选本人资料/学习档案，不得成为登录门槛。资料默认不公开，人口字段默认不进AI；头像走专用临时上传、受限解码/去元数据/重编码和每次鉴权的private/no-store读取，应用副本按实例/账号/资产分区，详见[账号](docs/modules/accounts.md)与[设置](docs/modules/settings.md)。
 - 用户可创建多个单词本，一词条可入多本但共用学习状态；删本只移除归类。单词掌握由有效习题证据自动计算，禁止UI/API/CSV手改mastery。用户端不支持词汇复习、每日/到期队列、SRS/FSRS、ReviewOpportunity或新词额度；单词本只负责组织和AI习题选源，见[单词本](docs/modules/vocabulary-notebooks.md)与[学习证据](docs/architecture/vocabulary-learning.md)。
 - P0提供独立[AI习题与错题库](docs/modules/ai-exercises.md)：用户显式选择单词本、收藏、教材、错题或诊断来源并确认后使用本人Key生成，不后台自动出题。服务端对教材题、AI习题和试卷的全部可靠错误/部分正确幂等留档；用户可以收藏任一历史错题，收藏与当前错误/纠正/作废状态独立，针对性生成只消费当前有效且有权的事实。
 - 管理后台和完整 RBAC 为 P0；控制用户端/管理端登录、页面/菜单/按钮、接口与数据范围；Flutter Web 管理端及 PyCasbin 为当前推荐实现。
 - 用户各自提供 API Key；朗读使用 Gemini TTS 或 OpenRouter TTS，不能静默替换成系统 TTS。
+- 当前不建设Haruka商业化系统；不引入套餐、应用余额、购买或金额结算。每个真实供应商attempt按[模型用量统计](docs/contracts/model-usage.md)保存input/output/cache及可得的其他用量，技术限额只用于运行保护。
 - 用户侧备份恢复仅为单词 CSV 导出与导入，不新增整库 ZIP、原书/音频打包或全库恢复。
 - 复用 MyHome 基础设施与可适配机制，Haruka 维护独立业务、数据库、凭据、账号和部署。
 - 所有前端/后端/数据库/AI/TTS 日志及前端业务埋点统一进入 MyHome 的 Alloy/Loki/Grafana；正常事件也要采集，不能仅上报 warn/error。
@@ -53,7 +54,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 - 将已确认、推荐、待验证和已实现分开标注。中文用于产品文档和沟通，代码标识保持清晰一致。
 - 工程使用frontend/、backend/、scripts/、tools/和根contracts/；所有开发Compose与初始化/采集配置放dev/，deploy/及业务数据/任务工程尚未建立。只创建当前职责需要的模块，不预建后续空目录。
 - Flutter 保持功能模块、UI 状态与数据访问分层，平台差异放入适配层；Python 保持路由、服务、仓储和供应商适配分离。
-- Flutter共享业务/数据，复杂页面允许独立紧凑/宽屏布局；空间、输入和平台能力分别判断。布局切换保留账号/资源作用域内的状态，不重复请求/收费或重置考试；Android专属系统行为与真机优化按Flutter适配规范验收。
+- Flutter共享业务/数据，复杂页面允许独立紧凑/宽屏布局；空间、输入和平台能力分别判断。布局切换保留账号/资源作用域内的状态，不重复请求/发起供应商调用或重置考试；Android专属系统行为与真机优化按Flutter适配规范验收。
 - 用户/管理JSON接口统一使用具体化的SuccessResponse[T]、PageResponse[T]与ErrorResponse；服务返回业务结果，路由包装成功，统一处理器包装异常；204/文件/SSE保留原生传输语义，字段/语言/HTTP映射只在返回契约维护。
 - 用现有约定解决当前问题，不先引入多服务拆分、公共平台包或无实际需求的抽象。
 - 后端正式入口共用资源组装，非editable安装后不依赖checkout/cwd；PEP517构建依赖另行完整锁定。开发命令与前端环境身份按蓝图统一，生成物单向导出并按清单纳管。
@@ -71,14 +72,14 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 - 权限代码由发布注册，用户经多角色/受限继承授权，匹配的显式拒绝优先。授权事务同步版本与审计，缓存只加速匹配版本，新请求不能用旧 JWT/权限快照继续已撤销的权限。
 - 管理者授予范围与受保护角色独立校验，防止自提权、继承提权和修改默认注册角色提权；保护最后一个可登录超级管理员，首次管理员由受控部署初始化。
 - 幂等键、模型配置、解释/私有TTS缓存及通知按用户分区；仅受控global_word目录资产和生成占用按实例共享，不用owner为空扩大私有查询。换账号处理旧本机缓存、下载和迟到响应；全局命中不暴露他人Job/Key，缺失不自动借他人Key生成。
-- 完整成功的词句/AI解释与TTS自动持久保存，不要求收藏；有效引用期间不按TTL/LRU删除。Redis/本机只是可淘汰副本，miss先查持久结果；匹配、重生成与跨配置迟到发布以[学习结果缓存](docs/architecture/learning-cache.md)为准，不因换Key/默认模型升级或清本机缓存隐式重收费。
+- 完整成功的词句/AI解释与TTS自动持久保存，不要求收藏；有效引用期间不按TTL/LRU删除。Redis/本机只是可淘汰副本，miss先查持久结果；匹配、重生成与跨配置迟到发布以[学习结果缓存](docs/architecture/learning-cache.md)为准，不因换Key/默认模型升级或清本机缓存隐式重新调用供应商。
 - 密码哈希存储；任何哈希替换推进password_version，改密提交锁内复核password_version/security_epoch/当前会话，提交后结果未知不得自动重放或宣称未修改；模型 Key 按用户加密；密码、Token、Key 不进入日志、队列或 CSV。
 - credential_version与部署encryption_key_version分开；部署旧密钥不能因在线重加密完成就销毁，仍需保留依赖历史备份的恢复能力。
 - 缺少用户 Key 时不回退到其他用户或 MyHome 的 Key。常规测试使用模拟供应商，真实调用只在任务需要且已获授权的范围内执行。
 - 稳定内容 ID、内容版本和选区偏移由应用维护；AI 不得重写原文或绕过 schema/归属校验。
-- 长任务先持久化 Job/Outbox；重复投递和重启不得重复提交业务结果，不承诺外部供应商恰好收费一次。
+- 长任务先持久化 Job/Outbox；重复投递和重启不得重复提交业务结果，不承诺外部供应商恰好只执行一次。
 - Pydantic AI 的运行依赖按用户注入，不能通过全局环境变量或共享可变模型客户端切换个人 Key；对话存储不等于任意步骤自动续跑，首版在已提交业务阶段边界恢复。
-- Worker/Agent 工具与每个新的付费阶段重查当前权限；撤权保留已提交数据，固定系统维护主体只做允许的封存/清理，不能变成任意用户调用。
+- Worker/Agent 工具与每个新的供应商调用阶段重查当前权限；撤权保留已提交数据，固定系统维护主体只做允许的封存/清理，不能变成任意用户调用。
 - CSV 导入先预览确认，重复处理和来源回跳遵循规范，不能借导入 ID 覆盖他人数据。
 - 单词CSV当前草案v2兼容v1，词本归属按本人权限恢复，导入掌握快照不是有效学习证据；内容学习版本、跨端辅助记录及重评重放遵循学习状态专题，不能用模型自报或埋点判掌握。CSV不备份错题、作答或AI习题历史。
 - 考试使用冻结试卷版本，答卷由服务端保存，时限由服务端判定，交卷幂等且锁定答案；题面接口不返回答案/解析，普通练习仍可逐题反馈。
@@ -87,7 +88,8 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 - 上传只向客户端开放临时对象，后端发布验证后的不可变final对象；Worker不读取可被旧上传签名覆盖的来源。
 - Flutter 使用统一 Telemetry，Python 使用统一 logging/structlog 出口；保持 operation/request/job/AI 关联，新增服务同步采集清单，禁止上传请求递归产生日志。
 - 前端日志和埋点按事件白名单脱敏，身份由接收端绑定；队列按账号隔离，换账号不能补发为新用户。用户/请求等高基数字段不能成为 Loki 索引标签。
-- AI 日志不记录原始 Prompt/回复/工具正文，SQL 日志不记录绑定参数；业务成功以服务端提交为准，不能把埋点当权限、账单或学习数据的权威来源。
+- AI 日志不记录原始 Prompt/回复/工具正文，SQL 日志不记录绑定参数；业务成功以服务端提交为准，模型Token用量以持久attempt记录为准，不能把埋点当权限、用量或学习数据的权威来源。
+- 应用缓存命中不创建零Token模型调用；供应商Prompt缓存读取/写入仍属于真实attempt，分别记录cache_read_tokens/cache_write_tokens。未知用量为null，不用0代替，也不把AiRun汇总与attempt重复累加。
 
 ## 开发节奏、并行协作与提交
 
@@ -99,7 +101,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 ## 检查与测试
 
 - 小阶段完成或修复bug时，只允许执行证明本次变更所必需的测试：优先最低有效层的回归用例、直接受影响模块/契约和必要的跨端或集成路径。先说明影响范围与选择依据，不默认运行全仓、全平台或所有E2E。
-- 只有大阶段/大节点完成时才执行全量测试，范围为截至该节点已交付能力的完整必需矩阵和约定平台；不得因用例失败、设备缺失或准备不足缩小已承诺范围。尚未实现的后续阶段不冒充已通过，真实付费模型测试仍遵守既有授权边界。
+- 只有大阶段/大节点完成时才执行全量测试，范围为截至该节点已交付能力的完整必需矩阵和约定平台；不得因用例失败、设备缺失或准备不足缩小已承诺范围。尚未实现的后续阶段不冒充已通过，真实模型测试仍遵守既有授权边界。
 - 必要测试通过后停止重复测试；有新改动、失败或明确未消除的影响时，只补相关验证。大节点review修复问题后同样先做定点回归，已有未受影响证据在验证适用性后保留，不机械重跑全量；影响确实覆盖整体时才在该大节点重跑完整矩阵。
 - 小阶段报告只声明本次局部结果，不把局部覆盖率当全仓覆盖率，也不为满足全仓覆盖门槛强行触发全量测试。完整覆盖分母和总体/核心组门禁在大节点执行。文档改动仅做必要文档检查，lint/类型检查按受影响范围和工具实际能力执行。
 

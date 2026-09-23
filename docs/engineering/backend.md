@@ -47,7 +47,7 @@
 
 跨模块写入若必须原子完成，由明确的应用编排用例拥有一个短事务，调用参与模块明确开放的事务内能力；这些能力接受同一个受控会话和 scope，不自行开新事务/提交。禁止 A service 调 B service 再调回 A 的隐含提交链，也不能用独立 HTTP 自调用协调本进程业务。
 
-非原子、耗时或外部动作拆为持久 Job/Outbox 阶段；不跨付费调用持锁，不用 FastAPI BackgroundTasks 代替必须可靠完成的任务。具体锁、并发删除/关联与恢复由 [数据库规范](database.md)、[数据与任务](../architecture/data-jobs.md) 维护。
+非原子、耗时或外部动作拆为持久 Job/Outbox 阶段；不跨供应商调用持锁，不用 FastAPI BackgroundTasks 代替必须可靠完成的任务。具体锁、并发删除/关联与恢复由 [数据库规范](database.md)、[数据与任务](../architecture/data-jobs.md) 维护。
 
 ## 4. 路由返回模板
 

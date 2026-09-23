@@ -94,7 +94,7 @@ Base统一使用MetaData.naming_convention。命名模板包含全部组合列�
 - Repository方法必须接收适合该表类别的scope；没有scope=None、is_admin=True或ignore_owner的通用绕过参数。管理查询使用独立AdminScopeContext、操作范围和白名单DTO，不复用用户全文接口。
 - 列表、详情、搜索、分页游标、COUNT、JOIN、子查询、UPDATE、DELETE、UPSERT都约束归属。JOIN每一侧的私有数据均核对owner/library；只过滤主表不能自动证明错误关联的另一侧安全。
 - 更新采用id + scope + expected_revision/状态条件，检查受影响行数；零行按统一不可访问/版本冲突映射，不另查无scope对象确认属于谁。新增所有者由服务写入，不能批量解包客户端对象覆盖归属。
-- 私有缓存key、幂等key、解释/私有TTS请求合并、对象路径和事件订阅包含账号/实例范围。仅global_word目录与全局生成占用按实例/标准词音键唯一；目录仓储接收限定词条/profile/操作的服务端CatalogScope，不允许通用ignore_owner。内部占用可关联私有生产Job，客户端无读取该关联权限；请求/费用/等待引用仍有owner。Worker从持久Job恢复身份和归属，逐阶段/付费动作重查权限，不信任队列快照；缓存或分区不是授权替代品。
+- 私有缓存key、幂等key、解释/私有TTS请求合并、对象路径和事件订阅包含账号/实例范围。仅global_word目录与全局生成占用按实例/标准词音键唯一；目录仓储接收限定词条/profile/操作的服务端CatalogScope，不允许通用ignore_owner。内部占用可关联私有生产Job，客户端无读取该关联权限；请求/模型用量/等待引用仍有owner。Worker从持久Job恢复身份和归属，逐阶段/模型调用动作重查权限，不信任队列快照；缓存或分区不是授权替代品。
 - 文件签名、CSV、SSE、Agent工具、统计导出与管理元数据都受相同隔离；日志按现有脱敏/身份绑定契约，不把私有正文用于数据库巡检日志。
 
 用户端不获得PG连接。API/Worker账号仅具运行所需DML，不能DDL、切换为迁移身份或修改追加审计；迁移与受控维护使用单独凭据，应用管理员不是数据库管理员。连接池Session只属于当前请求/任务，不缓存上个用户scope。此基线保障的是受控应用路径，持有数据库运行凭据的任意SQL不会自动经过ScopeContext；不将其描述为数据库原生行级隔离。
@@ -121,6 +121,7 @@ Base统一使用MetaData.naming_convention。命名模板包含全部组合列�
 
 - 用户库内业务唯一键包含owner/library及业务键；用户级唯一包含其权威owner列；系统代码、规范化邮箱等明确全局唯一的对象另行声明。幂等记录同时绑定scope、动作及请求摘要，不把不同账号的同值key当同一请求。
 - 必需字段NOT NULL；分数/用量/revision等由命名CHECK保证本行范围。NULL参与唯一性的语义必须明确：默认唯一约束不能推定“所有NULL只能一条”；业务要求时选择非空字段或可验证的部分唯一策略。
+- `ModelCallUsage`以`external_call_attempt_id`唯一，owner/provider/model/capability/状态与时间非空；各Token、字符、图片和时长分项为非负值或NULL，未知不能写0。按本人时间/模型聚合和管理时间桶建立有界索引，字段口径见[模型用量统计](../contracts/model-usage.md)。
 - 软删除后可复用名称的对象使用WHERE deleted_at IS NULL的部分唯一索引；恢复也经过同一唯一校验，冲突返回需处理，不覆盖现存记录。全生命周期唯一对象不得套此模式。
 - 根据实际过滤与排序设计组合索引：库内常见(owner_user_id, library_id, created_at, id)，状态/软删除条件根据查询模式加入或用部分索引；不能给每列机械加index=True。
 - 逻辑关联列按查子项、删除检查和GC查询建立作用域组合索引，不因没有外键省略访问路径。已由PK/UNIQUE覆盖的相同索引不重复建立；额外覆盖/反向索引说明用途。
@@ -193,7 +194,7 @@ class CollectionTag(TimestampMixin, Base):
 
 大列表使用稳定排序及有界分页；可变updated_at排序不保证跨页快照，完整导出/批处理须使用冻结边界或既定游标方案，不能在更新过程中用OFFSET漏行。用户全量CSV仍按专用协议完成，不能因分页限额静默截断。
 
-批量更新/删除必须带scope、状态与必要revision；UPDATE（含软删除）显式维护updated_at，物理DELETE按既定审计/清理记录留痕，不尝试更新已删除行。批次分段提交仅适用于已设计的可恢复任务，不能擅自拆开注册、交卷、授权审计等原子事务。安全重试只包可重做的短事务；数据库重试不能重放模型收费。
+批量更新/删除必须带scope、状态与必要revision；UPDATE（含软删除）显式维护updated_at，物理DELETE按既定审计/清理记录留痕，不尝试更新已删除行。批次分段提交仅适用于已设计的可恢复任务，不能擅自拆开注册、交卷、授权审计等原子事务。安全重试只包可重做的短事务；数据库事务重试不能重放供应商调用。
 
 SQL日志只记录批准的模板/指纹、耗时、行数和关联信息，不含绑定参数、密文/摘要值、正文或连接秘密；慢查询及失败一并进入 [统一观测](../operations/observability.md)。数据库引擎日志也按其脱敏要求配置。
 

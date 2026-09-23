@@ -6,7 +6,7 @@
 
 ## 1. HTTP与数据格式
 
-REST前缀/api/v1；管理业务在/api/v1/admin。请求/响应JSON使用snake_case，Dart DTO做显式映射。UUID使用字符串，日期UTC ISO 8601，分数/金额等固定精度数字用十进制字符串；未知枚举客户端显示安全“不支持”状态，不能自动映射成功。
+REST前缀/api/v1；管理业务在/api/v1/admin。请求/响应JSON使用snake_case，Dart DTO做显式映射。UUID使用字符串，日期UTC ISO 8601，分数等固定精度数字用十进制字符串；未知枚举客户端显示安全“不支持”状态，不能自动映射成功。
 
 路由operationId显式声明且稳定唯一；后端schema/注册定义单向生成客户端契约。源码/导出文件归属、生成器原型及差异检查由 [脚手架蓝图](../engineering/scaffold.md) 维护，不改变本文的业务/传输语义。
 
@@ -24,7 +24,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 首版幂等回执推荐保留至少7天或关联任务终态后24小时两者较长；涉及学习提交/评分的业务唯一约束长期保留，不因回执过期就允许重复Attempt。幂等命中仍检查当前权限/资源可见性，不把旧成功响应当绕过撤权缓存；不在记录中存Token/Key或完整答案，保存HMAC摘要/业务引用。
 
-自动网络重试仅对安全读取、同一幂等键且已定义协议的写入及同次native刷新执行有界退避。超时不能推断写入未提交，先按操作/资源ID查询；流式中断不能自动重新发起模型调用。用户主动新操作必须新key，SDK/Worker重试总预算见 [数据与任务](../architecture/data-jobs.md)。
+自动网络重试仅对安全读取、同一幂等键且已定义协议的写入及同次native刷新执行有界退避。超时不能推断写入未提交，先按操作/资源ID查询；流式中断不能自动重新发起模型调用。用户主动新操作必须新key，SDK/Worker重试总上限见 [数据与任务](../architecture/data-jobs.md)。
 
 ## 3. 接口分组与功能合同
 
@@ -47,7 +47,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST users/me/avatar-upload-intents；POST users/me/avatar-upload-intents/{id}/complete；DELETE users/me/avatar | 本人avatar用途临时上传、验证/重编码后原子替换或删除当前头像 | profile.read+profile.avatar.update；只接受配置允许的静态图片，不接受外链/任意FileObject ID；替换使用profile expected_revision，删除保留受控GC |
 | GET users/me/avatar | 当前本人私有头像媒体；无头像返回404/受控空态 | profile.read；每次鉴权，`Cache-Control: private, no-store`，不要求avatar.update，不产生长期公共URL或跨账号ETag，不因知道asset ID/旧revision读取他人对象 |
 | GET/POST/PATCH/DELETE provider-credentials；POST {id}/test | 掩码/增删轮换；受限能力测试 | credential.read/manage/test；永不GET明文 |
-| POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/requested_stages；视觉OCR与进一步AI分析分别明确范围/预算；新上传或本人源文件重新处理 | material.import、目标试卷组合权限；视觉OCR另验analyze；复用验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
+| GET users/me/model-usage | 本人按时间范围、供应商、模型、能力、操作类型聚合的调用状态及input/output/cache等用量；可按有权run查询明细 | credential.read与self范围；未知分项为null，应用缓存命中不冒充模型调用，不返回Key/Prompt/回复；口径见[模型用量统计](model-usage.md) |
+| POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/requested_stages；视觉OCR与进一步AI分析分别明确范围/上限；新上传或本人源文件重新处理 | material.import、目标试卷组合权限；视觉OCR另验analyze；复用验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |
 | GET materials、materials/{id}、materials/{id}/revisions；PATCH/DELETE materials/{id} | 三类筛选、共用元数据/状态与版本摘要；改标题/删除，不返回正文/答案、不允许PATCH类型 | material.list/read/update/delete；类型分派以三类材料契约为准 |
 | GET novels/{material_id}/revisions/{revision_id}/manifest、chapters/{node_id} | NovelManifest、小说章节原文与语言标注引用 | material.read、type=novel、同库/版本/节点校验 |
@@ -61,28 +62,28 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET vocabulary/learning-states | 本人词的只读掌握/原因/证据版本摘要；无队列、due或下次复习 | collection.read；证据/历史明细另需practice.read和实际来源read，按本筛选需notebook.read；缺实践读取权限只给摘要，不含Attempt ID/题答/分数；不发模型请求 |
 | POST collections/merge | 明确目标/来源条目和合并策略，expected_revision；涉及词本时确认成员并集 | collection.read/update/delete；成员迁移另需notebook.read/update；只在本人范围合并，学习证据按等价/新学习版本重算，不取最高掌握值 |
 | GET collections/words/export；POST vocabulary-csv/previews；POST {id}/commit | 流式CSV v2兼容v1、可选词本列、映射/预览/确认/游标；导入状态仅为来源快照 | CSV组合权限及词本列/筛选依赖；既有记录比较/跳过需collection.read，合并再需update；无read只明确直接新增、不返回旧词表信息 |
-| POST photo-word-imports；GET {id} | 一张图/语言→候选词预览，尚不写收藏 | photo.import；识别可能收费，不能冒充整卷OCR |
+| POST photo-word-imports；GET {id} | 一张图/语言→候选词预览，尚不写收藏 | photo.import；识别可能消耗供应商用量，不能冒充整卷OCR |
 | POST photo-word-imports/{id}/confirm | 明确新增/补空合并/排除行后确认 | photo.import；新增再验collection.create；读取/合并既有记录另验collection.read/update，缺任一所选动作权限整次确认拒绝 |
 | PATCH/DELETE photo-word-imports/{id} | 修正/丢弃尚未确认的候选预览 | 本人photo.import；已确认的Collection独立编辑，不回滚已提交记录 |
 | POST ai-exercise-selections；GET ai-exercise-selections/{id} | 按[AI习题](../modules/ai-exercises.md)接收单词本/收藏/教材/错题/诊断及时间/掌握/错误条件，以及题型/方向/题量/同源多题/难度/模型配置等生成设置；返回本人selection/revision/expiry、冻结设置摘要、计数和分页预览 | practice.read+每类实际来源read；按本需notebook.read，错题需mistake.read；不要求Key/generate，不调用模型或写学习事实；无due/复习条件 |
-| POST ai-exercise-generations；GET ai-exercise-generations/{id} | 只提交selection_id+expected_revision和幂等键，返回复制冻结候选/设置的不可变AiExercisePlan/Job；读取生成状态及有权习题集 | practice.generate/read+当前来源权限、本人Key/预算；确认与每个付费阶段重验，拒绝覆盖生成设置或自报候选/mastery/错误状态，摘要冲突要求重新预览 |
-| POST practice-sessions；GET practice-sessions/{id} | 用已有教材题/AI习题集开始并恢复冻结会话；不建立review-plan或时间调度 | practice.start/read及当前题目/来源权限；开始不隐含生成或评分收费 |
+| POST ai-exercise-generations；GET ai-exercise-generations/{id} | 只提交selection_id+expected_revision和幂等键，返回复制冻结候选/设置的不可变AiExercisePlan/Job；读取生成状态及有权习题集 | practice.generate/read+当前来源权限、本人Key/上限；确认与每个供应商调用阶段重验，拒绝覆盖生成设置或自报候选/mastery/错误状态，摘要冲突要求重新预览 |
+| POST practice-sessions；GET practice-sessions/{id} | 用已有教材题/AI习题集开始并恢复冻结会话；不建立review-plan或时间调度 | practice.start/read及当前题目/来源权限；开始已有练习不会隐式生成题目或调用模型评分 |
 | GET mistakes；GET mistakes/{id}；POST/DELETE mistakes/{id}/favorite | 本人全部可靠错题历史、当前状态/筛选/详情；收藏/取消收藏独立于错误状态 | mistake.read/favorite及题面/成绩实际权限；列表按投影裁剪，收藏不改评分/掌握，交换他人或无权来源ID拒绝 |
 | POST practice-sessions/{id}/answers、finish；GET attempts/{id} | 答案版本/提交；结束/成绩读取；response_kind区分answer/dont_know/skip | practice.answer/read；answer/dont_know按冻结规则形成Attempt，skip仅记录跳过，不以空答案造零分；服务端判状态 |
 | POST practice-sessions/{id}/items/{item_id}/assistances | 受控hint/reveal；服务端记录session_item、稳定根题/答案谱系、学习目标/版本和接受顺序后才返回提示 | practice.answer/read与本人活动场次；同根题换会话/设备不能擦除已辅助事实，独立新根题不继承曝光，反馈后订正不成为独立掌握证据；考试不复用此入口 |
-| POST attempts/{id}/grading-runs、review-requests | 付费评分/重评、个人异议标记 | grade.request/review.request；不能写任意分数 |
+| POST attempts/{id}/grading-runs、review-requests | 调用模型评分/重评、个人异议标记 | grade.request/review.request；不能写任意分数 |
 | GET/POST diagnoses；GET diagnoses/{id} | 报告列表/详情/生成，数据范围与统计窗口 | diagnosis.read/generate+来源read |
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
-| POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新付费另验Key/预算；显式再解析使用expected_lookup_revision取得新查阅代次 |
+| POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新模型调用另验Key/上限；显式再解析使用expected_lookup_revision取得新查阅代次 |
 | GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；run引用与流 | agent.read/use/delete，每工具独立授权 |
-| POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；试卷隐藏听力稿不能作为任意客户端文本提交，须走试卷专用生成入口；ExamListeningAudioBinding不从此通用manifest端点交付，有限场次只走PlayAttempt；global_word生产者Job/Key/费用不返回给其他等候者，缺失不自动换用户Key |
-| POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 只读匹配/本人等待状态/普通音频传输；global_word响应含asset_kind及实际profile，不含贡献者/他人Job/使用人数 | resolve/play不收费、不要求Key；全局媒体也须验证本人收藏来源/版本/读音/profile与资产匹配；试卷听力资产ID在通用resolve/media拒绝，防止绕过场次策略；新生成只走requests且需generate |
+| POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；试卷隐藏听力稿不能作为任意客户端文本提交，须走试卷专用生成入口；ExamListeningAudioBinding不从此通用manifest端点交付，有限场次只走PlayAttempt；global_word生产者Job/Key/模型用量不返回给其他等候者，缺失不自动换用户Key |
+| POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 只读匹配/本人等待状态/普通音频传输；global_word响应含asset_kind及实际profile，不含贡献者/他人Job/使用人数 | resolve/play不发起供应商调用、不要求Key；全局媒体也须验证本人收藏来源/版本/读音/profile与资产匹配；试卷听力资产ID在通用resolve/media拒绝，防止绕过场次策略；新生成只走requests且需generate |
 | GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从exam材料准备/校对/冻结；不能直接把novel/textbook当试卷 | exam动作+实际AI分析/导入权限；其他类型先显式重新处理 |
 | POST exams/{id}/listening-script-upload-intents；POST exams/{id}/listening-script-upload-intents/{intent_id}/complete | 为本人试卷草稿上传UTF-8纯文本/Markdown听力稿并发布不可变脚本源版本 | exam.read+exam.edit、expected_revision与本人试卷范围；只接受声明的文字稿用途，P0拒绝音频MIME、外链和任意FileObject ID |
-| POST exam-versions/{id}/listening-analysis-runs | 从已发布试卷正文/视觉转写或文字稿生成听力题、脚本片段及题组/小题绑定候选 | exam.read+exam.edit+material.read+material.analyze、本人Key/预算和当前试卷版本；创建Job使用幂等键，模型输出只形成候选，不能发布正式绑定或把模型置信度当确认 |
+| POST exam-versions/{id}/listening-analysis-runs | 从已发布试卷正文/视觉转写或文字稿生成听力题、脚本片段及题组/小题绑定候选 | exam.read+exam.edit+material.read+material.analyze、本人Key/上限和当前试卷版本；创建Job使用幂等键，模型输出只形成候选，不能发布正式绑定或把模型置信度当确认 |
 | GET exam-versions/{id}/listening-review-items | 读取当前候选证据、未决项和人工决定，不触发模型调用 | exam.read+exam.edit、本人试卷/候选代次；失去analyze后仍可处理已产生的候选，不返回答案投影或他人Job |
 | PATCH exam-versions/{id}/listening-review-items/{review_id} | 用户确认、编辑、重绑或拒绝听力题/脚本/题目候选，形成正式ExamStimulus与ExamListeningBinding | exam.read+exam.edit、expected_revision和候选代次；不调用模型、不直接生成音频，人工决定优先于同代次迟到结果，冲突要求重新加载 |
-| POST exam-versions/{id}/listening-audio-generations | 按已确认脚本/绑定/声音配置创建私有TTS任务；缓存命中返回已有结果 | exam.read+exam.edit+speech.generate；新调用需本人Key/预算，每个付费阶段重验；只允许确认且未泄露答案的脚本版本，资产不得进入global_word，发布需匹配试卷/脚本/生成代次 |
+| POST exam-versions/{id}/listening-audio-generations | 按已确认脚本/绑定/声音配置创建私有TTS任务；缓存命中返回已有结果 | exam.read+exam.edit+speech.generate；新调用需本人Key/上限，每个供应商调用阶段重验；只允许确认且未泄露答案的脚本版本，资产不得进入global_word，发布需匹配试卷/脚本/生成代次 |
 | GET exam-versions/{id}/listening-audio-bindings | 准备页读取已确认题组的音频状态/清单与受控播放信息，不触发合成 | exam.read+exam.edit+speech.play、本人版本/绑定；不要求generate或Key，不返回隐藏稿件/贡献凭据 |
 | POST exams/{id}/sessions；GET exam-sessions/{id}；POST {id}/takeover | 开考/恢复/显式编辑端接管；开考冻结题面、听力稿版本、音频资产与播放策略；场次快照返回每个Stimulus的冻结策略、剩余次数和仍在期限内的active attempt摘要 | exam_session.start/read/save、edit_epoch；含必需听力题时另需speech.play且服务端ready预检已通过，不能在开考后隐式重合成或切换声音 |
 | POST exam-sessions/{id}/listening-playbacks | `stimulus_id + edit_epoch + Idempotency-Key`领取一次新播放；返回play_attempt_id、冻结Manifest引用、`reserved/active/终态`、续播期限和剩余次数 | exam_session.read+save+speech.play、本人活动场次/当前编辑端/未截止/冻结资产；服务端锁定usage并先占位，同键丢响应重试返回同一attempt，有限次数并发不能超领；显式重播或终态后从头播放须新键/新attempt |
@@ -90,12 +91,13 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | PUT exam-sessions/{id}/responses；POST {id}/submit | response_revision/edit_epoch；最后答案与submit_reason | save/submit；服务端时间/锁卷 |
 | POST exam-sessions/{id}/media-reports | 冻结题面asset引用、edit_epoch与幂等键；服务端受控复核后返回未确认/确认事实及revision，不接受客户端自判故障或任意URL | session.read+save、活动状态/截止/edit_epoch；只读题面不授予报告写入，服务端推导受影响叶子；确认持久化及锁卷/评分门槛见[考试故障处理](../modules/exams.md#必要媒体故障的场次处理) |
 | POST exam-sessions/{id}/grading-runs；GET {id}/results | 初次批改或新generation重评；部分/有效成绩 | exam_grade.request/regrade/read |
-| GET jobs/{id}；POST {id}/cancel/retry | 当前阶段、可操作状态、结果引用 | read的结果另验来源read；cancel只需本人范围/可取消状态和job.cancel；仅retry重验原业务权限/付费意图 |
+| GET jobs/{id}；POST {id}/cancel/retry | 当前阶段、可操作状态、结果引用 | read的结果另验来源read；cancel只需本人范围/可取消状态和job.cancel；仅retry重验原业务权限/模型调用意图 |
 | GET runs/{id}/events | Agent/解释/Job进度的统一应用事件流 | run类型所需read，不能只因有run_id放行 |
 | GET runs/{id}；POST runs/{id}/cancel | 持久运行快照/完整结果；取消意图 | 读需对应领域权限；取消需本人job.cancel，失去agent.use不妨碍仍获授权的停止操作 |
 | POST frontend-logs、admin/frontend-logs、frontend-logs/anonymous | 受众内批量/受限匿名，逐项接收结果 | 观测规范；不接收任意查询 |
-| admin/users、roles、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作 | 管理工作流和admin对应动作、revision/审计 |
+| admin/users、roles、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作；quotas只表示技术运行上限 | 管理工作流和admin对应动作、revision/审计；不提供商业套餐或金额字段 |
 | admin/sessions、resource-metadata、jobs、audit-events、diagnostics | 限定元数据查询、撤销/安全运维 | 不返回私有内容/Key、不接受任意LogQL |
+| GET admin/dashboard/model-usage | 按时间、供应商、模型、能力和状态的实例级Token/缓存等聚合 | admin.dashboard.view；不返回个人Key、Prompt、回复、私有材料或默认逐用户明细 |
 
 三类内容接口的语义和字段边界见 [三类材料契约](material-types.md)，源层与三类领域对象见 [解析数据结构](material-structures.md)，各专用路径由对应模块 schema 定义，不用大一统阅读 DTO。试卷准备响应必须把正式对象、AI候选、人工校对任务和冻结考试DTO分开；题面接口不返回隐藏听力稿、答案依据、候选内部证据或可推断答案的TTS文本。`model-capabilities` 只负责模型能力，材料支持组合随公共 `meta` 能力段返回，不携带私有数据或个人授权；UI 不用硬编码扩展名表越过后端检查。管理登录/续期/退出/本人安全流程用admin/auth镜像路径，固定admin受众；业务修改用户状态/角色/权限使用独立子资源，不能把通用PATCH映射任意ORM列。最终具体路由表在工程PR中从此契约展开并接受路由保护枚举检查。
 
@@ -107,12 +109,12 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 SSE采用两步：POST创建run/Job，返回run_id；GET其events读取。事件信封包含schema_version、event_id、run_id、sequence、type、occurred_at、payload，事件类型accepted/progress/text_delta/tool_status/card_ready/completed/failed/cancelled。完整card_ready才允许收藏/后续动作，不能把半JSON交互当最终结果。
 
-Last-Event-ID用于有界事件回放；首版仅保证持久状态、阶段结果和最终卡片可恢复，不保证每token永久存档。窗口外返回需要重新取run快照的明确事件/错误，前端补读最终消息，不重新收费生成。SSE重连重新授权，心跳检查会话/权限；权限丢失关闭，不给旧账号推送新结果。代理禁缓冲/合理超时需部署实测。
+Last-Event-ID用于有界事件回放；首版仅保证持久状态、阶段结果和最终卡片可恢复，不保证每token永久存档。窗口外返回需要重新取run快照的明确事件/错误，前端补读最终消息，不重新调用供应商生成。SSE重连重新授权，心跳检查会话/权限；权限丢失关闭，不给旧账号推送新结果。代理禁缓冲/合理超时需部署实测。
 
 ## 5. 兼容与验收
 
 新增可选字段向后兼容；删除字段/改枚举语义/必填字段需版本升级或明确迁移期。每次发布记录min_supported_client与契约版本，旧客户端不能理解的写协议显示升级提示而非猜测提交。CSV、AI输出、事件、出处协议有各自schema_version，不能一个app版本代替全部。
 
-API-01：每个路由映射权限/公共例外并测越权；API-02：分页/版本/幂等/超时重试不重复写；API-03：Pydantic/Dart对null/未知枚举/Decimal/Unicode/UTC一致；API-04：SSE断连/窗口外恢复不重复收费；API-05：文件/CSV媒体类型和失败状态在三端有效；API-06：旧客户端兼容、生成契约差异及未经授权字段拒绝可验证。
+API-01：每个路由映射权限/公共例外并测越权；API-02：分页/版本/幂等/超时重试不重复写；API-03：Pydantic/Dart对null/未知枚举/Decimal/Unicode/UTC一致；API-04：SSE断连/窗口外恢复不重复调用供应商；API-05：文件/CSV媒体类型和失败状态在三端有效；API-06：旧客户端兼容、生成契约差异及未经授权字段拒绝可验证。
 
 统一返回、框架异常覆盖和语言/客户端降级的 API-07～API-10 见 [返回契约验收](api-responses.md#7-验收)，按已交付路由和本阶段影响范围执行。

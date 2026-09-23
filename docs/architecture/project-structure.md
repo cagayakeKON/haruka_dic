@@ -110,7 +110,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 
 ## 3. Python 内部分层
 
-请求：api 参数/身份校验 → AuthorizationService → service 用例/事务 → repository + domain → response DTO。对外供应商调用只在 adapter/ai 层发生，不在 ORM hook、路由模型 validator 或数据库事务里调用付费模型。
+请求：api 参数/身份校验 → AuthorizationService → service 用例/事务 → repository + domain → response DTO。对外供应商调用只在 adapter/ai 层发生，不在 ORM hook、路由模型 validator 或数据库事务里调用模型。
 
 - api 负责 HTTP 状态、Header、SSE、Cookie；domain 不导入 FastAPI/SQLAlchemy/Pydantic AI。
 - service 是业务提交边界；repository 必须接收 ScopeContext，禁止默认 scope=None 的全库查询。管理查询用独立 AdminScopeContext 和白名单 DTO。
@@ -162,7 +162,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 
 小说/课本/试卷在 api/routes、schemas、services、domain、repositories 中按 novels/textbooks/exams 分组；adapters/parsers 按 markdown/epub 及获准后的 pdf/txt 划分。格式适配器只返回SourceAsset/SourceUnit/ContentBlock源事实，类型处理器分别返回NovelManifest、TextbookManifest或ExamPaperVersion领域产物，Worker handler 显式分派；详细边界见[解析数据结构](../contracts/material-structures.md)。不建立万能 MaterialProcessor 加一套通用阅读 DTO，也不因此拆微服务或提前生成空文件。试卷文字听力稿属于exams专用上传/准备用例，ExamListeningService负责候选、人工确认和TTS绑定编排；音频合成仍调用SpeechService公开能力，不让exams直接访问TTS适配器。
 
-[视觉OCR](vision-recognition.md)在services负责页计划/授权/预算/提交编排，ai负责类型化视觉调用与各业务识别配置，adapters只负责图像预处理/PDF渲染；不增加传统OCR引擎目录或独立部署服务。页面识别稿不是领域ready，仍由小说/课本/试卷各自校验后发布。
+[视觉OCR](vision-recognition.md)在services负责页计划/授权/上限/提交编排，ai负责类型化视觉调用与各业务识别配置，adapters只负责图像预处理/PDF渲染；不增加传统OCR引擎目录或独立部署服务。页面识别稿不是领域ready，仍由小说/课本/试卷各自校验后发布。
 
 ## 5. 契约、配置与生成文件
 

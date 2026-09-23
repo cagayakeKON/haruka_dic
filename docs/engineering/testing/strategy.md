@@ -29,8 +29,8 @@
 | Flutter 组件 | frontend/test，flutter_test | 加载/空/错误/只读/无权、导航守卫、表单、题目/成绩、无障碍语义 | 真实平台弹窗或浏览器 Cookie |
 | 三端应用内集成 | frontend/integration_test，integration_test | 注册登录、主学习闭环、考试、CSV、退出切账号 | 无法操作原生平台 UI；测试入口包不能代替最终发布包 |
 | 浏览器与原生补充 | tools/e2e 的 Playwright；frontend/patrol_test 的 Android Patrol；Windows 专项驱动或明确人工记录 | Web Cookie/多标签/刷新/管理端、系统权限/文件框/后台恢复及实际候选制品冒烟 | 不复制完整公共用例；未验证平台驱动不能声称覆盖 |
-| AI/TTS 协议测试 | backend/tests/contract，Fake 模型/HTTP/音频 | 类型、工具权限、无 Key、取消/超时、重试预算、听力题/脚本/题目候选、音频字节/格式和用量口径 | 模拟输出不能证明模型讲解/批改、听力匹配或声音质量 |
-| AI/TTS 质量评估 | 受控评估样本与独立运行记录 | 英/日解释、抽题/评分、真实声音/音频和模型能力 | 不加入常规 PR 的隐式付费调用 |
+| AI/TTS 协议测试 | backend/tests/contract，Fake 模型/HTTP/音频 | 类型、工具权限、无 Key、取消/超时、重试上限、听力题/脚本/题目候选、音频字节/格式；每attempt的input/output/cache/可选指标、partial/unavailable与聚合不重复 | 模拟输出不能证明模型讲解/批改、听力匹配或声音质量 |
+| AI/TTS 质量评估 | 受控评估样本与独立运行记录 | 英/日解释、抽题/评分、真实声音/音频和模型能力 | 不加入常规 PR 的隐式供应商调用 |
 
 Flutter 官方区分 unit/widget/integration；integration_test 不能操作原生平台 UI，须用实际平台操作或经评估的专用驱动补齐，不把自动测试未覆盖的系统界面写成通过。Patrol 的项目分工为 Android 补充，并不表示该工具没有 Web 能力。依据：[Flutter 测试分层](https://docs.flutter.dev/testing/overview)、[集成测试](https://docs.flutter.dev/testing/integration-tests)。
 
@@ -53,7 +53,7 @@ Flutter 官方区分 unit/widget/integration；integration_test 不能操作原�
 
 - **命名**使用 test_动作_条件_预期 的 snake_case，例如 test_create_collection_foreign_source_rejected；函数名描述可观察行为，不写 test_01 或内部方法名的机械镜像。稳定 case_id 与需求/参数映射独立维护，重命名或移动测试不自动改变用例身份。
 - **Arrange**通过最小合法 fixture 准备前置条件，标明哪些流程未被本次测试；**Act**执行被测公开入口；**Assert**核对结果或类型化错误、已提交状态及必须没有发生的副作用。一个用例聚焦一种行为；并发、恢复或幂等用例可有协议要求的多步 Act，但每步目的和状态断言必须清楚。
-- **断言**优先业务结果与不变量，不断言无契约意义的私有 helper 次数/顺序、ORM 对象内存身份或完整 SQL 文本。拒绝用例同时检查无越权数据、无未经许可的业务写入/付费调用，保留契约要求的审计和限流记录；并发用例检查最终有效记录和业务贡献，而不只断言某个异常出现。错误文案仅在它属于明确兼容契约时逐字比较。
+- **断言**优先业务结果与不变量，不断言无契约意义的私有 helper 次数/顺序、ORM 对象内存身份或完整 SQL 文本。拒绝用例同时检查无越权数据、无未经许可的业务写入/供应商调用，保留契约要求的审计和限流记录；并发用例检查最终有效记录和业务贡献，而不只断言某个异常出现。错误文案仅在它属于明确兼容契约时逐字比较。
 - **参数化**用 pytest.mark.parametrize / pytest.param 表达同一规则的成功、边界和失败输入，并给每个参数组稳定、无秘密的业务 ids；避免在一个测试函数内循环多组输入，使第一处失败遮住后续结果。不同执行语义拆成用例，不用大笛卡尔积或许多条件分支堆成万能测试。
 - 参数组使用不可变值或准备配方，每次执行重新取得可变对象、账号和 Session；pytest 不复制传入的 list/dict，不能跨参数共享被修改的对象。ids 不含密码、Token 或用户正文；需要登记为必需行为的参数进入第5节的执行键和数据专题 variant，不能只在显示名称中区分。参数语义见 [pytest 参数化](https://docs.pytest.org/en/stable/how-to/parametrize.html)。
 
@@ -131,7 +131,7 @@ def override_dependency(
 
 优先对应用已有的接口注入小型、有类型的 Fake；临时 mock 用 create_autospec 约束调用签名，并按需用 spec_set 拒绝未知属性。异步依赖保留 await 语义，不能用宽松 MagicMock 掩盖不存在的方法或错参。patch 作用于被测代码实际查找符号的位置，并以 fixture/上下文限定寿命；避免永久改写环境变量、全局客户端或第三方内部实现。能力依据：[Python mock 与 autospec](https://docs.python.org/3/library/unittest.mock.html)。
 
-规则单测允许模拟时钟、随机数、仓储端口和供应商；狭义 route 契约允许覆盖 service。真实集成/E2E 仍按测试数据专题保留 PG、Redis、权限、Job/Outbox/Worker 等被测链路，Fake 只替换约定的外部供应商。生产配置拒绝 Fake，测试不能增加可公开调用的控制入口。Spy 的次数/顺序只用于有意义的契约，例如拒绝后零次付费调用、限定重试预算；“调用了 commit 一次”不能证明提交成功或无重复结果。
+规则单测允许模拟时钟、随机数、仓储端口和供应商；狭义 route 契约允许覆盖 service。真实集成/E2E 仍按测试数据专题保留 PG、Redis、权限、Job/Outbox/Worker 等被测链路，Fake 只替换约定的外部供应商。生产配置拒绝 Fake，测试不能增加可公开调用的控制入口。Spy 的次数/顺序只用于有意义的契约，例如拒绝后零次供应商调用、限定重试上限；“调用了 commit 一次”不能证明提交成功或无重复结果。
 
 ## 4. 首版必须覆盖的行为矩阵
 
@@ -142,12 +142,12 @@ def override_dependency(
 | AUTH | 最小注册竞争/回滚；错误密码/限流；原生刷新轮换/重放、Web续期/多窗口；改密重验/密码策略/password_version锁内复核/全会话撤销，并发改密与恢复竞争、提交后丢响应的结果未知；启用的验证/恢复挑战按用途/到期/单次消费；两端登录资格与可跳过首次引导 | 真实DB/Redis + API + 三端/管理Web，ACC |
 | PROFILE_SETTINGS | [PROFILE/SET验收](../../modules/settings.md)：资料可选/清除、字段/revision冲突、头像解码/去元数据/原子替换/no-store及同浏览器A→B与撤权后条件、语言目录/当前语/历史保留、可选人口字段AI开关、显示无障碍、管理DTO裁剪与A/B/账号切换 | 纯校验 + 真实PG/对象存储/API + Flutter widget/三端目标流程；恶意图片用受控资产，不向真实供应商发送人口数据 |
 | AUTHZ | 多角色/继承/环/停用/deny；未知权限默认拒绝；写权限不扩大读/范围；直达路由和直接 API；逐字段裁剪 | 授权规则/真实投影 + UI + API 权限矩阵 |
-| REVOKE | 多实例旧缓存、通知丢失、Redis 删除失败而 PG 撤销已提交、旧表单/并发管理提交；撤权后新请求/工具/付费步骤拒绝；最后管理员竞争保护 | 并发集成 + SSE/Worker/管理 Web |
+| REVOKE | 多实例旧缓存、通知丢失、Redis 删除失败而 PG 撤销已提交、旧表单/并发管理提交；撤权后新请求/工具/供应商调用步骤拒绝；最后管理员竞争保护 | 并发集成 + SSE/Worker/管理 Web |
 | ISOLATION | 同库同 schema 的 A/B 交换所有资源/父子 ID，批量混入他人 ID；ScopeContext及服务事务拒绝非法关联，私有文件签名/任务/统计/日志无泄漏 | 每个资源族实际 API/仓储/文件/Worker + 真实 PG；不依赖 FK/RLS |
 | DB | 无物理外键、PK/UNIQUE/NOT NULL/行内 CHECK、字段/时间语义、逻辑关联、父删除竞争、软删唯一、事务/CAS、索引/迁移/字典与数据库账号隔离 | 数据库规范的 DB 验收 + 真实迁移/元数据/服务事务；DAT-01/DAT-06及工厂 TDS 场景 |
 | ACCOUNT_SWITCH | A 退出后 B 登录，旧响应/音频/下载/日志/考试草稿不应用到 B；client/admin 快照和队列不混用 | Flutter 单元/组件 + 三端集成 |
 | IMPORT | 三类/格式分别验证、大小/解压限制、危险路径/外部资源、取消/重投；公共源层与三类领域结构分离、独立就绪/质量门槛、AI不改所选类型、显式另一类型重处理不改旧历史；试卷文字稿用途与原始音频拒绝 | 格式与各处理器单测 + 文件/Worker/专用API集成，TYPE/MAT/MSTR |
-| VISION_OCR | 文本层免调用、扫描/混合页范围、显式阶段/Key/预算、首次识别与重识别版本、截断/漏页/错误坐标、页面重试与unknown结果、无传统OCR回退 | 页计划/校验单测 + Fake视觉/Job/作用域集成；真实识别质量另行授权样本评估，OCR验收按获准格式分期 |
+| VISION_OCR | 文本层免调用、扫描/混合页范围、显式阶段/Key/上限、首次识别与重识别版本、截断/漏页/错误坐标、页面重试与unknown结果、无传统OCR回退 | 页计划/校验单测 + Fake视觉/Job/作用域集成；真实识别质量另行授权样本评估，OCR验收按获准格式分期 |
 | NOVEL | 章序/对话/脚注、句词边界与原文范围、标注失败降级、专用阅读器 | 人工标注样本 + controller/widget + 三端相关流程，NOV |
 | TEXTBOOK | 单元/角色/词表列与题目答案关联、缺结构降级、位置与Attempt分离、逐题反馈 | 独立课本结构样本 + 专用页面/普通练习集成，TBK |
 | LEARNING_PRESENTATION | [PRES-01～PRES-10](../../contracts/learning-presentation.md)：八类内容关系/顺序、五类输入及题组、原文与题面投影、听力标记/脚本题目候选/人工确认、冻结音频与策略、未知结构/媒体降级、跨布局状态 | 人工标注源样本 + 类型化校验/API资产授权 + controller/widget；当期三端目标流程，分别证明解析、校对、生成与消费，不为文档改动运行应用用例 |
@@ -155,7 +155,7 @@ def override_dependency(
 | COLLECTION | 新增/编辑/删除及标签，重复提交、出处回跳、删除原文后保留上下文，失权不写入 | API + 控制器/组件 |
 | VOCABULARY_NOTEBOOK | [VNB验收](../../modules/vocabulary-notebooks.md)：多本/多对多去重、语种/父锁、删本保留词、批量筛选快照、只读派生字段与CSV v2权限 | 规则/真实PG事务 + API/Flutter组件；三端仅选目标流程 |
 | VOCABULARY_LEARNING | [VL验收](../../architecture/vocabulary-learning.md)：跨习题集/根题结果窗口、主动回忆、辅助曝光顺序、pending/重评/作废重放与版本/删除竞争；无时间调度 | 纯规则/稳定事件重放 + 真实PG/Outbox；不以工厂预填掌握替代真实有效评分 |
-| AI_AGENT | 工具按权限提供且执行再次校验；伪造 user_id 无效；输出未完成不可保存；并发用户 Key 独立；预算/未知收费/续聊恢复 | Fake 模型/HTTP + 持久化集成 |
+| AI_AGENT | 工具按权限提供且执行再次校验；伪造 user_id 无效；输出未完成不可保存；并发用户 Key 独立；调用上限/供应商结果未知/续聊恢复 | Fake 模型/HTTP + 持久化集成 |
 | SPEECH | 私有缓存隔离与global_word标准词音共享、多读音/声音差异、倍速不重新合成、合并/取消/过期链接、实际 PCM/封装/Content-Type、无 Key 与不支持声音；已确认试卷脚本的私有缓存/确切ScriptVersion-Segment映射/迟到代次且绝不进入global_word，有限场次拒绝通用speech manifest/media与完整离线副本旁路 | 适配器 + 真实PG/对象/Job + 三端实际播放；实际发音质量不由可解码/Fake替代 |
 | LEARNING_CACHE | 未收藏的词/句/卡片/TTS持久保存；同词异境与无材料输入不串；清本机/Redis后恢复；模型/Key变更、并发乱序、存储失败/配额/GC和离线租期；全局词音不泄漏私人关系/Job、取消不换Key、删贡献者不删成品 | [LC-01～LC-10](../../architecture/learning-cache.md)；键/版本单测、Fake调用计数与真实PG/对象/任务集成、三端副本与账号切换；只读命中不得新增模型调用 |
 | PRACTICE | 可靠客观题不调用 AI；主观失败不计零分；评分/统计幂等；无依据诊断不虚构事实 | 规则/Fake + API 主路径 |
@@ -253,7 +253,7 @@ Flutter 收集器处理实际取得的 hit map，不应假定 flutter test --cov
 
 AI 质量单独使用经人工标注的版本化样本与 rubric；首批样本至少覆盖英/日两种语言、选区解释、出题、无参考答案评分、含标准答案评分及各 TTS 路径。记录模型/声音、提示版本、样本摘要、人工结论、实际用量与限制；阈值由小样本基线确定后写入发布门禁。没有质量基线或真实能力证据时不能声称该供应商路径已可发布。
 
-真实调用仅在任务范围已授权、输入/费用/并发/重试上限明确时执行；常规测试始终 fake。模型不稳定使单次输出不同不等于协议可漂移，schema/归属/得分范围等确定性约束仍然必须 100% 校验。
+真实调用仅在任务范围已授权、输入/模型用量/并发/重试上限明确时执行；常规测试始终 fake。模型不稳定使单次输出不同不等于协议可漂移，schema/归属/得分范围等确定性约束仍然必须 100% 校验。
 
 ## 7. 发布平台与证据
 

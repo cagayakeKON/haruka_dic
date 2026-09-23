@@ -37,7 +37,7 @@
 | [Web logger](../../../MyHome/frontend/src/shared/logging/logger.ts) | 统一日志入口；后端上送只允许 warn/error，默认是否上送与开发环境有关 |
 | [前端日志路由](../../../MyHome/backend/app/api/routes/frontend_logs.py) / [接收服务](../../../MyHome/backend/app/services/frontend_log_service.py) | Web 日志 Cookie/来源和 Android Bearer 验证、Redis 限流、上下文裁剪、重新输出后端日志 |
 | [SQL 耗时采集](../../../MyHome/backend/app/core/db_sql_timing.py) / [数据库引擎](../../../MyHome/backend/app/core/db.py) | SQLAlchemy 事件记录成功查询耗时和截断语句；失败钩子仅清理计时状态 |
-| [AI 回调](../../../MyHome/backend/app/ai/telemetry/langchain_callback.py) / [用量汇总](../../../MyHome/backend/app/ai/telemetry/llm_telemetry.py) | 每次模型调用的状态、耗时、Token 及工作流汇总，不记录 Prompt/回复正文 |
+| [AI 回调](../../../MyHome/backend/app/ai/telemetry/langchain_callback.py) / [用量汇总](../../../MyHome/backend/app/ai/telemetry/llm_telemetry.py) | 每次模型调用的状态、耗时、Token 及工作流汇总参考；Haruka改为Pydantic AI适配并按attempt持久记录input/output/cache等用量，不记录Prompt/回复正文 |
 | [日志服务 Compose](../../../MyHome/deploy/docker-compose.observability.yml) / [Loki 配置](../../../MyHome/deploy/observability/loki/config.yml) | 共享 Alloy/Loki/Grafana、Docker socket proxy；Loki 源码配置 auth_enabled=false、保留 168 小时 |
 | [运维看板](../../../MyHome/deploy/observability/grafana/dashboards/myhome-production.json) / [AI 看板](../../../MyHome/deploy/observability/grafana/dashboards/myhome-ai.json) | API、Worker、关联查询、Android 故障，以及模型用量/失败/延迟看板的参考 |
 
@@ -139,13 +139,13 @@ MyHome 已检查的角色机制是固定等级比较。Haruka 需要新增关系
 
 建议按任务用途命名，例如 haruka.imports、haruka.speech，并配套 DLQ 和消费者组。消息只包含用户/资料库/任务/凭据引用等必要信息，不包含明文 Key 或整本材料。不新增整库备份 Topic。
 
-Redis私有业务缓存、会话和通知带Haruka前缀及用户/会话范围；MinIO私有对象按用户分路径，上传/下载检查所有者。仅[标准收藏词音](../architecture/learning-cache.md#51-收藏库标准单词发音的全局缓存)使用Haruka实例的global_word缓存/占用与独立MinIO前缀，由受控目录服务发布和鉴权；共享不延伸到MyHome或私人上下文，个人Job/Key/费用仍隔离。仅加haruka前缀不能代替私有资源归属检查。
+Redis私有业务缓存、会话和通知带Haruka前缀及用户/会话范围；MinIO私有对象按用户分路径，上传/下载检查所有者。仅[标准收藏词音](../architecture/learning-cache.md#51-收藏库标准单词发音的全局缓存)使用Haruka实例的global_word缓存/占用与独立MinIO前缀，由受控目录服务发布和鉴权；共享不延伸到MyHome或私人上下文，个人Job/Key/模型用量仍隔离。仅加haruka前缀不能代替私有资源归属检查。
 
 角色策略、授权版本、授予边界和管理审计归 Haruka PostgreSQL；Redis 仅缓存与数据库版本完全对应的授权快照，并提供失效通知。每个受保护请求读取数据库当前版本，不能依赖 Pub/Sub 必达或旧 JWT 权限；日志/队列中断不改变数据库授权真相。
 
 任务去重以 PostgreSQL 已提交结果为准，Redis 只作为辅助。不能因为共享 Redis 存在，就忽略数据库任务状态或恢复流程。
 
-Pydantic AI Agent 在 API/Worker 内调用；Job 重试从应用提交的业务阶段边界处理，不等于 SDK 任意步骤自动恢复。工具写入须有稳定业务幂等键，SDK 与 Worker 重试共同受总预算限制。
+Pydantic AI Agent 在 API/Worker 内调用；Job 重试从应用提交的业务阶段边界处理，不等于 SDK 任意步骤自动恢复。工具写入须有稳定业务幂等键，SDK 与 Worker 重试共同受总上限限制。
 
 ### 全部日志与前端埋点
 

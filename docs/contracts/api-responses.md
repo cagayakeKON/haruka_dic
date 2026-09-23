@@ -152,13 +152,13 @@ class ErrorResponse(ApiModel):
 | 422 | CAPABILITY_UNSUPPORTED：所选模型/声音/格式组合不受支持，不自动更换供应商 |
 | 429 | RATE_LIMITED、QUOTA_EXCEEDED；有可靠重试时间才给 Retry-After，无明确恢复条件不得标可立即重试 |
 | 500 | INTERNAL_ERROR：未预期代码/响应校验/内部数据错误；安全兜底，不暴露异常文本 |
-| 502/503/504 | DEPENDENCY_ERROR / SERVICE_UNAVAILABLE / DEPENDENCY_TIMEOUT；已知外部结果不确定时优先 EXTERNAL_RESULT_UNKNOWN（504），不能把未知收费当未调用 |
+| 502/503/504 | DEPENDENCY_ERROR / SERVICE_UNAVAILABLE / DEPENDENCY_TIMEOUT；外部执行结果不确定时优先 EXTERNAL_RESULT_UNKNOWN（504），不能把结果unknown的供应商attempt当作未调用 |
 
 错误码在 `app/contracts/errors.py` 注册为稳定字符串枚举，并记录 HTTP 状态、兜底文案、允许参数、details 类型和重试分类；领域层可引用这个不依赖框架的目录。导出到 contracts/errors.json，Flutter 消费其枚举与参数契约。未知客户端错误码按失败处理；不能按 message 文本分支或把未知值映射为成功。
 
 表中为基础分类；各模块已有或后续定义的专用代码也必须进入同一注册表，按模块合同明确状态和恢复方式，不因未列在本表就改名或删除。原生刷新使用专门的 refresh_request_id/代次回执，它与每次 HTTP 的 request_id 不同。
 
-retryable 表示在当前动作协议下允许自动重试，不是“HTTP 5xx 都重试”。默认 false；只有明确暂态原因、重试预算、可重放读取或相同幂等键安全写入全部成立才为 true。EXTERNAL_RESULT_UNKNOWN、内部错误、输入/权限/状态错误均为 false，先查询提交/任务状态；权限重查和幂等语义仍以 API 总则为准。
+retryable 表示在当前动作协议下允许自动重试，不是“HTTP 5xx 都重试”。默认 false；只有明确暂态原因、重试上限、可重放读取或相同幂等键安全写入全部成立才为 true。EXTERNAL_RESULT_UNKNOWN、内部错误、输入/权限/状态错误均为 false，先查询提交/任务状态；权限重查和幂等语义仍以 API 总则为准。
 
 分页继续采用 opaque cursor + limit：默认 20，最大 100；排序有稳定唯一尾键，cursor 绑定筛选/排序/账号/受众和版本，允许的过滤/排序字段显式声明。失效游标由服务分类，不返回他人的游标内容；普通列表不强制全库精确 total。
 
@@ -213,7 +213,7 @@ locale 解析结果保存在请求上下文，显式传入消息渲染器，不�
 
 异步任务创建时持久化所需的内容语言/模板语言及版本快照；Worker 不依赖原请求 Header 或全局 locale。改偏好只影响新任务；重新生成属于显式新操作。内容语言、模型/声音等语义维度进入既有按用户分区的缓存键，不能用 UI locale 替代这些维度。
 
-错误目录单向导出 code、参数 schema、默认模板标识；Flutter ARB 是前端译文的唯一来源。构建时检查已支持 locale 的模板存在、占位符名/类型与注册表一致；缺译文走确定的 fallback 并留下无敏感内容的诊断，不动态调用付费模型翻译异常。新增 UI 语言必须作为单独范围变更验证。
+错误目录单向导出 code、参数 schema、默认模板标识；Flutter ARB 是前端译文的唯一来源。构建时检查已支持 locale 的模板存在、占位符名/类型与注册表一致；缺译文走确定的 fallback 并留下无敏感内容的诊断，不动态调用模型翻译异常。新增 UI 语言必须作为单独范围变更验证。
 
 ## 7. 验收
 

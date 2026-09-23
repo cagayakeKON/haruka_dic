@@ -229,3 +229,13 @@ architecture_review第1轮发现3项P2：ACCSET-01并发改密可复用旧密码
 architecture_review第1轮发现MSTRR-01～03三项P2及MSTRR-04一项P3：有限播放策略缺少持久计次，独立/人工脚本不能沿用ContentBlock偏移，上传完成错误隐含付费分析Job，且流水线在必要TTS验证前冻结试卷。集中修订后，第2轮定点确认MSTRR-02/03/04关闭，并指出MSTRR-01仍缺consumed attempt终态，完整播放后可能借刷新/接管复用旧attempt。作者在同一问题下补`active/completed/closed_unknown/void`、有界续播期限、持久交付游标和保守未知交付规则：只有active可在期限内续播，终态不退款也不重开，显式重播必须新领次数。按AGENTS小阶段最多两轮review，不机械开启第3轮；最终定点扫描确认权威结构、API、权限、事务、测试和日志均使用该终态规则，未把达到轮数上限当作豁免。
 
 必要检查覆盖76份Markdown的1358个本地链接/页内锚点、37组代码围栏、路径大小写、冲突标记及可识别私钥材料，零问题；MSTR-01～10、PRES-01～10、OPEN-12和DEC-22定义均唯一，旧StructureNode/canonical_text_range、上传即付费分析、TTS前冻结和旧听力事件名扫描无有效残留，仓库仅保留根AGENTS.md，git diff --check通过。未运行Flutter/Python应用测试、真实模型/TTS、数据库/对象存储或三端播放；这些契约和验收均未实现。本小阶段独立本地commit的实际哈希以Git日志为证据，不默认push。
+
+## 20. 后续USAGE1：移除商业化范围并建立模型用量统计
+
+2026-09-23，基线ccd76c0。用户确认当前不做Haruka应用内商业化，只保留按模型统计input、output、cache等调用用量。本次是阶段1运行基础的独立文档小阶段，新增[模型用量统计契约](../../contracts/model-usage.md)，同步产品范围、Agent/任务/数据库、用户设置、管理后台、API/权限、日志、配置、测试、路线图、覆盖、决策、AGENTS及相关功能表述。Haruka不维护套餐、应用余额、订单、价格、金额或结算；用户继续使用本人供应商Key。请求次数、Token、并发、超时、存储和重试只作为运行保护上限，不构成商业方案。
+
+每次真实供应商请求先建立非空且唯一的ExternalCallAttempt，并可幂等补全一条ModelCallUsage；重试保持独立attempt。统计保存input/output/total、cache read/cache write及供应商可得的推理、音频、图片、字符等指标，未知为null。应用结果缓存命中不创建模型用量，供应商Prompt缓存仍是一次真实调用。本人设置按credential.read查看本人投影，管理端dashboard只看受限聚合；数据库attempt是权威，日志只承担观测。此前审查记录中的“付费/费用/预算”等历史措辞仅记录当时方案演进，不再定义现行产品或工程契约。
+
+architecture_review完成第1轮独立只读审查，发现MUR-01（P2）：用量行允许无attempt会遗漏Key测试/TTS等真实调用；MUR-02（P2）：普通SUM会隐藏同组未知attempt；MUR-03（P3）：批量改词后仍有三处语义或机械替换问题。集中修订为每个真实调用必须先建非空唯一attempt，聚合从attempt LEFT JOIN用量并返回每个指标的已知和未知attempt数、完整性及迟到版本重算；同时修复运行限制、消费用例和断流恢复表述。定点复核确认MUR-01～03全部关闭，审查范围内无剩余缺陷，不增加第2轮全面审查。
+
+必要检查使用仓库docs检查器覆盖Markdown本地链接、锚点、围栏、冲突标记和可识别私钥材料，结果为零问题；商业化词扫描只保留明确的范围排除、外部供应商/工具事实及本文件历史记录，替换异常扫描无结果，仓库仍仅保留根AGENTS.md，git diff --check通过。本次不运行Flutter/Python应用测试、真实模型、数据库或三端统计页面；ModelCallUsage、查询和看板仍待阶段1及对应模型阶段实现。随本阶段创建独立本地commit，实际哈希以Git日志为证据，不默认push。

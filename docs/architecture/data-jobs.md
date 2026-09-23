@@ -32,15 +32,16 @@
 | ExerciseSelectionSnapshot/AiExercisePlan | 本人规范化单词本/收藏/教材/错题/诊断及时间/掌握/错误条件、as_of/时区、候选/版本/抽样/expiry；不可变生成计划 | [AI习题](../modules/ai-exercises.md)中预览计数/明细同一快照，确认短事务重验后与Job/Outbox提交；无复习计划/机会/日额度 |
 | ExamPaper/Version/Section/Stimulus/Item/GradingBasis | 题面/题序/共享材料/交付方式/分值与依据版本 | ready版本不可变；题面DTO不含答案/rubric/隐藏听力稿 |
 | ExamListeningScriptSource/Version/Candidate/Binding/PreparationIssue | 文字稿或试卷文本来源、脚本段、听力题标记、脚本—题目候选/generation、人工确认revision与待办 | AI必须标记疑似听力题并给证据，但候选不能直接发布；同owner/material/version，迟到run不覆盖人工结果；P0无原始音频输入 |
-| ExamListeningSynthesisSpec/AudioBinding/PlaybackPolicy | 已确认script/binding、本人TTS配置摘要、私有AudioAsset/Manifest、播放/稿件可见规则 | 生成另验speech.generate/Key/预算；ready绑定精确音频，场次冻结；不能用global_word、任意FileObject或系统TTS |
+| ExamListeningSynthesisSpec/AudioBinding/PlaybackPolicy | 已确认script/binding、本人TTS配置摘要、私有AudioAsset/Manifest、播放/稿件可见规则 | 生成另验speech.generate/Key/上限；ready绑定精确音频，场次冻结；不能用global_word、任意FileObject或系统TTS |
 | ExamSession/Response/ListeningUsage/PlayAttempt/GradeRun | 固定版本、deadline、edit_epoch、response_revision、每场次×Stimulus的播放上限/占用/消耗、播放幂等键、reservation/resume期限、交付游标及首字节/终段事实、grade_generation | 保存/交卷和有限次数播放领取在场次/usage锁内；单题答案唯一；终态attempt不重开，刷新/跨端不重置次数，提交后不可修改 |
 | LearnerContribution/Profile | source_kind + session/attempt + item 的唯一贡献键、effective_grade_id | 重评替换贡献不追加重复错误；needs_review 不进入正式统计 |
 | AgentThread/Message/AiRun/Card | owner、SDK/协议/模型/Prompt版本、run状态、结果引用 | 单线程轮次占用/版本校验；消息与可收藏卡片的提交状态分离 |
 | Explanation/SourceResultBinding/MaterialLearningIndex/LearningLookupState/GenerationSlot | 完整结果、源/语境/用途、查阅键/严格生成键；LookupState维护跨配置的选用run/effective/代次 | 成功后同事务建历史绑定，通过共同查阅代次才更新当前索引；不同语境不误用，严格键slot只合并调用；已有结果不依赖Redis或本机存续 |
 | AudioAsset/Segment/Manifest | owner、内容/声音/模型/参数摘要、格式、对象与句子引用 | 用户内去重；实际格式与Content-Type匹配；未完成产物不播放 |
-| GlobalWordAudio/GlobalWordGenerationSlot | system_catalog标准词条/读音/profile、全局合成键、对象版本及内部生成租约/代次 | 仅[标准收藏词音](learning-cache.md#51-收藏库标准单词发音的全局缓存)跨用户去重；发布/消费走专用目录服务，个人引用/Job/凭据/费用仍隔离，不给私有AudioAsset增加owner空值旁路 |
+| GlobalWordAudio/GlobalWordGenerationSlot | system_catalog标准词条/读音/profile、全局合成键、对象版本及内部生成租约/代次 | 仅[标准收藏词音](learning-cache.md#51-收藏库标准单词发音的全局缓存)跨用户去重；发布/消费走专用目录服务，个人引用/Job/凭据/模型用量仍隔离，不给私有AudioAsset增加owner空值旁路 |
 | ProviderCredential | owner、provider、密文、credential_version、encryption_key_version、row revision | 用户换Key/撤销更新credential_version，主密钥重加密只更新encryption_key_version，二者不混用；DTO只返回掩码，模型能力选择由上方Settings引用 |
-| Job/JobStage/ExternalCall | actor/owner/audience、权限引用、输入版本、阶段、租约、预算 | 状态CAS、阶段幂等、调用结果不确定单独记录 |
+| Job/JobStage/ExternalCall | actor/owner/audience、权限引用、输入版本、阶段、租约、调用上限 | 状态CAS、阶段幂等、调用结果不确定单独记录 |
+| ModelCallUsage | ExternalCall attempt、provider/model/capability、调用与用量状态、Token/缓存及供应商可得的音频/图像/字符指标 | 每个attempt幂等写入；未知为null而非0；数据库记录为权威，完整口径见[模型用量统计](../contracts/model-usage.md) |
 | Outbox/Inbox/IdempotencyRecord | event_id、schema、资源引用、请求摘要、游标/结果引用 | 已提交事实可重投；重复消费不重复业务；不放秘密/正文 |
 | AdminAuditEvent | actor、target、动作、版本/安全差异、结果 | 与成功变更同事务；应用不可更新/删除；留存独立于Loki |
 
@@ -69,8 +70,8 @@
 | 撤销/改密/禁用 | 改密锁内复核password_version/security_epoch/当前会话；哈希替换、版本/epoch、持久会话撤销或状态/权限版本、审计、Outbox | 密码验证与新哈希计算、Redis删除、客户端通知；提交确认丢失不自动重放 |
 | 角色/菜单/策略管理 | 范围检查、预期revision、修改、版本、审计、Outbox | 快照预热/通知/Loki投递 |
 | 上传完成/导入 | UploadIntent状态、FileObject验证引用、Material/Job/Outbox | 文件内容解析、AI、对象读取 |
-| 听力稿上传完成 | exam专用UploadIntent/FileObject、当前试卷草稿版本/权限、规范化受理状态与Outbox | 在短事务外按字符/格式限制确定性解码；通过后发布ScriptSource/Version，可创建不收费的规范化Job；不创建AI分析Job，P0拒绝audio purpose |
-| 听力候选分析受理 | exam/material当前权限、本人Key/预算、冻结的试卷/脚本输入版本、幂等记录、AiRun/Job/Outbox | Worker显式执行AI听力标记/脚本—题目匹配；上传完成不能代替本次付费意图 |
+| 听力稿上传完成 | exam专用UploadIntent/FileObject、当前试卷草稿版本/权限、规范化受理状态与Outbox | 在短事务外按字符/格式限制确定性解码；通过后发布ScriptSource/Version，可创建不发起供应商调用的规范化Job；不创建AI分析Job，P0拒绝audio purpose |
+| 听力候选分析受理 | exam/material当前权限、本人Key/上限、冻结的试卷/脚本输入版本、幂等记录、AiRun/Job/Outbox | Worker显式执行AI听力标记/脚本—题目匹配；上传完成不能代替本次模型调用意图 |
 | 听力候选确认 | 当前candidate generation、ExamVersion草稿、ScriptVersion、Stimulus/Item归属、expected_revision、人工Binding/Issue状态、Outbox | TTS生成；确认不能和外部调用放在同一事务 |
 | 听力音频发布 | generation/spec、当前人工Binding/Policy、验证后的私有AudioAsset/Manifest、AudioBinding状态、Outbox | 客户端预载/通知；模型调用、转码/解码在短事务外完成 |
 | 听力播放领取/计次 | 当前场次/编辑端/截止/权限、冻结policy和资产、每场次×Stimulus usage锁、幂等PlayAttempt；新领取先reserved并设短租期，媒体端首字节前CAS为active、计入consumed并写resume期限 | Manifest/签名签发和媒体传输；持久更新交付游标，终段交付为completed，期限/回执不确定为closed_unknown；从未领取的过期reservation或可证明零字节的故障才void释放。只有active在期限内可按策略续播，终态/显式重播必须新领次数；接管失效旧edit_epoch |
@@ -81,7 +82,7 @@
 | 删除材料 | tombstone/generation、拒绝新引用、取消意图/Outbox | MinIO延迟回收、缓存清理 |
 | Worker阶段完成 | 有效租约/代次、状态/版本/权限、阶段产物与下阶段Outbox | 下一次外部调用 |
 
-服务层开启/提交事务，仓储不私自 commit。外部 HTTP、哈希计算、文件解压/渲染和模型等待不持有数据库长事务。并发管理修改锁顺序固定为策略 revision → 用户/会话 → 角色/绑定 → 业务聚合；锁冲突/死锁只重试已经证明安全的短事务，禁止把付费调用包在事务重试里。
+服务层开启/提交事务，仓储不私自 commit。外部 HTTP、哈希计算、文件解压/渲染和模型等待不持有数据库长事务。并发管理修改锁顺序固定为策略 revision → 用户/会话 → 角色/绑定 → 业务聚合；锁冲突/死锁只重试已经证明安全的短事务，禁止把供应商调用包在事务重试里。
 
 新增、合并、重绑逻辑引用时，服务须在提交事务内验证全部父/目标，不能只在预览或路由阶段查一次。引用写入、父对象 tombstone 和物理回收遵守数据库规范的同一父行锁/代次协议及稳定锁顺序，避免检查后删除；Worker 最终写入也不能绕过。这里仅定义适用范围，不另行维护一套无外键并发算法。
 
@@ -107,19 +108,19 @@ Redis 全失、数据库不可用或无法确认当前策略均失败关闭；�
 
 重大异步操作先返回 202 + job_id。Job 基础状态：queued → running → succeeded；可进入 retry_wait、blocked、failed、cancel_requested、cancelled。业务层的“待Key/待复核/部分批改”保留在对应资源中，不能仅用一个Job状态表达成绩。
 
-Job 保存不可变输入版本/摘要、actor/owner/audience、所需权限、预算上限、用户付费意图、取消状态；credential_id仅是引用，开始每个新付费步骤时检查当前凭据所有者、状态/版本和授权。账户正常退出不撤销已提交任务授权；角色/账号变更会阻断后续步骤。
+Job 保存不可变输入版本/摘要、actor/owner/audience、所需权限、调用上限、用户模型调用意图、取消状态；credential_id仅是引用，开始每个新供应商调用步骤时检查当前凭据所有者、状态/版本和授权。账户正常退出不撤销已提交任务授权；角色/账号变更会阻断后续步骤。
 
 Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布成功但标记前崩溃可重复发布。消费者使用 event_id/JobStage唯一键、当前状态CAS和租约代次 fence 防重复：过期Worker即使恢复，也不能提交覆盖新Worker结果。Kafka消息确认在DB事务提交后；Inbox去重与业务结果同事务。
 
-推荐每类配置 concurrency、max_attempts、timeout、backoff、lease/heartbeat、预算；429遵循供应商Retry-After。新付费调用次数含SDK/HTTP/Worker所有重试，共享同一计数；重试不能增加用户未授权的总预算。Kafka不可用则Outbox积压、Job维持queued并可见，不丢已受理操作。
+推荐每类配置 concurrency、max_attempts、timeout、backoff、lease/heartbeat、上限；429遵循供应商Retry-After。新供应商调用次数含SDK/HTTP/Worker所有重试，共享同一计数；重试不能增加用户未授权的总上限。Kafka不可用则Outbox积压、Job维持queued并可见，不丢已受理操作。
 
 ### 外部副作用不确定
 
-在调用供应商前写 ExternalCall(attempt_id、input_digest、provider/model/version、预算预留、started)；请求结束后记录 succeeded/failed/unknown 与产物引用。超时、断线或进程在收费后崩溃会形成 unknown，不能当作“没执行过”无限重试。供应商确有可验证幂等接口时才传兼容幂等键；否则默认停止自动付费重试并提示用户可能重复计费，用户显式重试生成新attempt和受控预算。
+在调用供应商前写 ExternalCall(attempt_id、input_digest、provider/model/version、调用名额、started)；请求结束后记录 succeeded/failed/unknown、产物引用及该attempt的模型用量。超时、断线或进程在供应商执行后崩溃会形成 unknown，不能当作“没执行过”无限重试。供应商确有可验证幂等接口时才传兼容幂等键；否则默认停止自动重试模型调用并提示用户再次尝试会产生新的供应商调用，显式重试生成新attempt并受同一调用上限约束。
 
-结果已返回但发生撤权/删除/取消时，固定系统职责可最小保存封存产物/用量用于对账与清理，不使其成为可见业务结果、不继续付费步骤。Key已撤销时不使用旧解密缓存发起调用。取消无法保证撤回在途收费；收到确认的取消结果后不再开始新步骤。
+结果已返回但发生撤权/删除/取消时，固定系统职责可最小保存封存产物/用量用于诊断与清理，不使其成为可见业务结果、不继续供应商调用步骤。Key已撤销时不使用旧解密缓存发起调用。取消无法撤回已经发出的供应商请求；收到确认的取消结果后不再开始新步骤。
 
-非付费的解析/数据库短事务可在类型化错误白名单内有界重试；确定不可恢复错误进failed/DLQ。恢复只能从持久完成的阶段继续，不重置整个Job后无条件重跑。管理端重试仅重投允许的非付费阶段；涉及新付费attempt由所有者显式确认。
+不发起供应商调用的解析/数据库短事务可在类型化错误白名单内有界重试；确定不可恢复错误进failed/DLQ。恢复只能从持久完成的阶段继续，不重置整个Job后无条件重跑。管理端重试仅重投明确不会触发外部模型调用的阶段；涉及新模型调用attempt由所有者显式确认。
 
 ## 6. 评分代次与学习贡献
 
@@ -145,16 +146,16 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 
 原文件/历史revision不被永久无条件保留：只有仍被活跃场次/成绩/收藏必要回跳策略或在途安全处理引用的对象才retain；没有引用的对象进入延迟GC候选。首版推荐7天宽限，物理回收前按同一父行锁/代次协议再次检查tombstone、实际逻辑引用、generation和任务租约，不能把过期引用计数当删除依据，也不依赖数据库级联删除。GC权限只针对明确对象键与Haruka Bucket。MinIO删除失败重试，不在一个SQL事务中假装对象和数据库原子删除。
 
-单词/句子解释和TTS的已提交版本、书内索引与来源绑定也是权威业务引用，完整规则见 [学习结果缓存](learning-cache.md)。有效业务引用期间不按短TTL/LRU淘汰付费结果；原书删除后仅书属引用可解除，独立收藏/历史业务必要引用仍按各自授权保留，旧版/在途发布也纳入共同父行锁检查。仅清理本机或Redis不触发服务端GC，临时未发布/失效孤立对象与成功结果分开处理。
+单词/句子解释和TTS的已提交版本、书内索引与来源绑定也是权威业务引用，完整规则见 [学习结果缓存](learning-cache.md)。有效业务引用期间不按短TTL/LRU淘汰模型结果；原书删除后仅书属引用可解除，独立收藏/历史业务必要引用仍按各自授权保留，旧版/在途发布也纳入共同父行锁检查。仅清理本机或Redis不触发服务端GC，临时未发布/失效孤立对象与成功结果分开处理。
 
-未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他有效资源引用的对象。私有内容不跨用户去重；已ready的global_word有独立公共目录引用，删除贡献者/任一收藏不移除此引用，GC须在目录父锁内复核版本、个人选用引用和在途占用。共享容量只计一份，生产者私人Job/费用记录按自己的生命周期处理。数据库迁移和运维恢复步骤见 [部署与恢复](../operations/deployment-recovery.md)，保留参数见 [运行配置](../operations/configuration.md)，不属于用户单词CSV功能。
+未完成上传/临时OCR图/废弃生成音频有单独TTL，不能清理仍被其他有效资源引用的对象。私有内容不跨用户去重；已ready的global_word有独立公共目录引用，删除贡献者/任一收藏不移除此引用，GC须在目录父锁内复核版本、个人选用引用和在途占用。共享容量只计一份，生产者私人Job/用量记录按自己的生命周期处理。数据库迁移和运维恢复步骤见 [部署与恢复](../operations/deployment-recovery.md)，保留参数见 [运行配置](../operations/configuration.md)，不属于用户单词CSV功能。
 
 ## 8. 验收
 
 - DAT-01：实际业务服务在真实 PostgreSQL 集成测试中，通过 ScopeContext 与事务校验拒绝跨 owner/library、错误父版本/状态及混合批量引用；不存在/他人私有 ID 统一不可访问。数据库 PK/UNIQUE/NOT NULL/行内 CHECK 分别证明主键、唯一/重复和行内条件，不声称由 FK/RLS 自动拒绝跨库引用；重复初始化/提交由相应唯一约束与服务幂等共同保证。
 - DAT-02：Redis撤销删除失败、全量丢失与PG不可用时身份失败关闭；已提交学习数据不丢。
 - DAT-03：Outbox重复、消费者提交前后崩溃、租约过期Worker迟到，业务仅提交一次且不会覆盖新代次。
-- DAT-04：供应商收费后断线标unknown，测试无自动无限重试；取消/撤权/删Key停止后续调用。
+- DAT-04：供应商执行后断线标unknown，测试无自动无限重试；取消/撤权/删Key停止后续调用；已知和未知用量按attempt记录且不重复聚合。
 - DAT-05：交卷/截止/保存并发、评分A取消后B生效再A迟到，不改写B或重复学习贡献。
 - DAT-06：通过真实 PG 并发验证“新增/重绑引用—父 tombstone—物理回收”和解析/音频迟到提交的竞争，共用父行锁/代次协议，不产生新悬空引用或复活材料；历史考试可复盘，GC不删仍有保留引用对象，归属不可转移。
 - DAT-07：授权、版本、审计、Outbox故障注入验证事务提交边界，日志平台故障不改变已提交权限。

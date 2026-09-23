@@ -30,7 +30,7 @@
 
 首次完成受理前，用户可取消意图并重新选择类型；已有意图的类型不原地修改。材料建立后类型固定，`PATCH materials/{id}` 不接受 `material_type`。标题/标签可按现有 revision 规则修改。
 
-“选错类型，重新处理”是显式创建另一份材料的操作：通过 `POST material-imports` 指定本人已有的源材料及目标类型，服务端复用已验证的不可变原文件，重新执行目标流程。它与上传新文件的输入互斥；不接受客户端提供任意对象 key/URL。需重新检查源 `client.material.read`、原文件可用、目标 `client.material.import`、配额与明确请求的阶段；目标为试卷另需 `client.exam.import`，AI 阶段另需 `client.material.analyze`、本人 Key 和预算。采用同一幂等/Job/Outbox机制，创建文件引用也遵守父行锁/删除代次协议。
+“选错类型，重新处理”是显式创建另一份材料的操作：通过 `POST material-imports` 指定本人已有的源材料及目标类型，服务端复用已验证的不可变原文件，重新执行目标流程。它与上传新文件的输入互斥；不接受客户端提供任意对象 key/URL。需重新检查源 `client.material.read`、原文件可用、目标 `client.material.import`、配额与明确请求的阶段；目标为试卷另需 `client.exam.import`，AI 阶段另需 `client.material.analyze`、本人 Key 和上限。采用同一幂等/Job/Outbox机制，创建文件引用也遵守父行锁/删除代次协议。
 
 使用完整原件另按源类型校验：小说/课本源适用 material.read；试卷源必须同时具有 `client.exam.read` 与 `client.exam.edit`，在本人试卷校对范围内才允许使用可能含答案的完整原件。仅有题面/场次/成绩读取权限不足；exam权限被撤销时，即使仍有material.read/import也拒绝复用。受理、Job阶段及提交重新检查这些源动作与目标动作，幂等命中也不能绕过；相同规则适用于完整原件读取/签名，通用文件接口不提供旁路。
 

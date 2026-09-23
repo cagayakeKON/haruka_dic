@@ -64,7 +64,7 @@ ASGI/原生依赖/基础设施的 stderr 和非 JSON 输出也必须有采集路
 | 权限与管理审计 | 登录/越权拒绝、账号/角色/菜单/策略变化、会话撤销、首管理员初始化 | 安全事件 → structlog；成功管理变更另以数据库审计/Outbox 保证持久记录 |
 | 前端性能/崩溃 | 首屏、章节加载、首文本/首音频、卡顿摘要、异常堆栈、可恢复的原生退出诊断 | 平台适配器 → 同一队列 |
 | Python 全部进程 | 请求访问/错误、业务服务、权限拒绝、生命周期、第三方库、Outbox/Worker、取消/重试/DLQ、迁移与初始化 | logging/structlog → stdout |
-| AI 全部路径 | Agent run、每次模型请求、工具、校验失败、重试、预算、中断、TTS 合成与缓存 | AI 遥测适配器 → structlog |
+| AI 全部路径 | Agent run、每次模型请求、工具、校验失败、重试、上限、中断、TTS 合成与缓存 | AI 遥测适配器 → structlog |
 | 数据库访问 | 查询成功/失败、耗时、模板/指纹、连接获取失败、池等待、事务失败/回滚 | SQLAlchemy/服务适配器 → structlog |
 | PostgreSQL 引擎 | 启停、连接/认证故障、死锁/锁等待、检查点、数据库错误和启用的慢查询诊断 | PostgreSQL 输出 → Alloy 专用解析 |
 | 网关与基础设施 | Web 静态服务与代理的访问/错误，Redis、Kafka、MinIO、各初始化容器运行日志 | Docker → Alloy |
@@ -122,7 +122,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 | 单词本 | notebook.created/updated/deleted、notebook.members.changed | 本/操作类型、计数、受控引用、提交结果；无本名/简介/词内容，删本不计作删词 |
 | 词汇学习 | vocabulary.evidence.accepted/replaced/invalidated、vocabulary.learning.updated/rebuild_failed | 证据/投影受控引用、策略版本、结果类别/耗时/数量；不记答案或逐人掌握明细；埋点不作为学习成绩，重评重放不计新作答 |
 | TTS/播放 | speech.requested、speech.generated、speech.cache.hit、playback.started、playback.failed | 模型/声音、缓存结果、首音频耗时、时长、平台错误；试卷仅记录受控exam/script/audio binding引用与播放策略类别，不含稿文、媒体URL或答案 |
-| 学习结果复用 | learning.cache.resolved、learning.result.persisted、learning.result.persistence_failed、learning.generation.joined | 缓存层/结果种类、private/global_word、命中/缺失原因、配置是否不同、条目数/耗时及受控引用；不记录词句/上下文/完整文本hash，命中和等待不重复累计模型调用；全局词音费用只归生产者，等待者事件绑定本人，不下发他人Job/身份 |
+| 学习结果复用 | learning.cache.resolved、learning.result.persisted、learning.result.persistence_failed、learning.generation.joined | 缓存层/结果种类、private/global_word、命中/缺失原因、配置是否不同、条目数/耗时及受控引用；不记录词句/上下文/完整文本hash，命中和等待不重复累计模型调用；全局词音模型用量只归生产者，等待者事件绑定本人，不下发他人Job/身份 |
 | 练习 | practice.started、answer.submitted、answer.scored、practice.completed | 题型、来源、题数、规则/AI 评分方式；答案与学习事实留在业务库 |
 | AI习题/错题 | ai_exercise.selection_previewed、ai_exercise.generation_requested/generated/failed、mistake.recorded/status_changed/favorite_changed | 来源/时间/掌握/错误条件类型枚举、候选/排除/实际题数、错题状态与收藏动作、冲突类别、耗时、受控快照/Job/occurrence引用；不记录本名、日期区间原值、词表、题目、答案或逐人掌握明细；预览不计模型调用/习题完成，前端事件不作为错题事实 |
 | 试卷准备/听力 | exam.import.reviewed、exam.listening.script_uploaded、exam.listening.analysis.requested/completed/failed、exam.listening.review.committed、exam.listening.audio.generated/failed | 试卷/脚本版本、候选/确认/拒绝/冲突/缺稿/缺音频数量、来源类别、Job/AI/TTS引用、状态与耗时；不含题干、听力稿、说话人正文、答案、Prompt、音频URL或本地路径，AI候选不计作人工确认 |
@@ -132,7 +132,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 前端记录用户意图与实际体验，后端记录已提交的业务结果。借助 origin、operation_id 和 event_id 区分，不能把点击成功、API 接收成功和数据库提交成功算成同一个转化。导出接口完成传输与客户端实际保存完成也分别记录。
 
-业务库继续承担已提交学习数据和业务统计的权威来源。埋点用于使用路径、成功率和性能分析；客户端事件可重试、缺失或被伪造，不能直接用作权限、账单或评分依据。PRD 的学习活跃与导入后转化指标需结合服务端记录计算。
+业务库继续承担已提交学习数据和业务统计的权威来源。埋点用于使用路径、成功率和性能分析；客户端事件可重试、缺失或被伪造，不能直接用作权限、模型用量记录或评分依据。PRD 的学习活跃与导入后转化指标需结合服务端记录计算。
 
 试卷过程按 [试卷模式](../modules/exams.md) 关联 exam_session_id、exam_paper_version_id、受控script/audio binding、grading_run_id 和 Job/AiRun；这些 ID 不作索引标签。文字稿上传、AI候选、人工确认、TTS生成和场次播放分别计数，不能把候选产生或客户端点击当作已确认/已播放/已ready。保存/交卷以服务端确认事件为准，超时自动交卷也必须记录；原卷题干、听力稿/片段、说话人正文、作答、参考答案、rubric、媒体URL与个人成绩明细不进入日志。批改失败/待复核及听力媒体故障单独统计，不记为答错或零分。
 
@@ -172,9 +172,9 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 ### Pydantic AI 与 TTS
 
-- AgentService记录run开始、完成、失败、取消、预算耗尽；模型适配层记录每次真实请求及attempt；工具适配层记录工具开始/结果/校验失败。普通解释、视觉OCR/识词、AI习题生成、评分、诊断和后台批处理均必须经过这些入口。AI习题另记录选择/生成/校验数量，错题记录/状态/收藏只记录计数与受控ID，禁止题面、答案、错误笔记或Prompt正文。视觉识别允许阶段/页与区域计数/结果复用状态，不记录页图、base64或转写正文；模型自报置信度不作为成功或内容完整性的权威依据。
+- AgentService记录run开始、完成、失败、取消、调用上限耗尽；模型适配层记录每次真实请求及attempt；工具适配层记录工具开始/结果/校验失败。普通解释、视觉OCR/识词、AI习题生成、评分、诊断和后台批处理均必须经过这些入口。AI习题另记录选择/生成/校验数量，错题记录/状态/收藏只记录计数与受控ID，禁止题面、答案、错误笔记或Prompt正文。视觉识别允许阶段/页与区域计数/结果复用状态，不记录页图、base64或转写正文；模型自报置信度不作为成功或内容完整性的权威依据。
 - 记录 ai_run_id、model_call_id、tool_call_id、provider、请求/实际模型、提示模板版本、状态、耗时、首内容等待、重试和供应商返回的用量。供应商请求 ID 只有在确认不含秘密时才保存。
-- Token/字符/音频用量缺失时标记 unknown，不记作 0；费用如为估算需记录价格版本/币种，并明确非最终账单。看板按模型请求统计用量，run 的汇总字段不能再次相加；每次重试费用独立观察。
+- Token/字符/音频用量缺失时标记 unknown，不记作 0；input、output、cache read、cache write 及供应商可得的其他指标按attempt记录，口径见[模型用量统计](../contracts/model-usage.md)。看板从持久attempt聚合，不能把run汇总再次相加；每次重试作为独立attempt观察。
 - Pydantic AI 提供基于 OpenTelemetry 的 instrumentation，可以不用 Logfire 服务；采用时关闭内容捕获，例如 include_content=False，并用字段白名单适配日志。官方说明见 [Pydantic AI 观测接入](https://pydantic.dev/docs/ai/integrations/logfire/)。原始 Prompt、回复、工具入参/结果、音频和图片不写入日志，异常消息也要防止回显这些内容。
 - TTS 独立记录合成、缓存命中/未命中、合并请求、格式转换、文件保存、取消和失败；关联同一 operation_id/job_id。缓存命中不算模型调用。Flutter 记录真实首音频与播放错误，服务端生成耗时不能代替用户听到声音的等待时间。
 
@@ -194,7 +194,7 @@ Haruka API/Worker 使用独立数据库账号，并配置稳定 application_name
 
 Loki 中保留内部用户 ID 仅用于获授权的故障排查，不记录邮箱或显示名。project/user_id 标签筛选和 Grafana 文件夹不构成数据权限隔离；应用角色无隐含的数据源查询权。管理端 admin.diagnostics.read 只访问后端限定的 Haruka 查询模板、时间/条数范围与脱敏 DTO，不能提交任意 LogQL，也不能查看 MyHome 日志或个人正文。确需开放用户自己的诊断时，另建本人范围的窄接口。
 
-当前 MyHome 源码配置的留存是 7 天，Haruka 首次接入可沿用，但必须在发布说明明确窗口与容量。PRD 的导入后 7 日转化不能仅依赖恰好保留 7 天的原始日志，需要从业务记录计算并保存必要聚合；更长周期的日志分析要先调整留存和磁盘预算。学习数据与日志分别管理，日志不纳入用户单词 CSV。
+当前 MyHome 源码配置的留存是 7 天，Haruka 首次接入可沿用，但必须在发布说明明确窗口与容量。PRD 的导入后 7 日转化不能仅依赖恰好保留 7 天的原始日志，需要从业务记录计算并保存必要聚合；更长周期的日志分析要先调整留存和磁盘上限。学习数据与日志分别管理，日志不纳入用户单词 CSV。
 
 管理授权历史以 PostgreSQL 审计为准，留存/归档单独配置，不能随 Loki 的 7 天窗口一起消失；权限差异仅记录权限代码/ID 和安全状态，不保存密码、Key 或完整用户表单快照。
 
@@ -206,7 +206,7 @@ Haruka 的采集规则不沿用“超过 1 小时即丢弃”的固定 Docker �
 | 前端质量 | 崩溃与异常、页面/章节加载、网络/SSE、播放器故障、队列积压/丢弃 |
 | 使用与转化 | 注册登录、导入 → 阅读 → 解释/朗读/收藏 → 练习，前端意图与服务端结果区分 |
 | 登录与授权 | 两端登录成功/拒绝、权限拒绝、禁用/撤权、管理变更、审计投递积压；按 event_id 避免重试重复计数 |
-| AI/TTS | 模型与工具成功率、首内容/首音频、Token/音频用量、重试/预算、缓存效果 |
+| AI/TTS | 模型与工具成功率、首内容/首音频、Token/音频用量、重试/上限、缓存效果 |
 | 数据库与基础设施 | 查询耗时/失败、锁等待/死锁、连接故障、任务积压、网关与存储错误 |
 | 采集健康 | 各来源最近到达、接收拒绝/限流、Alloy/Loki 写入失败、回放缺口、端到端探针 |
 

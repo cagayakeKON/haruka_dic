@@ -28,7 +28,7 @@ B0 的配置拒绝、进程生命周期与契约处理是首批实际核心代�
 
 从干净检出开始，只使用已提交的非秘密配置模板、工具清单和锁文件，按蓝图的 doctor、bootstrap、codegen、check、dev 职责执行。已实现命令见 [开发指南](../../engineering/development.md)，两系统实际记录由B0验收索引定位。测试使用新虚拟环境和独立资源，不能借作者已有全局包、相邻 MyHome 目录或未记录的本地文件成功。
 
-doctor 必须能区分缺工具、版本不符、缺服务、端口冲突与配置缺项；输出可采取的修复步骤和失败状态，不打印连接串/秘密。bootstrap 可重复执行且不覆盖用户已有配置、不更新依赖锁、不默认启动付费调用或初始化公开管理员。分别记录 Windows PowerShell 与选定 CI shell 的真实结果，不能用其中一个替代另一个。
+doctor 必须能区分缺工具、版本不符、缺服务、端口冲突与配置缺项；输出可采取的修复步骤和失败状态，不打印连接串/秘密。bootstrap 可重复执行且不覆盖用户已有配置、不更新依赖锁、不默认启动供应商调用或初始化公开管理员。分别记录 Windows PowerShell 与选定 CI shell 的真实结果，不能用其中一个替代另一个。
 
 构建依赖不能仅凭运行 uv.lock 或顶层 Hatchling 版本认定已锁定。按蓝图中 backend/pyproject.toml 的 tool.uv.build-constraint-dependencies 单一约定，核对实际 PEP 517 直接/传递构建依赖的精确版本与摘要。B0 用支持该配置的锁定 uv 和干净构建缓存验证本包 wheel/sdist/editable，以及本阶段批准的第三方源码构建；缺约束、缺 hash 或实际闭包漂移必须失败并保存报告。尚未批准的源码构建不能临时下载未约束构建器后继续，本文不新增另一套构建锁来源。
 
@@ -99,18 +99,18 @@ B1 的正常/info 埋点、登录/拒绝/退出、收藏提交、API 与 ORM 结
 
 ### 唯一替换边界
 
-B2使用“从收藏生成AI习题”参考切片：在B1收藏中明确选择一项，经正式 `POST ai-exercise-selections` 预览后确认 `POST ai-exercise-generations`，生成一道受支持题型。权限、来源、Key状态、预算、Job/AiRun和业务结果均使用正式服务；schema与路径以[API契约](../../contracts/api.md)和[AI习题](../../modules/ai-exercises.md)为准，不创建仅供生产调试的fake-job/run-model HTTP路由，也不引入词汇复习/到期调度。
+B2使用“从收藏生成AI习题”参考切片：在B1收藏中明确选择一项，经正式 `POST ai-exercise-selections` 预览后确认 `POST ai-exercise-generations`，生成一道受支持题型。权限、来源、Key状态、上限、Job/AiRun和业务结果均使用正式服务；schema与路径以[API契约](../../contracts/api.md)和[AI习题](../../modules/ai-exercises.md)为准，不创建仅供生产调试的fake-job/run-model HTTP路由，也不引入词汇复习/到期调度。
 
 只在 dev/test 的受控组装配置中注入 Pydantic AI 测试模型或确定性供应商替身；用户请求体、Header、model ID、管理模型目录都不能自行切换 Fake。其他环境（包括 staging/production）必须拒绝 Fake 配置和测试 seed，验证 API 与独立 Worker 各入口均拒绝，不能只在 Flutter 隐藏按钮。缺少正式 Key 时也不能自动使用 Fake。
 
-合成用户的凭据记录使用无法访问外部服务的测试哨兵，仍走正常的凭据所有者/状态/代次与预算校验；同时保留“缺凭据”“凭据撤销”的失败用例。Fake 仅替换供应商边界，不把 AuthorizationService、PG、Redis、Kafka、Job/Outbox/Worker 或 SSE 替换成内存成功桩。运行记录和日志按注册字段标识 dev/test 模拟执行，模拟用量不能冒充真实供应商用量、费用或质量证据。
+合成用户的凭据记录使用无法访问外部服务的测试哨兵，仍走正常的凭据所有者/状态/代次与上限校验；同时保留“缺凭据”“凭据撤销”的失败用例。Fake 仅替换供应商边界，不把 AuthorizationService、PG、Redis、Kafka、Job/Outbox/Worker 或 SSE 替换成内存成功桩。运行记录和日志按注册字段标识 dev/test 模拟执行，模拟用量不能冒充真实供应商用量、模型用量或质量证据。
 
 Pydantic AI 的 TestModel/FunctionModel、Agent.override 与禁用真实模型请求的能力见 [官方测试说明](https://pydantic.dev/docs/ai/guides/testing/)。除此之外仍按测试规范限制独立 HTTP/供应商出站；使用 Fake 不代表所有联网适配器自动被拦截。只有声明的隔离基础设施可访问，未声明供应商请求直接使验收失败。
 
 ### 正常任务闭环
 
 1. API 验证当前用户、来源、明确出题意图和配置，事务创建业务生成请求、Job/AiRun、Outbox；持久受理后返回任务/运行引用。
-2. 正式 Outbox 进程发布到隔离 Kafka，正式 Worker 领取、核对当前权限/凭据/预算并调用 Fake；Fake 返回已版本化的有效题目样本。
+2. 正式 Outbox 进程发布到隔离 Kafka，正式 Worker 领取、核对当前权限/凭据/上限并调用 Fake；Fake 返回已版本化的有效题目样本。
 3. Pydantic 与业务校验检查结构、来源和归属，Worker 以当前租约/代次提交结果及状态；客户端按正式权限查询生成结果。
 4. 用户三端订阅正式 runs/{id}/events，看到受理/进度/完成或失败，完成结果从持久资源读取。界面断连后通过事件游标/运行快照恢复，不重新 POST 一次生成操作。
 5. 查询 PG 业务记录、Job/阶段、Outbox 和模拟调用次数，证明完成与去重；沿 operation/request/job/ai_run 关联到 API、Outbox、Worker、模型适配与前端日志。
@@ -128,7 +128,7 @@ SSE 进度可以使用应用事件，不要求 Fake 伪造逐 token 流。参考
 | SCF-B2-03 | 持久受理和重复投递不丢事实、不重复业务结果 | 真实进程/数据库；提交前后故障、Kafka 不可用再恢复、发送成功但 Outbox 未标记、消费者提交后未确认 |
 | SCF-B2-04 | 中断恢复从已提交阶段继续，旧 Worker 不能覆盖新结果 | 真实 Worker/租约；停进程、到期接管、旧租约迟到、同幂等键重复请求；不重置整个 Job 无界调用 |
 | SCF-B2-05 | 撤权、删 Key、来源失效或取消后不开始新的受限步骤 | 后端并发测试 + 三端状态展示；提交前重查，返回产物按封存规则处理，A/B 任务/SSE/结果不可互读 |
-| SCF-B2-06 | 无效输出/来源、预算耗尽与 unknown 有确定结果 | Fake schema 错误、伪造来源、限流、调用中断；不得把失败标成功，unknown 不自动再发付费 attempt |
+| SCF-B2-06 | 无效输出/来源、调用上限耗尽与 unknown 有确定结果 | Fake schema 错误、伪造来源、限流、调用中断；不得把失败标成功，unknown 不自动再发模型调用 attempt |
 | SCF-B2-07 | SSE 断连/回放窗口外可查最终状态且不重复生成 | 用户三端；代理与客户端实际断连、重连重新授权、窗口外快照恢复、账号切换关闭旧订阅 |
 | SCF-B2-08 | 模型/任务正常与失败日志完整、脱敏且模拟口径可辨 | API/Outbox/Worker/Fake/ORM/前端至查询平台；无 Prompt/题目/Key/工具正文，次数/用量无重复累计 |
 

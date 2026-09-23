@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | [账号：注册、登录、恢复与会话](../modules/accounts.md) | [认证](../architecture/authentication.md)、[API](../contracts/api.md)、[授权](../architecture/authorization.md) | ACC；最小注册、三端与管理Web、改密/恢复、会话撤销、首次引导与账号切换 |
 | [材料公共能力：上传、书库与出处操作](../modules/materials-reading.md) | [三类材料](../contracts/material-types.md)、[解析数据结构](../contracts/material-structures.md)、[出处](../contracts/content-locator.md)、[数据与任务](../architecture/data-jobs.md) | MAT/READ/TYPE/MSTR；不可变上传、公共来源层与专用领域结构、类型/格式独立、版本/位置/书签 |
-| [统一视觉模型OCR](../architecture/vision-recognition.md) | [运行层](../architecture/agent-runtime.md)、[来源定位](../contracts/content-locator.md)、对应材料/照片模块 | OCR-01～OCR-05，按获准格式/消费功能执行；本人Key/预算、页覆盖、识别稿/版本、失败恢复、定位粒度与日志 |
+| [统一视觉模型OCR](../architecture/vision-recognition.md) | [运行层](../architecture/agent-runtime.md)、[来源定位](../contracts/content-locator.md)、对应材料/照片模块 | OCR-01～OCR-05，按获准格式/消费功能执行；本人Key/上限、页覆盖、识别稿/版本、失败恢复、定位粒度与日志 |
 | [小说：预处理与连续阅读](../modules/novels.md) | [材料类型](../contracts/material-types.md)、[出处](../contracts/content-locator.md) | NOV；章序/段落/对话、分句分词、专用阅读和标注降级 |
 | [课本：单元结构与学习](../modules/textbooks.md) | [材料类型](../contracts/material-types.md)、[公共作答](../modules/vocabulary-practice.md) | TBK；内容角色/词表/题目关联、单元位置、逐题反馈与独立状态 |
 | [教材/试卷解析、听力与展示](../contracts/learning-presentation.md) | [解析数据结构](../contracts/material-structures.md)、[课本](../modules/textbooks.md)、[考试](../modules/exams.md)、[出处](../contracts/content-locator.md)、[Flutter](../engineering/flutter.md) | PRES-01～PRES-10、MSTR；八类内容/五类输入/题组、听力标记/脚本题目匹配/TTS绑定、原文投影、未知结构和媒体故障、三端状态；阶段2解析校对、3音频生成、4作答复盘分别验收 |
@@ -17,8 +17,9 @@
 | [多单词本与自动掌握](../modules/vocabulary-notebooks.md) | [学习证据/掌握](../architecture/vocabulary-learning.md)、[AI习题](../modules/ai-exercises.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-10、VL-01～VL-10；多对多归属、删本/删词、AI习题选源、自动掌握、辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |
 | [单词CSV入口](../modules/vocabulary-practice.md) | [CSV唯一协议](../contracts/vocabulary-csv.md) | 原CSV清单；全部逻辑记录导出、v2词本归属与v1兼容、快照不恢复学习证据、预览/分批/重复策略、公式转义、跨账号往返 |
 | [考试：导入、文字听力、校对、答题、交卷与成绩](../modules/exams.md) | [解析数据结构](../contracts/material-structures.md)、[API](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[出处](../contracts/content-locator.md) | 原考试清单、MSTR/PRES及DAT；AI听力标记/匹配、人工确认、TTS冻结、草稿/截止/锁卷、媒体故障、评分恢复与重评 |
-| [AI与朗读：解释、卡片、对话和TTS](../modules/ai-speech.md) | [Agent运行层](../architecture/agent-runtime.md)、[API事件](../contracts/api.md) | AI/TTS；类型校验、权限/预算、流恢复、音频缓存与播放 |
-| [词句解析与TTS的持久保存/缓存](../architecture/learning-cache.md) | [AI/朗读](../modules/ai-speech.md)、[收藏](../modules/vocabulary-practice.md)、[设置](../modules/settings.md)、[数据与任务](../architecture/data-jobs.md) | LC-01～LC-10；未收藏也保存、书内语境索引、跨端复用、全局标准词音与私人关联/费用、生成合并/版本、容量与GC、权限/离线 |
+| [AI与朗读：解释、卡片、对话和TTS](../modules/ai-speech.md) | [Agent运行层](../architecture/agent-runtime.md)、[API事件](../contracts/api.md) | AI/TTS；类型校验、权限/上限、流恢复、音频缓存与播放 |
+| [模型用量统计](../contracts/model-usage.md) | [数据与任务](../architecture/data-jobs.md)、[设置](../modules/settings.md)、[管理后台](../modules/admin.md)、[观测](../operations/observability.md) | USAGE-01～USAGE-09；attempt幂等、input/output/cache分项、unknown/null与混合组完整性、应用缓存区分、本人/管理聚合和日志边界 |
+| [词句解析与TTS的持久保存/缓存](../architecture/learning-cache.md) | [AI/朗读](../modules/ai-speech.md)、[收藏](../modules/vocabulary-practice.md)、[设置](../modules/settings.md)、[数据与任务](../architecture/data-jobs.md) | LC-01～LC-10；未收藏也保存、书内语境索引、跨端复用、全局标准词音与私人关联/用量、生成合并/版本、容量与GC、权限/离线 |
 | [后台：用户、角色、菜单、策略和运维](../modules/admin.md) | [RBAC](../architecture/authorization.md)、[权限目录](../contracts/permissions.md) | ADM/PERM；两端显示/接口一致、deny/继承/撤权、防提权与首末管理员 |
 | [设置：资料、头像、语言、Key、服务实例与缓存](../modules/settings.md) | [认证与隔离](../architecture/authentication.md)、[API/头像传输](../contracts/api.md)、[运行配置](../operations/configuration.md) | PROFILE/SET/CACHE；资料隐私/并发、头像安全发布、语言组合/历史、显示无障碍、凭据轮换、账号代次、离线租期与迟到响应 |
 | [统一日志与业务埋点](../operations/observability.md) | 各模块的事件映射、[MyHome接入](../operations/myhome-integration.md) | 原观测清单；全部来源/info事件、关联、脱敏、补传与采集缺口 |

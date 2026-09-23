@@ -14,7 +14,7 @@ P0以本人 `CollectionItem(kind=word) + learning_revision` 作为具体词形/�
 | learning_revision | 词形、语言、目标义项或读音实质变化时递增；笔记、标签和归本不递增 |
 | evidence_revision / policy_version | 当前投影消费到的证据版本和判定策略，用于解释与重放 |
 
-不存在 `due_at`、`ReviewSchedule`、学习日预算或下次复习字段。首次收藏/导入为new；浏览、朗读、收藏次数、前端埋点和生成习题都不是掌握证据。excluded条目仍显示真实状态，可被用户显式选入一次AI习题，但不会出现在默认候选中。
+不存在 `due_at`、`ReviewSchedule`、每日新词限额或下次复习字段。首次收藏/导入为new；浏览、朗读、收藏次数、前端埋点和生成习题都不是掌握证据。excluded条目仍显示真实状态，可被用户显式选入一次AI习题，但不会出现在默认候选中。
 
 ## 2. 有效学习证据
 
@@ -81,6 +81,6 @@ CSV v2可导出只读mastery快照和policy版本，导入只保存为非权威�
 | VL-07 | excluded/active、改内容/仅改笔记、删词/删本与迟到评分竞争符合生命周期，无非法逻辑关联 |
 | VL-08 | 合并等价条目按业务键去重；不同义项/读音/learning_revision不串，聚合视图不虚构状态 |
 | VL-09 | 状态摘要与证据明细分别授权；A/B、来源撤权和日志脱敏有实际证据，投影失败明确rebuilding |
-| VL-10 | 用户/API/数据模型不存在due、FSRS、ReviewOpportunity、每日预算或复习计划；AI习题只读取状态筛选，不形成时间调度 |
+| VL-10 | 用户/API/数据模型不存在due、FSRS、ReviewOpportunity、每日新词限额或复习计划；AI习题只读取状态筛选，不形成时间调度 |
 
 阶段3验证多本/条目和派生字段只读，阶段4验证AI习题、错题、掌握投影及重评重放，阶段5验证CSV不伪造证据。以上仍是设计，尚未运行应用测试。

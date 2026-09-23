@@ -119,11 +119,11 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 | 课本 | textbook.lesson.opened | 受控材料/版本/Lesson引用、内容角色、结果与耗时；不含课文/词表/题目正文；作答计数复用practice事实，不另累计 |
 | 解释/收藏 | explanation.requested、explanation.completed、collection.saved | 内容类别、语言、引用、耗时；不记录原词句、笔记或解释正文 |
 | 单词本 | notebook.created/updated/deleted、notebook.members.changed | 本/操作类型、计数、受控引用、提交结果；无本名/简介/词内容，删本不计作删词 |
-| 词汇学习 | vocabulary.review.plan_created、vocabulary.learning.updated/rebuild_failed | 机会/投影受控引用、策略/算法版本、结果类别/耗时/数量；不记答案、逐人掌握明细或日历史；队列和埋点不作为学习成绩，重放不计新作答 |
+| 词汇学习 | vocabulary.evidence.accepted/replaced/invalidated、vocabulary.learning.updated/rebuild_failed | 证据/投影受控引用、策略版本、结果类别/耗时/数量；不记答案或逐人掌握明细；埋点不作为学习成绩，重评重放不计新作答 |
 | TTS/播放 | speech.requested、speech.generated、speech.cache.hit、playback.started、playback.failed | 模型/声音、缓存结果、首音频耗时、时长、平台错误 |
 | 学习结果复用 | learning.cache.resolved、learning.result.persisted、learning.result.persistence_failed、learning.generation.joined | 缓存层/结果种类、private/global_word、命中/缺失原因、配置是否不同、条目数/耗时及受控引用；不记录词句/上下文/完整文本hash，命中和等待不重复累计模型调用；全局词音费用只归生产者，等待者事件绑定本人，不下发他人Job/身份 |
 | 练习 | practice.started、answer.submitted、answer.scored、practice.completed | 题型、来源、题数、规则/AI 评分方式；答案与学习事实留在业务库 |
-| 条件出题 | practice.selection.previewed、practice.generation.requested/completed/failed | 范围/时间字段/记忆条件类型枚举、候选/排除/实际题数、冲突类别、耗时、受控快照/Job引用；不记录本名、日期区间原值、词表、答案或逐人掌握明细；预览不计模型调用/练习完成 |
+| AI习题/错题 | ai_exercise.selection_previewed、ai_exercise.generation_requested/generated/failed、mistake.recorded/status_changed/favorite_changed | 来源/时间/掌握/错误条件类型枚举、候选/排除/实际题数、错题状态与收藏动作、冲突类别、耗时、受控快照/Job/occurrence引用；不记录本名、日期区间原值、词表、题目、答案或逐人掌握明细；预览不计模型调用/习题完成，前端事件不作为错题事实 |
 | 试卷考试 | exam.import.reviewed、exam.session.started、exam.response.saved、exam.session.submitted、exam.grading.started/completed/failed、exam.result.viewed | 场次/试卷版本/评分运行引用、题数、状态、耗时、manual/timeout；详细口径见试卷专题 |
 | Agent | agent.message.submitted、agent.run.completed、agent.run.failed、agent.card.action | run 引用、卡片类型、操作类型、耗时、失败类别；不记录消息正文 |
 | CSV | vocabulary.csv.export.completed、vocabulary.csv.import.previewed、vocabulary.csv.import.completed | 导出/有效/错误/重复/新增行数、处理策略、耗时；不含 CSV 内容 |
@@ -170,7 +170,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 ### Pydantic AI 与 TTS
 
-- AgentService 记录 run 开始、完成、失败、取消、预算耗尽；模型适配层记录每次真实请求及 attempt；工具适配层记录工具开始/结果/校验失败。普通解释、视觉OCR/识词、生成题、评分、诊断和后台批处理均必须经过这些入口。视觉识别允许阶段/页与区域计数/结果复用状态，不记录页图、base64或转写正文；模型自报置信度不作为成功或内容完整性的权威依据。
+- AgentService记录run开始、完成、失败、取消、预算耗尽；模型适配层记录每次真实请求及attempt；工具适配层记录工具开始/结果/校验失败。普通解释、视觉OCR/识词、AI习题生成、评分、诊断和后台批处理均必须经过这些入口。AI习题另记录选择/生成/校验数量，错题记录/状态/收藏只记录计数与受控ID，禁止题面、答案、错误笔记或Prompt正文。视觉识别允许阶段/页与区域计数/结果复用状态，不记录页图、base64或转写正文；模型自报置信度不作为成功或内容完整性的权威依据。
 - 记录 ai_run_id、model_call_id、tool_call_id、provider、请求/实际模型、提示模板版本、状态、耗时、首内容等待、重试和供应商返回的用量。供应商请求 ID 只有在确认不含秘密时才保存。
 - Token/字符/音频用量缺失时标记 unknown，不记作 0；费用如为估算需记录价格版本/币种，并明确非最终账单。看板按模型请求统计用量，run 的汇总字段不能再次相加；每次重试费用独立观察。
 - Pydantic AI 提供基于 OpenTelemetry 的 instrumentation，可以不用 Logfire 服务；采用时关闭内容捕获，例如 include_content=False，并用字段白名单适配日志。官方说明见 [Pydantic AI 观测接入](https://pydantic.dev/docs/ai/integrations/logfire/)。原始 Prompt、回复、工具入参/结果、音频和图片不写入日志，异常消息也要防止回显这些内容。

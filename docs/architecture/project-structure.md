@@ -148,8 +148,8 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | 课本 | textbooks | TextbookProcessing/TextbookStudyService、单元/角色及Exercise引用 | 单元分析、词表/习题关联；评分复用Practice公开服务 |
 | 收藏/照片/CSV | collections | Collection/PhotoWord/CsvService | 识词、CSV 分批 |
 | 多单词本/成员 | collections的notebooks子功能 | NotebookService、Notebook/NotebookItem；CollectionService拥有词内容/版本 | 有界批量、已有Job机制；不复制学习进度 |
-| 每日学习/自动掌握 | practice与collections只读状态组件 | VocabularyLearningService、机会/日额度/证据/掌握与调度投影 | 有效评分Outbox消费、确定性重算；复用现有Worker |
-| 普通练习/诊断 | practice | Practice/Grading/LearnerService | 出题、主观评分、诊断 |
+| AI习题/自动掌握/错题 | ai_exercises与collections只读状态组件 | AiExerciseService、MistakeService、VocabularyLearningService；选择/生成、错题事实/收藏、证据/掌握投影 | Job/Outbox、Pydantic AI、有效评分事务与确定性重算；无复习调度 |
+| AI习题/公共作答/诊断 | ai_exercises、practice | AiExercise/Mistake/Practice/Grading/LearnerService | 显式出题、全部错题账本/收藏、作答、主观评分、诊断 |
 | 试卷/考试 | exams | ExamPaper/Session/GradeService | 结构抽取、截止扫描、逐题批改 |
 | 对话/解释 | agent | Agent/ExplanationService | 按即时/持久路径处理 |
 | 朗读 | speech、core/platform | SpeechService、AudioRepository | 合成、封装、音频存储 |
@@ -158,7 +158,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 
 名称是设计职责，不强制每行都拆成多个类。接口依赖必须显式注入，不能运行时导入相邻 MyHome 工作目录。
 
-词本在collections中组织紧凑/宽屏页面；复习控制器在practice复用PracticeSession/Attempt，掌握规则由后端唯一计算。Python中词本用例归services/vocabulary_notebooks，纯学习规则归domain/vocabulary_learning，py-fsrs隔离于adapters中的调度适配器；评分仅发布有效证据，学习服务通过既有事务/Outbox更新投影。以上为目标模块职责，不在文档阶段生成空目录或新微服务；依据见[学习状态](vocabulary-learning.md)。
+词本在collections中组织紧凑/宽屏页面；AI习题使用独立controller并复用PracticeSession/Attempt作答能力，掌握规则由后端唯一计算。Python中词本用例归services/vocabulary_notebooks，AI选择/生成与错题账本归对应应用服务，纯证据规则归domain/vocabulary_learning；不引入py-fsrs、调度适配器、ReviewOpportunity或日额度。评分发布有效证据和错题事实，投影服务通过既有事务/Outbox重算。以上为目标职责，不在文档阶段生成空目录或新微服务；依据见[AI习题](../modules/ai-exercises.md)与[学习证据](vocabulary-learning.md)。
 
 小说/课本/试卷在 api/routes、schemas、services、domain、repositories 中按 novels/textbooks/exams 分组；adapters/parsers 按 markdown/epub 及获准后的 pdf/txt 划分。格式适配器返回源结构，类型处理器返回各自领域产物，Worker handler 显式分派；不建立万能 MaterialProcessor 加一套通用阅读 DTO，也不因此拆微服务或提前生成空文件。
 

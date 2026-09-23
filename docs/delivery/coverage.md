@@ -1,6 +1,6 @@
 # 功能与验收追踪
 
-状态：2026-09-22，设计覆盖索引。这里只维护功能→权威正文→验收族的映射，不复制产品优先级或协议字段；B0工程基础已验收，以下业务功能仍按所属阶段交付。产品范围见 [产品总览](../product/overview.md)，实施状态见 [路线图](roadmap.md)。
+状态：2026-09-23，设计覆盖索引。这里只维护功能→权威正文→验收族的映射，不复制产品优先级或协议字段；B0工程基础已验收，以下业务功能仍按所属阶段交付。产品范围见 [产品总览](../product/overview.md)，实施状态见 [路线图](roadmap.md)。
 
 ## 1. 按功能开始开发
 
@@ -10,11 +10,11 @@
 | [材料公共能力：上传、书库与出处操作](../modules/materials-reading.md) | [三类材料](../contracts/material-types.md)、[出处](../contracts/content-locator.md)、[数据与任务](../architecture/data-jobs.md) | MAT/READ/TYPE；不可变上传、类型/格式独立、专用分派、版本/位置/书签 |
 | [统一视觉模型OCR](../architecture/vision-recognition.md) | [运行层](../architecture/agent-runtime.md)、[来源定位](../contracts/content-locator.md)、对应材料/照片模块 | OCR-01～OCR-05，按获准格式/消费功能执行；本人Key/预算、页覆盖、识别稿/版本、失败恢复、定位粒度与日志 |
 | [小说：预处理与连续阅读](../modules/novels.md) | [材料类型](../contracts/material-types.md)、[出处](../contracts/content-locator.md) | NOV；章序/段落/对话、分句分词、专用阅读和标注降级 |
-| [课本：单元结构与学习](../modules/textbooks.md) | [材料类型](../contracts/material-types.md)、[普通练习](../modules/vocabulary-practice.md) | TBK；内容角色/词表/题目关联、单元位置、逐题反馈与独立状态 |
+| [课本：单元结构与学习](../modules/textbooks.md) | [材料类型](../contracts/material-types.md)、[公共作答](../modules/vocabulary-practice.md) | TBK；内容角色/词表/题目关联、单元位置、逐题反馈与独立状态 |
 | [教材/试卷解析展示](../contracts/learning-presentation.md) | [课本](../modules/textbooks.md)、[考试](../modules/exams.md)、[出处](../contracts/content-locator.md)、[Flutter](../engineering/flutter.md) | PRES-01～PRES-08；八类内容/五类输入/题组、原始顺序与关系、原文投影、未知结构和媒体故障、三端状态；阶段2解析展示、3学习辅助、4作答复盘分别验收 |
-| [学习：收藏、照片、练习、评分和诊断](../modules/vocabulary-practice.md) | [权限](../contracts/permissions.md)、[数据与任务](../architecture/data-jobs.md) | COL/PHOTO/PRA/DIAG；重复与来源、规则/AI评分、有效贡献 |
-| [按单词本/时间/记忆生成练习](../modules/vocabulary-practice.md#按单词本时间和记忆情况生成) | [学习状态](../architecture/vocabulary-learning.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md) | PGEN-01～PGEN-06；筛选组合/时间空值、稳定预览与确认、词数不足、撤权/版本/幂等、生成与学习分离；阶段4验收 |
-| [多单词本与每日学习](../modules/vocabulary-notebooks.md) | [学习证据/掌握/调度](../architecture/vocabulary-learning.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-10、VL-01～VL-10；多对多归属、删本/删词、跨本去重、自动掌握、日额度/辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |
+| [学习：收藏、照片、公共作答/评分和诊断](../modules/vocabulary-practice.md) | [权限](../contracts/permissions.md)、[数据与任务](../architecture/data-jobs.md) | COL/PHOTO/PRA/DIAG；重复与来源、规则/AI评分、有效贡献 |
+| [AI习题与错题库](../modules/ai-exercises.md) | [学习证据](../architecture/vocabulary-learning.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md) | AIX-01～AIX-10；全部可靠错题留档/收藏/重评状态、单词本/教材/错题/诊断选源、稳定预览与显式生成、针对性原题/变式、无复习调度；阶段4验收 |
+| [多单词本与自动掌握](../modules/vocabulary-notebooks.md) | [学习证据/掌握](../architecture/vocabulary-learning.md)、[AI习题](../modules/ai-exercises.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-10、VL-01～VL-10；多对多归属、删本/删词、AI习题选源、自动掌握、辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |
 | [单词CSV入口](../modules/vocabulary-practice.md) | [CSV唯一协议](../contracts/vocabulary-csv.md) | 原CSV清单；全部逻辑记录导出、v2词本归属与v1兼容、快照不恢复学习证据、预览/分批/重复策略、公式转义、跨账号往返 |
 | [考试：导入、校对、答题、交卷与成绩](../modules/exams.md) | [API](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[出处](../contracts/content-locator.md) | 原考试清单及DAT；冻结版本、草稿/截止/锁卷、评分恢复与重评 |
 | [AI与朗读：解释、卡片、对话和TTS](../modules/ai-speech.md) | [Agent运行层](../architecture/agent-runtime.md)、[API事件](../contracts/api.md) | AI/TTS；类型校验、权限/预算、流恢复、音频缓存与播放 |

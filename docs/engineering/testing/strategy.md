@@ -153,12 +153,12 @@ def override_dependency(
 | READING | 稳定出处/Unicode、重解析与删除后的快照、进度冲突、离线租期和重联撤权 | 跨端相同样本 + 缓存/版本单测 |
 | COLLECTION | 新增/编辑/删除及标签，重复提交、出处回跳、删除原文后保留上下文，失权不写入 | API + 控制器/组件 |
 | VOCABULARY_NOTEBOOK | [VNB验收](../../modules/vocabulary-notebooks.md)：多本/多对多去重、语种/父锁、删本保留词、批量筛选快照、只读派生字段与CSV v2权限 | 规则/真实PG事务 + API/Flutter组件；三端仅选目标流程 |
-| VOCABULARY_LEARNING | [VL验收](../../architecture/vocabulary-learning.md)：成功日/间隔/主动回忆、辅助曝光顺序、机会/日额度跨端原子性、pending/重评重放与版本/删除竞争 | Fake时钟纯规则/锁定调度适配 + 真实PG/Outbox；不等真实7天、不以工厂预填掌握替代练习 |
+| VOCABULARY_LEARNING | [VL验收](../../architecture/vocabulary-learning.md)：跨习题集/根题结果窗口、主动回忆、辅助曝光顺序、pending/重评/作废重放与版本/删除竞争；无时间调度 | 纯规则/稳定事件重放 + 真实PG/Outbox；不以工厂预填掌握替代真实有效评分 |
 | AI_AGENT | 工具按权限提供且执行再次校验；伪造 user_id 无效；输出未完成不可保存；并发用户 Key 独立；预算/未知收费/续聊恢复 | Fake 模型/HTTP + 持久化集成 |
 | SPEECH | 私有缓存隔离与global_word标准词音共享、多读音/声音差异、倍速不重新合成、合并/取消/过期链接、实际 PCM/封装/Content-Type、无 Key 与不支持声音 | 适配器 + 三端实际播放；实际发音质量不由可解码/Fake替代 |
 | LEARNING_CACHE | 未收藏的词/句/卡片/TTS持久保存；同词异境与无材料输入不串；清本机/Redis后恢复；模型/Key变更、并发乱序、存储失败/配额/GC和离线租期；全局词音不泄漏私人关系/Job、取消不换Key、删贡献者不删成品 | [LC-01～LC-10](../../architecture/learning-cache.md)；键/版本单测、Fake调用计数与真实PG/对象/任务集成、三端副本与账号切换；只读命中不得新增模型调用 |
-| PRACTICE | 可靠客观题不调用 AI；主观失败不计零分；错题/统计幂等；无依据诊断不虚构事实 | 规则/Fake + API 主路径 |
-| PRACTICE_SELECTION | PGEN筛选AND/OR、成员时间/空值/时区、有效记忆投影、固定随机/计数、确认竞态/撤权与无隐式扩词；生成不占学习额度 | 纯条件/时钟规则 + 真实PG快照/事务与Fake生成；控件只验条件保持/失效和明确确认 |
+| PRACTICE | 可靠客观题不调用 AI；主观失败不计零分；评分/统计幂等；无依据诊断不虚构事实 | 规则/Fake + API 主路径 |
+| AI_EXERCISE_MISTAKE | [AIX-01～AIX-10](../../modules/ai-exercises.md)：全部可靠错题/收藏/重评投影、来源筛选、稳定预览、显式生成、针对性原题/变式、无复习调度 | 纯选择/投影规则 + 真实PG评分发布/快照/事务/Outbox + Fake模型；三端仅验实际目标流程，不用前端埋点或工厂预置错题 |
 | EXAM | 题面 DTO 无答案/rubric；冻结版本；revision/编辑代次；截止/保存/交卷并发；缺 Key、逐题失败、重评历史/统计去重 | 真并发 DB/Worker + 三端 release |
 | CSV | 当前用户全部单词、协议往返/可逆转义、映射预览、重复确认、混入他人 ID、导出与实际保存区分 | 规则/API + 三端文件选择保存 |
 | JOB | 业务与 Outbox 原子；消息重复、领取租约过期、提交后进程退出、取消竞争、DLQ 恢复；结果不重复写入 | 真实 DB/Kafka/Worker 进程 |

@@ -99,7 +99,7 @@ B1 的正常/info 埋点、登录/拒绝/退出、收藏提交、API 与 ORM 结
 
 ### 唯一替换边界
 
-B2 推荐使用现有“从收藏生成普通练习”业务：在 B1 收藏中明确选择一项，要求生成一道受支持题型，通过正式 POST practice-generations 受理。权限、来源、Key 状态、预算、Job/AiRun 和业务结果均使用正式服务；schema 与路径以 [API 契约](../../contracts/api.md) 和 [收藏与练习](../../modules/vocabulary-practice.md) 为准，不创建仅供生产调试的 fake-job/run-model HTTP 路由。
+B2使用“从收藏生成AI习题”参考切片：在B1收藏中明确选择一项，经正式 `POST ai-exercise-selections` 预览后确认 `POST ai-exercise-generations`，生成一道受支持题型。权限、来源、Key状态、预算、Job/AiRun和业务结果均使用正式服务；schema与路径以[API契约](../../contracts/api.md)和[AI习题](../../modules/ai-exercises.md)为准，不创建仅供生产调试的fake-job/run-model HTTP路由，也不引入词汇复习/到期调度。
 
 只在 dev/test 的受控组装配置中注入 Pydantic AI 测试模型或确定性供应商替身；用户请求体、Header、model ID、管理模型目录都不能自行切换 Fake。其他环境（包括 staging/production）必须拒绝 Fake 配置和测试 seed，验证 API 与独立 Worker 各入口均拒绝，不能只在 Flutter 隐藏按钮。缺少正式 Key 时也不能自动使用 Fake。
 

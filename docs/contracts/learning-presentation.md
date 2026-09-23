@@ -1,6 +1,6 @@
 # 教材与试卷解析展示契约
 
-状态：2026-09-22，已确认的展示方案，待实现。本文统一维护内容角色与作答交互的展示分类、结构关系、原文对照和降级规则；业务流程分别由 [课本](../modules/textbooks.md)、[普通练习](../modules/vocabulary-practice.md) 和 [考试](../modules/exams.md) 维护。
+状态：2026-09-22，已确认的展示方案，待实现。本文统一维护内容角色与作答交互的展示分类、结构关系、原文对照和降级规则；业务流程分别由 [课本](../modules/textbooks.md)、[公共作答](../modules/vocabulary-practice.md) 和 [考试](../modules/exams.md) 维护。
 
 ## 1. 范围与分层
 

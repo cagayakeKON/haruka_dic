@@ -25,10 +25,10 @@
 | FileObject/UploadIntent | owner、临时staging_key、独占final_key、用途、最终摘要/实际大小、状态、到期 | 客户端仅写临时对象；后端固定不可变final对象并验证后才发布；完成幂等 |
 | CollectionItem/Tag/Bookmark/ReadingProgress | kind、词/笔记、出处快照、current_position、小说max_progress、revision | 标签关系同库；小说当前/最远分离，课本位置不表示完成度，考试进度另存；删除材料后收藏文本仍存在 |
 | VocabularyNotebook/NotebookItem | owner/library、名称/目标语、成员CollectionItem和revision | 多本多对多、单语匹配、关系唯一；同条目多本不复制进度，删本不删词；改词语言与成员增改共用父锁 |
-| VocabularyLearningState/ReviewSchedule/EffectiveLearningEvidence | item/learning_revision/skill、有效成绩证据、mastery与调度版本 | [词汇学习](vocabulary-learning.md)只从有效证据派生；客户端/CSV不得写mastery，重评按原时间重放不重复累计 |
-| ReviewOpportunity/DailyLearningBudget/NewWordReservation | 当前学习机会/辅助曝光、owner学习日与条目唯一额度预留 | 跨本/设备共享机会与预留；领取原子占额、接受作答即消费，pending不释放，取消/日边界按协议处理 |
+| VocabularyLearningState/EffectiveLearningEvidence | item/learning_revision/skill、有效成绩证据、mastery/策略/证据版本 | [词汇学习](vocabulary-learning.md)只从有效证据派生；客户端/CSV不得写mastery，重评按原接受时间重放；无ReviewSchedule/due/SRS |
+| MistakeOccurrence/MistakeProjection/MistakeFavorite | 每次可靠错误事实、根题/考察点当前状态、用户独立收藏关系 | [AI习题](../modules/ai-exercises.md)按effective评分幂等记录；重评/纠正重算不删历史，收藏不改错误状态 |
 | Exercise/PracticeSession/Attempt/GradeRun | 冻结题目与依据、答案、提交幂等键、评分代次 | 同一提交不重复 Attempt；规则/AI 成绩有来源；有效成绩与历史分开 |
-| PracticeSelectionSnapshot/PracticePlan | 本人规范化词本/时间/记忆条件、as_of/时区、候选与版本、顺序/数量、expiry；计划purpose=generate/review | [出题筛选](../modules/vocabulary-practice.md#按单词本时间和记忆情况生成)中预览计数/明细同一快照，确认短事务重验后与Job/Outbox提交；生成不占学习机会/日额度，实际学习计划才领取 |
+| ExerciseSelectionSnapshot/AiExercisePlan | 本人规范化单词本/收藏/教材/错题/诊断及时间/掌握/错误条件、as_of/时区、候选/版本/抽样/expiry；不可变生成计划 | [AI习题](../modules/ai-exercises.md)中预览计数/明细同一快照，确认短事务重验后与Job/Outbox提交；无复习计划/机会/日额度 |
 | ExamPaper/Version/Item/GradingBasis | 题面/题序/分值与依据版本 | ready 版本不可变；题面 DTO 不含答案/rubric |
 | ExamSession/Response/GradeRun | 固定版本、deadline、edit_epoch、response_revision、grade_generation | 保存/交卷在场次行锁内；单题答案唯一；提交后不可修改 |
 | LearnerContribution/Profile | source_kind + session/attempt + item 的唯一贡献键、effective_grade_id | 重评替换贡献不追加重复错误；needs_review 不进入正式统计 |
@@ -51,7 +51,7 @@
 - Material 的来源格式、唯一业务类型 material_type、语言与导入报告分开。MaterialRevision 保留不可变源结构/ContentBlock，各类型独立编排 NovelManifest、TextbookManifest 或 ExamPaperVersion；语言分析版本中的 Sentence/Token 引用原文 span。类型固定、另类型重新处理及内容/标注版本边界唯一维护在 [三类材料契约](../contracts/material-types.md)。重新解析失败不切当前版本，收藏重绑失败保留快照；保留/删除期限仍按第 7 节处理。
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
 - CollectionItem 维护 kind、词句/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词允许为空，不能伪造材料出处。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
-- Exercise 区分 extracted/generated，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至 CollectionItem、Attempt 或 ContentBlock，引用由服务事务校验同库归属及版本/状态。Attempt 关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
+- Exercise 区分 extracted/generated/derived_from_mistake，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至CollectionItem、MistakeOccurrence、Attempt或ContentBlock，引用由服务事务校验同库归属及版本/状态。Attempt关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
 - AgentMessage 保存结构化文字与卡片结果；Card 保存类型、版本化载荷及合法来源。消息保存和卡片成为可收藏业务结果不是同一成功条件；用户内容、模型候选和生成例句的标识按 [AI 与朗读](../modules/ai-speech.md) 维护。
 - CsvImportBatch 保存用户/资料库、协议版本、批次状态、进度与结果引用，不能用外部 CSV ID 决定所有者；导入的 preview/confirm/重复策略字段以 [CSV 契约](../contracts/vocabulary-csv.md) 为准。Job/外部调用记录和 CSV 批次各自表达领域状态，不互相代替。
 
@@ -64,9 +64,9 @@
 | 角色/菜单/策略管理 | 范围检查、预期revision、修改、版本、审计、Outbox | 快照预热/通知/Loki投递 |
 | 上传完成/导入 | UploadIntent状态、FileObject验证引用、Material/Job/Outbox | 文件内容解析、AI、对象读取 |
 | 收藏/CSV批次 | 权限/归属/版本/幂等、业务记录、批次游标 | 下一批处理、日志转发 |
-| 条件出题确认 | 本人快照/所选来源版本与权限、幂等、不可变生成计划、Job/Outbox | 模型生成；Worker不重查动态筛选补词，开始练习另行绑定当前机会/额度 |
+| AI习题确认 | 本人选择快照/所选来源和错题投影版本/权限、幂等、不可变AiExercisePlan、Job/Outbox | 模型生成；Worker不重跑动态筛选或补入未选来源，开始习题另建会话 |
 | 考试保存/交卷 | 场次锁、权限/截止/edit_epoch、最终答案、锁卷、唯一评分请求/Outbox | AI批改与客户端推送 |
-| 评分发布 | run/代次验证、有效成绩指针、学习贡献替换、汇总状态 | 派生诊断/通知，不重复累计 |
+| 评分发布 | run/代次验证、有效成绩指针、学习贡献替换、可靠错误的MistakeOccurrence幂等写入、汇总状态、Outbox | 错题/掌握投影重算、诊断/通知，不重复累计 |
 | 删除材料 | tombstone/generation、拒绝新引用、取消意图/Outbox | MinIO延迟回收、缓存清理 |
 | Worker阶段完成 | 有效租约/代次、状态/版本/权限、阶段产物与下阶段Outbox | 下一次外部调用 |
 
@@ -122,7 +122,7 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 
 考试的[必要媒体故障](../modules/exams.md#必要媒体故障的场次处理)确认事实与锁卷共用场次行锁，只在允许作答时确认提交；确认后才向客户端报告已成立，不能仅存遥测。事实绑定冻结版本/资产和服务端推导的叶子题，锁卷保留其revision。评分领取/恢复和最终发布都读取持久事实，发布CAS除grade_generation外检查故障revision且无受影响项；有确认故障时相关题needs_review，不走空答零分，也不切effective或发出学习贡献。媒体恢复或Worker重启不清除该场次影响，锁卷后新报告不追认历史故障；P0以模块规定的新场次重考处理，不引入人工改分或自动撤销既有有效成绩。
 
-词汇掌握与间隔调度按[学习证据协议](vocabulary-learning.md)消费此发布：普通练习的“整次”指该Attempt的完整评分，考试指整个场次有效成绩。只有冻结到本人词条/学习版本/能力及评分项的明确映射才能回流，不能从总分猜每词掌握。Outbox与贡献在有效评分事务提交，投影按原接受时间/稳定ID、机会去重及参数版本重放；内容改版/删除阻止迟到结果复活，删词本不删除学习状态。
+词汇掌握按[学习证据协议](vocabulary-learning.md)消费此发布：普通习题的边界是该Attempt的effective评分，考试是整个场次有效成绩。只有冻结到本人词条/学习版本/能力及评分项的明确映射才能回流，不能从总分猜每词掌握；投影按原接受时间、稳定业务键及策略版本重放，没有时间调度。可靠错误/部分正确同时按[错题账本](../modules/ai-exercises.md#2-服务端错题账本)写入唯一MistakeOccurrence并异步重算状态；重评替换贡献、标记旧错题状态而不删除历史。内容改版/删除阻止迟到结果复活，删词本不删除学习或错题记录。
 
 该规则消除“旧评分最后返回就覆盖新成绩”。允许并发run或逐题提前回流属于未来协议变更，必须补竞态和统计迁移验收。
 

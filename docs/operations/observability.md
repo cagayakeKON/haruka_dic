@@ -112,7 +112,8 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 | 场景 | 事件示例 | 允许的业务字段/统计口径 |
 | --- | --- | --- |
 | 启动/页面 | app.started、screen.viewed、app.lifecycle.changed | 平台、版本、screen_name、启动/加载耗时 |
-| 账号 | auth.register.submitted、auth.login.result、auth.logout.completed、auth.session.revoked | client/admin 受众、成功/失败类别、传输方式；不含邮箱、密码或令牌 |
+| 账号 | auth.register.submitted、auth.login.result、auth.password.changed、auth.logout.completed、auth.session.revoked | client/admin受众、成功/失败类别、传输方式；不含邮箱、密码、新旧密码策略细节或令牌 |
+| 个人资料/设置 | profile.updated、profile.avatar.updated/deleted、study_profile.updated、settings.updated | 只记录字段类别、语言/目标数量、头像格式/大小区间、结果/冲突和耗时；不记录显示名、出生年份、性别/自定义说明、语言标签列表、文件名/路径或图像内容 |
 | RBAC / 管理 | access.snapshot.updated、authz.denied、admin.change.committed、admin.change.rejected | 权限代码、目标类型/ID、版本、影响数量、安全状态差异；成功变更以服务端审计事务为准，覆盖用户/角色/继承/菜单/策略 |
 | 材料 | material.import.requested、material.import.completed、material.import.failed | material_type枚举、格式、大小区间、阶段、耗时、错误分类；服务端确认导入结果，不能将原文件接受当作三类全部ready |
 | 阅读 | reading.chapter.opened、reading.session.ended、source.navigation.result | 材料/章节引用、有效前台阅读时长、回跳结果；不收集逐字选区或逐帧滚动 |

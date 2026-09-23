@@ -6,7 +6,7 @@
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |
 | --- | --- | --- |
-| [账号：注册、登录、恢复与会话](../modules/accounts.md) | [认证](../architecture/authentication.md)、[API](../contracts/api.md)、[授权](../architecture/authorization.md) | ACC；三端与管理Web、注册竞争、会话撤销与账号切换 |
+| [账号：注册、登录、恢复与会话](../modules/accounts.md) | [认证](../architecture/authentication.md)、[API](../contracts/api.md)、[授权](../architecture/authorization.md) | ACC；最小注册、三端与管理Web、改密/恢复、会话撤销、首次引导与账号切换 |
 | [材料公共能力：上传、书库与出处操作](../modules/materials-reading.md) | [三类材料](../contracts/material-types.md)、[出处](../contracts/content-locator.md)、[数据与任务](../architecture/data-jobs.md) | MAT/READ/TYPE；不可变上传、类型/格式独立、专用分派、版本/位置/书签 |
 | [统一视觉模型OCR](../architecture/vision-recognition.md) | [运行层](../architecture/agent-runtime.md)、[来源定位](../contracts/content-locator.md)、对应材料/照片模块 | OCR-01～OCR-05，按获准格式/消费功能执行；本人Key/预算、页覆盖、识别稿/版本、失败恢复、定位粒度与日志 |
 | [小说：预处理与连续阅读](../modules/novels.md) | [材料类型](../contracts/material-types.md)、[出处](../contracts/content-locator.md) | NOV；章序/段落/对话、分句分词、专用阅读和标注降级 |
@@ -20,7 +20,7 @@
 | [AI与朗读：解释、卡片、对话和TTS](../modules/ai-speech.md) | [Agent运行层](../architecture/agent-runtime.md)、[API事件](../contracts/api.md) | AI/TTS；类型校验、权限/预算、流恢复、音频缓存与播放 |
 | [词句解析与TTS的持久保存/缓存](../architecture/learning-cache.md) | [AI/朗读](../modules/ai-speech.md)、[收藏](../modules/vocabulary-practice.md)、[设置](../modules/settings.md)、[数据与任务](../architecture/data-jobs.md) | LC-01～LC-10；未收藏也保存、书内语境索引、跨端复用、全局标准词音与私人关联/费用、生成合并/版本、容量与GC、权限/离线 |
 | [后台：用户、角色、菜单、策略和运维](../modules/admin.md) | [RBAC](../architecture/authorization.md)、[权限目录](../contracts/permissions.md) | ADM/PERM；两端显示/接口一致、deny/继承/撤权、防提权与首末管理员 |
-| [设置：Key、语言、服务实例与缓存](../modules/settings.md) | [认证与隔离](../architecture/authentication.md)、[运行配置](../operations/configuration.md) | SET/CACHE；凭据轮换、账号代次、离线租期、队列及迟到响应 |
+| [设置：资料、头像、语言、Key、服务实例与缓存](../modules/settings.md) | [认证与隔离](../architecture/authentication.md)、[API/头像传输](../contracts/api.md)、[运行配置](../operations/configuration.md) | PROFILE/SET/CACHE；资料隐私/并发、头像安全发布、语言组合/历史、显示无障碍、凭据轮换、账号代次、离线租期与迟到响应 |
 | [统一日志与业务埋点](../operations/observability.md) | 各模块的事件映射、[MyHome接入](../operations/myhome-integration.md) | 原观测清单；全部来源/info事件、关联、脱敏、补传与采集缺口 |
 
 模块中的验收项是行为要求，测试运行器和required_cases负责将其展开为真实case/平台/runner/参数；本文不能替代运行报告。原来只有检查清单的CSV、考试和观测验收保留原意，不虚构已经存在的编号化测试。

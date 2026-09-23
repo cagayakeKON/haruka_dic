@@ -1,6 +1,6 @@
 # API、事件与客户端契约
 
-状态：设计基线 v0.2，2026-09-22，未实现。本文固定跨模块约定与接口分组，功能载荷由专题定义；后端初始化时将设计展开为OpenAPI/契约测试，不把本表误称已存在接口。
+状态：设计基线 v0.3，2026-09-23，未实现。本文固定跨模块约定与接口分组，功能载荷由专题定义；后端初始化时将设计展开为OpenAPI/契约测试，不把本表误称已存在接口。
 
 协议归属：认证传输与会话轮换见 [认证设计](../architecture/authentication.md)，权限代码见 [权限目录](permissions.md)，选区/来源字段见 [出处协议](content-locator.md)，CSV文件格式见 [CSV契约](vocabulary-csv.md)。模块只引用这些协议并描述用户行为，不再定义另一套字段；未来根contracts中的生成OpenAPI由后端schema单向导出，不与本文手工双向维护字段表。
 
@@ -34,13 +34,18 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 | 资源/方法 | 关键输入/返回与业务动作 | 权限/规范 |
 | --- | --- | --- |
-| GET meta；GET model-capabilities | 公共instance_id/兼容版本/材料类型与格式能力；已登录者模型/声音/输出格式能力 | meta不带凭据探测；模型能力目录是client登录基础只读，不含Key/管理字段；能力支持不代表个人获权 |
+| GET meta；GET model-capabilities；GET language-capabilities | 公共instance_id/兼容版本/材料类型与格式能力；已登录者模型/声音/输出格式能力；版本化UI/学习/解释语言标识 | meta不带凭据探测；两个能力目录是client登录基础只读，不含Key/用户资料/管理字段；能力支持不代表个人获权或模型质量已验证 |
 | GET auth/policy；POST auth/register/login | 安全公共策略；邮箱/密码；业务会话或受限continuation | 账号流程；注册不接受角色/状态 |
 | GET auth/csrf | 当前Web会话绑定的CSRF值 | 同源Cookie身份，不能当业务访问Token |
-| POST auth/refresh/logout/password；GET auth/sessions；POST auth/sessions/{id}/revoke | 原生轮换/Web续期；本人退出/改密/会话治理 | 本人身份基础例外；同audience下验证 |
+| POST auth/refresh；POST auth/logout；POST auth/password/change；GET auth/sessions；POST auth/sessions/{id}/revoke；POST auth/sessions/revoke-all | 原生轮换/Web续期；本人退出、当前密码改密、会话治理 | 本人身份基础例外；同audience下验证。改密成功推进安全epoch并撤销client/admin全部会话，不接受资料字段作为恢复证据 |
 | POST auth/recovery/request/complete、auth/email/verify、auth/reauthenticate | 条件启用的一次性挑战/近期验证 | 目的/到期/单次消费；未选模式不公开能力 |
 | GET me/access、admin/me/access | 最小user_id/instance_id/audience/session_ref、account_status、authz_version、权限/范围、nav、flags | 对应login；不要求profile.read，session_ref不是认证凭据，不返回全体用户策略 |
-| GET/PATCH users/me、settings | 资料/学习/模型选择；revision | profile.read/update；拒绝身份/权限敏感字段 |
+| GET users/me/account | 当前登录邮箱、验证/账号状态、创建时间等本人身份摘要 | 本人有效client会话的身份基础读取；不要求profile.read，不返回密码哈希/角色明细/安全epoch，也不提供邮箱PATCH |
+| GET/PATCH users/me/profile | 本人显示名、可选出生年份/性别、资料完整度；field mask + expected_revision | profile.read/update；拒绝邮箱/角色/状态/权限及整数年龄写入，可选人口字段默认不进入AI |
+| GET/PATCH users/me/study-profile | 母语/解释语言、目标语言/当前语言、各语言水平/目标；field mask + expected_revision | profile.read/update；受版本化语言能力目录约束，移除默认值不删除历史学习数据 |
+| GET/PATCH users/me/settings | 模型/声音、时区、AI习题默认、阅读/朗读、theme/无障碍默认；field mask + expected_revision | profile.read/update；本机缓存/服务地址不伪装服务器字段，拒绝修改派生掌握/权限/配额 |
+| POST users/me/avatar-upload-intents；POST users/me/avatar-upload-intents/{id}/complete；DELETE users/me/avatar | 本人avatar用途临时上传、验证/重编码后原子替换或删除当前头像 | profile.read+profile.avatar.update；只接受配置允许的静态图片，不接受外链/任意FileObject ID；替换使用profile expected_revision，删除保留受控GC |
+| GET users/me/avatar | 当前本人私有头像媒体；无头像返回404/受控空态 | profile.read；每次鉴权，`Cache-Control: private, no-store`，不要求avatar.update，不产生长期公共URL或跨账号ETag，不因知道asset ID/旧revision读取他人对象 |
 | GET/POST/PATCH/DELETE provider-credentials；POST {id}/test | 掩码/增删轮换；受限能力测试 | credential.read/manage/test；永不GET明文 |
 | POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/requested_stages；视觉OCR与进一步AI分析分别明确范围/预算；新上传或本人源文件重新处理 | material.import、目标试卷组合权限；视觉OCR另验analyze；复用验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |

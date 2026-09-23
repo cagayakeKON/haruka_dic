@@ -153,7 +153,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | 试卷/考试 | exams | ExamPaper/Session/GradeService | 结构抽取、截止扫描、逐题批改 |
 | 对话/解释 | agent | Agent/ExplanationService | 按即时/持久路径处理 |
 | 朗读 | speech、core/platform | SpeechService、AudioRepository | 合成、封装、音频存储 |
-| 偏好/个人 Key | settings | Settings/CredentialService | 受控连接测试、配置失效 |
+| 个人资料/学习偏好/个人 Key | settings | ProfileService、AvatarService、SettingsService、CredentialService | 字段/revision校验、头像安全发布/GC、受控连接测试、配置失效 |
 | 日志 | core/telemetry | TelemetryIngestService | Outbox 审计日志投递 |
 
 名称是设计职责，不强制每行都拆成多个类。接口依赖必须显式注入，不能运行时导入相邻 MyHome 工作目录。

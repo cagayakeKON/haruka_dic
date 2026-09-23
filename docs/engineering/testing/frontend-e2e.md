@@ -30,6 +30,11 @@ Patrol 已有基于 Playwright 的 Web 支持，仍不支持 Windows；本项目
 ```text
 client.auth.login.email
 client.auth.login.submit
+client.account.profile.display_name
+client.account.profile.avatar.choose
+client.account.study.target_languages
+client.account.security.password.current
+client.account.security.password.save
 client.exam.session.save_status
 admin.roles.editor.save
 ```
@@ -107,6 +112,7 @@ Playwright 是开发工具，不引入 Node 生产服务。其独立依赖锁、
 | 范围 | UI 目标动作与服务端证据 | 特别约束 |
 | --- | --- | --- |
 | B1 登录→收藏→列表 | 使用合成账号正式登录，读取 me/access，选择合法材料来源，新增收藏；重读/刷新后存在且归属正确 | A/B 独立数据；无权时入口/请求均拒绝，不能所有账号都给管理员 |
+| 账号→资料/头像/语言→改密 | 用最小注册账号跳过/重进引导，保存/清除可选资料，上传并替换受控头像，选择英日目标及当前语言，再修改密码并重新登录 | widget覆盖字段/错误/无障碍；API/真实PG与对象存储证明revision、私有媒体和旧会话撤销。Web同一context执行A→B并确认`/users/me/avatar`不复用A；改密提交后丢响应由API/集成层证明结果未知且不重放。恶意图片主要在后端低层验证，E2E各平台只选一份合法图和一个失败恢复路径 |
 | B2 收藏→AI习题 | UI先取得选择预览再确认生成，真实Job/Outbox/Worker，收到状态与结果并查询持久习题 | Fake仅模型边界；预览不调用模型，覆盖重复确认/投递、取消/故障、A/B隔离，不建立复习队列 |
 | AUTH Web 会话 | 正常登录、刷新、多标签同步退出/撤权及拒绝旧会话 | 同用户多标签使用同一 context；两个用户使用独立 context |
 | AUTHZ 用户/后台 | 菜单/按钮/路由可见性与 API 授权一致；直接深链和伪造资源 ID 被拒绝 | 固定行为矩阵按真实授予权限组合执行，不硬编码“角色名等于允许” |

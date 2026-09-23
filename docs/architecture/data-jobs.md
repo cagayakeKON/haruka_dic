@@ -16,13 +16,14 @@
 
 | 聚合 | 关键字段/关系 | 必须保证 |
 | --- | --- | --- |
-| User/Library/StudyProfile | email_normalized、status、安全 epoch、authz_version；Library.owner | 邮箱唯一、每用户一个 Library；初始化同事务；登录身份与学习偏好分离 |
+| User/Library/UserProfile/StudyProfile/Settings | User的email_normalized/status/password_version/安全epoch/authz_version；Library.owner；本人资料、语言档案和设置各自revision | 邮箱唯一、每用户一个Library及每类单例聚合；注册同事务初始化；任何密码哈希替换推进password_version；登录身份与可选资料/学习偏好分离，普通用户无跨用户资料读取 |
 | AuthSession/AuthChallenge | user、audience、绝对期限、epoch、撤销/消费状态、purpose、摘要 | 会话/挑战不得跨用户/受众/用途；PG 撤销先于任何缓存失效通知 |
 | Role/权限关系/Revision | 见 RBAC | 继承 DAG、合法范围、唯一绑定、版本、授予边界、最后管理员约束 |
 | Material/Revision/StructureNode/ContentBlock | 固定material_type、当前版本指针、状态、delete_generation、源结构/原文/定位 | revision 不可变；同库引用；节点不能跨版本拼接；AI 不覆盖原文/类型，共用内容不直接构成万能阅读器 |
 | NovelManifest/Chapter、TextbookManifest/Unit/Lesson | 各自的内容版本、领域节点、源块/课本Exercise引用与质量状态 | 两套专用产物，只引用匹配类型/版本/所有者的来源；试卷使用下方独立Exam聚合 |
 | LinguisticAnalysis/Sentence/Token | 内容版本、分析/规则/词典版本、语言、原文span | 派生标注不改canonical_text；新切句不能静默改变旧sentence_id的含义 |
 | FileObject/UploadIntent | owner、临时staging_key、独占final_key、用途、最终摘要/实际大小、状态、到期 | 客户端仅写临时对象；后端固定不可变final对象并验证后才发布；完成幂等 |
+| AvatarAsset | owner、源UploadIntent、受控格式/像素/摘要、final_key、revision/状态 | 只从avatar用途临时对象真实解码、去元数据、限制像素并重编码发布；资料指针原子替换，外链/材料对象/他人资产不能充当头像，旧资产受控GC |
 | CollectionItem/Tag/Bookmark/ReadingProgress | kind、词/笔记、出处快照、current_position、小说max_progress、revision | 标签关系同库；小说当前/最远分离，课本位置不表示完成度，考试进度另存；删除材料后收藏文本仍存在 |
 | VocabularyNotebook/NotebookItem | owner/library、名称/目标语、成员CollectionItem和revision | 多本多对多、单语匹配、关系唯一；同条目多本不复制进度，删本不删词；改词语言与成员增改共用父锁 |
 | VocabularyLearningState/EffectiveLearningEvidence | item/learning_revision/skill、有效成绩证据、mastery/策略/证据版本 | [词汇学习](vocabulary-learning.md)只从有效证据派生；客户端/CSV不得写mastery，重评按原接受时间重放；无ReviewSchedule/due/SRS |
@@ -36,7 +37,7 @@
 | Explanation/SourceResultBinding/MaterialLearningIndex/LearningLookupState/GenerationSlot | 完整结果、源/语境/用途、查阅键/严格生成键；LookupState维护跨配置的选用run/effective/代次 | 成功后同事务建历史绑定，通过共同查阅代次才更新当前索引；不同语境不误用，严格键slot只合并调用；已有结果不依赖Redis或本机存续 |
 | AudioAsset/Segment/Manifest | owner、内容/声音/模型/参数摘要、格式、对象与句子引用 | 用户内去重；实际格式与Content-Type匹配；未完成产物不播放 |
 | GlobalWordAudio/GlobalWordGenerationSlot | system_catalog标准词条/读音/profile、全局合成键、对象版本及内部生成租约/代次 | 仅[标准收藏词音](learning-cache.md#51-收藏库标准单词发音的全局缓存)跨用户去重；发布/消费走专用目录服务，个人引用/Job/凭据/费用仍隔离，不给私有AudioAsset增加owner空值旁路 |
-| ProviderCredential/Settings | owner、provider、密文、credential_version、encryption_key_version、row revision；模型能力选择在Settings | 用户换Key/撤销更新credential_version，主密钥重加密只更新encryption_key_version，二者不混用；DTO只返回掩码 |
+| ProviderCredential | owner、provider、密文、credential_version、encryption_key_version、row revision | 用户换Key/撤销更新credential_version，主密钥重加密只更新encryption_key_version，二者不混用；DTO只返回掩码，模型能力选择由上方Settings引用 |
 | Job/JobStage/ExternalCall | actor/owner/audience、权限引用、输入版本、阶段、租约、预算 | 状态CAS、阶段幂等、调用结果不确定单独记录 |
 | Outbox/Inbox/IdempotencyRecord | event_id、schema、资源引用、请求摘要、游标/结果引用 | 已提交事实可重投；重复消费不重复业务；不放秘密/正文 |
 | AdminAuditEvent | actor、target、动作、版本/安全差异、结果 | 与成功变更同事务；应用不可更新/删除；留存独立于Loki |
@@ -47,7 +48,7 @@
 
 以下保留产品逻辑模型中的跨功能关系，不复制模块 DTO，也不把字段示意当最终 DDL：
 
-- User 拥有私有 Library，StudyProfile 是该用户的学习偏好；界面 locale、母语与 target_languages 分开。LearnerProfile 按学习者与目标语派生词汇、语法和技能统计，并保留更新时间/事实版本；修改语言偏好不改写原 Attempt 或删除历史。设置字段和诊断口径分别见 [设置](../modules/settings.md)、[收藏与练习](../modules/vocabulary-practice.md)。
+- User拥有私有Library并承载不可由资料接口修改的登录/状态字段；UserProfile保存显示名、头像引用及可选出生年份/性别，StudyProfile保存母语/解释语言、target_languages及各语言水平/目标，Settings保存模型、时区、显示/阅读等偏好，三者各自revision。界面locale、母语与target_languages分开；可选人口字段默认不进入AI。LearnerProfile按学习者与目标语派生词汇、语法和技能统计，并保留更新时间/事实版本；修改语言偏好不改写原Attempt或删除历史。设置字段和诊断口径分别见[设置](../modules/settings.md)、[收藏与练习](../modules/vocabulary-practice.md)。
 - Material 的来源格式、唯一业务类型 material_type、语言与导入报告分开。MaterialRevision 保留不可变源结构/ContentBlock，各类型独立编排 NovelManifest、TextbookManifest 或 ExamPaperVersion；语言分析版本中的 Sentence/Token 引用原文 span。类型固定、另类型重新处理及内容/标注版本边界唯一维护在 [三类材料契约](../contracts/material-types.md)。重新解析失败不切当前版本，收藏重绑失败保留快照；保留/删除期限仍按第 7 节处理。
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
 - CollectionItem 维护 kind、词句/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词允许为空，不能伪造材料出处。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
@@ -59,8 +60,10 @@
 
 | 事务 | 在同一提交内完成 | 事务外执行 |
 | --- | --- | --- |
-| 注册 | User/Library/Profile/默认角色/必要通知Outbox | 发邮件、创建登录会话 |
-| 撤销/改密/禁用 | 持久会话撤销或epoch、状态/权限版本、审计、Outbox | Redis删除、客户端通知 |
+| 注册 | User/Library/UserProfile/StudyProfile/Settings/默认角色/必要通知Outbox | 发邮件、创建登录会话 |
+| 资料/学习档案/设置更新 | 本人范围、字段白名单/field mask、expected_revision、单聚合更新与Outbox | 头像文件处理、客户端缓存刷新；一个聚合成功不与另一个页面保存伪装成全局原子 |
+| 头像发布/替换 | 完成验证后的AvatarAsset、UserProfile expected_revision、当前指针与Outbox | staging清理、旧无引用资产GC、客户端私有缓存刷新；解码/重编码在短事务外完成 |
+| 撤销/改密/禁用 | 改密锁内复核password_version/security_epoch/当前会话；哈希替换、版本/epoch、持久会话撤销或状态/权限版本、审计、Outbox | 密码验证与新哈希计算、Redis删除、客户端通知；提交确认丢失不自动重放 |
 | 角色/菜单/策略管理 | 范围检查、预期revision、修改、版本、审计、Outbox | 快照预热/通知/Loki投递 |
 | 上传完成/导入 | UploadIntent状态、FileObject验证引用、Material/Job/Outbox | 文件内容解析、AI、对象读取 |
 | 收藏/CSV批次 | 权限/归属/版本/幂等、业务记录、批次游标 | 下一批处理、日志转发 |

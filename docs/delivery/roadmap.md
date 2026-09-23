@@ -56,7 +56,9 @@ B0各切片已完成必要测试与独立review。Windows/Linux干净检出、�
 - 按 [前端E2E](../engineering/testing/frontend-e2e.md) 建立Test ID单源生成、Key/Web语义定位原型及平台runner分工；按 [测试数据](../engineering/testing/data.md) 建立共享样本、声明式场景、工厂秘密通道与资源账本，映射UIE/TDS验收。
 - 按 [MyHome 复用](../operations/myhome-integration.md) 接入独立数据库、凭据、Bucket、队列、网络和日志，不共用 MyHome 账号数据。
 - 首次建表前落实数据库规范与 DB 验收：不使用物理/组合外键，保留 PK/UNIQUE/NOT NULL/行内 CHECK；复用 MyHome 的创建/更新时间约定并覆盖全部写路径，维护数据字典、索引和迁移约束。采用同库同 schema 共享表及强制 ScopeContext，P0 不启用 RLS。
-- 实现注册事务、密码哈希、设备会话、刷新/撤销、改密、Web Cookie/CSRF 和原生安全存储。
+- 实现最小注册事务、密码哈希/password_version、设备会话、刷新/撤销、改密、Web Cookie/CSRF和原生安全存储；改密提交锁内复核版本/epoch/会话，成功推进版本和安全epoch并撤销client/admin全部会话，确定拒绝/回滚不撤销，提交后丢响应按结果未知处理且不自动重放。
+- 实现可跳过首次引导和[基础资料/设置](../modules/settings.md)：显示名、头像、可选出生年份/性别、母语/解释语言、英日目标语/当前语言、水平/目标、时区、显示/无障碍默认值；UserProfile/StudyProfile/Settings分revision，资料不成为注册/登录门槛。
+- 实现头像专用UploadIntent、真实解码/资源与像素限制/去元数据/重编码、不可变发布/原子替换与账号分区副本；头像HTTP响应P0使用private/no-store，同浏览器换账号或撤权后重新鉴权，普通用户及管理端均不能用头像/资料接口或缓存旁路读取他人头像、人口属性或语言档案。
 - 按 [账号流程](../modules/accounts.md) 和 [公共认证机制](../architecture/authentication.md) 实现PG持久撤销/epoch、Web opaque Cookie与原生轮换；覆盖激活条件、login-only空状态、Redis故障与并发刷新。
 - 建立管理 Web 布局、用户管理、角色/权限、两端菜单及注册策略；任务、配额、审计和运行概览随对应模块接入。
 - 实现权限目录、角色继承/显式拒绝、授予边界、AuthorizationService、数据库授权版本与只读策略投影、两端访问快照和路由/操作守卫。
@@ -70,7 +72,8 @@ B0各切片已完成必要测试与独立review。Windows/Linux干净检出、�
 
 验收：
 
-- [ ] 三端可注册、登录、续期、退出、改密；失败注册不留下半成品 Library。
+- [ ] 三端可注册、登录、续期、退出、改密；失败注册不留下半成品Library/Profile/Settings，头像/出生年份/性别/语言/Key缺失不阻止注册或登录。
+- [ ] ACC-11/12及PROFILE-001～PROFILE-006通过：引导可跳过；资料/学习语言/显示设置可保存与清除；头像验证发布；多端revision冲突、A/B交换ID、换账号迟到响应、管理DTO裁剪和可选人口字段默认不进AI均有证据。
 - [ ] A/B 的 API、文件、会话、模型配置和任务不能越权，MyHome Token 不被接受。
 - [ ] 数据库规范的本阶段 DB 验收通过；真实 PG 元数据无物理外键，创建/更新时间及行内/唯一约束符合规范，实际服务的 ScopeContext 关联校验和父删除竞争通过 DAT-01/DAT-06，合法测试工厂不绕过逻辑关联；不得将本条文档化视为已经实现。
 - [ ] 客户端和管理端登录分别受控；client 会话不能调用 admin API，权限未加载/不足时不显示受限页面、菜单、按钮或字段。

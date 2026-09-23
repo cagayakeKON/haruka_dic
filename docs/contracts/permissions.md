@@ -45,7 +45,8 @@
 | client.exam.import/edit | 创建试卷/题目校对/版本确认 | import复用上传需material.import；AI结构化另验material.analyze；edit需exam.read；在本人校对范围使用完整原件另需material.read，普通题面read不授予含答案原件的复用/下载 |
 | client.exam_session.start/read/save/submit | 开考、恢复/答题卡、存草稿、交卷 | start需exam.read；save/submit需session.read与活动状态/edit_epoch；submit不隐含收费批改 |
 | client.exam_grade.request/read/regrade | 请求批改、成绩、显式重评 | request/regrade需session.read及已提交答案；需要AI时Key/预算，交卷并批改需同时submit+request |
-| client.profile.read/update | 本人资料/学习偏好/设置 | update校验字段；不允许改角色/状态/登录邮箱 |
+| client.profile.read/update | 本人资料、学习语言档案、模型/阅读/显示等服务器设置 | update需read、字段白名单、field mask和expected_revision；不允许改角色/状态/登录邮箱/权限/配额/掌握，出生年份/性别为可选本人数据 |
+| client.profile.avatar.update | 申请/完成本人头像上传、替换或删除当前头像 | 需profile.read；仅avatar用途临时对象及本人资料revision，不能复用材料/题图FileObject或提交外链；读取当前头像仍需profile.read |
 | client.credential.read/manage/test | 掩码/配置；新增轮换删除Key；供应商测试 | manage不返回明文；test需read、本人Key/预算且明确提示可能产生极小测试费用 |
 | client.job.read/cancel/retry | 本人任务状态/取消/重试 | read校验结果本身所需read；retry重查原业务所有权限/意图/预算，不能绕过unknown确认 |
 
@@ -79,7 +80,7 @@
 | 类型 | 入口 | 限制 |
 | --- | --- | --- |
 | 公开 | meta、auth/policy、register/login、恢复/邮箱挑战受理与消费、受限匿名遥测 | 对应速率/来源/用途校验；meta仅实例/兼容版本等安全信息，不返回业务资源或权限目录 |
-| 身份基础 | 本人access、model-capabilities、CSRF读取、续期、改密、列出/撤销本人会话、近期重验、退出 | 本人有效会话/必要旧密码或挑战；模型目录仅有效client登录者的已发布能力；active与受众登录资格按账号协议；退出可本地清理失效会话；不授权他人数据 |
+| 身份基础 | 本人access/account摘要、model/language-capabilities、CSRF读取、续期、改密、列出/撤销本人会话、近期重验、退出 | 本人有效会话/必要旧密码或挑战；能力目录仅有效client登录者的已发布安全字段；active与受众登录资格按账号协议；退出可本地清理失效会话；不授权他人数据或邮箱修改 |
 | 已登录遥测 | frontend-logs及admin对应入口 | 当前受众login权限；只写白名单遥测，无查询权 |
 | 运行探针 | live/readiness | 公网仅最少状态，依赖细节仅内部；不返回配置/秘密 |
 | 系统维护 | 截止锁卷、租约清理、Outbox发布、明确GC、已返回产物最低落盘、公共词音错误版本隔离/指针修复 | 固定代码注册的服务主体/动作白名单，不接受用户指定任意principal；目录维护仅非付费公共资产操作，不借个人Key生成 |

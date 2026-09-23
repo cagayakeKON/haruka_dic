@@ -72,7 +72,7 @@ client 权限固定为 self；admin 权限按管理服务返回 platform_metadat
 | 试卷 | client.exam.list/read/import/edit、client.exam_session.start/read/save/submit、client.exam_grade.request/read/regrade | 试卷入口、答题、交卷、批改与成绩 |
 | 收藏与 CSV | client.collection.read/create/update/delete、client.vocabulary.csv.export/import | 收藏页与 CSV 按钮 |
 | 学习与模型 | client.practice.read/start/answer、client.ai.explain、client.agent.use、client.speech.generate/play | 练习、解释、Agent、合成/已有音频播放 |
-| 个人设置与任务 | client.profile.read/update、client.credential.manage、client.job.read/cancel/retry | 设置/Key 管理、本人任务操作；密码/退出有专用自服务入口 |
+| 个人设置与任务 | client.profile.read/update、client.profile.avatar.update、client.credential.manage、client.job.read/cancel/retry | 资料/语言/设置、头像安全发布、Key管理和本人任务操作；密码/退出有专用身份自服务入口 |
 | 管理概览 | admin.dashboard.view | 后台首页及授权聚合 |
 | 账号 | admin.user.read/create/approve/update/enable/disable、admin.user.role.assign、admin.session.read/revoke | 用户页与对应按钮 |
 | 授权配置 | admin.role.read/create/update/delete、admin.role.permission.assign、admin.permission.read、admin.menu.read/update | 角色、权限树与两端菜单 |

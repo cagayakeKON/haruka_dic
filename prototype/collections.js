@@ -32,6 +32,137 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   s.collectionSearch = "";
   s.dailyDate = today();
   s.queryMessages = [];
+  s.queryImages = [];
+  let queryImageError = "";
+  let preparingImages = false;
+  let imageEpoch = 0;
+  let queryPicker = null;
+  const imageUrls = new Set();
+  function releaseImage(url) {
+    URL.revokeObjectURL(url);
+    imageUrls.delete(url);
+  }
+  function resetQueryImages() {
+    imageEpoch++;
+    imageUrls.forEach(releaseImage);
+    s.queryImages = [];
+    s.queryMessages = [];
+    s.queryDraft = "";
+    queryImageError = "";
+    preparingImages = false;
+    queryPicker = null;
+  }
+  window.addEventListener("pagehide", (event) => {
+    if (!event.persisted) resetQueryImages();
+  });
+  function queryImageStrip(images, editable = false) {
+    return images
+      .map(
+        (item, index) =>
+          `<div class="query-image-tile"><button class="query-image-open" type="button" data-x="viewQueryImage" data-id="${item.id}" aria-label="查看图片 ${index + 1}"><img src="${item.url}" alt="${e(item.name)}"></button>${editable ? `<button class="query-image-remove" type="button" data-x="removeQueryImage" data-id="${item.id}" aria-label="移除图片 ${index + 1}">${I("close")}</button>` : ""}</div>`,
+      )
+      .join("");
+  }
+  function refreshQueryAttachments() {
+    const form = root.querySelector('[data-x-form="query"]');
+    if (!form) return;
+    form.querySelector("[data-query-images]").innerHTML = queryImageStrip(
+      s.queryImages,
+      true,
+    );
+    form.querySelector("[data-query-images]").hidden = !s.queryImages.length;
+    form.querySelector("[data-query-error]").textContent = queryImageError;
+    form.querySelector("[data-query-error]").hidden = !queryImageError;
+    form.querySelector("[data-query-status]").textContent = preparingImages
+      ? "正在准备图片…"
+      : s.queryImages.length
+        ? `${s.queryImages.length} / 4 张图片 · 仅本机预览`
+        : mobile
+          ? "本地示例 · 不调用模型"
+          : "可粘贴图片 · 本地示例";
+    form.querySelectorAll('[data-x="pickQueryImage"]').forEach((button) => {
+      button.disabled = preparingImages;
+    });
+    form.querySelector('[type="submit"]').disabled =
+      preparingImages || (!s.queryDraft?.trim() && !s.queryImages.length);
+    form.setAttribute("aria-busy", String(preparingImages));
+  }
+  async function addQueryImages(files, picker = null) {
+    if (!files.length || !s.signedIn) return;
+    if (preparingImages || s.queryImages.length + files.length > 4) {
+      queryImageError = preparingImages
+        ? "图片正在准备，请稍后再添加。"
+        : "每次最多添加 4 张图片，请移除部分图片后重试。";
+      refreshQueryAttachments();
+      return;
+    }
+    const epoch = imageEpoch;
+    const batch = [];
+    preparingImages = true;
+    queryImageError = "";
+    refreshQueryAttachments();
+    try {
+      for (const file of files) {
+        if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
+          throw new Error("请选择 PNG、JPEG 或 WebP 图片。");
+        if (!file.size || file.size > 10_000_000)
+          throw new Error("单张图片需大于 0 且不超过 10 MB。");
+        const signature = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+        if (epoch !== imageEpoch || !s.signedIn) return;
+        const match =
+          file.type === "image/png"
+            ? [137, 80, 78, 71, 13, 10, 26, 10].every(
+                (value, index) => signature[index] === value,
+              )
+            : file.type === "image/jpeg"
+              ? signature[0] === 255 &&
+                signature[1] === 216 &&
+                signature[2] === 255
+              : String.fromCharCode(...signature.slice(0, 4)) === "RIFF" &&
+                String.fromCharCode(...signature.slice(8, 12)) === "WEBP";
+        if (!match) throw new Error("无法读取图片，请重新选择有效的图片文件。");
+        const url = URL.createObjectURL(file);
+        imageUrls.add(url);
+        batch.push({ id: id(), name: file.name || "粘贴的图片", url });
+        const img = new Image();
+        img.src = url;
+        await img.decode();
+        if (
+          !img.naturalWidth ||
+          img.naturalWidth * img.naturalHeight > 24_000_000
+        )
+          throw new Error("图片尺寸过大，请选择不超过 2400 万像素的图片。");
+        if (epoch !== imageEpoch || !s.signedIn) return;
+      }
+      s.queryImages.push(...batch);
+    } catch (error) {
+      batch.forEach((item) => releaseImage(item.url));
+      if (epoch === imageEpoch)
+        queryImageError =
+          error instanceof Error && error.name === "Error"
+            ? error.message
+            : "无法读取图片，请重新选择。";
+    } finally {
+      if (epoch !== imageEpoch) batch.forEach((item) => releaseImage(item.url));
+      else {
+        preparingImages = false;
+        refreshQueryAttachments();
+        if (picker)
+          requestAnimationFrame(() => {
+            if (
+              epoch === imageEpoch &&
+              picker.form === root.querySelector('[data-x-form="query"]') &&
+              [document.body, picker.button, picker.input].includes(
+                document.activeElement,
+              )
+            )
+              root
+                .querySelector("#query-input")
+                ?.focus({ preventScroll: true });
+          });
+      }
+    }
+  }
   s.materials = data.materials.map((m) => ({ ...m }));
   const deletedMaterials = new Set();
   let deletedFocusIndex = null;
@@ -299,13 +430,22 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     };
   }
   function query() {
-    return `<div class="query-page">${mobile ? "" : `<div class="collection-heading"><h1>查询</h1><span class="collection-kind">示例会话</span></div>`}<div class="query-messages" aria-live="polite">${s.queryMessages.length ? s.queryMessages.map((message) => `<div class="query-question">${e(message.question)}</div><article class="answer-card"><div class="collection-caption"><span class="collection-kind">${e(kinds[message.card.kind])} · 示例</span><button class="text-btn" type="button" data-x="saveCard" data-id="${message.card.id}" ${s.words.some((w) => w.cardId === message.card.id) ? "disabled" : ""}>${I("bookmark")}${s.words.some((w) => w.cardId === message.card.id) ? "已收藏" : "收藏"}</button></div><h2>${e(message.card.word)}</h2><p>${e(message.card.meaning)}</p><p>${e(message.card.detail)}</p>${message.card.sentence ? `<blockquote>${e(message.card.sentence)}</blockquote>` : ""}</article>`).join("") : `<div class="query-welcome"><span class="query-symbol">${I("message")}</span><h2>有什么想了解的？</h2><div class="query-prompts">${["そっと 是什么意思？", "に 和 へ 有什么区别？", "翻译：夏の風がそっと頬に触れた。", "天空为什么是蓝色的？"].map((q) => `<button class="secondary" type="button" data-x="prompt" data-question="${e(q)}">${e(q)} ${I("arrow")}</button>`).join("")}</div></div>`}</div><form class="query-composer" data-x-form="query"><label class="sr-only" for="query-input">输入问题</label><textarea id="query-input" name="question" required maxlength="2000" rows="2" placeholder="输入问题…">${e(s.queryDraft || "")}</textarea><div><span class="note">本地示例 · 不调用模型</span><button class="primary" type="submit" aria-label="发送问题">发送 ${I("arrow")}</button></div></form></div>`;
+    return `<div class="query-page">${mobile ? "" : `<div class="collection-heading"><h1>查询</h1><span class="collection-kind">示例会话</span></div>`}<div class="query-messages" aria-live="polite">${s.queryMessages.length ? s.queryMessages.map((message) => `<div class="query-question">${message.images?.length ? `<div class="query-image-strip">${queryImageStrip(message.images)}</div>` : ""}${message.question ? `<p>${e(message.question)}</p>` : ""}</div><article class="answer-card"><div class="collection-caption"><span class="collection-kind">${e(kinds[message.card.kind])} · 示例</span><button class="text-btn" type="button" data-x="saveCard" data-id="${message.card.id}" ${s.words.some((w) => w.cardId === message.card.id) ? "disabled" : ""}>${I("bookmark")}${s.words.some((w) => w.cardId === message.card.id) ? "已收藏" : "收藏"}</button></div><h2>${e(message.card.word)}</h2><p>${e(message.card.meaning)}</p><p>${e(message.card.detail)}</p>${message.card.sentence ? `<blockquote>${e(message.card.sentence)}</blockquote>` : ""}</article>`).join("") : `<div class="query-welcome"><span class="query-symbol">${I("message")}</span><h2>有什么想了解的？</h2><div class="query-prompts">${["そっと 是什么意思？", "に 和 へ 有什么区别？", "翻译：夏の風がそっと頬に触れた。", "天空为什么是蓝色的？"].map((q) => `<button class="secondary" type="button" data-x="prompt" data-question="${e(q)}">${e(q)} ${I("arrow")}</button>`).join("")}</div></div>`}</div><form class="query-composer" data-x-form="query" aria-busy="${preparingImages}"><div class="query-image-strip" data-query-images ${s.queryImages.length ? "" : "hidden"}>${queryImageStrip(s.queryImages, true)}</div><label class="sr-only" for="query-input">输入问题</label><textarea id="query-input" name="question" maxlength="2000" rows="2" placeholder="输入问题，或添加图片…">${e(s.queryDraft || "")}</textarea><p class="query-image-error" data-query-error role="alert" ${queryImageError ? "" : "hidden"}>${e(queryImageError)}</p><div class="query-composer-actions"><div class="query-attach-actions"><button class="query-attach-button" type="button" data-x="pickQueryImage" data-id="album" aria-label="添加图片" title="${mobile ? "从相册添加" : "选择图片"}" ${preparingImages ? "disabled" : ""}>${I("image")}<span>${mobile ? "相册" : "图片"}</span></button>${mobile ? `<button class="query-attach-button" type="button" data-x="pickQueryImage" data-id="camera" aria-label="拍照" ${preparingImages ? "disabled" : ""}>${I("camera")}<span>拍照</span></button>` : ""}</div><button class="primary" type="submit" aria-label="发送问题" ${preparingImages || (!s.queryDraft?.trim() && !s.queryImages.length) ? "disabled" : ""}>发送 ${I("arrow")}</button></div><p class="note query-composer-note" data-query-status role="status">${preparingImages ? "正在准备图片…" : s.queryImages.length ? `${s.queryImages.length} / 4 张图片 · 仅本机预览` : mobile ? "本地示例 · 不调用模型" : "可粘贴图片 · 本地示例"}</p><input type="file" data-query-file="album" accept="image/png,image/jpeg,image/webp" multiple hidden>${mobile ? '<input type="file" data-query-file="camera" accept="image/*" capture="environment" hidden>' : ""}</form></div>`;
   }
   function dialog() {
     let title;
     let content;
     const w = s.words.find((x) => x.id === s.selectedWord);
-    if (s.modal === "switchBook") {
+    if (s.modal === "queryImagePreview") {
+      const item = [
+        ...s.queryImages,
+        ...s.queryMessages.flatMap((message) => message.images || []),
+      ].find((image) => image.id === s.queryImagePreview);
+      title = "图片预览";
+      content = item
+        ? `<figure class="query-image-preview"><img src="${item.url}" alt="${e(item.name)}"><figcaption>${e(item.name)}</figcaption></figure>`
+        : "<p>图片已移除。</p>";
+    } else if (s.modal === "switchBook") {
       title = "切换单词本";
       content = `<div class="book-picker"><button class="book-picker-row" type="button" data-x="chooseBook" data-id="all"><span>全部收藏<small>${s.words.length} 条</small></span>${s.selectedBook === "all" ? I("check") : ""}</button>${s.notebooks.map((b) => `<div class="book-picker-line"><button class="book-picker-row" type="button" data-x="chooseBook" data-id="${b.id}"><span>${e(b.title)}<small>${e(b.language)} · ${s.words.filter((w) => belongs(w, b.id)).length} 条</small></span>${s.selectedBook === b.id ? I("check") : ""}</button><button class="icon-btn" type="button" data-x="manageBook" data-id="${b.id}" aria-label="管理 ${e(b.title)}">${I("more")}</button></div>`).join("")}<button class="secondary full" type="button" data-x="newBook">${I("plus")}新建单词本</button></div>`;
     } else if (s.modal === "manageBook") {
@@ -385,6 +525,25 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
       if (target.dataset.material) return openMaterial(target.dataset.material);
       const key = target.dataset.x,
         value = target.dataset.id;
+      if (key === "pickQueryImage") {
+        const input = root.querySelector(`[data-query-file="${value}"]`);
+        if (input) {
+          queryPicker = { form: input.form, input, button: target };
+          input.click();
+        }
+      }
+      if (key === "viewQueryImage") {
+        s.queryImagePreview = value;
+        show("queryImagePreview");
+      }
+      if (key === "removeQueryImage") {
+        const item = s.queryImages.find((image) => image.id === value);
+        if (item) releaseImage(item.url);
+        s.queryImages = s.queryImages.filter((image) => image.id !== value);
+        queryImageError = "";
+        refreshQueryAttachments();
+        root.querySelector("#query-input")?.focus({ preventScroll: true });
+      }
       if (key === "switch") show("switchBook");
       if (key === "chooseBook") {
         s.selectedBook = value;
@@ -478,9 +637,50 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     }
   });
   root.addEventListener("input", (event) => {
-    if (event.target.id === "query-input") s.queryDraft = event.target.value;
+    if (event.target.id === "query-input") {
+      s.queryDraft = event.target.value;
+      const button = event.target.form.querySelector('[type="submit"]');
+      button.disabled =
+        preparingImages || (!s.queryDraft.trim() && !s.queryImages.length);
+    }
+  });
+  root.addEventListener("paste", (event) => {
+    if (!event.target.closest('[data-x-form="query"]') || s.modal) return;
+    const files = [...(event.clipboardData?.items || [])]
+      .filter((item) => item.kind === "file")
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (!files.length) return;
+    event.preventDefault();
+    const text = event.clipboardData.getData("text/plain");
+    const input = root.querySelector("#query-input");
+    if (text && input) {
+      const available = Math.max(
+        0,
+        input.maxLength -
+          input.value.length +
+          input.selectionEnd -
+          input.selectionStart,
+      );
+      input.setRangeText(
+        text.slice(0, available),
+        input.selectionStart,
+        input.selectionEnd,
+        "end",
+      );
+      s.queryDraft = input.value;
+    }
+    void addQueryImages(files);
   });
   root.addEventListener("change", (event) => {
+    if (event.target.hasAttribute("data-query-file")) {
+      const files = [...event.target.files];
+      const picker = queryPicker?.input === event.target ? queryPicker : null;
+      queryPicker = null;
+      event.target.value = "";
+      void addQueryImages(files, picker);
+      return;
+    }
     if (event.target.hasAttribute("data-x-date")) {
       s.dailyDate = event.target.value || today();
       render();
@@ -550,12 +750,27 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
       }
       if (action === "query") {
         const question = text("question");
-        if (!question) return;
+        if (preparingImages || (!question && !s.queryImages.length)) return;
+        const images = s.queryImages;
         s.queryMessages.push({
           question,
-          card: { ...answer(question), id: id() },
+          images,
+          card: {
+            ...(images.length
+              ? {
+                  kind: "answer",
+                  word: question || "图片查询",
+                  meaning: "未生成图片回答",
+                  detail: `已添加 ${images.length} 张图片。本地原型仅演示图文消息，未上传图片或调用视觉模型。`,
+                  language: "简体中文",
+                }
+              : answer(question)),
+            id: id(),
+          },
         });
         s.queryDraft = "";
+        s.queryImages = [];
+        queryImageError = "";
         form.reset();
         render();
         root.querySelector("#query-input")?.focus({ preventScroll: true });
@@ -657,6 +872,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     deletedFocusIndex = null;
   }
   return {
+    resetQueryImages,
     guardMaterialRoute,
     restoreMaterialFocus,
     notebooks,

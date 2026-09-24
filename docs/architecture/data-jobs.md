@@ -57,7 +57,7 @@
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
 - CollectionItem 维护 kind=word/phrase/grammar/sentence/excerpt/answer、内容/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词及无材料查询卡片允许为空，不能伪造材料出处。卡片收藏保存card_id/card_revision/schema_version及完整服务端校验载荷快照；目标语缺失时按[查询模块](../modules/query.md)接受显式语言确认，不改写原卡片；每用户同一卡片版本幂等，不接受客户端自报正文。每日单词以CollectionItem.created_at按本人时区查询，只计kind=word，不用NotebookItem.created_at、CSV来源时间或另建每日调度表。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
 - Exercise 区分 extracted/generated/derived_from_mistake，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至CollectionItem、MistakeOccurrence、Attempt或ContentBlock，引用由服务事务校验同库归属及版本/状态。Attempt关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
-- AgentThread.mode区分query/contextual，无来源查询不强制材料ID。AgentMessage 保存结构化文字与卡片结果；Card 保存类型、版本化载荷及合法来源。消息保存和卡片成为可收藏业务结果不是同一成功条件；用户内容、模型候选和生成例句的标识按 [AI 与朗读](../modules/ai-speech.md) 维护。
+- AgentThread.mode区分query/contextual，无来源查询不强制材料ID。查询图片为query_image用途的本人私有FileObject/UploadIntent及会话附件关联，完成验证后发布不可变版本；AgentMessage保存可空文字、有序附件引用与卡片结果。发送/删除共用会话父行锁与代次保护，附件绑定与轮次一致提交，不接受其他用户/会话/用途的对象；未绑定草稿和有效消息引用采用不同回收规则，细节见[查询图片](../modules/query.md#31-私有图片附件)。Card 保存类型、版本化载荷及合法来源。消息保存和卡片成为可收藏业务结果不是同一成功条件；用户内容、模型候选和生成例句的标识按 [AI 与朗读](../modules/ai-speech.md) 维护。
 - CsvImportBatch 保存用户/资料库、协议版本、批次状态、进度与结果引用，不能用外部 CSV ID 决定所有者；导入的 preview/confirm/重复策略字段以 [CSV 契约](../contracts/vocabulary-csv.md) 为准。Job/外部调用记录和 CSV 批次各自表达领域状态，不互相代替。
 
 ## 3. 事务边界

@@ -277,3 +277,7 @@ architecture_review完成第1轮独立只读审查，发现MUR-01（P2）：用�
 本次仅检查受影响的页头布局：320/390/735px × 五个主tab共15组通过，双/三图标间距均为8px、点击区至少44px，标题保持单行且无重叠、横向溢出或JavaScript异常；人工查看390px材料库/单词本截图。局部脚本与结果位于忽略目录 `artifacts/design9/header-spacing.cjs` 和 `artifacts/design9/header-spacing-results.json`，不新增低风险样式的仓库测试。两份原型文件格式检查及diff空白检查通过，不运行无关业务或正式应用测试。
 
 独立reviewer `mobile_design_review` 第1轮核对CSS作用域、缓存版本、设计规则、布局结果与截图，无缺陷，不追加第2轮。两份Markdown的lint、本地链接/锚点/围栏/路径检查通过。按本小阶段创建本地commit，不默认push。
+
+## DESIGN10 查询图片与拍照入口
+
+2026-09-24，基线 7e688da，阶段1内独立原型/文档小阶段。增加查询图文输入、Web粘贴、手机相册与拍照入口、本机预览/移除及图文消息，同步私有附件、视觉能力、平台恢复及QRY-06～09验收设计；不实现正式上传、模型或原生Android。独立review与实际局部证据见[查询图片与拍照入口](2026-09-24-query-images.md)。

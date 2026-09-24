@@ -899,6 +899,7 @@
     }
     extras.guardMaterialRoute();
     s.adminArea = adminRoutes.includes(s.route);
+    if (!s.signedIn || s.adminArea) extras.resetQueryImages();
     applyTheme();
     document.body.style.overflow = s.modal ? "hidden" : "";
     const authScreen = [

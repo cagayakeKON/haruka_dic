@@ -919,6 +919,7 @@
         '#login',
       );
     }
+    if (!s.signedIn) extras.resetQueryImages();
     if (extras.guardMaterialRoute())
       history.replaceState(
         { ...history.state, harukaModal: '' },

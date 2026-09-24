@@ -76,7 +76,9 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/POST diagnoses；GET diagnoses/{id} | 报告列表/详情/生成，数据范围与统计窗口 | diagnosis.read/generate+来源read |
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
 | POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新模型调用另验Key/上限；显式再解析使用expected_lookup_revision取得新查阅代次 |
-| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；mode=query/contextual、解释语言/可选目标语、可空材料引用；run引用与流 | agent.read/use/delete，每工具独立授权 |
+| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；mode=query/contextual、解释语言/可选目标语、可空材料引用；查询轮次可提交文字与有序image_refs，至少一项有效；run引用与流 | agent.read/use/delete，每工具独立授权；含图轮次检查本人视觉能力及全部附件 |
+| POST agent/threads/{id}/image-upload-intents；POST agent/threads/{id}/image-upload-intents/{intent_id}/complete | 仅query_image用途；当前会话的临时上传、真实解码/规范方向/去元数据/重编码后发布不可变图片 | agent.use、本人query会话；复用受控上传发布，不接受任意FileObject或URL |
+| GET agent/threads/{id}/images/{image_id}/content；DELETE agent/threads/{id}/images/{image_id} | 获取私有图片；删除未绑定的草稿附件，已绑定消息的附件返回冲突 | 读取需agent.read；草稿移除需agent.use及本人会话；逐次鉴权，private/no-store，正式会话删除与GC另行处理 |
 | POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；试卷隐藏听力稿不能作为任意客户端文本提交，须走试卷专用生成入口；ExamListeningAudioBinding不从此通用manifest端点交付，有限场次只走PlayAttempt；global_word生产者Job/Key/模型用量不返回给其他等候者，缺失不自动换用户Key |
 | POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 只读匹配/本人等待状态/普通音频传输；global_word响应含asset_kind及实际profile，不含贡献者/他人Job/使用人数 | resolve/play不发起供应商调用、不要求Key；全局媒体也须验证本人收藏来源/版本/读音/profile与资产匹配；试卷听力资产ID在通用resolve/media拒绝，防止绕过场次策略；新生成只走requests且需generate |
 | GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从exam材料准备/校对/冻结；不能直接把novel/textbook当试卷 | exam动作+实际AI分析/导入权限；其他类型先显式重新处理 |
@@ -105,7 +107,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 ## 4. 文件与流式事件
 
-上传意图只返回临时staging_key的写入能力、格式/大小/摘要规则、期限与传输方式。完成接口领取该意图的提交权后，由后端复制/流式读取到服务端独享的全新final_key，再校验final对象的实际字节/大小/摘要/格式，只有全部通过才在PG事务发布FileObject/Material/Job。客户端永远不获得final_key的PUT权限，Worker只读取这个已验证最终对象；重试不能覆盖已发布final对象。临时对象被重复PUT或复制时改变，最终校验不符就拒绝并清理，不沿用先前HEAD结果。完整状态/竞态合同见数据与任务；头像/照片/试卷等所有上传复用同一不可变发布过程。听力文字稿使用试卷专用purpose并发布到ExamListeningScriptSource/Version，不创建第四类Material；P0上传完成端点按真实字节与MIME拒绝原始音频，不能改走通用上传绕过。
+上传意图只返回临时staging_key的写入能力、格式/大小/摘要规则、期限与传输方式。完成接口领取该意图的提交权后，由后端复制/流式读取到服务端独享的全新final_key，再校验final对象的实际字节/大小/摘要/格式，只有全部通过才在PG事务发布FileObject及对应用途的业务引用；材料导入才创建Material/Job，查询图片只发布会话附件，不创建材料或自动调用模型。客户端永远不获得final_key的PUT权限，Worker只读取这个已验证最终对象；重试不能覆盖已发布final对象。临时对象被重复PUT或复制时改变，最终校验不符就拒绝并清理，不沿用先前HEAD结果。完整状态/竞态合同见数据与任务；头像/照片/试卷等所有上传复用同一不可变发布过程。听力文字稿使用试卷专用purpose并发布到ExamListeningScriptSource/Version，不创建第四类Material；P0上传完成端点按真实字节与MIME拒绝原始音频，不能改走通用上传绕过。
 
 私有下载签发前验证业务权限/对象用途，短签名地址到期前的撤权限制必须明确；即时撤权内容采用API鉴权代理。媒体正确设置Content-Type、Range/206、长度与缓存策略，不缓存带会话的私人响应到公共CDN。CSV流失败不显示完整成功，前端收到有效完成后再报告本地保存结果。
 
@@ -120,3 +122,11 @@ Last-Event-ID用于有界事件回放；首版仅保证持久状态、阶段结�
 API-01：每个路由映射权限/公共例外并测越权；API-02：分页/版本/幂等/超时重试不重复写；API-03：Pydantic/Dart对null/未知枚举/Decimal/Unicode/UTC一致；API-04：SSE及任务WebSocket断连/窗口外恢复不重复调用供应商（WebSocket完整矩阵见WSP-01～WSP-05）；API-05：文件/CSV媒体类型和失败状态在三端有效；API-06：旧客户端兼容、生成契约差异及未经授权字段拒绝可验证。
 
 统一返回、框架异常覆盖和语言/客户端降级的 API-07～API-10 见 [返回契约验收](api-responses.md#7-验收)，按已交付路由和本阶段影响范围执行。
+
+## 6. 查询图片请求补充（P0，待实现）
+
+查询上传前读取公开能力配置中的 `query_image_policy`（允许格式、单张字节/像素上限、每轮张数/总字节和临时保留期）；具体数值由部署发布，原型限制不是正式契约默认值。上传意图请求只含受限文件描述与用途上下文，owner来自认证，会话来自路径；complete按临时对象发布协议验证实际字节后返回 `attachment_id/revision/status`，只有ready可发送。
+
+`POST agent/threads/{id}/runs` 的query输入包含可空 `text` 和有序 `image_refs: [{attachment_id, revision}]`；纯图允许，二者皆空拒绝。不得同时接受base64、外链URL或客户端指定的final对象路径；引用必须全部ready、属于当前用户/当前会话/query_image用途，已绑定其他轮次的草稿不能重复绑定。重放同幂等键先返回原轮次结果，同键文字/图片版本/顺序或模型配置不同则冲突。新提交在共同会话锁下冻结消息引用，与AiRun/必要Outbox一致提交，删除会话与迟到完成遵守代次保护。
+
+附件不合格、超限或未就绪用具体字段/状态错误拒绝整轮；缺视觉能力或本人Key不丢图转纯文字。成功JSON、分页与错误沿用统一返回契约，图片内容为鉴权的原生二进制响应；消息投影仅返回受控附件引用与必要显示元数据，不回传存储键、EXIF或供应商签名。完整流程和验收由[查询模块](../modules/query.md)维护。

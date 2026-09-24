@@ -8,7 +8,7 @@
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。
 
-2026-09-24已文档化[产品设计语言「晴空频率」](../product/design-language.md)，整体方向已确认，具体实现初值待各切片验证。[当前 HTML 原型](../../prototype/README.md)已重建为手机/电脑两套独立视觉与内存交互示例；手机端在 DESIGN3 调整页面层级与触控任务流，DESIGN4 进一步重构移动排版、底部操作与产品文案，详见[手机局部交付记录](reviews/2026-09-24-mobile-refinement.md)。DESIGN5 将电脑端对齐手机视觉，重构响应式排版、分步表单、阅读辅助栏、键盘操作与历史导航，详见[电脑局部交付记录](reviews/2026-09-24-desktop-refinement.md)。DESIGN6同步多类型收藏列表/弹窗、每日单词、查询卡片、材料直达与本地WebSocket进度演示，详见[局部交付](reviews/2026-09-24-collections-query-prototype.md)。DESIGN7 优化手机登录、注册和找回的紧凑布局、字段反馈与受理状态，详见[手机身份入口记录](reviews/2026-09-24-mobile-auth.md)。DESIGN8 将手机材料搜索并入header、恢复右下角导入并弱化两端详情入口，详见[材料库层级修订](reviews/2026-09-24-library-hierarchy.md)。DESIGN9 统一手机tab标题与按需搜索，增加两端材料更多菜单及确认删除，详见[页头与材料操作记录](reviews/2026-09-24-tab-header-material-menu.md)。原型不提供正式业务服务；不设“继续阅读”的边界保留。原型交付不勾选下方业务验收，正式应用的B0通过依据仍是独立工程证据。
+2026-09-24已文档化[产品设计语言「晴空频率」](../product/design-language.md)，整体方向已确认，具体实现初值待各切片验证。[当前 HTML 原型](../../prototype/README.md)已重建为手机/电脑两套独立视觉与内存交互示例；手机端在 DESIGN3 调整页面层级与触控任务流，DESIGN4 进一步重构移动排版、底部操作与产品文案，详见[手机局部交付记录](reviews/2026-09-24-mobile-refinement.md)。DESIGN5 将电脑端对齐手机视觉，重构响应式排版、分步表单、阅读辅助栏、键盘操作与历史导航，详见[电脑局部交付记录](reviews/2026-09-24-desktop-refinement.md)。DESIGN6同步多类型收藏列表/弹窗、每日单词、查询卡片、材料直达与本地WebSocket进度演示，详见[局部交付](reviews/2026-09-24-collections-query-prototype.md)。DESIGN7 优化手机登录、注册和找回的紧凑布局、字段反馈与受理状态，详见[手机身份入口记录](reviews/2026-09-24-mobile-auth.md)。DESIGN8 将手机材料搜索并入header、恢复右下角导入并弱化两端详情入口，详见[材料库层级修订](reviews/2026-09-24-library-hierarchy.md)。DESIGN9 统一手机tab标题与按需搜索，增加两端材料更多菜单及确认删除，详见[页头与材料操作记录](reviews/2026-09-24-tab-header-material-menu.md)。DESIGN10 增加图文查询、本机图片预览、Web粘贴和手机拍照入口，详见[查询图片记录](reviews/2026-09-24-query-images.md)；原生Android相机与正式附件业务待阶段4。原型不提供正式业务服务；不设“继续阅读”的边界保留。原型交付不勾选下方业务验收，正式应用的B0通过依据仍是独立工程证据。
 
 多用户和账号功能已确定。推荐每账号一个私有资料库、邮箱密码登录和 Haruka 独立会话。注册开放策略、邮箱验证/找回方式、阅读器要求、默认供应商和原需求契约缺口统一见 [待决事项及锁定节点](../decisions/pending.md)；依赖项未闭环不能将相关能力标为ready。
 
@@ -148,7 +148,7 @@ B0各切片已完成必要测试与独立review。Windows/Linux干净检出、�
 - 按当前用户真实学习记录生成诊断与练习，提供 WordCard、SentenceCard、GrammarCard、AnswerCard。
 - AI习题支持多本组合、日期字段/区间、自动掌握与错误状态筛选、预览确认和冻结候选；执行AIX-01～AIX-10，不扩充模型主考范围或后台自动发起供应商调用。
 - 使用 Pydantic AI 工具与运行依赖固定用户范围，支持多轮上下文及业务阶段保存；模型不能自报身份扩大权限。
-- 实现[独立查询](../modules/query.md)及AnswerCard，QRY-01～QRY-05验证无材料问答、完整卡片收藏、幂等/来源/账号隔离；正式模型调用仍遵守本人Key与上限。
+- 实现[独立查询](../modules/query.md)及AnswerCard，QRY-01～QRY-09验证无材料图文问答、完整卡片收藏、私有附件发布/读取、Web图片粘贴、Android相册/直接拍照及权限/恢复、幂等/来源/账号隔离；正式模型调用仍遵守本人视觉能力、Key与上限，不以HTML文件选择替代Android系统验收。
 - 同步练习、作答、评分与 Agent 卡片操作埋点，以及每次模型/工具/重试的遥测；业务统计以实际记录为准。
 - 按 [试卷模式](../modules/exams.md) 实现开考/继续、答题卡、跳题/标记、revision 草稿保存、编辑端接管、可选服务端计时和截止自动交卷。
 - 对包含听力题的试卷在开考前预检冻结音频与speech.play，场次固定脚本/AudioBinding/播放策略；考试中隐藏脚本，必要媒体故障由服务端确认并阻止受影响空答误记零分，不在作答中临时重合成或切换声音。

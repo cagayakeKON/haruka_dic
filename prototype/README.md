@@ -1,6 +1,6 @@
 # Haruka「晴空频率」交互原型
 
-状态：2026-09-24，阶段1中的独立原型小阶段 DESIGN2；手机端在 DESIGN3 调整任务流，DESIGN4 进一步重构移动排版、底部动作和产品文案；电脑端在 DESIGN5 对齐手机视觉；DESIGN6 同步两端收藏列表/弹窗、每日单词、查询卡片、材料直达，并去除电脑消息/任务重复入口。用于核对产品设计语言、页面信息架构和关键交互，不是 Flutter/Python 正式应用、B1/B2 实现或业务验收证据。视觉基线见[产品设计语言](../docs/product/design-language.md)，行为边界以[产品总览](../docs/product/overview.md)和各模块规格为准。
+状态：2026-09-24，阶段1中的独立原型小阶段 DESIGN2；手机端在 DESIGN3 调整任务流，DESIGN4 进一步重构移动排版、底部动作和产品文案；电脑端在 DESIGN5 对齐手机视觉；DESIGN6 同步两端收藏列表/弹窗、每日单词、查询卡片、材料直达，并去除电脑消息/任务重复入口；DESIGN7 优化手机登录、注册、找回的紧凑布局、字段反馈和受理页。用于核对产品设计语言、页面信息架构和关键交互，不是 Flutter/Python 正式应用、B1/B2 实现或业务验收证据。视觉基线见[产品设计语言](../docs/product/design-language.md)，行为边界以[产品总览](../docs/product/overview.md)和各模块规格为准。
 
 从 [原型入口](index.html) 分别进入[手机端](phone.html)与[电脑端](desktop.html)。两个入口分别拥有页面结构、导航、排版和交互脚本；共用虚构样本、基础图标/安全转义，以及 collections.js 的本地收藏/查询/任务示例交互；外层导航和布局保持独立。手机端以五个主入口、底部操作和面板完成触控路径；电脑端从单列布局渐进展开侧栏、阅读解释和设置分类，沿用手机视觉与五个核心目的地，并提供独立 Web 管理端示例。静态页面可直接打开HTML；WebSocket进度需要下面的本地演示服务。普通静态服务/直接文件方式没有进度服务器时会保留等待连接，不虚构完成。
 
@@ -8,7 +8,7 @@
 
 | 范围 | 手机端 | 电脑端 |
 | --- | --- | --- |
-| 入口与账号 | 登录、注册确认/受理状态、找回、登录后的可跳过首次设置、服务连接 | 独立登录/注册确认与受理/找回/首次设置，以及管理端登录示例 |
+| 入口与账号 | 登录、注册确认/受理状态、找回/受理状态、登录后的可跳过首次设置、服务连接 | 独立登录/注册确认与受理/找回/首次设置，以及管理端登录示例 |
 | 材料 | 主区域直接阅读/课本学习/试卷准备；独立详情dialog、解析进度面板、三步导入 | 同一流程；任务右侧抽屉，消息只保留header铃铛 |
 | 小说 | 通栏章节正文、底部阅读工具与选词解释面板、出处、收藏、朗读状态；字号/行距/字体/主题可直接在底部面板调整 | 按宽度展开正文/解释/目录，窄窗口改用弹窗；阅读排版就地调整，保留选词、出处与收藏 |
 | 课本 | 单元列表 → 单元内容 → 独立课后题与逐题反馈 | 单元导航、对应单元内容弹窗、独立课后题与逐题反馈 |
@@ -37,6 +37,8 @@
 
 正式 Flutter 页面、权限、离线租期、模型 Key、任务、持久化、无障碍和 Windows/Web/Android 适配仍以工程切片及对应验收证明为准。本原型的浏览器 CSS 阈值不是 Flutter 断点。
 
+手机身份页使用顶部品牌与可滚动短表单，密码显隐不丢输入，错误贴近字段；切换页面后不恢复密码，邮箱只在当前页内存中临时保留。注册和找回均显示独立受理页；原型不创建账号、不发送邮件、不修改密码。注册长度用账号模块推荐值演示，正式输入约束仍由公开策略确定。DESIGN7 的局部检查见[手机登录、注册与找回优化](../docs/delivery/reviews/2026-09-24-mobile-auth.md)。
+
 DESIGN6实际检查见[收藏、查询与实时进度记录](../docs/delivery/reviews/2026-09-24-collections-query-prototype.md)。此前检查与修订见[双端原型审查](../docs/delivery/reviews/2026-09-24-clear-signal-prototype.md)、[手机任务流修订](../docs/delivery/reviews/2026-09-24-mobile-first-prototype.md)、[手机排版与文案重构](../docs/delivery/reviews/2026-09-24-mobile-refinement.md)和[电脑端排版与交互重构](../docs/delivery/reviews/2026-09-24-desktop-refinement.md)。
 
 ## 本地进度演示与检查
@@ -54,4 +56,4 @@ python -X utf8 prototype/serve.py
 
 查询提供四个可体验的内置问题；任意其他文本可提交并得到明确“未生成回答”的占位卡，不能当成真实AI回答。收藏保留完整卡片，类型分别进入单词/语法/句子/回答筛选。每日单词仅按实际本页加入日期显示单词，不生成任务或复习配额。
 
-已有仓库E2E依赖与Edge环境下，局部浏览器回归：`node prototype/tests/design6.cjs`；修订项定点回归：`node prototype/tests/design6-regressions.cjs`。结果写入被忽略的 artifacts/design6，不作为正式应用测试证据。
+已有仓库E2E依赖与Edge环境下，局部浏览器回归：`node prototype/tests/design6.cjs`；修订项定点回归：`node prototype/tests/design6-regressions.cjs`。结果写入被忽略的 artifacts/design6，不作为正式应用测试证据。手机身份页定点回归：`node prototype/tests/design7-auth.cjs`；焦点与对比度修订检查：`node prototype/tests/design7-auth-regressions.cjs`。结果与截图写入 artifacts/design7；仅检查本次表单与邻接流程，不替代正式认证或实体软键盘验收。

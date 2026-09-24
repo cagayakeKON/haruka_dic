@@ -52,6 +52,9 @@
   let builderStep = location.hash.includes('exerciseBuilder?step=2') ? 1 : 0;
   let examPaused = false;
   let modalReturnFocus = '';
+  let authEmail = '';
+  let recoveryAccepted = false;
+  let renderedRoute = '';
   const focusSelector = (element) => {
     if (!element?.attributes) return '';
     const attributes = [...element.attributes].filter(
@@ -201,6 +204,7 @@
         'login',
         'register',
         'registrationStatus',
+        'recoveryStatus',
         'recovery',
         'onboarding',
       ].includes(s.route) ||
@@ -527,21 +531,66 @@
   function security() {
     return `<div class="surface" style="margin-top:22px">${settingRow('profile', '本人资料', '头像、显示名与可选资料', 'user')}<div class="setting-row"><span class="setting-icon">${I('lock')}</span><span class="row-copy"><strong>修改密码</strong><small>正式成功后所有会话需重新登录</small></span><button class="text-btn" type="button" data-modal="password">查看流程</button></div><div class="setting-row"><span class="setting-icon">${I('shield')}</span><span class="row-copy"><strong>当前设备会话</strong><small>演示身份 · 用户端</small></span></div></div><button class="danger-btn full" type="button" data-action="logout" style="margin-top:19px">退出演示账号</button><p class="note" style="margin-top:15px">本原型不接收密码、真实登录邮箱或 API Key。</p>`;
   }
+  const authEye = (visible = false) =>
+    `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>${visible ? '<path d="m3 3 18 18"/>' : ''}</svg>`;
+  function authFrame(content, footer = '') {
+    return `<div class="mobile-auth"><header class="auth-header"><div class="auth-brand"><span class="head-mark" aria-hidden="true">h</span><span>haruka</span></div><details class="auth-about"><summary>原型</summary><p>仅供本地体验，不创建账号或发送邮件。请使用示例信息。</p></details></header><div class="auth-body">${content}</div>${footer ? `<footer class="auth-footer">${footer}</footer>` : ''}</div>`;
+  }
+  function authPassword(name, label, register = false) {
+    const confirm = name === 'confirmPassword';
+    return `<div class="auth-field"><label for="auth-${name}">${label}</label><div class="auth-input-wrap">${I('lock')}<input id="auth-${name}" type="password" name="${name}" autocomplete="${register ? 'new-password' : 'current-password'}" placeholder="${confirm ? '再次输入密码' : register ? '设置密码' : '输入密码'}" required aria-describedby="${register && !confirm ? 'auth-password-hint ' : ''}auth-${name}-error" enterkeyhint="${register && !confirm ? 'next' : 'go'}"><button class="auth-reveal" type="button" data-auth-toggle="${name}" aria-label="显示${label}" aria-controls="auth-${name}" aria-pressed="false">${authEye()}</button></div>${register && !confirm ? '<p class="auth-hint" id="auth-password-hint">15–128 个字符，可包含空格</p>' : ''}<p class="auth-field-error" id="auth-${name}-error" role="alert" hidden></p></div>`;
+  }
   function authCore() {
-    const route = s.route;
-    const title =
-      route === 'register'
-        ? '从这里开始。'
-        : route === 'recovery'
-          ? '找回访问方式。'
-          : '欢迎回来。';
-    return `<div class="auth-screen"><div class="login-logo"><span class="head-mark">h</span>haruka</div><h1 class="hero-title">${title}</h1><p class="page-subtitle">体验登录/注册页面结构。请输入演示内容，页面不会向外发送。</p><form data-form="${route}" class="surface form-grid" style="margin-top:23px">${route === 'recovery' ? `<label class="field">登录邮箱<input type="email" name="email" placeholder="example@demo.test" required></label><div class="callout">${I('shield')}<span>真实找回方式尚待产品确定；此处只显示统一受理结果。</span></div>` : `<label class="field">登录邮箱<input type="email" name="email" placeholder="example@demo.test" required></label><label class="field">密码<input type="password" name="password" placeholder="仅填写演示内容" required minlength="6"></label>`}${route === 'register' ? '<label class="field">确认密码<input type="password" name="confirmPassword" placeholder="再次输入演示密码" required minlength="6"></label>' : ''}<button type="submit" class="primary full">${route === 'register' ? '提交演示注册' : route === 'recovery' ? '查看受理结果' : '进入演示账号'}</button></form><div class="button-row" style="margin-top:12px">${route !== 'login' ? btn('返回登录', 'login', 'text-btn') : btn('创建账号', 'register', 'text-btn')}${route === 'login' ? btn('忘记密码', 'recovery', 'text-btn') : ''}</div><p class="note" style="margin-top:17px">注册只需身份字段；语言、资料与模型配置可登录后选择。</p></div>`;
+    const register = s.route === 'register';
+    const recovery = s.route === 'recovery';
+    const title = register ? '创建账号' : recovery ? '找回密码' : '欢迎回来';
+    const content = `<div class="auth-heading"><span class="auth-signal" aria-hidden="true"></span><h1>${title}</h1>${recovery ? '<p>输入登录邮箱，提交找回申请。</p>' : ''}</div><form class="auth-form" data-form="${s.route}" novalidate><div class="auth-field"><label for="auth-email">邮箱</label><div class="auth-input-wrap">${I('user')}<input id="auth-email" type="email" name="email" value="${e(authEmail)}" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="name@example.com" required aria-describedby="auth-email-error" enterkeyhint="${recovery ? 'go' : 'next'}"></div><p class="auth-field-error" id="auth-email-error" role="alert" hidden></p></div>${recovery ? '' : authPassword('password', '密码', register)}${register ? authPassword('confirmPassword', '确认密码', true) : ''}${s.route === 'login' ? '<div class="auth-forgot"><button class="text-btn" type="button" data-go="recovery">忘记密码？</button></div>' : ''}<button class="primary full auth-submit" type="submit">${register ? '创建账号' : recovery ? '提交申请' : '登录'}${I('arrow')}</button><p class="auth-demo-note">${recovery ? '本地演示，不会发送邮件' : '本地演示，请勿使用真实密码'}</p></form>`;
+    const footer = `<div class="auth-switch">${s.route === 'login' ? '<span>还没有账号？</span><button class="text-btn" type="button" data-go="register">创建账号</button>' : `<button class="text-btn" type="button" data-go="login">${I('back')}返回登录</button>`}</div>${s.route === 'login' ? `<button class="auth-server" type="button" data-go="connection">${I('globe')}<span>服务地址</span>${I('chevron')}</button>` : ''}`;
+    return authFrame(content, footer);
+  }
+  function validateAuthForm(form) {
+    const errors = {};
+    const email = form.elements.namedItem('email');
+    email.value = email.value.trim();
+    authEmail = email.value;
+    if (!email.value) errors.email = '请输入邮箱';
+    else if (!email.validity.valid) errors.email = '请输入有效的邮箱地址';
+    const password = form.elements.namedItem('password');
+    if (password && !password.value) errors.password = '请输入密码';
+    if (form.dataset.form === 'register') {
+      const length = Array.from(password.value).length;
+      if (password.value && (length < 15 || length > 128))
+        errors.password = '密码需要 15–128 个字符';
+      const confirm = form.elements.namedItem('confirmPassword');
+      if (!confirm.value) errors.confirmPassword = '请再次输入密码';
+      else if (confirm.value !== password.value)
+        errors.confirmPassword = '两次输入的密码不一致';
+    }
+    form.querySelectorAll('input').forEach((input) => {
+      const message = errors[input.name];
+      input.setAttribute('aria-invalid', String(!!message));
+      const error = form.querySelector(`#auth-${input.name}-error`);
+      error.textContent = message || '';
+      error.hidden = !message;
+    });
+    if (Object.keys(errors).length) {
+      form.elements.namedItem(Object.keys(errors)[0]).focus();
+      return false;
+    }
+    return true;
   }
   function onboarding() {
     return `<div class="auth-screen"><h1 class="hero-title">按自己的节奏，<br>开始学习。</h1><p class="page-subtitle">这些设置都可以跳过，之后在设置里修改。</p><div class="surface form-grid" style="margin-top:22px"><label class="field">先学哪门语言？<select data-setting="activeLanguage"><option>日语</option><option>英语</option></select></label><label class="field">解释语言<select data-setting="explanationLanguage"><option>简体中文</option><option>英语</option><option>日语</option></select></label><div class="callout">${I('spark')}<span>个人模型 Key 也可以之后配置。没有 Key 仍能使用基础阅读与已有结果。</span></div><button class="primary full" type="button" data-action="finishOnboarding">开始体验</button><button class="secondary full" type="button" data-action="finishOnboarding">暂时跳过</button></div></div>`;
   }
   function registrationStatus() {
-    return `<div class="auth-screen"><div class="login-logo"><span class="head-mark">h</span>haruka</div><h1 class="hero-title">注册请求，已模拟受理。</h1><p class="page-subtitle">本原型没有创建账号或发送邮件。正式注册是否需要邮箱验证或管理员审批，取决于发布时的公开策略；满足激活条件后仍需单独登录。</p><div class="surface stack" style="margin-top:22px"><strong>下一步</strong><p>查看实际激活方式，完成要求后回到登录页。本地演示可继续体验登录与可跳过的首次设置。</p><button class="primary full" type="button" data-go="login">返回登录演示</button></div></div>`;
+    return authFrame(
+      `<div class="auth-result"><span class="auth-result-icon">${I('check')}</span><h1>注册申请已受理</h1><p>这是演示结果，尚未创建账号。</p><button class="primary full" type="button" data-go="login">返回登录${I('arrow')}</button></div>`,
+    );
+  }
+  function recoveryStatus() {
+    return authFrame(
+      `<div class="auth-result"><span class="auth-result-icon">${I('check')}</span><h1>找回申请已受理</h1><p>若账号可用，将按当前服务的恢复方式处理。</p><p class="auth-result-note">本地演示，未发送邮件或修改密码。</p><button class="primary full" type="button" data-go="login">返回登录${I('arrow')}</button><button class="text-btn full" type="button" data-go="recovery">使用其他邮箱</button></div>`,
+    );
   }
   function modal() {
     if (!s.modal) return '';
@@ -670,7 +719,7 @@
     return `${modelCore()}<div class="surface stack" style="margin-top:18px"><h2 style="font-size:17px">个人凭据与能力</h2><div class="row-copy"><strong>当前凭据：未配置</strong><small>添加 API Key 后可测试模型能力。</small></div>${['文本', '视觉', 'TTS'].map((cap) => `<div class="button-row" style="justify-content:space-between"><span>${cap}能力 · 待验证</span><button class="text-btn" type="button" data-action="modelCapability" data-capability="${cap}">模拟单项检查</button></div>`).join('')}<button class="secondary full" type="button" data-modal="credential">查看凭据管理流程</button></div>`;
   }
   function auth() {
-    return `${authCore()}<button class="text-btn full" type="button" data-go="connection" style="margin-top:10px">配置服务地址（Android 演示）</button>`;
+    return authCore();
   }
   function connection() {
     return `<p class="page-subtitle">Android 与 Windows 在登录前可配置 HTTPS 服务地址；Web 固定连接当前部署。</p><form class="surface form-grid" data-form="connection" style="margin-top:22px"><label class="field">Haruka 服务地址<input type="url" name="address" required value="${e(s.serviceAddress)}" placeholder="https://your-haruka.example"><small>不能包含账号密码、查询参数或片段。</small></label><button class="primary full" type="submit">模拟无凭据连接探测</button></form>${s.serviceProbe ? `<div class="panel stack" style="margin-top:18px"><strong>本地预览 · 未实际联网</strong><p>实例标识、版本和兼容性会在真实探测后显示；切换实例会退出并清理原账号本机副本。</p></div>` : ''}<div class="callout" style="margin-top:18px">${I('shield')}<span>连接探测不发送 Cookie、Token 或个人 Key；本原型不请求输入地址。</span></div>${!s.signedIn ? `<button class="secondary full" type="button" data-go="login" style="margin-top:16px">返回登录</button>` : ''}`;
@@ -732,10 +781,13 @@
     login: auth,
     register: auth,
     registrationStatus,
+    recoveryStatus,
     recovery: auth,
     onboarding,
   };
   function render() {
+    const restoreAuthHeadingFocus =
+      root.querySelector('.mobile-auth h1') === document.activeElement;
     const previousSheet = root.querySelector('.sheet');
     const sheetScroll = previousSheet?.scrollTop || 0;
     const focusedControl = previousSheet?.contains(document.activeElement)
@@ -748,6 +800,14 @@
       s.modal = 'entryDetail';
     }
 
+    if (s.route === 'recoveryStatus' && !recoveryAccepted) {
+      s.route = 'recovery';
+      history.replaceState(
+        { harukaMobileIndex: navigationIndex },
+        '',
+        '#recovery',
+      );
+    }
     if (s.route === 'registrationStatus' && !s.registrationAccepted) {
       s.route = 'register';
       history.replaceState(
@@ -794,6 +854,7 @@
         'login',
         'register',
         'registrationStatus',
+        'recoveryStatus',
         'recovery',
         'onboarding',
         'connection',
@@ -811,7 +872,7 @@
     document.body.dataset.reduceMotion = s.reduceMotion ? 'on' : 'off';
     document.body.style.overflow = s.modal ? 'hidden' : '';
     const mainTab = primary.includes(s.route);
-    root.innerHTML = `<div class="phone-shell" data-page="${s.route}"><div class="page-content" ${s.modal ? 'inert' : ''}>${head()}<main class="screen ${mainTab ? 'main-screen' : 'detail-screen'} ${['novel', 'material', 'import', 'notebook', 'agent', 'textbook', 'examRun', 'practice'].includes(s.route) || (s.route === 'exerciseBuilder' && builderStep === 0) ? 'with-dock' : ''}" id="main-content">${views[s.route]()}</main>${s.signedIn && mainTab ? nav() : ''}</div>${s.toast ? `<div class="toast" role="status">${e(s.toast)}</div>` : ''}${modal()}</div>`;
+    root.innerHTML = `<div class="phone-shell" data-page="${s.route}"><div class="page-content" ${s.modal ? 'inert' : ''}>${head()}<main class="screen ${['login', 'register', 'recovery', 'registrationStatus', 'recoveryStatus'].includes(s.route) ? 'auth-main' : ''} ${mainTab ? 'main-screen' : 'detail-screen'} ${['novel', 'material', 'import', 'notebook', 'agent', 'textbook', 'examRun', 'practice'].includes(s.route) || (s.route === 'exerciseBuilder' && builderStep === 0) ? 'with-dock' : ''}" id="main-content">${views[s.route]()}</main>${s.signedIn && mainTab ? nav() : ''}</div>${s.toast ? `<div class="toast" role="status">${e(s.toast)}</div>` : ''}${modal()}</div>`;
     const sheet = root.querySelector('.sheet');
     if (s.route === 'novel') {
       const shell = root.querySelector('.phone-shell');
@@ -863,6 +924,17 @@
     } else if (previousSheet && modalReturnFocus) {
       root.querySelector(modalReturnFocus)?.focus({ preventScroll: true });
       modalReturnFocus = '';
+    }
+    if (renderedRoute !== s.route || restoreAuthHeadingFocus) {
+      const heading = root.querySelector('.mobile-auth h1');
+      document.title = heading
+        ? `${heading.textContent} · Haruka`
+        : 'Haruka · 手机端原型';
+      if (heading && !sheet) {
+        heading.tabIndex = -1;
+        heading.focus({ preventScroll: true });
+      }
+      renderedRoute = s.route;
     }
   }
   function setHashRoute() {
@@ -968,6 +1040,20 @@
   window.visualViewport?.addEventListener('scroll', updateViewport);
   updateViewport();
   root.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-auth-toggle]');
+    if (toggle) {
+      const input = root.querySelector(`#auth-${toggle.dataset.authToggle}`);
+      const visible = input.type === 'password';
+      input.type = visible ? 'text' : 'password';
+      toggle.setAttribute('aria-pressed', String(visible));
+      toggle.setAttribute(
+        'aria-label',
+        `${visible ? '隐藏' : '显示'}${toggle.dataset.authToggle === 'confirmPassword' ? '确认密码' : '密码'}`,
+      );
+      toggle.innerHTML = authEye(visible);
+      return;
+    }
+
     const target = event.target.closest(
       '[data-action],[data-go],[data-modal],[data-filter],[data-material],[data-import-type],[data-term],[data-textbook-unit],[data-book],[data-word],[data-mistake],[data-notification],[data-practice-answer],[data-textbook-answer],[data-exam-question],[data-exam-answer],[data-usage-range]',
     );
@@ -1512,6 +1598,19 @@
   });
   root.addEventListener('input', (event) => {
     const t = event.target;
+    if (t.closest('.auth-form')) {
+      if (t.name === 'email') authEmail = t.value;
+      const names =
+        t.name === 'password' ? ['password', 'confirmPassword'] : [t.name];
+      names.forEach((name) => {
+        root.querySelector(`#auth-${name}`)?.removeAttribute('aria-invalid');
+        const error = root.querySelector(`#auth-${name}-error`);
+        if (error) {
+          error.hidden = true;
+          error.textContent = '';
+        }
+      });
+    }
     if (t.name === 'password' || t.name === 'confirmPassword')
       root.querySelector('[name="confirmPassword"]')?.setCustomValidity('');
     if (t.dataset.input === 'search') {
@@ -1527,6 +1626,7 @@
     const form = event.target.closest('[data-form]');
     if (!form) return;
     event.preventDefault();
+    if (form.classList.contains('auth-form') && !validateAuthForm(form)) return;
     const values = Object.fromEntries(new FormData(form));
     if (form.dataset.form === 'profile') {
       s.profile = {
@@ -1639,20 +1739,18 @@
       return;
     }
     if (['login', 'register', 'recovery'].includes(form.dataset.form)) {
-      if (form.dataset.form === 'recovery')
-        return toast('演示受理结果：若账号可用，会按已配置的恢复方式处理。');
+      if (form.dataset.form === 'recovery') {
+        recoveryAccepted = true;
+        go('recoveryStatus');
+        return;
+      }
       if (form.dataset.form === 'register') {
-        if (String(values.password) !== String(values.confirmPassword)) {
-          const input = form.querySelector('[name="confirmPassword"]');
-          input.setCustomValidity('两次输入的密码不一致');
-          input.reportValidity();
-          return;
-        }
         s.registrationAccepted = true;
         s.signedIn = false;
         go('registrationStatus');
         return;
       }
+      authEmail = '';
       s.signedIn = true;
       if (s.registrationAccepted) {
         s.registrationAccepted = false;

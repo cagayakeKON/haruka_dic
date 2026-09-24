@@ -73,6 +73,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [手机移动优先修订审查](delivery/reviews/2026-09-24-mobile-first-prototype.md)：手机端 DESIGN3 的任务流修订、独立审查与定点浏览器验证。
 - [手机排版与文案重构](delivery/reviews/2026-09-24-mobile-refinement.md)：手机端 DESIGN4 的内容层级、触控操作、产品文案清理及局部验证。
 - [电脑端排版与交互重构](delivery/reviews/2026-09-24-desktop-refinement.md)：电脑端 DESIGN5 的移动优先布局、手机视觉对齐、键盘与历史导航、文案清理及局部验证。
+- [手机登录、注册与找回优化](delivery/reviews/2026-09-24-mobile-auth.md)：DESIGN7 紧凑表单、密码显隐、字段错误和受理页的局部验证。
 - [首个脚手架切片](delivery/reviews/2026-09-22-scaffold-foundation.md)：B0-foundation的实现、局部验证、review与未完成门禁。
 - [基础设施切片](delivery/reviews/2026-09-22-scaffold-infrastructure.md)：真实客户端生命周期、隔离Compose、正常日志采集、运行与维护账号边界。
 

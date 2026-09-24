@@ -48,10 +48,10 @@ const fs = require('node:fs');
         }
         await expect(
           page.getByRole('searchbox', { name: '搜索材料' }),
-        ).toHaveCount(1);
+        ).toHaveCount(platform === 'phone' ? 0 : 1);
         if (platform === 'phone') {
           await expect(
-            page.locator('.phone-head input[type=search]'),
+            page.locator('.phone-head [data-action=openTabSearch]'),
           ).toHaveCount(1);
           await expect(page.locator('main input[type=search]')).toHaveCount(0);
           expect(new Set(measure.filters).size).toBe(1);
@@ -83,6 +83,7 @@ const fs = require('node:fs');
       });
       await more.focus();
       await page.keyboard.press('Enter');
+      await page.getByRole('button', { name: '查看详情', exact: true }).click();
       await expect(
         page.getByRole('dialog', { name: '材料详情', exact: true }),
       ).toBeVisible();
@@ -100,6 +101,9 @@ const fs = require('node:fs');
       );
 
       if (platform === 'phone') {
+        await page
+          .getByRole('button', { name: '搜索材料', exact: true })
+          .click();
         const search = page.getByRole('searchbox', { name: '搜索材料' });
         const originalInput = await search.elementHandle();
         await search.fill('日语');
@@ -127,6 +131,7 @@ const fs = require('node:fs');
         );
         await expect(page.locator('.direct-material')).toHaveCount(1);
         await page.locator('[data-filter=all]').click();
+        await page.getByRole('button', { name: '关闭搜索' }).click();
         await expect(page.locator('.floating-action')).toBeVisible();
 
         // At the end of the scroll, the last row is above both the FAB and navigation.
@@ -159,6 +164,9 @@ const fs = require('node:fs');
           'phone: stable search input, clear retains type, FAB position and import/back',
         );
 
+        await page
+          .getByRole('button', { name: '搜索材料', exact: true })
+          .click();
         await search.fill('雨');
         await search.press('Tab');
         await page.locator('[data-material=rain]').click();
@@ -183,9 +191,7 @@ const fs = require('node:fs');
         await page
           .getByRole('button', { name: '清除搜索', exact: true })
           .click();
-        await page
-          .getByRole('heading', { name: '材料库', exact: true })
-          .click();
+        await page.getByRole('button', { name: '关闭搜索' }).click();
         await page
           .getByRole('button', { name: '站内消息', exact: true })
           .click();

@@ -169,7 +169,10 @@ const fs = require("node:fs");
           await page.evaluate(() => {
             location.hash = "library";
           });
-          await page.locator("[data-x=materialDetails][data-id=rain]").click();
+          await page.locator("[data-x=materialActions][data-id=rain]").click();
+          await page
+            .getByRole("button", { name: "查看详情", exact: true })
+            .click();
           await page.getByRole("dialog").locator("[data-x=openJob]").click();
         }
         await expect(page.getByRole("dialog")).toHaveCount(0);

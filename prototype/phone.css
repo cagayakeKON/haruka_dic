@@ -181,8 +181,33 @@ strong {
 .root-head .icon-btn {
   background: var(--paper);
 }
-.library-head {
+.tab-head {
   gap: 8px;
+}
+.head-tab-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+  line-height: 1.35;
+  letter-spacing: -0.7px;
+}
+.head-tab-title:focus {
+  outline: none;
+}
+.tab-head .icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.tab-head .head-actions {
+  gap: 0;
+}
+.practice-language {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted);
 }
 .library-brand {
   flex: none;
@@ -503,7 +528,7 @@ strong {
   box-shadow: 0 6px 18px #2457ed29;
   border-radius: 20px 20px 8px 20px;
 }
-[data-page='library']:has(.head-search input:focus) .floating-action {
+[data-page='library']:has(.search-open) .floating-action {
   display: none;
 }
 .mobile-action-dock,

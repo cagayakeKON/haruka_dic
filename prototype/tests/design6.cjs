@@ -59,7 +59,8 @@ fs.mkdirSync(output, { recursive: true });
         await expect(page.locator(".task-drawer")).toBeVisible();
         await page.getByRole("button", { name: "关闭", exact: true }).click();
       }
-      await page.locator("[data-x=materialDetails][data-id=summer]").click();
+      await page.locator("[data-x=materialActions][data-id=summer]").click();
+      await page.getByRole("button", { name: "查看详情", exact: true }).click();
       await expect(page.getByRole("dialog")).toContainText("夏の手紙");
       await expect(page).toHaveURL(/#library$/);
       await page.keyboard.press("Escape");

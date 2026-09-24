@@ -402,7 +402,10 @@
     }
     if (s.activeLanguage === "日语") {
       if (s.practiceSources.includes("collection")) count += s.collected.length;
-      if (s.practiceSources.includes("textbook"))
+      if (
+        s.practiceSources.includes("textbook") &&
+        s.materials.some((material) => material.id === "daily")
+      )
         count += (
           data.textbook.units.find((x) => x.id === s.practiceTextbookUnit) ||
           data.textbook.units[0]
@@ -434,7 +437,10 @@
       );
     if (s.practiceSources.includes("collection"))
       parts.push(`手选收藏 ${s.collected.length} 项`);
-    if (s.practiceSources.includes("textbook"))
+    if (
+      s.practiceSources.includes("textbook") &&
+      s.materials.some((material) => material.id === "daily")
+    )
       parts.push(
         `教材：${(data.textbook.units.find((x) => x.id === s.practiceTextbookUnit) || data.textbook.units[0]).title}`,
       );
@@ -473,7 +479,7 @@
       ["mistake", "错题", "warning"],
       ["report", "诊断", "spark"],
     ];
-    return `<div class="focused-page builder-page">${head("", "生成 AI 习题")}<ol class="step-labels"><li class="on" ${!builderStep ? 'aria-current="step"' : ""}><span>1</span>选择来源</li><li class="${builderStep ? "on" : ""}" ${builderStep ? 'aria-current="step"' : ""}><span>2</span>题目设置</li></ol>${!builderStep ? `<section class="surface stack-lg"><label class="field">学习语言<select data-setting="activeLanguage">${["日语", "英语"].map((x) => `<option ${s.activeLanguage === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><div class="source-grid">${sources.map(([key, label, icon]) => `<label class="source-choice"><input type="checkbox" data-source="${key}" ${s.practiceSources.includes(key) ? "checked" : ""}>${I(icon)}<span>${label}</span></label>`).join("")}</div>${exerciseDetails()}</section><div class="flow-actions"><button class="primary" type="button" data-action="builderNext" ${practiceCandidateCount() ? "" : "disabled"}>下一步 ${I("arrow")}</button></div>` : `<section class="surface stack-lg"><div class="grid-2"><label class="field">题型<select data-practice-type>${["语境填空", "词义选择", "翻译判断"].map((x) => `<option ${s.practiceQuestionType === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><label class="field">题量<select data-practice-count>${["5 题", "10 题"].map((x) => `<option ${s.practiceCount === x ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><div class="soft-panel"><p class="step-caption">已选来源</p><p>${e(practiceSelectionSummary())}</p></div>${s.practicePreview ? `<div class="preview-summary" role="status"><strong>${practiceCandidateCount()} 项示例候选</strong><p class="small muted">${e(s.activeLanguage)} · ${e(s.practiceQuestionType)} · ${e(s.practiceCount)}</p><p class="note">确认后打开内置示例题，不调用模型。</p></div>` : ""}</section><div class="flow-actions"><button class="secondary" type="button" data-action="builderBack">上一步</button>${s.practicePreview ? '<button class="primary" type="button" data-modal="generateConfirm">确认生成</button>' : '<button class="primary" type="button" data-action="practicePreview">预览候选</button>'}</div>`}</div>`;
+    return `<div class="focused-page builder-page">${head("", "生成 AI 习题")}<ol class="step-labels"><li class="on" ${!builderStep ? 'aria-current="step"' : ""}><span>1</span>选择来源</li><li class="${builderStep ? "on" : ""}" ${builderStep ? 'aria-current="step"' : ""}><span>2</span>题目设置</li></ol>${!builderStep ? `<section class="surface stack-lg"><label class="field">学习语言<select data-setting="activeLanguage">${["日语", "英语"].map((x) => `<option ${s.activeLanguage === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><div class="source-grid">${sources.map(([key, label, icon]) => `<label class="source-choice"><input type="checkbox" data-source="${key}" ${s.practiceSources.includes(key) ? "checked" : ""}${key === "textbook" && !s.materials.some((material) => material.id === "daily") ? "disabled" : ""}>${I(icon)}<span>${key === "textbook" && !s.materials.some((material) => material.id === "daily") ? "教材（暂无可用）" : label}</span></label>`).join("")}</div>${exerciseDetails()}</section><div class="flow-actions"><button class="primary" type="button" data-action="builderNext" ${practiceCandidateCount() ? "" : "disabled"}>下一步 ${I("arrow")}</button></div>` : `<section class="surface stack-lg"><div class="grid-2"><label class="field">题型<select data-practice-type>${["语境填空", "词义选择", "翻译判断"].map((x) => `<option ${s.practiceQuestionType === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><label class="field">题量<select data-practice-count>${["5 题", "10 题"].map((x) => `<option ${s.practiceCount === x ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><div class="soft-panel"><p class="step-caption">已选来源</p><p>${e(practiceSelectionSummary())}</p></div>${s.practicePreview ? `<div class="preview-summary" role="status"><strong>${practiceCandidateCount()} 项示例候选</strong><p class="small muted">${e(s.activeLanguage)} · ${e(s.practiceQuestionType)} · ${e(s.practiceCount)}</p><p class="note">确认后打开内置示例题，不调用模型。</p></div>` : ""}</section><div class="flow-actions"><button class="secondary" type="button" data-action="builderBack">上一步</button>${s.practicePreview ? '<button class="primary" type="button" data-modal="generateConfirm">确认生成</button>' : '<button class="primary" type="button" data-action="practicePreview">预览候选</button>'}</div>`}</div>`;
   }
 
   function practice() {
@@ -735,7 +741,7 @@
       title = "运维摘要";
       content = `<div class="stack"><strong>${e(s.adminItem || "示例对象")}</strong><p>当前状态：正常 · 示例运维摘要。</p><div class="callout">${I("shield")}<span>私有材料、个人 Key 与学习内容不在此处显示。</span></div></div>`;
     }
-    return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog ${s.modal === "tasks" ? "task-drawer" : ""}" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
+    return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog ${s.modal === "tasks" ? "task-drawer" : s.modal === "materialActions" ? "material-menu-dialog" : ""}" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
   }
   const extras = window.HarukaCollections({
     s,
@@ -891,6 +897,7 @@
       s.route = "examPrep";
       history.replaceState(null, "", "#examPrep");
     }
+    extras.guardMaterialRoute();
     s.adminArea = adminRoutes.includes(s.route);
     applyTheme();
     document.body.style.overflow = s.modal ? "hidden" : "";
@@ -939,6 +946,7 @@
       modalReturnFocus = "";
     } else if (samePage && focused)
       root.querySelector(focused)?.focus({ preventScroll: true });
+    extras.restoreMaterialFocus();
     renderedRoute = s.route;
     history.replaceState(navigationState(), "", pageHash());
     root.querySelectorAll(".table-wrap").forEach((table) => {

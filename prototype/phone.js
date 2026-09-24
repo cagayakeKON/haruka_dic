@@ -10,6 +10,30 @@
   const s = initialState();
   const root = document.getElementById('phone-app');
   const primary = ['library', 'notebooks', 'query', 'exercise', 'settings'];
+  const tabTitles = {
+    library: '材料库',
+    notebooks: '单词本',
+    query: '查询',
+    exercise: '练习',
+    settings: '我的',
+  };
+  const searchOpen = () =>
+    ['library', 'notebooks'].includes(s.route) &&
+    new URLSearchParams(location.hash.split('?')[1] || '').get('search') ===
+      '1';
+  const tabSearchValue = () =>
+    s.route === 'library' ? s.search : s.collectionSearch;
+  const closeTabSearch = () => {
+    if (history.state?.harukaSearch) history.back();
+    else {
+      history.replaceState(
+        { ...history.state, harukaSearch: false },
+        '',
+        `#${s.route}`,
+      );
+      render();
+    }
+  };
   const parentRoute = {
     dailyWords: 'notebooks',
     sampleReader: 'library',
@@ -214,10 +238,14 @@
     const top = primary.includes(s.route);
     const unread = s.notifications.some((n) => n.unread);
 
-    if (s.route === 'library')
-      return `<header class="phone-head root-head library-head"><button class="head-brand library-brand" type="button" data-modal="prototypeInfo" aria-label="Haruka 原型说明" title="Haruka · 原型说明"><span class="head-mark" aria-hidden="true">h</span></button><div class="head-search" role="search">${I('search')}<input id="material-search" type="search" data-input="search" aria-label="搜索材料" aria-controls="material-list" placeholder="搜索材料" value="${e(s.search)}" enterkeyhint="search" autocomplete="off"><button class="head-search-clear" type="button" data-action="clearMaterialSearch" aria-label="清除搜索" ${s.search ? '' : 'hidden'}>${I('close')}</button></div><button class="icon-btn ${unread ? 'unread-dot' : ''}" type="button" data-go="notifications" aria-label="站内消息">${I('bell')}</button></header>`;
-
-    return `<header class="phone-head ${top ? 'root-head' : ''}">${top ? '<div class="head-brand"><span class="head-mark" aria-hidden="true">h</span>haruka</div>' : `<button class="head-back" type="button" data-action="back" aria-label="返回上一页">${I('back')}</button><div class="head-title">${e(titles[s.route] || 'Haruka')}</div>`}<div class="head-actions">${top ? `<button class="preview-label" type="button" data-modal="prototypeInfo">原型</button><button class="icon-btn ${unread ? 'unread-dot' : ''}" type="button" data-go="notifications" aria-label="站内消息">${I('bell')}</button>` : ''}</div></header>`;
+    if (top) {
+      const title = tabTitles[s.route];
+      const searchable = ['library', 'notebooks'].includes(s.route);
+      const label = s.route === 'library' ? '搜索材料' : '搜索收藏';
+      const expanded = searchOpen();
+      return `<header class="phone-head root-head tab-head ${expanded ? 'search-open' : ''}">${expanded ? `<button class="icon-btn" type="button" data-action="closeTabSearch" aria-label="关闭搜索">${I('back')}</button><h1 class="sr-only">${title}</h1><div class="head-search" role="search">${I('search')}<input id="tab-search" type="search" data-input="tabSearch" aria-label="${label}" aria-controls="${s.route === 'library' ? 'material-list' : 'collection-list'}" placeholder="${label}" value="${e(tabSearchValue())}" enterkeyhint="search" autocomplete="off"><button class="head-search-clear" type="button" data-action="clearTabSearch" aria-label="清除搜索" ${tabSearchValue() ? '' : 'hidden'}>${I('close')}</button></div>` : `<button class="head-brand library-brand" type="button" data-modal="prototypeInfo" aria-label="Haruka 原型说明" title="Haruka · 原型说明"><span class="head-mark" aria-hidden="true">h</span></button><h1 class="head-tab-title">${title}</h1><div class="head-actions">${searchable ? `<button class="icon-btn" type="button" data-action="openTabSearch" aria-label="${label}">${I('search')}</button>` : ''}${s.route === 'notebooks' ? `<button class="icon-btn" type="button" data-x="add" aria-label="添加收藏">${I('plus')}</button>` : ''}<button class="icon-btn ${unread ? 'unread-dot' : ''}" type="button" data-go="notifications" aria-label="站内消息">${I('bell')}</button></div>`}</header>`;
+    }
+    return `<header class="phone-head"><button class="head-back" type="button" data-action="back" aria-label="返回上一页">${I('back')}</button><div class="head-title">${e(titles[s.route] || 'Haruka')}</div></header>`;
   };
   const nav = () =>
     `<nav class="bottom-nav" aria-label="主要导航">${[
@@ -238,9 +266,10 @@
   function library() {
     return extras.library();
   }
-  function filterMaterials(value) {
-    s.search = value;
-    root.querySelector('#main-content').innerHTML = library();
+  function filterTab(value) {
+    if (s.route === 'library') s.search = value;
+    else s.collectionSearch = value;
+    root.querySelector('#main-content').innerHTML = views[s.route]();
     root.querySelector('.head-search-clear').hidden = !value;
   }
 
@@ -390,7 +419,10 @@
     }
     if (s.activeLanguage === '日语') {
       if (s.practiceSources.includes('collection')) count += s.collected.length;
-      if (s.practiceSources.includes('textbook'))
+      if (
+        s.practiceSources.includes('textbook') &&
+        s.materials.some((material) => material.id === 'daily')
+      )
         count += (
           data.textbook.units.find((x) => x.id === s.practiceTextbookUnit) ||
           data.textbook.units[0]
@@ -422,7 +454,10 @@
       );
     if (s.practiceSources.includes('collection'))
       parts.push(`手选收藏 ${s.collected.length} 项`);
-    if (s.practiceSources.includes('textbook'))
+    if (
+      s.practiceSources.includes('textbook') &&
+      s.materials.some((material) => material.id === 'daily')
+    )
       parts.push(
         `教材：${(data.textbook.units.find((x) => x.id === s.practiceTextbookUnit) || data.textbook.units[0]).title}`,
       );
@@ -451,7 +486,7 @@
     }${s.practiceSources.includes('collection') ? `<div class="soft-panel"><strong>手选收藏</strong><p class="small">已选 ${s.collected.length} 个词句</p></div>` : ''}${s.practiceSources.includes('textbook') ? `<div class="surface"><label class="field">教材单元<select data-practice-unit>${data.textbook.units.map((unit) => `<option value="${unit.id}" ${s.practiceTextbookUnit === unit.id ? 'selected' : ''}>${e(unit.title)}</option>`).join('')}</select></label></div>` : ''}${s.practiceSources.includes('mistake') ? `<div class="surface"><label class="field">错题范围<select data-practice-mistakes><option value="current" ${s.practiceMistakeScope === 'current' ? 'selected' : ''}>当前待纠正</option><option value="favorite" ${s.practiceMistakeScope === 'favorite' ? 'selected' : ''}>已收藏历史</option><option value="all" ${s.practiceMistakeScope === 'all' ? 'selected' : ''}>全部历史</option></select></label></div>` : ''}${s.practiceSources.includes('report') ? `<div class="soft-panel"><strong>诊断薄弱点：方向助词</strong><p class="small">方向助词：に / へ</p></div>` : ''}</div>`;
   }
   function exercise() {
-    return `<div class="page-heading"><h1>练习</h1><span>${e(s.activeLanguage)}</span></div>
+    return `<p class="practice-language">${e(s.activeLanguage)}</p>
       <button class="practice-create" type="button" data-go="exerciseBuilder"><span class="signal" aria-hidden="true"></span><strong>生成 AI 习题</strong><small>从词本、教材或错题中选源</small><span class="practice-create-action">选择来源 ${I('arrow')}</span></button>
       <div class="mobile-list-heading"><h2>已有习题</h2></div><div class="mobile-plain-list">${settingRow('practice', s.activeLanguage === '英语' ? '微光与希望' : '动作里的语气', '语境填空 · 1 题 · 示例', 'edit')}</div>
       <div class="mobile-list-heading"><h2>学习记录</h2></div><div class="mobile-plain-list">${settingRow('mistakes', '错题库', `${s.mistakes.filter((m) => m.state === '当前待纠正').length} 题待纠正`, 'warning')}${settingRow('report', '学习诊断', '最近 7 天', 'grid')}</div>
@@ -469,7 +504,7 @@
       ]
         .map(
           ([key, label, detail, icon]) =>
-            `<label class="choice-row"><input type="checkbox" data-source="${key}" ${selected.includes(key) ? 'checked' : ''}>${I(icon)}<span><strong>${label}</strong><small style="display:block;color:var(--muted)">${detail}</small></span></label>`,
+            `<label class="choice-row"><input type="checkbox" data-source="${key}" ${selected.includes(key) ? 'checked' : ''}${key === 'textbook' && !s.materials.some((material) => material.id === 'daily') ? 'disabled' : ''}>${I(icon)}<span><strong>${label}</strong><small style="display:block;color:var(--muted)">${key === 'textbook' && !s.materials.some((material) => material.id === 'daily') ? '暂无可用教材' : detail}</small></span></label>`,
         )
         .join(
           '',
@@ -508,9 +543,9 @@
   }
 
   const settingRow = (route, label, detail, icon) =>
-    `<button class="setting-row" type="button" data-go="${route}"><span class="setting-icon">${I(icon)}</span><span class="row-copy"><strong>${label}</strong><small>${detail}</small></span>${I('chevron')}</button>`;
+    `<button class="setting-row" type="button" data-go="${route}"><span class="setting-icon">${I(icon)}</span><span class="row-copy"><strong>${label}</strong><small>${e(detail)}</small></span>${I('chevron')}</button>`;
   function settingsCore() {
-    return `<div class="page-heading"><h1>我的</h1></div><button type="button" class="mobile-profile-row" data-go="profile"><span class="mobile-avatar">遥</span><span class="row-copy"><strong>${e(s.profile.displayName)}</strong><small>个人资料与隐私</small></span>${I('chevron')}</button><div class="mobile-list-heading"><h2>学习偏好</h2></div><div class="mobile-plain-list">${settingRow('languages', '语言选项', `学习：${e(s.activeLanguage)} · 解释：${e(s.explanationLanguage)}`, 'globe')}${settingRow('appearance', '外观与无障碍', '主题、动态与对比度', 'sun')}${settingRow('readingPrefs', '阅读偏好', '字体、字号与阅读主题', 'book')}${settingRow('speech', '朗读与声音', '声音和播放倍速', 'headphones')}</div><div class="mobile-list-heading"><h2>模型与数据</h2></div><div class="mobile-plain-list">${settingRow('model', '个人模型', '模型与 API Key', 'spark')}${settingRow('usage', '模型用量', '调用次数与 Token', 'grid')}${settingRow('cache', '本机缓存', '阅读与音频', 'database')}</div><div class="mobile-list-heading"><h2>账号与动态</h2></div><div class="mobile-plain-list">${settingRow('notifications', '站内消息', '任务和结果提醒', 'bell')}${settingRow('jobs', '任务进度', '导入与生成结果', 'clock')}${settingRow('security', '安全与账号', '会话与退出', 'shield')}</div>`;
+    return `<button type="button" class="mobile-profile-row" data-go="profile"><span class="mobile-avatar">遥</span><span class="row-copy"><strong>${e(s.profile.displayName)}</strong><small>个人资料与隐私</small></span>${I('chevron')}</button><div class="mobile-list-heading"><h2>学习偏好</h2></div><div class="mobile-plain-list">${settingRow('languages', '语言选项', `学习：${e(s.activeLanguage)} · 解释：${e(s.explanationLanguage)}`, 'globe')}${settingRow('appearance', '外观与无障碍', '主题、动态与对比度', 'sun')}${settingRow('readingPrefs', '阅读偏好', '字体、字号与阅读主题', 'book')}${settingRow('speech', '朗读与声音', '声音和播放倍速', 'headphones')}</div><div class="mobile-list-heading"><h2>模型与数据</h2></div><div class="mobile-plain-list">${settingRow('model', '个人模型', '模型与 API Key', 'spark')}${settingRow('usage', '模型用量', '调用次数与 Token', 'grid')}${settingRow('cache', '本机缓存', '阅读与音频', 'database')}</div><div class="mobile-list-heading"><h2>账号与动态</h2></div><div class="mobile-plain-list">${settingRow('notifications', '站内消息', '任务和结果提醒', 'bell')}${settingRow('jobs', '任务进度', '导入与生成结果', 'clock')}${settingRow('security', '安全与账号', '会话与退出', 'shield')}</div>`;
   }
   function profileCore() {
     return `<h1 class="page-title">你好，${e(s.profile.displayName)}。</h1><p class="page-subtitle">资料仅自己可见。</p><form class="surface form-grid" data-form="profile" style="margin-top:22px"><label class="field">显示名<input name="displayName" value="${e(s.profile.displayName)}" maxlength="40"><small>可以留空，界面会显示“学习者”。</small></label><label class="field">出生年份（可选）<input name="birthYear" type="number" min="1900" max="2026" placeholder="不填写也可以" value="${e(s.profile.birthYear)}"></label><label class="field">性别（可选）<select name="gender">${['未填写', '女', '男', '非二元', '自我描述', '不愿说明'].map((x) => `<option ${s.profile.gender === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label><label class="field">时区<select name="timezone"><option value="Asia/Tokyo" ${s.profile.timezone === 'Asia/Tokyo' ? 'selected' : ''}>东京 / Asia/Tokyo</option><option value="Asia/Shanghai" ${s.profile.timezone === 'Asia/Shanghai' ? 'selected' : ''}>上海 / Asia/Shanghai</option><option value="UTC" ${s.profile.timezone === 'UTC' ? 'selected' : ''}>UTC</option></select></label><div class="callout">${I('shield')}<span>出生年份与性别默认不用于 AI。</span></div><button type="submit" class="primary full">保存资料</button></form>`;
@@ -794,8 +829,17 @@
     onboarding,
   };
   function render() {
-    const restoreAuthHeadingFocus =
-      root.querySelector('.mobile-auth h1') === document.activeElement;
+    const hadSearch = !!root.querySelector('.head-search');
+    const previousSearch = root.querySelector('#tab-search');
+    const searchHadFocus = previousSearch === document.activeElement;
+    const searchSelection = searchHadFocus
+      ? [previousSearch.selectionStart, previousSearch.selectionEnd]
+      : null;
+    const searchToggleHadFocus =
+      document.activeElement?.dataset.action === 'openTabSearch';
+    const restoreHeadingFocus =
+      root.querySelector('.mobile-auth h1, .root-head h1') ===
+      document.activeElement;
     const previousSheet = root.querySelector('.sheet');
     const sheetScroll = previousSheet?.scrollTop || 0;
     const focusedControl = previousSheet?.contains(document.activeElement)
@@ -875,6 +919,16 @@
         '#login',
       );
     }
+    if (extras.guardMaterialRoute())
+      history.replaceState(
+        { ...history.state, harukaModal: '' },
+        '',
+        '#library',
+      );
+    if (!searchOpen()) {
+      if (s.route === 'library') s.search = '';
+      if (s.route === 'notebooks') s.collectionSearch = '';
+    }
     document.body.dataset.theme = s.theme === 'system' ? 'light' : s.theme;
     document.body.dataset.contrast = s.highContrast ? 'on' : 'off';
     document.body.dataset.reduceMotion = s.reduceMotion ? 'on' : 'off';
@@ -933,17 +987,31 @@
       root.querySelector(modalReturnFocus)?.focus({ preventScroll: true });
       modalReturnFocus = '';
     }
-    if (renderedRoute !== s.route || restoreAuthHeadingFocus) {
-      const heading = root.querySelector('.mobile-auth h1');
+    if (renderedRoute !== s.route || restoreHeadingFocus) {
+      const heading = root.querySelector('.mobile-auth h1, .root-head h1');
       document.title = heading
         ? `${heading.textContent} · Haruka`
         : 'Haruka · 手机端原型';
-      if (heading && !sheet) {
+      if (heading && !sheet && !searchOpen()) {
         heading.tabIndex = -1;
         heading.focus({ preventScroll: true });
       }
       renderedRoute = s.route;
     }
+    if (!sheet && searchOpen() && (!hadSearch || searchHadFocus)) {
+      const input = root.querySelector('#tab-search');
+      input?.focus({ preventScroll: true });
+      if (input && searchSelection) input.setSelectionRange(...searchSelection);
+    } else if (!sheet && !searchOpen() && (hadSearch || searchToggleHadFocus))
+      root
+        .querySelector('[data-action="openTabSearch"]')
+        ?.focus({ preventScroll: true });
+    extras.restoreMaterialFocus();
+    history.replaceState(
+      { ...history.state, harukaMaterial: s.chosenMaterial },
+      '',
+      location.href,
+    );
   }
   function setHashRoute() {
     const hash = decodeURIComponent(location.hash.slice(1));
@@ -988,6 +1056,8 @@
     const position = window.scrollY;
     navigationIndex = Number(history.state?.harukaMobileIndex || 0);
     s.route = route;
+    if (history.state?.harukaMaterial)
+      s.chosenMaterial = history.state.harukaMaterial;
     builderStep = step;
     if (route === 'import') s.importStep = importStep;
     s.modal = history.state?.harukaModal || '';
@@ -1000,6 +1070,9 @@
     if (event.key === 'Escape' && s.modal) {
       event.preventDefault();
       closeModal();
+    } else if (event.key === 'Escape' && searchOpen()) {
+      event.preventDefault();
+      closeTabSearch();
     }
   });
   window.addEventListener('keydown', (event) => {
@@ -1210,9 +1283,27 @@
       openModal(action === 'materialQuality' ? 'quality' : action);
       return;
     }
-    if (action === 'clearMaterialSearch') {
-      filterMaterials('');
-      const input = root.querySelector('#material-search');
+    if (action === 'openTabSearch') {
+      history.pushState(
+        {
+          harukaMobileIndex: ++navigationIndex,
+          harukaSearch: true,
+          harukaMaterial: s.chosenMaterial,
+        },
+        '',
+        `#${s.route}?search=1`,
+      );
+      render();
+      root.querySelector('#tab-search')?.focus();
+      return;
+    }
+    if (action === 'closeTabSearch') {
+      closeTabSearch();
+      return;
+    }
+    if (action === 'clearTabSearch') {
+      filterTab('');
+      const input = root.querySelector('#tab-search');
       input.value = '';
       input.focus();
       return;
@@ -1628,8 +1719,8 @@
     }
     if (t.name === 'password' || t.name === 'confirmPassword')
       root.querySelector('[name="confirmPassword"]')?.setCustomValidity('');
-    if (t.dataset.input === 'search' && s.route === 'library') {
-      filterMaterials(t.value);
+    if (t.dataset.input === 'tabSearch') {
+      filterTab(t.value);
       return;
     }
     if (t.dataset.input === 'search') {

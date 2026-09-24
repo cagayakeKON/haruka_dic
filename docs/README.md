@@ -7,7 +7,7 @@
 | 现在要做什么 | 先读 | 再按需查 |
 | --- | --- | --- |
 | 了解产品 | [产品总览](product/overview.md) | [待决事项](decisions/pending.md) |
-| 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md) | [Flutter适配](engineering/flutter.md)、对应模块；旧HTML原型尚未迁移 |
+| 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md) | [手机/电脑独立HTML原型](../prototype/README.md)、[Flutter适配](engineering/flutter.md)、对应模块；正式Flutter视觉仍待落地 |
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |
 | 实现模型调用与Token统计 | [模型用量统计契约](contracts/model-usage.md) | [Agent运行层](architecture/agent-runtime.md)、[数据与任务](architecture/data-jobs.md)、[观测](operations/observability.md) |
@@ -66,6 +66,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [路线图](delivery/roadmap.md) 与 [脚手架里程碑](delivery/milestones/scaffold.md)：只按实际工程证据更新状态。
 - [原设计审查](delivery/reviews/2026-09-22-design.md) 与 [本轮重组](delivery/reviews/reorganization.md)：历史检查和修订记录，不作为当前规则的第二正文。
 - [原型审查](delivery/reviews/2026-09-22-prototype.md)：独立原型工作记录，不代表本轮重组执行过原型测试。
+- [「晴空频率」双端原型审查](delivery/reviews/2026-09-24-clear-signal-prototype.md)：新原型的页面覆盖、独立审查、实际浏览器验证和边界。
 - [首个脚手架切片](delivery/reviews/2026-09-22-scaffold-foundation.md)：B0-foundation的实现、局部验证、review与未完成门禁。
 - [基础设施切片](delivery/reviews/2026-09-22-scaffold-infrastructure.md)：真实客户端生命周期、隔离Compose、正常日志采集、运行与维护账号边界。
 

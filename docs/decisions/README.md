@@ -26,7 +26,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 
 2026-09-23确认当前不做应用内商业化。Haruka不维护套餐、应用余额、购买、金额或结算；用户继续使用本人供应商Key。系统保留运行保护上限，并按供应商/模型/attempt持久记录input、output、cache read、cache write及供应商可得的其他用量指标。
 
-2026-09-24用户认可「晴空频率」整体风格并要求先写入文档：灵动青春、科技感，以晴空蓝、少量芽黄绿、短声线和统一排版/反馈贯穿各场景。唯一正文见[产品设计语言](../product/design-language.md)；概念稿不改正式导航和业务范围，旧HTML原型及Flutter尚未迁移。
+2026-09-24用户认可「晴空频率」整体风格并要求先写入文档：灵动青春、科技感，以晴空蓝、少量芽黄绿、短声线和统一排版/反馈贯穿各场景。唯一正文见[产品设计语言](../product/design-language.md)；概念稿不改正式导航和业务范围，HTML原型随后重建，Flutter正式界面尚未迁移。
 
 ## 2. 当前实现建议
 
@@ -55,7 +55,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | DEC-21 | 账号基础资料采用UserProfile/StudyProfile/Settings分离：最小注册，可跳过引导；可选birth_year代替整数年龄，人口字段默认不进AI；头像专用安全发布，语言档案与UI语言/权限分离 | [账号](../modules/accounts.md)ACC-11/12与[设置](../modules/settings.md)PROFILE验收；阶段1实现，精确生日/未成年人、公开资料、邮箱变更/销号另立范围，均未实现 |
 | DEC-22 | 材料解析采用公共SourceUnit/ContentBlock来源层+NovelManifest/TextbookManifest/ExamPaperVersion三套领域结构；P0考试听力只处理文字稿/正文候选，经AI标记匹配和人工确认后生成私有TTS | [解析数据结构](../contracts/material-structures.md)MSTR、[考试](../modules/exams.md)与PRES验收；原始音频上传/自动绑定按OPEN-12进入P1前置设计，全部未实现 |
 | DEC-23 | 当前不建设Haruka商业化系统；个人Key调用只记录按attempt的模型用量，不维护金额。应用缓存命中与供应商Prompt缓存Token分开 | [模型用量统计](../contracts/model-usage.md)USAGE-01～USAGE-09；阶段1建立持久化/聚合基础，实际模型阶段补供应商适配，均未实现 |
-| DEC-24 | 产品设计语言采用「晴空频率」；整体风格已获认可，色彩/形状/文字/状态/动效/文案集中维护，场景只调整视觉强度 | [产品设计语言](../product/design-language.md)DESIGN-01～06随页面切片验证；深色派生色、字体资源及尺寸/动效为实现初值，旧原型和Flutter未迁移，不回写B0验收 |
+| DEC-24 | 产品设计语言采用「晴空频率」；整体风格已获认可，色彩/形状/文字/状态/动效/文案集中维护，场景只调整视觉强度 | [产品设计语言](../product/design-language.md)DESIGN-01～06随正式页面切片验证；深色派生色、字体资源及尺寸/动效为实现初值，HTML原型已重建但Flutter未迁移，不回写B0验收 |
 
 ## 3. 决策导航与变更
 

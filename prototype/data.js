@@ -1,52 +1,63 @@
-"use strict";
-
-// Original, fictional passages for this visual prototype. No remote services.
-const DEMO_BOOKS = [
-  {
-    id: "cafe", title: "雨あがりの喫茶店", subtitle: "雨后的咖啡馆", language: "日语", type: "小说", format: "EPUB", cover: "cafe", number: "01",
-    chapters: [
-      { title: "雨がやんだ午後", paragraphs: [
-        "雨がやんだ午後、私はいつもと違う道を歩いていた。濡れた石畳が、空の色を静かに映している。どこかから、挽きたてのコーヒーの香りがした。",
-        "角を曲がると、小さな喫茶店が見えた。窓辺には古い本が並び、白いカップから湯気が立ちのぼっている。扉には、手書きの文字で「どうぞ、ごゆっくり」と書かれていた。",
-        "木漏れ日がテーブルの上で揺れていた。私は窓のそばの席に座り、鞄から読みかけの本を取り出した。忙しい毎日の中で、こんなふうに何もしない時間は、久しぶりだった。",
-        "「今日は、いい天気になりましたね。」店主がカップを置きながら言った。私はうなずいて、窓の外を見た。水たまりの中に、小さな青空があった。",
-        "ページをめくる音と、カップが触れ合う音。言葉にしなくても、ここには確かに、穏やかな時間が流れている。もう少しだけ、この場所にいようと思った。"
-      ] },
-      { title: "一冊の忘れもの", paragraphs: [
-        "翌週、同じ席には一冊の青いノートが置かれていた。表紙には名前も日付もなく、小さな葉っぱの絵だけが描かれている。",
-        "店主に尋ねると、誰かの忘れものだという。「最後のページを読んでみてください。」そう言って、静かに笑った。",
-        "そこには一行だけあった。「また来たくなる場所がある。それだけで、今日は少しいい日だ。」私はその言葉を、心の中でもう一度読んだ。"
-      ] },
-      { title: "いつもの席で", paragraphs: [
-        "季節が変わっても、窓辺の席から見える木はそこにあった。葉の色が変わり、光の角度が変わる。その小さな違いに気づくのが、楽しみになっていた。",
-        "私は新しい本を開いた。まだ知らない言葉が、ページの向こうで待っている。わからないことがあるのは、悪いことではない。今日も少しずつ、読んでいこう。"
-      ] }
+/* Shared fictional content only. The phone and desktop views are independent. */
+window.HarukaData = Object.freeze({
+  materials: [
+    { id: 'summer', type: 'novel', title: '夏の手紙', subtitle: '小说 · 日语 · 12 章', status: '可阅读', cover: '夏', tone: 'blue', detail: '一封从夏日海边寄来的信，慢慢连接起两个人的故事。', updated: '今天 09:42' },
+    { id: 'daily', type: 'textbook', title: '日语的日常表达', subtitle: '课本 · 日语 · 8 单元', status: '可学习', cover: 'あ', tone: 'lime', detail: '用熟悉的生活场景学习表达、语法和课后练习。', updated: '昨天 18:10' },
+    { id: 'n2', type: 'exam', title: 'N2 模拟试卷', subtitle: '试卷 · 日语 · 38 题', status: '待校对', cover: 'N2', tone: 'peach', detail: '结构已提取，听力文字稿与题目关联等待校对。', updated: '9 月 21 日' }
+  ],
+  novel: {
+    chapters: ['海边的邮筒', '雨停之后', '窓の向こう', '写给未来的你'],
+    paragraphs: [
+      '朝の光が、白いカーテンを通して部屋に広がった。窓を開けると、夏の風がそっと頬に触れた。',
+      '机の上には、一通の手紙が置かれていた。見覚えのある文字を見て、私は思わず微笑んだ。',
+      'まだ知らない言葉にも、どこか懐かしい響きがある。'
+    ],
+    terms: {
+      soft: { word: 'そっと', reading: 'sotto · 副词', meaning: '轻轻地，悄悄地。这里描写夏风轻触脸颊，带着温柔、不打扰的感觉。', sentence: '夏の風がそっと頬に触れた。', translation: '夏风轻轻拂过脸颊。', source: '第 03 章 · 第 1 段' },
+      smile: { word: '微笑んだ', reading: 'ほほえんだ · 动词', meaning: '微笑了。这里的「思わず微笑んだ」表示认出熟悉的字迹后，不由自主地笑了。', sentence: '私は思わず微笑んだ。', translation: '我不由得微笑起来。', source: '第 03 章 · 第 2 段' }
+    }
+  },
+  textbook: {
+    units: [
+      { id: 'unit1', title: 'Unit 01 · 初次见面', items: ['会话：よろしくお願いします', '词汇：姓名与职业', '语法：は 与 です', '课后练习：3 题'] },
+      { id: 'unit2', title: 'Unit 02 · 一起去车站', items: ['课文：駅までの道', '词汇：方向与交通', '语法：に / へ', '课后练习：4 题'] },
+      { id: 'unit3', title: 'Unit 03 · 在咖啡馆', items: ['会话：注文をお願いします', '例句与译文', '语法：ください', '课后练习：3 题'] }
+    ],
+    question: { prompt: '「駅へ行きます」中的「へ」主要表示什么？', options: ['移动方向', '动作对象', '动作原因', '所属关系'], correct: 0 }
+  },
+  exam: {
+    title: 'N2 模拟试卷', duration: '60 分钟', sections: ['语言知识', '阅读', '听力'],
+    questions: [
+      { id: 'q1', group: '语言知识', text: '「穏やか」に最接近的意思是？', options: ['平静温和', '迅速猛烈', '十分复杂', '令人惊讶'], correct: 0 },
+      { id: 'q2', group: '阅读', text: '文中主人公为什么停下脚步？', options: ['忘记了约定', '想起了旧友', '听到了广播', '遇见了老师'], correct: 1 },
+      { id: 'q3', group: '听力', text: '听力题组 1：两人最后决定在哪里见面？', options: ['图书馆门口', '车站南口', '公园入口', '学校大厅'], correct: 1 }
     ]
   },
-  { id: "morning", title: "The Art of Slow Mornings", subtitle: "给清晨，一点慢下来的时间", language: "英语", type: "其他", format: "MD", cover: "morning", number: "02", chapters: [{ title: "A little room for the day", paragraphs: [
-    "Before the city gets loud, I open the kitchen window. The morning air smells of rain and the bread from the bakery downstairs. For a moment, there is nothing I need to hurry toward.",
-    "I used to fill every quiet minute with something useful. Now I leave a little space. I make tea, read a page, and watch the light move across the wall.",
-    "A slow morning does not have to be a perfect morning. Sometimes it is just five minutes at the table, with both hands around a warm cup. That is enough for today."
-  ] }] },
-  { id: "walk", title: "街角を歩けば", subtitle: "在街角，遇见日常", language: "日语", type: "小说", format: "EPUB", cover: "walk", number: "03", chapters: [{ title: "知らない道", paragraphs: [
-    "駅を出て、いつもとは反対の方向へ歩いた。地図は見なかった。今日は、少しだけ迷ってみたかった。",
-    "小さな花屋の前で足を止めた。店先には、名前のわからない黄色い花が並んでいる。風が吹くたびに、花びらが楽しそうに揺れていた。",
-    "知らない道にも、誰かにとっての日常がある。そのことを考えると、この街が少し近くなった気がした。"
-  ] }] },
-  { id: "notes", title: "日常のことばノート", subtitle: "把想说的话，好好记下来", language: "日语", type: "其他", format: "MD", cover: "notes", number: "04", chapters: [{ title: "暮らしの中で", paragraphs: [
-    "「おかえり」と言われると、家に帰ってきたことを実感する。短い言葉なのに、そこにはたくさんの気持ちが入っている。",
-    "「お疲れさま」は、相手の一日をそっと受け止める言葉だと思う。何をしたかを全部知らなくても、その時間を大切にすることはできる。"
-  ] }] },
-  { id: "everyday", title: "Everyday, in English", subtitle: "从生活里的小事开始表达", language: "英语", type: "教材", format: "MD", cover: "everyday", number: "05", chapters: [{ title: "Small talk, real connections", paragraphs: [
-    "A conversation can begin with something small. Ask about the book on the table, or the music playing in the café. You do not need a perfect opening sentence.",
-    "Listen to the answer. A good question gives the other person room to share a story. When you are curious, everyday moments become chances to connect.",
-    "Try this: describe a place you enjoy in three sentences. What can you see? What can you hear? How do you feel when you are there?"
-  ] }] },
-  { id: "exam", title: "日本語読解 · 練習問題", subtitle: "阅读理解 · 示例试卷", language: "日语", type: "试卷", format: "示例", cover: "exam", number: "06", chapters: [] }
-];
-
-const DICTIONARY = {
-  "木漏れ日": { reading: "こもれび", kind: "名词", meaning: "从树叶间隙洒落的阳光。", detail: "木（树木）＋ 漏れ（漏出）＋ 日（阳光）。一个词，装下了光穿过树叶时的温柔。", example: "木漏れ日がテーブルの上で揺れていた。", translation: "树隙间的阳光，在桌面上轻轻摇曳。" },
-  "穏やか": { reading: "おだやか", kind: "形容动词", meaning: "平静的；温和的。", detail: "可以形容天气、气氛或人的性情。文中的「穏やかな時間」指宁静而舒适的时光。", example: "穏やかな時間が流れている。", translation: "宁静的时光缓缓流淌。" },
-  "window": { reading: "/ˈwɪndoʊ/", kind: "名词", meaning: "窗；窗户。", detail: "这里指厨房的窗户。open the window 表示「打开窗户」。", example: "I open the kitchen window.", translation: "我打开厨房的窗户。" }
-};
+  notebooks: [
+    { id: 'dailywords', title: '日常的细节', language: '日语', count: 24, tone: 'lime', description: '从小说和日常会话里收集的表达。' },
+    { id: 'readingwords', title: '阅读时遇见', language: '日语', count: 18, tone: 'blue', description: '读故事时想记住的词与短语。' },
+    { id: 'englishwords', title: 'English sparks', language: '英语', count: 12, tone: 'peach', description: '英语材料里的高频表达。' }
+  ],
+  words: [
+    { id: 'soft', word: 'そっと', reading: 'sotto', meaning: '轻轻地；悄悄地', source: '夏の手紙 · 第 03 章', book: 'dailywords', mastery: '学习中', sentence: '夏の風がそっと頬に触れた。' },
+    { id: 'smile', word: '微笑む', reading: 'ほほえむ', meaning: '微笑', source: '夏の手紙 · 第 03 章', book: 'readingwords', mastery: '学习中', sentence: '私は思わず微笑んだ。' },
+    { id: 'gentle', word: '穏やか', reading: 'おだやか', meaning: '平静的；温和的', source: 'N2 模拟试卷 · 语言知识', book: 'dailywords', mastery: '尚无有效证据', sentence: '穏やかな一日を過ごした。' },
+    { id: 'glimmer', word: 'glimmer', reading: '/ˈɡlɪmər/', meaning: '微光；一丝希望', source: 'English sparks · 阅读片段', book: 'englishwords', mastery: '尚无有效证据', sentence: 'A glimmer of light appeared beyond the hill.' }
+  ],
+  mistakes: [
+    { id: 'm1', title: '移动方向与目的地', source: '日语的日常表达 · Unit 02', state: '当前待纠正', favorite: false, answer: '把「へ」解释为动作对象' },
+    { id: 'm2', title: '阅读中的指代关系', source: 'N2 模拟试卷 · 阅读', state: '已经改进', favorite: true, answer: '遗漏上一段的指代' },
+    { id: 'm3', title: '语境词义：穏やか', source: 'AI 习题 · 日常的细节', state: '当前待纠正', favorite: false, answer: '误选了「迅速猛烈」' }
+  ],
+  notifications: [
+    { id: 'n1', title: '「夏の手紙」已可阅读', detail: '章节与正文已准备好。', time: '今天 09:42', route: 'novel', unread: true },
+    { id: 'n2', title: '试卷结构需要校对', detail: '听力文字稿与题组匹配仍待确认。', time: '昨天 16:18', route: 'examPrep', unread: true },
+    { id: 'n3', title: '「日语的日常表达」已完成解析', detail: '3 个单元可以学习。', time: '9 月 20 日', route: 'textbook', unread: false }
+  ],
+  practice: { prompt: '猫を起こさないように、ドアを（　）閉めた。', translation: '为了不把猫吵醒，轻轻关上门。', options: ['そっと', 'きっと', 'ずっと', 'もっと'], correct: 0, explanation: '「そっと」强调动作轻柔、避免打扰。' },
+  practiceEnglish: { prompt: 'A (　) of light appeared beyond the hill.', translation: '山的那边出现了一丝微光。', options: ['glimmer', 'thunder', 'silence', 'weight'], correct: 0, explanation: 'glimmer 是微弱的光，也可表示一丝希望。' },
+  conversations: [
+    { from: 'user', text: '这句话里的「そっと」有什么语气？' },
+    { from: 'agent', text: '它强调动作轻柔、不打扰。结合“夏风碰到脸颊”的场景，读起来很温和。可以回到原文，再看它与前一句的节奏。', source: '夏の手紙 · 第 03 章 · 第 1 段' }
+  ]
+});

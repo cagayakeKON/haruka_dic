@@ -1,31 +1,11 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Haruka · 选择原型</title>
-  <link rel="stylesheet" href="styles.css?v=0.6">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Haruka · 晴空频率原型</title>
   <style>
-    body { min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: #f7f9fd; }
-    main { width: min(100%, 720px); }
-    h1 { font-size: clamp(28px, 5vw, 42px); margin-bottom: 8px; }
-    p { color: var(--muted); margin-bottom: 28px; }
-    .entries { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .entries a { display: flex; flex-direction: column; gap: 10px; min-height: 160px; padding: 26px; border: 1px solid #dce6f7; border-radius: 18px; background: #fff; }
-    .entries a:hover, .entries a:focus-visible { border-color: var(--primary); box-shadow: 0 10px 30px #265ad615; }
-    .entries strong { font-size: 22px; }
-    .entries span { color: var(--muted); font-size: 13px; }
-    @media (max-width: 520px) { .entries { grid-template-columns: 1fr; } }
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f4f7fb;color:#152b42;font-family:"Segoe UI","Microsoft YaHei",sans-serif;display:grid;place-items:center;padding:24px}.entry{width:min(100%,940px)}.brand{display:flex;align-items:center;gap:10px;font-size:25px;font-weight:700;letter-spacing:-1px}.mark{display:grid;place-items:center;width:40px;height:40px;border-radius:14px 14px 5px 14px;background:#2457ed;color:#fff;font-size:29px}.eyebrow{color:#2457ed;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-top:48px}h1{font-size:clamp(36px,6vw,66px);line-height:1.16;letter-spacing:-2px;margin:12px 0 16px}h1 em{font-style:normal;color:#2457ed}p{color:#58697b;line-height:1.8;font-size:16px;max-width:660px}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:34px 0}.choice{display:flex;flex-direction:column;justify-content:space-between;min-height:205px;padding:26px 28px;border-radius:24px 24px 7px 24px;text-decoration:none;color:inherit;background:#fff;border:1px solid #dde5ee;transition:transform .2s,box-shadow .2s}.choice:hover{transform:translateY(-4px);box-shadow:0 16px 36px #1a38621b}.choice:first-child{background:#2457ed;color:#fff;border-color:#2457ed}.choice:first-child .meta{color:#d6e2ff}.choice .small{font-size:12px;letter-spacing:1.6px;font-weight:700}.choice strong{font-size:29px;line-height:1.25}.choice .meta{color:#58697b;font-size:13px}.arrow{font-size:26px;align-self:flex-end}.note{font-size:12px;color:#58697b}@media(max-width:620px){.choices{grid-template-columns:1fr}.choice{min-height:155px}h1{font-size:42px}}
   </style>
 </head>
-<body>
-  <main>
-    <h1>Haruka 原型</h1>
-    <p>分别打开手机端与电脑端页面。</p>
-    <div class="entries">
-      <a href="phone.html#collections"><strong>手机端 →</strong><span>触控导航、分层页面与底部操作</span></a>
-      <a href="desktop.html#library"><strong>电脑端 →</strong><span>侧边导航、宽屏书库与阅读布局</span></a>
-    </div>
-  </main>
-</body>
+<body><main class="entry"><div class="brand"><span class="mark">h</span>haruka</div><div class="eyebrow">Clear Signal / 设计概念</div><h1>喜欢的内容，<br>就是你的<em>起点。</em></h1><p>同一套「晴空频率」产品语言，分别为手机和电脑设计页面结构。两套原型拥有独立的导航、布局与交互脚本，使用共同的虚构示例内容。</p><div class="choices"><a class="choice" href="phone.html#library"><span class="small">01 / TOUCH FIRST</span><strong>手机端</strong><span class="meta">触控导航 · 单列学习 · 底部解释面板</span><span class="arrow">↗</span></a><a class="choice" href="desktop.html#library"><span class="small">02 / WIDE SPACE</span><strong>电脑端</strong><span class="meta">侧栏导航 · 多栏内容 · 独立管理端</span><span class="arrow">↗</span></a></div><div class="note">本原型只有本地演示状态。示例文件、账号、模型结果和消息均为虚构，不连接服务。</div></main></body>
 </html>

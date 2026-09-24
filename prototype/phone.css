@@ -176,7 +176,8 @@ strong {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 .root-head .icon-btn {
   background: var(--paper);
@@ -200,9 +201,6 @@ strong {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-}
-.tab-head .head-actions {
-  gap: 0;
 }
 .practice-language {
   margin: 0 0 12px;

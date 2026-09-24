@@ -269,3 +269,11 @@ architecture_review完成第1轮独立只读审查，发现MUR-01（P2）：用�
 ## DESIGN9 手机页头与材料操作菜单
 
 2026-09-24，基线 cbc9c9d，阶段1内独立原型小阶段。统一手机五个tab的header标题，材料库和单词本点击搜索按钮才展开输入框；两端材料更多先显示查看详情/删除菜单。同步删除后的来源失效、历史导航和焦点恢复，保留收藏与历史作答。修改仅限HTML原型及相关文档，不改变正式工程阶段。独立review与局部验证见[手机页头与材料操作菜单](2026-09-24-tab-header-material-menu.md)。
+
+## DESIGN9a 手机页头图标间距
+
+2026-09-24，基线 b5c38b4，阶段1内局部原型修订。用户指出并列图标过近；将手机header动作组统一为8px净间距，移除主tab的零间距覆盖，保持图标44×44px命中区并禁止动作组压缩。更新CSS缓存版本及[设计语言](../../product/design-language.md)的共同间距规则，不改变业务或正式工程范围。
+
+本次仅检查受影响的页头布局：320/390/735px × 五个主tab共15组通过，双/三图标间距均为8px、点击区至少44px，标题保持单行且无重叠、横向溢出或JavaScript异常；人工查看390px材料库/单词本截图。局部脚本与结果位于忽略目录 `artifacts/design9/header-spacing.cjs` 和 `artifacts/design9/header-spacing-results.json`，不新增低风险样式的仓库测试。两份原型文件格式检查及diff空白检查通过，不运行无关业务或正式应用测试。
+
+独立reviewer `mobile_design_review` 第1轮核对CSS作用域、缓存版本、设计规则、布局结果与截图，无缺陷，不追加第2轮。两份Markdown的lint、本地链接/锚点/围栏/路径检查通过。按本小阶段创建本地commit，不默认push。

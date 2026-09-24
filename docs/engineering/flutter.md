@@ -2,7 +2,7 @@
 
 状态：2026-09-22，B0-foundation已建立跨平台应用壳、布局策略与平台路由边界，业务模块尚未实现。适用Windows、Web、Android用户端与仅Web管理端。本篇定义客户端开发、页面拆分、状态保留和平台适配；不新增平台、离线编辑、后台常驻播放或功能范围。
 
-配套：[产品设计语言](../product/design-language.md)、[项目结构](../architecture/project-structure.md)、[代码规范](coding.md)、[API返回与多语言](../contracts/api-responses.md)、[前端测试](testing/frontend-e2e.md)、[设置与缓存](../modules/settings.md)。具体业务状态/权限以modules、认证/RBAC与API为准，本篇不另定义保存、评分或授权流程。视觉、组件表达、动效与文案以「晴空频率」专题为准；[HTML原型](../../prototype/README.md)已重建为两套独立演示界面，只按其标注的边界参考，不能视为Flutter实现或验收。Flutter实际证据只记录在 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。
+配套：[产品设计语言](../product/design-language.md)、[项目结构](../architecture/project-structure.md)、[代码规范](coding.md)、[API返回与多语言](../contracts/api-responses.md)、[前端测试](testing/frontend-e2e.md)、[设置与缓存](../modules/settings.md)。具体业务状态/权限以modules、认证/RBAC与API为准，本篇不另定义保存、评分或授权流程。视觉、组件表达、动效与文案以「晴空频率」专题为准；[HTML原型](../../prototype/README.md)有独立的手机移动优先流程与电脑工作台，只按其标注的边界参考，不能视为Flutter实现或验收。Flutter实际证据只记录在 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。
 
 ## 1. 共享与独立实现的边界
 

@@ -14,6 +14,8 @@
 | 实现材料上传、解析数据或版本 | [三类解析数据结构](contracts/material-structures.md) | [三类材料](contracts/material-types.md)、[数据与任务](architecture/data-jobs.md)、对应功能模块 |
 | 实现教材/试卷解析、听力与展示 | [解析展示契约](contracts/learning-presentation.md) | [解析数据结构](contracts/material-structures.md)、[课本](modules/textbooks.md)、[考试](modules/exams.md)、[AI与朗读](modules/ai-speech.md)、[出处](contracts/content-locator.md) |
 | 实现私有解释/TTS缓存和全局单词发音 | [学习结果缓存](architecture/learning-cache.md) | [AI与朗读](modules/ai-speech.md)、[收藏](modules/vocabulary-practice.md)、[设置](modules/settings.md)、[数据与任务](architecture/data-jobs.md) |
+| 实现独立查询与卡片收藏 | [查询](modules/query.md) | [AI卡片](modules/ai-speech.md)、[API](contracts/api.md)、[单词本](modules/vocabulary-notebooks.md) |
+| 实现任务实时进度 | [WebSocket进度](contracts/job-progress.md) | [任务](architecture/data-jobs.md)、[认证](architecture/authentication.md)、[材料](modules/materials-reading.md) |
 | 实现多单词本与自动掌握 | [单词本](modules/vocabulary-notebooks.md) | [学习证据](architecture/vocabulary-learning.md)、[AI习题](modules/ai-exercises.md)、[CSV](contracts/vocabulary-csv.md) |
 | 实现AI习题与错题库 | [AI习题与错题库](modules/ai-exercises.md) | [公共作答/评分](modules/vocabulary-practice.md)、[数据与任务](architecture/data-jobs.md)、[Agent运行层](architecture/agent-runtime.md) |
 | 初始化工程 | [脚手架](engineering/scaffold.md) | [项目结构](architecture/project-structure.md)、[B0/B1/B2](delivery/milestones/scaffold.md)、[开发指南](engineering/development.md) |
@@ -37,9 +39,10 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 | [小说](modules/novels.md) | 章节/语言预处理、连续阅读与选词 | [三类材料](contracts/material-types.md)、[出处](contracts/content-locator.md) |
 | [课本](modules/textbooks.md) | 单元/内容角色、词表、课文与逐题练习 | [三类材料](contracts/material-types.md)、[公共作答](modules/vocabulary-practice.md) |
 | [收藏与公共作答](modules/vocabulary-practice.md) | 词表、CSV/照片、题目作答、评分与诊断 | [CSV](contracts/vocabulary-csv.md)、[API](contracts/api.md) |
-| [单词本](modules/vocabulary-notebooks.md) | 多本组织、单词详情/批量、AI习题选源、自动掌握与历史 | [学习证据](architecture/vocabulary-learning.md)、[AI习题](modules/ai-exercises.md)、[CSV](contracts/vocabulary-csv.md) |
+| [单词本](modules/vocabulary-notebooks.md) | 混合收藏列表/弹窗、多本组织、每日单词、AI习题选源和只读掌握 | [学习证据](architecture/vocabulary-learning.md)、[AI习题](modules/ai-exercises.md)、[CSV](contracts/vocabulary-csv.md) |
 | [AI习题与错题库](modules/ai-exercises.md) | 显式选源生成、所有可靠错题留档/收藏、针对性题目 | [学习证据](architecture/vocabulary-learning.md)、[公共作答](modules/vocabulary-practice.md)、[数据与任务](architecture/data-jobs.md) |
 | [考试](modules/exams.md) | 试卷/文字听力稿校对、TTS准备、整卷答题、保存/交卷、成绩与重评 | [解析数据结构](contracts/material-structures.md)、[数据与任务](architecture/data-jobs.md)、[AI与朗读](modules/ai-speech.md)、[出处](contracts/content-locator.md) |
+| [查询](modules/query.md) | 无材料自由问答、聊天、完整卡片收藏与归本 | [AI卡片](modules/ai-speech.md)、[运行层](architecture/agent-runtime.md)、[单词本](modules/vocabulary-notebooks.md) |
 | [AI与朗读](modules/ai-speech.md) | 解释、对话、卡片、TTS与播放 | [Agent运行层](architecture/agent-runtime.md)、[模型用量](contracts/model-usage.md)、[API事件](contracts/api.md) |
 | [管理后台](modules/admin.md) | 用户、角色、菜单、策略、任务与审计 | [RBAC](architecture/authorization.md)、[权限目录](contracts/permissions.md) |
 | [设置](modules/settings.md) | 个人资料/头像、语言档案、基础显示、个人Key、服务实例与缓存 | [认证隔离](architecture/authentication.md)、[配置](operations/configuration.md) |
@@ -90,3 +93,5 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 5. 本地链接用相对路径，移动后检查目标与大小写；旧路径和旧章节号只保留在历史迁移映射，不能继续作为开发入口。
 6. 变更范围、并行分工、commit、测试选择和review频率只由AGENTS.md规定；本文不另设门禁。
 7. 不为凑目录创建空文档。已有内容超出职责时先提取成单一专题，再修复所有消费者引用。
+
+- [收藏、查询与实时进度](delivery/reviews/2026-09-24-collections-query-prototype.md)：DESIGN6 双端条目列表/弹窗、每日单词、聊天卡片、材料直达与本地 WebSocket 验证。

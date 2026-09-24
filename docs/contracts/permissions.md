@@ -96,3 +96,5 @@ operator包含admin.login/dashboard.view/resource_metadata.read/job.read/cancel/
 ## 6. 验收
 
 PERM-01覆盖每个注册权限的allow/deny/未知/受众错误/范围错误；PERM-02覆盖全部组合依赖及复合请求受理（包括照片只识别/新增/合并权限分离）；PERM-03覆盖页面/按钮/API/Worker/Agent同一动作；PERM-04覆盖新增目录默认拒绝、旧客户端未知权限不放行；PERM-05覆盖模板种子升级不覆盖人工角色授权及只读角色无隐含模型调用路径；PERM-06覆盖无assign的账号/角色创建、初始授权、启停/删除deny角色与用户迁移均不能绕过授予边界。
+
+DESIGN6入口沿用既有权限：每日单词需要collection.read；按词本读取另需vocabulary_notebook.read。各类型收藏归本使用同一成员权限，语法/句子/回答卡片不以word权限语义伪造掌握。独立[查询](../modules/query.md)使用agent.read/use；卡片收藏需collection.create及卡片读取权限，选本另需vocabulary_notebook.read/update，不因能聊天而获得收藏写权。任务[WebSocket](job-progress.md)逐次核对client.job.read、本人任务及实际来源read，不能只在握手授权一次。

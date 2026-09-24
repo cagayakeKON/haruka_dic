@@ -62,7 +62,7 @@ OpenRouter 通过 Pydantic AI 的供应商适配接入，Gemini 文本/视觉调
 
 client.agent.use只允许进入Agent，不自动获得导入、收藏/错题收藏写入、生成AI习题、批改或TTS权限。按当前授权过滤可提供的工具，每次实际执行仍由AuthorizationService检查对应业务权限与所有权；模型提出未知/失权工具调用必须拒绝。学习Agent不暴露用户/角色/权限管理工具，管理角色也不能通过Agent读取其他用户内容或借用其Key。
 
-WordCard、SentenceCard、GrammarCard 和题目输出使用 Pydantic 模型。完整通过结构、出处与业务校验后才能成为可收藏/作答的结果；流式中间数据不能提前触发保存或业务动作。首版采用单个学习 Agent 配合领域工具；固定抽取/评分步骤可以直接使用类型化模型调用，不强制增加规划循环。
+WordCard、SentenceCard、GrammarCard、AnswerCard 和题目输出使用 Pydantic 模型。完整通过结构、出处与业务校验后才能成为可收藏/作答的结果；流式中间数据不能提前触发保存或业务动作。首版采用单个学习 Agent 配合领域工具；固定抽取/评分步骤可以直接使用类型化模型调用，不强制增加规划循环。
 
 TTS 继续使用独立的 Gemini/OpenRouter 音频适配器、音频任务及播放器。Pydantic AI 的文本模型接入不等于已经实现 TTS。
 
@@ -78,6 +78,7 @@ OCR/拍照识词统一通过 [视觉模型识别](vision-recognition.md) 的固�
 
 ## 4. 上下文、记忆与流式接口
 
+- [独立查询](../modules/query.md)与材料内对话共用运行层；AgentThread.mode区分query/contextual，query无需材料来源，保存每轮解释语言和可选目标语，不默认获取全部私有材料或外部联网能力。
 - AgentThread 和 AgentMessage 保存在 PostgreSQL，读取和续聊前验证所有者；保存 SDK 消息时记录序列化格式/SDK 版本，不能把 Python 对象当长期存储格式。
 - 学习掌握度、错题、收藏和诊断证据以业务表为准，对话摘要仅辅助上下文，不覆盖学习事实。
 - 每轮只装入必要原文和相关记录，限定历史与工具结果大小；超限时裁剪/摘要并保留来源引用。

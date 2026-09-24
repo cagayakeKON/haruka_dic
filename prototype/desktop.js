@@ -21,6 +21,11 @@
     "adminSecurity",
   ];
   const names = {
+    query: "查询",
+    dailyWords: "每日单词",
+    sampleReader: "阅读",
+    sampleTextbook: "课本学习",
+    sampleExamPrep: "试卷准备",
     library: "材料库",
     material: "材料详情",
     import: "导入材料",
@@ -71,12 +76,16 @@
     adminSecurity: "管理账号与安全",
   };
   const parentRoute = {
+    dailyWords: "notebooks",
+    sampleReader: "library",
+    sampleTextbook: "library",
+    sampleExamPrep: "library",
     material: "library",
     import: "library",
-    novel: "material",
-    textbook: "material",
+    novel: "library",
+    textbook: "library",
     textbookPractice: "textbook",
-    examPrep: "material",
+    examPrep: "library",
     examRun: "examPrep",
     examResult: "examPrep",
     notebook: "notebooks",
@@ -117,6 +126,7 @@
   });
   let builderStep = 0;
   let pendingRoute = "";
+  let pendingOptions = {};
   let modalReturnFocus = "";
   let renderedRoute = "";
   const focusSelector = (element) => {
@@ -149,10 +159,16 @@
       !options.force
     ) {
       pendingRoute = route;
+      pendingOptions = options;
       openModal("examLeave");
       return;
     }
-    if (route === s.route) return;
+    if (options.materialId) s.chosenMaterial = options.materialId;
+    if (route === s.route) {
+      s.modal = "";
+      render();
+      return;
+    }
     if (route === "adminLogin" && !s.adminArea) s.signedIn = false;
     if (route === "login" && s.adminArea) {
       s.adminSignedIn = false;
@@ -238,12 +254,13 @@
       : [
           ["library", "材料库", "library"],
           ["notebooks", "单词本", "layers"],
+          ["query", "查询", "message"],
           ["exercise", "练习", "spark"],
           ["settings", "我的", "user"],
         ];
     let active = s.route;
     while (parentRoute[active]) active = parentRoute[active];
-    return `<aside class="sidebar ${admin ? "admin-sidebar" : ""}"><a class="brand" href="${admin ? "#adminOverview" : "#library"}" aria-label="Haruka 首页"><span class="brand-mark">h</span><span>haruka</span></a>${admin ? '<span class="admin-ribbon">管理端 · 原型</span>' : ""}<nav class="side-nav" aria-label="${admin ? "管理导航" : "主导航"}">${items.map(([route, label, icon]) => `<button type="button" data-go="${route}" ${active === route ? 'aria-current="page"' : ""}>${I(icon)}<span>${label}</span></button>`).join("")}</nav><div class="sidebar-bottom">${!admin ? `<button class="side-link" type="button" data-go="jobs">${I("clock")}<span>任务进度</span></button><button class="side-link" type="button" data-go="notifications">${I("bell")}<span>站内消息</span>${s.notifications.some((n) => n.unread) ? '<span class="notification-dot" aria-label="有未读消息"></span>' : ""}</button>` : ""}<button class="side-account" type="button" data-go="${admin ? "adminSecurity" : "profile"}"><span class="avatar">遥</span><span class="row-copy"><strong>${e(s.profile.displayName)}</strong><small>${admin ? "管理账号" : e(s.activeLanguage || "未设置学习语言")}</small></span>${I("chevron")}</button></div></aside>`;
+    return `<aside class="sidebar ${admin ? "admin-sidebar" : ""}"><a class="brand" href="${admin ? "#adminOverview" : "#library"}" aria-label="Haruka 首页"><span class="brand-mark">h</span><span>haruka</span></a>${admin ? '<span class="admin-ribbon">管理端 · 原型</span>' : ""}<nav class="side-nav" aria-label="${admin ? "管理导航" : "主导航"}">${items.map(([route, label, icon]) => `<button type="button" data-go="${route}" ${active === route ? 'aria-current="page"' : ""}>${I(icon)}<span>${label}</span></button>`).join("")}</nav><div class="sidebar-bottom"><button class="side-account" type="button" data-go="${admin ? "adminSecurity" : "profile"}"><span class="avatar">遥</span><span class="row-copy"><strong>${e(s.profile.displayName)}</strong><small>${admin ? "管理账号" : e(s.activeLanguage || "未设置学习语言")}</small></span>${I("chevron")}</button></div></aside>`;
   }
 
   function topbar() {
@@ -252,20 +269,7 @@
   }
 
   function library() {
-    const items = visibleMaterials(s);
-    return `<div class="page-top">${head("", "材料库")}<div class="button-row">${btn("任务进度", "jobs", "secondary", "clock")}${btn("导入材料", "import", "primary", "plus")}</div></div><div class="library-toolbar"><div class="filters" aria-label="材料类型">${[
-      ["all", "全部"],
-      ["novel", "小说"],
-      ["textbook", "课本"],
-      ["exam", "试卷"],
-    ]
-      .map(
-        ([key, label]) =>
-          `<button type="button" data-filter="${key}" aria-pressed="${s.filter === key}">${label}</button>`,
-      )
-      .join(
-        "",
-      )}</div><label class="search">${I("search")}<input type="search" data-input="search" aria-label="搜索材料" placeholder="搜索标题或语言" value="${e(s.search)}"><kbd>/</kbd></label></div><div class="list-caption"><span>${items.length} 份材料</span><span>最近更新</span></div>${items.length ? `<div class="books-grid">${items.map((m) => `<button class="material-card" type="button" data-material="${m.id}"><span class="book-art ${m.tone}" aria-hidden="true"><span class="book-art-letter">${e(m.cover)}</span><span class="book-art-line"></span><span class="book-art-label">${e(typeLabel[m.type])}</span></span><span class="material-card-body"><span class="row-copy"><strong>${e(m.title)}</strong><small>${e(m.subtitle)}</small></span><span class="material-card-meta">${tag(m.status, m.type === "exam" ? "warn" : "good")}<small>${e(m.updated)}</small></span></span>${I("arrow")}</button>`).join("")}</div>` : `<div class="empty"><strong>没有找到材料</strong><p>试试其他关键词。</p><button class="secondary" type="button" data-action="clearSearch">清除筛选</button></div>`}`;
+    return extras.library();
   }
 
   function importPage() {
@@ -292,8 +296,7 @@
 
   function material() {
     const m =
-      data.materials.find((x) => x.id === s.chosenMaterial) ||
-      data.materials[0];
+      s.materials.find((x) => x.id === s.chosenMaterial) || s.materials[0];
     const target = { novel: "novel", textbook: "textbook", exam: "examPrep" }[
       m.type
     ];
@@ -364,23 +367,19 @@
     return `${head("", "考试结果")}<div class="grid-3" style="margin-top:23px"><div class="stat"><strong>${score} / ${data.exam.questions.length}</strong><span>示例客观题</span></div><div class="stat"><strong>${data.exam.questions.length - score}</strong><span>需要回看的示例题</span></div><div class="stat"><strong>已交卷</strong><span>示例答卷状态</span></div></div><div class="section-head"><h2>逐题复盘</h2>${btn("查看错题库", "mistakes", "secondary")}</div><div class="table-wrap"><table class="table"><thead><tr><th>题号</th><th>部分</th><th>你的选择</th><th>参考答案</th></tr></thead><tbody>${data.exam.questions.map((q, i) => `<tr><td>${i + 1}</td><td>${e(q.group)}</td><td>${s.examAnswers[q.id] === undefined ? "未作答" : e(q.options[s.examAnswers[q.id]])}</td><td>${e(q.options[q.correct])}</td></tr>`).join("")}</tbody></table></div>`;
   }
   function notebooks() {
-    return `<div class="page-top">${head("", "单词本")}<div class="button-row">${btn("单词 CSV", "csv", "secondary", "download")}<button class="primary" type="button" data-modal="newNotebook">${I("plus")}新建词本</button></div></div><p class="list-caption">${s.notebooks.length} 个词本</p><div class="notebooks-grid">${s.notebooks.map((book) => `<button class="notebook-card" type="button" data-book="${book.id}"><span class="notebook-spine ${book.tone}" aria-hidden="true"></span><span class="step-caption">${e(book.language)}</span><strong>${e(book.title)}</strong><span class="notebook-count">${s.words.filter((w) => w.book === book.id || w.books?.includes(book.id)).length}<small> 个词条</small></span>${I("arrow")}</button>`).join("")}</div>`;
+    return extras.notebooks();
   }
 
   function notebook() {
-    const book =
-      s.notebooks.find((b) => b.id === s.selectedBook) || s.notebooks[0];
-    const words = s.words.filter(
-      (w) => w.book === book.id || w.books?.includes(book.id),
-    );
-    return `${head(`NOTEBOOK / ${e(book.language)}`, e(book.title), e(book.description))}<div class="section-head"><h2>词条 <span>${words.length} 个</span></h2><div class="button-row"><button class="secondary" type="button" data-modal="bookActions">管理词本</button><button class="secondary" type="button" data-modal="newWord">${I("plus")} 添加词条</button><button class="primary" type="button" data-action="useNotebook">${I("spark")} 作为习题来源</button></div></div><div class="table-wrap"><table class="table"><thead><tr><th>词形</th><th>释义</th><th>出处</th><th>掌握</th><th></th></tr></thead><tbody>${words.map((w) => `<tr><td><strong lang="ja">${e(w.word)}</strong><br><small class="muted">${e(w.reading)}</small></td><td>${e(w.meaning)}</td><td>${e(w.source)}</td><td>${tag(w.mastery)}</td><td><button type="button" data-word="${w.id}">查看 ${I("arrow")}</button></td></tr>`).join("") || '<tr><td colspan="5">还没有词条。</td></tr>'}</tbody></table></div>`;
+    return extras.notebooks();
   }
+
   function word() {
-    const w = s.words.find((x) => x.id === s.selectedWord) || s.words[0];
-    return `${head("WORD / CONTEXT", e(w.word), `${e(w.reading)} · ${e(w.meaning)}`)}<div class="grid-aside" style="margin-top:21px"><article class="panel"><div class="eyebrow"><span class="signal"></span>回到原句</div><p lang="ja" style="font-family:'Yu Mincho',serif;font-size:24px;line-height:1.9;margin:15px 0">${e(w.sentence)}</p><p class="small muted">${e(w.source)}</p><div class="divider"></div><div class="button-row">${w.source.startsWith("夏の手紙") ? btn("回到原文", "novel", "secondary", "arrow") : w.source.startsWith("N2") ? btn("查看试卷", "examPrep", "secondary", "arrow") : ""}<button type="button" class="secondary" data-modal="moveWord">整理词本</button></div></article><aside class="surface stack"><h2 style="font-size:18px">学习记录</h2><div>${tag(w.mastery)}</div><div class="divider"></div><div><strong>个人笔记</strong><p class="small muted" style="margin-top:7px">${e(w.note || "还没有写笔记。")}</p></div><button type="button" class="secondary" data-modal="editWord">编辑词条与笔记</button></aside></div>`;
+    return extras.notebooks();
   }
+
   function csv() {
-    return `${head("", "单词 CSV")}<div class="grid-2" style="margin-top:24px"><div class="surface stack"><h2 style="font-size:20px">导出单词</h2><p class="subtitle">包含词形、读音、释义和词本归属的虚构样本。</p><button type="button" class="secondary" data-action="csvExport">${I("download")} 下载示例 CSV</button></div><div class="surface stack"><h2 style="font-size:20px">导入预览</h2><label class="field">选择 UTF-8 CSV<input type="file" data-file="csv" accept=".csv,text/csv"><small>${s.csvFile ? `已选择：${e(s.csvFile)}` : "本原型不读取所选文件内容。"}</small></label><button type="button" class="secondary" data-action="csvPreview" ${s.csvFile ? "" : "disabled"}>打开示例预览</button></div></div>${s.csvStep ? `<div class="surface stack" style="margin-top:20px"><div class="eyebrow"><span class="signal"></span>示例预览 · 与所选文件内容无关</div><h2 style="font-size:20px">2 行示例 · 1 行跳过</h2><div class="table-wrap"><table class="table"><thead><tr><th>词形</th><th>释义</th><th>词本</th><th>处理</th></tr></thead><tbody><tr><td>そっと</td><td>轻轻地</td><td>日常的细节</td><td>重复：跳过</td></tr><tr><td>微笑む</td><td>微笑</td><td>阅读时遇见</td><td>补空字段</td></tr></tbody></table></div><div class="button-row"><button class="primary" type="button" data-action="csvConfirm">确认演示导入</button></div></div>` : ""}`;
+    return `${head("", "单词 CSV")}<div class="grid-2" style="margin-top:24px"><div class="surface stack"><h2 style="font-size:20px">导出单词</h2><p class="subtitle">仅导出单词示例；不包含语法、句子和回答卡片。</p><button type="button" class="secondary" data-action="csvExport">${I("download")} 下载示例 CSV</button></div><div class="surface stack"><h2 style="font-size:20px">导入预览</h2><label class="field">选择 UTF-8 CSV<input type="file" data-file="csv" accept=".csv,text/csv"><small>${s.csvFile ? `已选择：${e(s.csvFile)}` : "本原型不读取所选文件内容。"}</small></label><button type="button" class="secondary" data-action="csvPreview" ${s.csvFile ? "" : "disabled"}>打开示例预览</button></div></div>${s.csvStep ? `<div class="surface stack" style="margin-top:20px"><div class="eyebrow"><span class="signal"></span>示例预览 · 与所选文件内容无关</div><h2 style="font-size:20px">2 行示例 · 1 行跳过</h2><div class="table-wrap"><table class="table"><thead><tr><th>词形</th><th>释义</th><th>词本</th><th>处理</th></tr></thead><tbody><tr><td>そっと</td><td>轻轻地</td><td>日常的细节</td><td>重复：跳过</td></tr><tr><td>微笑む</td><td>微笑</td><td>阅读时遇见</td><td>补空字段</td></tr></tbody></table></div><div class="button-row"><button class="primary" type="button" data-action="csvConfirm">确认演示导入</button></div></div>` : ""}`;
   }
   function practiceCandidateCount() {
     let count = 0;
@@ -393,7 +392,12 @@
         )
         .map((b) => b.id);
       count += s.words.filter(
-        (w) => ids.includes(w.book) || w.books?.some((id) => ids.includes(id)),
+        (w) =>
+          w.kind === "word" &&
+          w.language === s.activeLanguage &&
+          (s.practiceAllWords ||
+            ids.includes(w.book) ||
+            w.books?.some((id) => ids.includes(id))),
       ).length;
     }
     if (s.activeLanguage === "日语") {
@@ -497,8 +501,9 @@
     return `${head("IN-APP / UPDATES", "站内消息", "站内提示来自任务与结果状态；本原型没有系统推送或邮件发送。")}<div class="section-head"><h2>消息 <span>${s.notifications.filter((n) => n.unread).length} 条未读</span></h2><button class="text-btn" type="button" data-action="readAll">全部标为已读</button></div><div class="material-list">${s.notifications.map((n) => `<button type="button" class="material-row" data-notification="${n.id}"><span class="signal" style="opacity:${n.unread ? 1 : 0.25}"></span><span class="row-copy"><span class="row-title">${e(n.title)}</span><small>${e(n.detail)}</small></span><small class="muted">${e(n.time)}</small>${I("chevron")}</button>`).join("")}</div>`;
   }
   function jobs() {
-    return `${head("", "任务进度")}<div class="section-head"><h2>本人任务</h2></div><div class="table-wrap"><table class="table"><thead><tr><th>任务</th><th>阶段</th><th>状态</th><th>相关入口</th></tr></thead><tbody><tr><td>夏の手紙</td><td>文本解析</td><td>${tag("已完成", "good")}</td><td><button type="button" data-go="novel">打开小说</button></td></tr><tr><td>N2 模拟试卷</td><td>听力校对</td><td>${tag(s.examAudioReady ? "示例就绪" : "待人工确认", "warn")}</td><td><button type="button" data-go="examPrep">继续准备</button></td></tr>${s.importComplete ? `<tr><td>${e(s.importFile)}</td><td>${e(typeLabel[s.importType])} · 本地演示</td><td>${tag("演示已完成", "good")}</td><td>未上传文件</td></tr>` : ""}</tbody></table></div>`;
+    return extras.tasks();
   }
+
   const settingNav = [
     ["profile", "个人资料", "user"],
     ["languages", "语言选项", "globe"],
@@ -635,7 +640,11 @@
     if (!s.modal) return "";
     let title = "演示提示";
     let content = "";
-    if (s.modal === "prototypeInfo") {
+    const shared = extras.dialog();
+    if (shared) {
+      title = shared.title;
+      content = shared.content;
+    } else if (s.modal === "prototypeInfo") {
       title = "原型说明";
       content = `<div class="stack"><p>所有内容均为虚构样本；操作只保留在当前页面，刷新后重置。</p><p>文件不会上传，不连接业务服务，不调用 AI 或 TTS。请勿输入真实密码或 API Key。</p><div class="button-row">${btn("状态样例", "states", "secondary")}${btn("管理端演示", "adminLogin", "secondary")}</div></div>`;
     } else if (s.modal === "chapters") {
@@ -658,8 +667,7 @@
       content = `<div class="stack"><p>尚未配置凭据。</p><div class="callout warn">${I("shield")}<span>本原型不收集 API Key；停用 Key 不会自动删除已有解释与音频。</span></div></div>`;
     } else if (s.modal === "quality") {
       const m =
-        data.materials.find((x) => x.id === s.chosenMaterial) ||
-        data.materials[0];
+        s.materials.find((x) => x.id === s.chosenMaterial) || s.materials[0];
       title = "解析与来源状态";
       content = `<div class="stack"><p><strong>${e(m.title)}</strong> · ${e(m.status)}</p><div class="callout">${I("shield")}<span>${m.type === "exam" ? "试卷的题目、分值、答案依据与听力候选仍需校对；原文可用不等于可以开考。" : m.type === "textbook" ? "可靠单元可学习，未分类内容与缺少答案的题目分别提示。" : "可靠正文可阅读；语言标注与 AI 分析独立呈现状态。"}</span></div></div>`;
     } else if (s.modal === "textbookItem") {
@@ -727,9 +735,23 @@
       title = "运维摘要";
       content = `<div class="stack"><strong>${e(s.adminItem || "示例对象")}</strong><p>当前状态：正常 · 示例运维摘要。</p><div class="callout">${I("shield")}<span>私有材料、个人 Key 与学习内容不在此处显示。</span></div></div>`;
     }
-    return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
+    return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog ${s.modal === "tasks" ? "task-drawer" : ""}" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
   }
+  const extras = window.HarukaCollections({
+    s,
+    root,
+    mobile: false,
+    render: () => render(),
+    open: (name) => openModal(name),
+    close: () => closeModal(),
+    go: (route, options) => go(route, options),
+  });
   const views = {
+    query: () => extras.query(),
+    dailyWords: () => extras.dailyWords(),
+    sampleReader: () => extras.sampleReader(),
+    sampleTextbook: () => extras.sampleReader(),
+    sampleExamPrep: () => extras.sampleReader(),
     library,
     import: importPage,
     material,
@@ -788,7 +810,7 @@
     const oldModal = oldDialog?.getAttribute("aria-label");
     const drafts = samePage
       ? [...root.querySelectorAll("input[name],textarea[name],select[name]")]
-          .filter((t) => !t.dataset.practiceAll)
+          .filter((t) => !t.dataset.practiceAll && !t.closest("[data-x-form]"))
           .map((t) => ({
             selector: focusSelector(t),
             value: t.value,
@@ -799,6 +821,16 @@
           }))
       : [];
     if (!views[s.route]) s.route = "library";
+    if (s.route === "jobs") {
+      s.route = "library";
+      s.modal = "tasks";
+    }
+    if (s.route === "notebook") s.route = "notebooks";
+    if (s.route === "word" || s.route === "wordEdit") {
+      s.route = "notebooks";
+      s.modal = "entryDetail";
+    }
+
     const materialForRoute = {
       novel: "summer",
       textbook: "daily",
@@ -872,7 +904,7 @@
     ].includes(s.route);
     root.innerHTML = authScreen
       ? `${views[s.route](s.route)}`
-      : `<a class="skip-link" href="#main-content">跳转到内容</a><div class="workspace" ${s.modal ? "inert" : ""}>${sidebar()}<div class="app-main">${topbar()}<main class="desktop-screen" id="main-content" tabindex="-1" data-page="${s.route}">${views[s.route](s.route)}</main></div></div>${modal()}`;
+      : `<a class="skip-link" href="#main-content">跳转到内容</a><div class="workspace" ${s.modal ? "inert" : ""}>${sidebar()}<div class="app-main">${topbar()}${!s.adminArea ? `<button class="task-rail" type="button" data-x="tasks" aria-label="展开任务进度">${I("clock")}<span>任务进度</span></button>` : ""}<main class="desktop-screen" id="main-content" tabindex="-1" data-page="${s.route}">${views[s.route](s.route)}</main></div></div>${modal()}`;
     if (s.toast)
       root.insertAdjacentHTML(
         "beforeend",
@@ -933,8 +965,10 @@
     const [route, query = ""] = location.hash.slice(1).split("?");
     if (!views[route]) return;
     if (s.route === "examRun" && s.examRunning && route !== "examRun") {
+      const destinationMaterial = history.state?.context?.chosenMaterial;
       history.pushState(navigationState(), "", "#examRun");
       pendingRoute = route;
+      pendingOptions = { materialId: destinationMaterial };
       openModal("examLeave");
       return;
     }
@@ -1138,7 +1172,8 @@
       return;
     }
     if (action === "examLeave") {
-      go(pendingRoute, { force: true });
+      go(pendingRoute, { ...pendingOptions, force: true });
+      pendingOptions = {};
       pendingRoute = "";
       return;
     }

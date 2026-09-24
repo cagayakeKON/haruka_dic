@@ -56,8 +56,9 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST sources/resolve | 授权解析出处，返回三类之一及专用目标引用 | 当前源业务read与同库/版本检查；考试按考试投影规则，不由自报locator获得权限 |
 | POST materials/{id}/reparse、materials/{id}/analysis | reparse发布新内容版本；analysis可首次视觉转写尚无发布版本的源，或仅分析已发布正文 | 按[视觉OCR](../architecture/vision-recognition.md)明确阶段/页计划；首次OCR复核原import/read/analyze，已发布后视觉补识别/重识别需reparse+analyze；expected_revision/幂等/原件资格 |
 | GET/PUT materials/{id}/progress；GET/POST/DELETE bookmarks | 小说位置/最远位置、课本单元位置、书签；不承载考试进度 | material.read与progress/bookmark动作；只接受novel/textbook |
-| GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind仅创建时选择，词句/笔记/标签/exercise_control/出处；响应可带只读mastery/learning_revision | collection对应动作；拒绝写mastery/证据计数，不存在due/调度写入；实质学习内容变更推进版本；有成员时不得改成不匹配语言 |
-| GET/POST vocabulary-notebooks；GET/PATCH/DELETE vocabulary-notebooks/{id} | 多本名称/目标语/简介、版本与去重统计；删除本保留单词和历史 | vocabulary_notebook对应动作，self/同库；读需collection.read，写按目录依赖；非空本不切换语种 |
+| GET collections/daily-words | date与IANA timezone确定本地日，服务换算UTC半开区间；返回日期/时区、同快照total与稳定分页items，按CollectionItem.created_at/id排序，仅kind=word | collection.read、当前本人作用域；跨本去重，不以成员加入或CSV来源时间替代；非法日期/时区拒绝，无模型调用 |
+| GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind仅创建时选择（word/phrase/grammar/sentence/excerpt/answer），完整内容/笔记/标签/exercise_control/出处；卡片收藏提交card_id/card_revision/notebook_ids及必要的confirmed_target_language，服务端按[查询收藏规则](../modules/query.md)校验语言确认并重取已发布卡片保存完整快照；响应可带只读mastery/learning_revision | collection对应动作；拒绝写mastery/证据计数，不存在due/调度写入；实质学习内容变更推进版本；有成员时不得改成不匹配语言 |
+| GET/POST vocabulary-notebooks；GET/PATCH/DELETE vocabulary-notebooks/{id} | 多本名称/目标语/简介、版本与去重统计；删除本保留各类型收藏和历史 | vocabulary_notebook对应动作，self/同库；读需collection.read，写按目录依赖；非空本不切换语种 |
 | GET vocabulary-notebooks/{id}/items；POST vocabulary-notebooks/membership-changes | 稳定分页/筛选；明确add/remove/move、受控条目或冻结选择快照、所涉本expected_revision | notebook.read/update和collection.read；移动同时检查来源/目标本；不授权删除词、改掌握或复制学习进度 |
 | GET vocabulary/learning-states | 本人词的只读掌握/原因/证据版本摘要；无队列、due或下次复习 | collection.read；证据/历史明细另需practice.read和实际来源read，按本筛选需notebook.read；缺实践读取权限只给摘要，不含Attempt ID/题答/分数；不发模型请求 |
 | POST collections/merge | 明确目标/来源条目和合并策略，expected_revision；涉及词本时确认成员并集 | collection.read/update/delete；成员迁移另需notebook.read/update；只在本人范围合并，学习证据按等价/新学习版本重算，不取最高掌握值 |
@@ -75,7 +76,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/POST diagnoses；GET diagnoses/{id} | 报告列表/详情/生成，数据范围与统计窗口 | diagnosis.read/generate+来源read |
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
 | POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新模型调用另验Key/上限；显式再解析使用expected_lookup_revision取得新查阅代次 |
-| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；run引用与流 | agent.read/use/delete，每工具独立授权 |
+| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；mode=query/contextual、解释语言/可选目标语、可空材料引用；run引用与流 | agent.read/use/delete，每工具独立授权 |
 | POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；试卷隐藏听力稿不能作为任意客户端文本提交，须走试卷专用生成入口；ExamListeningAudioBinding不从此通用manifest端点交付，有限场次只走PlayAttempt；global_word生产者Job/Key/模型用量不返回给其他等候者，缺失不自动换用户Key |
 | POST speech/resolve；GET speech/requests/{id}；GET speech/assets/{id}/media | 只读匹配/本人等待状态/普通音频传输；global_word响应含asset_kind及实际profile，不含贡献者/他人Job/使用人数 | resolve/play不发起供应商调用、不要求Key；全局媒体也须验证本人收藏来源/版本/读音/profile与资产匹配；试卷听力资产ID在通用resolve/media拒绝，防止绕过场次策略；新生成只走requests且需generate |
 | GET exams；POST exams；GET/PATCH exams/{id}/draft；POST {id}/versions | 试卷列表/从exam材料准备/校对/冻结；不能直接把novel/textbook当试卷 | exam动作+实际AI分析/导入权限；其他类型先显式重新处理 |
@@ -91,8 +92,9 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | PUT exam-sessions/{id}/responses；POST {id}/submit | response_revision/edit_epoch；最后答案与submit_reason | save/submit；服务端时间/锁卷 |
 | POST exam-sessions/{id}/media-reports | 冻结题面asset引用、edit_epoch与幂等键；服务端受控复核后返回未确认/确认事实及revision，不接受客户端自判故障或任意URL | session.read+save、活动状态/截止/edit_epoch；只读题面不授予报告写入，服务端推导受影响叶子；确认持久化及锁卷/评分门槛见[考试故障处理](../modules/exams.md#必要媒体故障的场次处理) |
 | POST exam-sessions/{id}/grading-runs；GET {id}/results | 初次批改或新generation重评；部分/有效成绩 | exam_grade.request/regrade/read |
+| WebSocket jobs/events | [版本化进度、订阅、代次/序号与恢复](job-progress.md)；只订阅，不创建或重试任务 | client会话、job.read、本人Job与来源read；Web严格Origin，原生Bearer；每次交付与心跳重验，撤权关闭 |
 | GET jobs/{id}；POST {id}/cancel/retry | 当前阶段、可操作状态、结果引用 | read的结果另验来源read；cancel只需本人范围/可取消状态和job.cancel；仅retry重验原业务权限/模型调用意图 |
-| GET runs/{id}/events | Agent/解释/Job进度的统一应用事件流 | run类型所需read，不能只因有run_id放行 |
+| GET runs/{id}/events | Agent/解释的SSE文字、卡片及关联run状态；材料/通用任务进度使用jobs/events WebSocket | run类型所需read，不能只因有run_id放行 |
 | GET runs/{id}；POST runs/{id}/cancel | 持久运行快照/完整结果；取消意图 | 读需对应领域权限；取消需本人job.cancel，失去agent.use不妨碍仍获授权的停止操作 |
 | POST frontend-logs、admin/frontend-logs、frontend-logs/anonymous | 受众内批量/受限匿名，逐项接收结果 | 观测规范；不接收任意查询 |
 | admin/users、roles、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作；quotas只表示技术运行上限 | 管理工作流和admin对应动作、revision/审计；不提供商业套餐或金额字段 |
@@ -107,7 +109,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 私有下载签发前验证业务权限/对象用途，短签名地址到期前的撤权限制必须明确；即时撤权内容采用API鉴权代理。媒体正确设置Content-Type、Range/206、长度与缓存策略，不缓存带会话的私人响应到公共CDN。CSV流失败不显示完整成功，前端收到有效完成后再报告本地保存结果。
 
-SSE采用两步：POST创建run/Job，返回run_id；GET其events读取。事件信封包含schema_version、event_id、run_id、sequence、type、occurred_at、payload，事件类型accepted/progress/text_delta/tool_status/card_ready/completed/failed/cancelled。完整card_ready才允许收藏/后续动作，不能把半JSON交互当最终结果。
+SSE负责Agent/解释的文字与卡片，关联Job状态不要求客户端再重复计数；材料和任务栏进度使用[WebSocket](job-progress.md)。SSE采用两步：POST创建run及必要Job，返回run_id；GET其events读取。事件信封包含schema_version、event_id、run_id、sequence、type、occurred_at、payload，事件类型accepted/progress/text_delta/tool_status/card_ready/completed/failed/cancelled。完整card_ready才允许收藏/后续动作，不能把半JSON交互当最终结果。
 
 Last-Event-ID用于有界事件回放；首版仅保证持久状态、阶段结果和最终卡片可恢复，不保证每token永久存档。窗口外返回需要重新取run快照的明确事件/错误，前端补读最终消息，不重新调用供应商生成。SSE重连重新授权，心跳检查会话/权限；权限丢失关闭，不给旧账号推送新结果。代理禁缓冲/合理超时需部署实测。
 
@@ -115,6 +117,6 @@ Last-Event-ID用于有界事件回放；首版仅保证持久状态、阶段结�
 
 新增可选字段向后兼容；删除字段/改枚举语义/必填字段需版本升级或明确迁移期。每次发布记录min_supported_client与契约版本，旧客户端不能理解的写协议显示升级提示而非猜测提交。CSV、AI输出、事件、出处协议有各自schema_version，不能一个app版本代替全部。
 
-API-01：每个路由映射权限/公共例外并测越权；API-02：分页/版本/幂等/超时重试不重复写；API-03：Pydantic/Dart对null/未知枚举/Decimal/Unicode/UTC一致；API-04：SSE断连/窗口外恢复不重复调用供应商；API-05：文件/CSV媒体类型和失败状态在三端有效；API-06：旧客户端兼容、生成契约差异及未经授权字段拒绝可验证。
+API-01：每个路由映射权限/公共例外并测越权；API-02：分页/版本/幂等/超时重试不重复写；API-03：Pydantic/Dart对null/未知枚举/Decimal/Unicode/UTC一致；API-04：SSE及任务WebSocket断连/窗口外恢复不重复调用供应商（WebSocket完整矩阵见WSP-01～WSP-05）；API-05：文件/CSV媒体类型和失败状态在三端有效；API-06：旧客户端兼容、生成契约差异及未经授权字段拒绝可验证。
 
 统一返回、框架异常覆盖和语言/客户端降级的 API-07～API-10 见 [返回契约验收](api-responses.md#7-验收)，按已交付路由和本阶段影响范围执行。

@@ -9,15 +9,19 @@
   } = window.HarukaCore;
   const s = initialState();
   const root = document.getElementById('phone-app');
-  const primary = ['library', 'notebooks', 'exercise', 'settings'];
+  const primary = ['library', 'notebooks', 'query', 'exercise', 'settings'];
   const parentRoute = {
+    dailyWords: 'notebooks',
+    sampleReader: 'library',
+    sampleTextbook: 'library',
+    sampleExamPrep: 'library',
     import: 'library',
     material: 'library',
-    novel: 'material',
+    novel: 'library',
     textbookUnits: 'material',
     textbook: 'textbookUnits',
     textbookPractice: 'textbook',
-    examPrep: 'material',
+    examPrep: 'library',
     examRun: 'examPrep',
     examResult: 'examPrep',
     notebook: 'notebooks',
@@ -59,6 +63,11 @@
       : '';
   };
   const titles = {
+    query: '查询',
+    dailyWords: '每日单词',
+    sampleReader: '阅读',
+    sampleTextbook: '课本学习',
+    sampleExamPrep: '试卷准备',
     import: '导入材料',
     material: '材料详情',
     novel: '夏の手紙',
@@ -101,7 +110,10 @@
   };
   const go = (route, options = {}) => {
     if (!views[route]) return;
+    if (options.materialId) s.chosenMaterial = options.materialId;
     if (route === s.route) {
+      if (s.modal) closeModal();
+      else render();
       window.scrollTo({ top: 0 });
       return;
     }
@@ -143,17 +155,15 @@
     }, 3500);
   };
   const openModal = (name) => {
-    modalReturnFocus = focusSelector(document.activeElement);
+    const nested = !!s.modal;
+    if (!nested) modalReturnFocus = focusSelector(document.activeElement);
     s.modal = name;
-    history.pushState(
-      {
-        harukaMobileIndex: ++navigationIndex,
-        harukaModal: name,
-        harukaBuilderStep: builderStep,
-      },
-      '',
-      location.href,
-    );
+    const state = {
+      harukaMobileIndex: nested ? navigationIndex : ++navigationIndex,
+      harukaModal: name,
+      harukaBuilderStep: builderStep,
+    };
+    history[nested ? 'replaceState' : 'pushState'](state, '', location.href);
     render();
   };
   const closeModal = () => {
@@ -206,6 +216,7 @@
     `<nav class="bottom-nav" aria-label="主要导航">${[
       ['library', '材料', 'library'],
       ['notebooks', '词本', 'layers'],
+      ['query', '查询', 'message'],
       ['exercise', '练习', 'spark'],
       ['settings', '我的', 'user'],
     ]
@@ -218,23 +229,9 @@
     return `<button class="mobile-material" type="button" data-material="${m.id}">${cover(m)}<span class="mobile-material-copy"><strong>${e(m.title)}</strong><small>${e(m.subtitle)}</small><span class="mobile-material-status ${m.type === 'exam' ? 'needs-review' : ''}">${m.type === 'exam' ? I('warning') : I('check')}${e(m.status)}</span></span>${I('chevron')}</button>`;
   }
   function library() {
-    const items = visibleMaterials(s);
-    return `<div class="page-heading"><h1>材料</h1><button class="text-btn" type="button" data-go="jobs">${I('clock')} 任务</button></div>
-      <label class="searchbar">${I('search')}<input type="search" data-input="search" placeholder="搜索材料" value="${e(s.search)}" aria-label="搜索我的材料"></label>
-      <div class="mobile-filter" role="group" aria-label="材料类型筛选">${[
-        ['all', '全部'],
-        ['novel', '小说'],
-        ['textbook', '课本'],
-        ['exam', '试卷'],
-      ]
-        .map(
-          ([k, v]) =>
-            `<button class="chip" type="button" data-filter="${k}" aria-pressed="${s.filter === k}">${v}</button>`,
-        )
-        .join('')}</div>
-      ${items.length ? `<div class="mobile-material-list">${items.map(materialRow).join('')}</div>` : `<div class="empty">${I('search')}<strong>没有找到材料</strong><p>换个关键词，或清除筛选。</p><button type="button" class="secondary" data-action="clearSearch">清除筛选</button></div>`}
-      <div class="floating-action"><button class="primary" type="button" data-go="import">${I('plus')} 导入材料</button></div>`;
+    return extras.library();
   }
+
   function importScreen() {
     const steps = ['选择类型', '选择文件', '确认导入'];
     const current = Math.min(s.importStep, 2);
@@ -260,8 +257,7 @@
   }
   function materialScreen() {
     const m =
-      data.materials.find((x) => x.id === s.chosenMaterial) ||
-      data.materials[0];
+      s.materials.find((x) => x.id === s.chosenMaterial) || s.materials[0];
     const target =
       m.type === 'novel'
         ? 'novel'
@@ -343,33 +339,21 @@
     return `<h1 class="page-title">这次模拟已交卷。</h1><p class="page-subtitle">3 道示例题 · 本次作答结果</p><div class="brand-panel" style="margin-top:22px"><div class="eyebrow" style="color:#d8f36a">示例客观题</div><h2 style="font-size:42px;margin:6px 0">${count} / ${data.exam.questions.length}</h2><p>答对题数</p></div><div class="section-head"><h2>逐题复盘</h2></div><div class="list">${data.exam.questions.map((q, i) => `<div class="row-wrap"><span class="pill-count">${i + 1}</span><span class="row-copy"><strong>${e(q.group)} · ${e(q.text)}</strong><small>你的选择：${s.examAnswers[q.id] === undefined ? '未作答' : e(q.options[s.examAnswers[q.id]])} · 参考答案：${e(q.options[q.correct])}</small></span></div>`).join('')}</div><div class="button-row" style="margin-top:20px">${btn('查看错题库', 'mistakes', 'secondary')}${btn('返回书库', 'library', 'primary')}</div>`;
   }
   function notebooks() {
-    return `<div class="page-heading"><h1>词本</h1><span>${s.notebooks.length} 本</span></div><div class="notebook-list">${s.notebooks
-      .map((book) => {
-        const count = s.words.filter(
-          (w) => w.book === book.id || w.books?.includes(book.id),
-        ).length;
-        return `<button class="mobile-notebook-row" type="button" data-book="${book.id}"><span class="mobile-book-icon ${e(book.tone)}">${I('layers')}</span><span class="row-copy"><strong>${e(book.title)}</strong><small>${e(book.language)} · ${count} 个词条</small></span>${I('chevron')}</button>`;
-      })
-      .join(
-        '',
-      )}</div><div class="mobile-list-heading"><h2>单词管理</h2></div><div class="mobile-plain-list">${settingRow('csv', '导入与导出', '单词 CSV', 'upload')}</div><div class="floating-action"><button class="primary" type="button" data-modal="newNotebook">${I('plus')} 新建词本</button></div>`;
+    return extras.notebooks();
   }
+
   function notebook() {
-    const book =
-      s.notebooks.find((b) => b.id === s.selectedBook) || s.notebooks[0];
-    const words = s.words.filter(
-      (w) => w.book === book.id || (w.books || []).includes(book.id),
-    );
-    return `<div class="mobile-intro"><div class="mobile-intro-line"><h1>${e(book.title)}</h1><button class="text-btn" type="button" data-modal="bookActions">整理</button></div><p>${e(book.language)} · ${words.length} 个词条</p></div>${book.description ? `<p class="mobile-description">${e(book.description)}</p>` : ''}<div class="mobile-list-heading"><h2>词条</h2><button class="text-btn" type="button" data-modal="newWord">${I('plus')} 添加</button></div>${words.length ? `<div class="mobile-plain-list">${words.map((w) => `<button class="mobile-word-row" type="button" data-word="${w.id}"><span class="row-copy"><strong lang="${book.language === '英语' ? 'en' : 'ja'}">${e(w.word)}</strong><small>${e(w.meaning)}</small></span>${I('chevron')}</button>`).join('')}</div>` : `<div class="empty"><strong>这里还没有词</strong><p>手动添加，或在阅读时收藏。</p><button class="secondary" type="button" data-modal="newWord">添加第一个词</button></div>`}<div class="mobile-action-dock"><button class="primary full" type="button" data-action="useNotebook">${I('spark')} 用本词本出题</button></div>`;
+    return extras.notebooks();
   }
+
   function word() {
-    const w = s.words.find((x) => x.id === s.selectedWord) || s.words[0];
-    return `<h1 class="page-title" lang="ja">${e(w.word)}</h1><p class="page-subtitle">${e(w.reading)} · ${e(w.meaning)}</p><div class="button-row" style="margin-top:19px">${badge(w.mastery)}<button type="button" class="text-btn" data-go="wordEdit">${I('edit')} 编辑笔记</button></div><div class="section-head"><h2>放回原句</h2></div><div class="panel"><p lang="ja" style="font-family:'Yu Mincho',serif;font-size:19px;line-height:1.9">${e(w.sentence)}</p><div class="divider"></div><p class="small muted">${e(w.source)}</p><button type="button" class="text-btn" data-go="novel">查看来源 ${I('arrow')}</button></div><div class="section-head"><h2>所在词本</h2></div><div class="surface stack"><p>${e((s.notebooks.find((x) => x.id === w.book) || {}).title || '未归本')}</p><button class="secondary full" type="button" data-modal="moveWord">整理归属</button></div>`;
+    return extras.notebooks();
   }
+
   function wordEdit() {
-    const w = s.words.find((x) => x.id === s.selectedWord) || s.words[0];
-    return `<p class="page-subtitle">修改词形或释义将重新计算掌握状态。</p><form class="surface form-grid" data-form="wordEdit" style="margin-top:20px"><label class="field">词形<input name="word" value="${e(w.word)}" required></label><label class="field">释义<input name="meaning" value="${e(w.meaning)}" required></label><label class="field">个人笔记<textarea name="note" placeholder="这次你想记住什么？">${e(w.note || '')}</textarea></label><div class="callout">${I('bookmark')}<span>出处原句：${e(w.sentence)}</span></div><button type="submit" class="primary full">保存词条</button></form>`;
+    return extras.notebooks();
   }
+
   function csv() {
     return `<h1 class="page-title">单词导入与导出</h1><p class="page-subtitle">导入前可预览词条与重复项。</p><div class="stack" style="margin-top:22px"><div class="surface stack"><h2 style="font-size:18px">导出词条</h2><p class="small muted">示例范围：全部词条 · 词本归属 · 释义与个人笔记。作答、错题和 AI 历史不在 CSV 中。</p><button class="secondary full" type="button" data-action="csvExport">${I('download')} 生成示例 CSV</button></div><div class="surface stack"><h2 style="font-size:18px">导入预览</h2><label class="field">选择 UTF-8 CSV<input type="file" data-file="csv" accept=".csv,text/csv"><small>${s.csvFile ? `已选择：${e(s.csvFile)}` : '仅演示文件选择，不读取文件内容。'}</small></label>${s.csvStep ? `<div class="soft-panel"><strong>示例预览 · 与所选文件内容无关</strong><p class="small">2 个词条 · 1 个重复项；导入不会恢复可信掌握历史。</p><div class="divider"></div><label class="choice-row"><input type="radio" name="duplicate" checked><span>重复项跳过</span></label><label class="choice-row"><input type="radio" name="duplicate"><span>只补充空字段</span></label></div><button class="primary full" type="button" data-action="csvConfirm">确认示例导入</button>` : `<button class="secondary full" type="button" data-action="csvPreview" ${s.csvFile ? '' : 'disabled'}>查看示例预览</button>`}</div></div>`;
   }
@@ -384,7 +368,12 @@
         )
         .map((b) => b.id);
       count += s.words.filter(
-        (w) => ids.includes(w.book) || w.books?.some((id) => ids.includes(id)),
+        (w) =>
+          w.kind === 'word' &&
+          w.language === s.activeLanguage &&
+          (s.practiceAllWords ||
+            ids.includes(w.book) ||
+            w.books?.some((id) => ids.includes(id))),
       ).length;
     }
     if (s.activeLanguage === '日语') {
@@ -503,8 +492,9 @@
     return `<div class="eyebrow"><span class="signal"></span>IN-APP UPDATES</div><div class="section-head"><h2>消息</h2><button class="text-btn" type="button" data-action="readAll">全部标为已读</button></div><div class="stack">${s.notifications.map((n) => `<button type="button" class="surface" style="border:0;text-align:left;color:var(--ink)" data-notification="${n.id}"><div class="button-row" style="justify-content:space-between"><span class="eyebrow">${n.unread ? '<span class="signal"></span>新消息' : '已读'}</span><small class="muted">${e(n.time)}</small></div><strong style="display:block;font-size:16px;margin:11px 0 4px">${e(n.title)}</strong><p class="page-subtitle">${e(n.detail)}</p></button>`).join('')}</div>`;
   }
   function jobs() {
-    return `<div class="timeline surface" style="margin-top:22px"><div class="timeline-item"><span class="timeline-dot"></span><div class="timeline-content"><strong>夏の手紙 · 文本解析</strong><small>已完成 · 正文可阅读</small></div></div><div class="timeline-item"><span class="timeline-dot"></span><div class="timeline-content"><strong>N2 模拟试卷 · 听力准备</strong><small>${s.examAudioReady ? '示例已就绪' : '待校对脚本与题组'}</small></div></div>${s.importComplete ? `<div class="timeline-item"><span class="timeline-dot"></span><div class="timeline-content"><strong>${e(s.importFile)} · ${typeLabel[s.importType]}</strong><small>本地演示任务已完成，文件未上传</small></div></div>` : ''}</div>`;
+    return extras.tasks();
   }
+
   const settingRow = (route, label, detail, icon) =>
     `<button class="setting-row" type="button" data-go="${route}"><span class="setting-icon">${I(icon)}</span><span class="row-copy"><strong>${label}</strong><small>${detail}</small></span>${I('chevron')}</button>`;
   function settingsCore() {
@@ -557,109 +547,114 @@
     if (!s.modal) return '';
     let content = '';
     let title = '';
-    switch (s.modal) {
-      case 'prototypeInfo':
-        title = '原型说明';
-        content = `<div class="stack"><p>所有材料与记录均为虚构示例。操作只保留在本页，刷新后重置。</p><p>文件不上传，不调用模型，不生成音频。请勿输入真实密码或 API Key。</p><button class="secondary full" type="button" data-go="states">查看空白、离线与失败状态</button></div>`;
-        break;
-      case 'term': {
-        const term = data.novel.terms[s.selectedTerm];
-        title = '放回这句话';
-        content = `<div class="eyebrow"><span class="signal"></span>语境解释 · 示例</div><h2 style="font-size:31px;margin:11px 0 4px" lang="ja">${term.word}</h2><p class="small muted">${term.reading}</p><p style="margin:16px 0;line-height:1.85">${term.meaning}</p><div class="soft-panel"><strong lang="ja">${term.sentence}</strong><p class="small" style="margin-top:6px">${term.translation}</p></div><p class="note" style="margin:13px 0">出处：夏の手紙 · ${term.source}</p><div class="button-row"><button class="secondary" type="button" data-action="collectTerm">${I('bookmark')} ${s.collected.includes(s.selectedTerm) ? '已收藏' : '收藏词条'}</button><button class="secondary" type="button" data-action="askAgent">${I('message')} 问 Agent</button></div>`;
-        break;
+    const shared = extras.dialog();
+    if (shared) {
+      title = shared.title;
+      content = shared.content;
+    } else
+      switch (s.modal) {
+        case 'prototypeInfo':
+          title = '原型说明';
+          content = `<div class="stack"><p>所有材料与记录均为虚构示例。操作只保留在本页，刷新后重置。</p><p>文件不上传，不调用模型，不生成音频。请勿输入真实密码或 API Key。</p><button class="secondary full" type="button" data-go="states">查看空白、离线与失败状态</button></div>`;
+          break;
+        case 'term': {
+          const term = data.novel.terms[s.selectedTerm];
+          title = '放回这句话';
+          content = `<div class="eyebrow"><span class="signal"></span>语境解释 · 示例</div><h2 style="font-size:31px;margin:11px 0 4px" lang="ja">${term.word}</h2><p class="small muted">${term.reading}</p><p style="margin:16px 0;line-height:1.85">${term.meaning}</p><div class="soft-panel"><strong lang="ja">${term.sentence}</strong><p class="small" style="margin-top:6px">${term.translation}</p></div><p class="note" style="margin:13px 0">出处：夏の手紙 · ${term.source}</p><div class="button-row"><button class="secondary" type="button" data-action="collectTerm">${I('bookmark')} ${s.collected.includes(s.selectedTerm) ? '已收藏' : '收藏词条'}</button><button class="secondary" type="button" data-action="askAgent">${I('message')} 问 Agent</button></div>`;
+          break;
+        }
+        case 'chapters':
+          title = '章节目录';
+          content = `<div class="list">${data.novel.chapters.map((chapter, i) => `<button class="row" type="button" data-action="chapter" data-index="${i}"><span class="pill-count">${i + 1}</span><span class="row-copy"><strong>${e(chapter)}</strong><small>${i === 2 ? '正在阅读' : '章节示例'}</small></span>${I('chevron')}</button>`).join('')}</div>`;
+          break;
+        case 'readerSettings':
+          title = '阅读排版';
+          content = `<div class="form-grid"><label class="field">字号 · ${s.readingSize}<input type="range" data-range="readingSize" min="16" max="24" step="1" value="${s.readingSize}"></label><label class="field">行距 · ${s.lineHeight.toFixed(1)}<input type="range" data-range="lineHeight" min="1.6" max="2.4" step="0.1" value="${s.lineHeight}"></label><label class="field">字体<select data-setting="readingFont"><option value="serif" ${s.readingFont === 'serif' ? 'selected' : ''}>衬线体</option><option value="sans" ${s.readingFont === 'sans' ? 'selected' : ''}>无衬线体</option></select></label><label class="field">主题<select data-setting="readingTheme"><option value="light" ${s.readingTheme === 'light' ? 'selected' : ''}>浅色</option><option value="sepia" ${s.readingTheme === 'sepia' ? 'selected' : ''}>暖纸色</option><option value="dark" ${s.readingTheme === 'dark' ? 'selected' : ''}>深色</option></select></label><button class="primary full" type="button" data-action="closeModal">完成</button></div>`;
+          break;
+        case 'examScript':
+          title = '校对听力候选';
+          content = `<div class="stack"><div class="callout">${I('warning')}<span>AI 标记的是待确认候选。需要核对脚本内容与题组/小题关系，确认后才可生成 TTS。</span></div><div class="soft-panel"><strong>候选文字稿 · 题组 1</strong><p style="margin-top:8px" lang="ja">駅の南口で待ち合わせましょう。午後三時に会いましょう。</p><p class="small muted" style="margin-top:7px">候选关联：听力题组 1 / 小题 01</p></div><label class="choice-row"><input type="checkbox" id="exam-script-confirm" ${s.examScriptMatched ? 'checked' : ''}><span>我已核对脚本与题目对应关系</span></label><button type="button" class="primary full" data-action="confirmScript">确认匹配</button></div>`;
+          break;
+        case 'examIntro':
+          title = '考前说明';
+          content = `<div class="stack"><div class="stat"><strong>60 分钟</strong><span>示例整卷时间</span></div><p>开始后可以保存草稿、标记题目和切换题号。交卷会锁定答案，评分与解析只在交卷后显示。</p><div class="callout warn">${I('warning')}<span>真实考试的时间与听力播放次数由服务端管理。本原型只演示界面。</span></div><button class="primary full" type="button" data-action="examStart">开始模拟考试</button></div>`;
+          break;
+        case 'examLeave':
+          title = '暂时离开考试？';
+          content = `<div class="stack"><p>作答和标记会保留在当前本地演示会话中。下次从试卷准备页点“继续考试”，会回到这一题。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">继续作答</button><button class="primary" type="button" data-action="examLeaveConfirm">保存并离开</button></div></div>`;
+          break;
+        case 'answerSheet':
+          title = '答题卡';
+          content = `<div class="stack"><p class="small muted">点按题号跳转；圆点表示已作答，星号表示标记。</p><div class="mobile-answer-grid">${data.exam.questions.map((q, i) => `<button type="button" data-exam-question="${i}" class="${s.examQuestion === i ? 'current' : ''}"><strong>${i + 1}</strong><small>${s.examMarked.includes(q.id) ? '★ 标记' : s.examAnswers[q.id] !== undefined ? '● 已答' : '未答'}</small></button>`).join('')}</div><button class="secondary full" type="button" data-action="closeModal">继续作答</button></div>`;
+          break;
+        case 'examSubmit':
+          title = '确认交卷？';
+          content = `<div class="stack"><p>已答 ${Object.keys(s.examAnswers).length} / ${data.exam.questions.length} 个示例题。交卷后答案锁定，再查看复盘。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">继续作答</button><button class="danger-btn" type="button" data-action="examSubmitConfirm">确认交卷</button></div></div>`;
+          break;
+        case 'generateConfirm':
+          title = '确认生成示例习题';
+          content = `<div class="stack"><p>所选来源已经预览。正式生成需本人有效 Key、授权和调用上限确认。</p><div class="callout">${I('spark')}<span>此原型将打开内置示例题，不调用模型或记录用量。</span></div><button class="primary full" type="button" data-action="generateDemo">打开示例习题</button></div>`;
+          break;
+        case 'newNotebook':
+          title = '新建词本';
+          content = `<form class="form-grid" data-form="newNotebook"><label class="field">名称<input name="name" maxlength="40" required placeholder="例如：故事里的风景"></label><label class="field">学习语言<select name="language"><option>日语</option><option>英语</option></select></label><label class="field">简介<textarea name="description" placeholder="想把哪些词收在这里？"></textarea></label><button type="submit" class="primary full">创建词本</button></form>`;
+          break;
+        case 'newWord':
+          title = '添加词条';
+          content = `<form class="form-grid" data-form="newWord"><label class="field">词形<input name="word" required></label><label class="field">释义<input name="meaning" required></label><label class="field">个人例句（可选）<textarea name="sentence"></textarea></label><button type="submit" class="primary full">添加到当前词本</button></form>`;
+          break;
+        case 'bookActions':
+          title = '整理词本';
+          content = `<div class="stack"><button class="secondary full" type="button" data-action="renameBook">${I('edit')} 重命名</button><button class="danger-btn full" type="button" data-action="deleteBook">${I('trash')} 删除词本</button><p class="note">删本仅移除归类，不删除词条或学习历史。</p></div>`;
+          break;
+        case 'moveWord':
+          title = '整理词条归属';
+          content = `<div class="stack"><p class="small muted">一个词条可以进入多个词本，共用同一学习状态。</p>${s.notebooks.map((book) => `<label class="choice-row"><input type="checkbox" data-word-book="${book.id}" ${s.words.find((w) => w.id === s.selectedWord)?.book === book.id || s.words.find((w) => w.id === s.selectedWord)?.books?.includes(book.id) ? 'checked' : ''}><span>${e(book.title)}</span></label>`).join('')}<button class="primary full" type="button" data-action="saveWordBooks">保存归属</button></div>`;
+          break;
+        case 'clearCache':
+          title = '清理本机副本？';
+          content = `<div class="stack"><p>只清理本演示账号的本机副本状态。服务端完整解释与音频仍由正式服务保存。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">返回</button><button class="danger-btn" type="button" data-action="clearCacheConfirm">确认清理</button></div></div>`;
+          break;
+        case 'password':
+          title = '修改密码流程';
+          content = `<div class="stack"><p>正式应用会先验证旧密码与当前会话，提交成功后撤销两端旧会话，并要求重新登录。</p><div class="callout warn">${I('shield')}<span>本原型不收集真实密码，也不模拟已完成的安全变更。</span></div><button class="secondary full" type="button" data-action="closeModal">我知道了</button></div>`;
+          break;
+        case 'credential':
+          title = '个人凭据管理';
+          content = `<div class="stack"><p>正式流程会分别提供保存、能力测试、轮换与停用。测试前需看到最小样本、能力、调用次数与可能消耗的用量。</p><div class="callout warn">${I('shield')}<span>本原型不收集 API Key；已保存的解释与音频不会因停用 Key 而自动删除。</span></div><button class="secondary full" type="button" data-action="closeModal">返回设置</button></div>`;
+          break;
+        case 'quality': {
+          const m =
+            s.materials.find((x) => x.id === s.chosenMaterial) ||
+            s.materials[0];
+          title = '解析与来源状态';
+          content = `<div class="stack"><p><strong>${e(m.title)}</strong> · ${e(m.status)}</p><div class="callout">${I('shield')}<span>${m.type === 'exam' ? '题目、分值与听力稿仍待校对。' : m.type === 'textbook' ? '正文可学习；部分题目待补充答案。' : '章节与正文已就绪。'}</span></div><p class="note">示例文件、版本与源锚点未接入真实解析服务。</p></div>`;
+          break;
+        }
+        case 'textbookItem': {
+          const unit =
+            data.textbook.units.find((x) => x.id === s.textbookUnit) ||
+            data.textbook.units[0];
+          const index = s.textbookItemIndex || 0;
+          const line = {
+            unit1: 'はじめまして。よろしくお願いします。',
+            unit2: '駅まで一緒に行きましょう。',
+            unit3: 'コーヒーを一つください。',
+          }[unit.id];
+          const sample =
+            index === 0
+              ? `<p lang="ja" class="mobile-sample-line">${line}</p><p>${unit.id === 'unit1' ? '初次见面，请多关照。' : unit.id === 'unit2' ? '一起去车站吧。' : '请给我一杯咖啡。'}</p>`
+              : index === 1
+                ? `<div class="mobile-plain-list"><div class="row-wrap"><strong lang="ja">${unit.id === 'unit2' ? '駅' : unit.id === 'unit3' ? '注文' : '名前'}</strong><span class="row-copy"><small>${unit.id === 'unit2' ? '车站' : unit.id === 'unit3' ? '点单' : '姓名'}</small></span></div></div>`
+                : `<p lang="ja" class="mobile-sample-line">${unit.id === 'unit2' ? '駅へ行きます。' : unit.id === 'unit3' ? 'コーヒーをください。' : 'わたしは学生です。'}</p><p>${unit.id === 'unit1' ? '「は」提示话题，「です」表示礼貌判断。' : unit.id === 'unit2' ? '「へ」表示移动的方向。' : '「ください」表达礼貌请求。'}</p>`;
+          title = unit.items[index] || '单元内容';
+          content = `<div class="stack">${sample}<div class="callout">${I('book')}<span>出处：${e(unit.title)}</span></div><button class="secondary full" type="button" data-action="closeModal">回到单元</button></div>`;
+          break;
+        }
+        default:
+          title = '提示';
+          content = '<p>这是一个本地演示状态。</p>';
       }
-      case 'chapters':
-        title = '章节目录';
-        content = `<div class="list">${data.novel.chapters.map((chapter, i) => `<button class="row" type="button" data-action="chapter" data-index="${i}"><span class="pill-count">${i + 1}</span><span class="row-copy"><strong>${e(chapter)}</strong><small>${i === 2 ? '正在阅读' : '章节示例'}</small></span>${I('chevron')}</button>`).join('')}</div>`;
-        break;
-      case 'readerSettings':
-        title = '阅读排版';
-        content = `<div class="form-grid"><label class="field">字号 · ${s.readingSize}<input type="range" data-range="readingSize" min="16" max="24" step="1" value="${s.readingSize}"></label><label class="field">行距 · ${s.lineHeight.toFixed(1)}<input type="range" data-range="lineHeight" min="1.6" max="2.4" step="0.1" value="${s.lineHeight}"></label><label class="field">字体<select data-setting="readingFont"><option value="serif" ${s.readingFont === 'serif' ? 'selected' : ''}>衬线体</option><option value="sans" ${s.readingFont === 'sans' ? 'selected' : ''}>无衬线体</option></select></label><label class="field">主题<select data-setting="readingTheme"><option value="light" ${s.readingTheme === 'light' ? 'selected' : ''}>浅色</option><option value="sepia" ${s.readingTheme === 'sepia' ? 'selected' : ''}>暖纸色</option><option value="dark" ${s.readingTheme === 'dark' ? 'selected' : ''}>深色</option></select></label><button class="primary full" type="button" data-action="closeModal">完成</button></div>`;
-        break;
-      case 'examScript':
-        title = '校对听力候选';
-        content = `<div class="stack"><div class="callout">${I('warning')}<span>AI 标记的是待确认候选。需要核对脚本内容与题组/小题关系，确认后才可生成 TTS。</span></div><div class="soft-panel"><strong>候选文字稿 · 题组 1</strong><p style="margin-top:8px" lang="ja">駅の南口で待ち合わせましょう。午後三時に会いましょう。</p><p class="small muted" style="margin-top:7px">候选关联：听力题组 1 / 小题 01</p></div><label class="choice-row"><input type="checkbox" id="exam-script-confirm" ${s.examScriptMatched ? 'checked' : ''}><span>我已核对脚本与题目对应关系</span></label><button type="button" class="primary full" data-action="confirmScript">确认匹配</button></div>`;
-        break;
-      case 'examIntro':
-        title = '考前说明';
-        content = `<div class="stack"><div class="stat"><strong>60 分钟</strong><span>示例整卷时间</span></div><p>开始后可以保存草稿、标记题目和切换题号。交卷会锁定答案，评分与解析只在交卷后显示。</p><div class="callout warn">${I('warning')}<span>真实考试的时间与听力播放次数由服务端管理。本原型只演示界面。</span></div><button class="primary full" type="button" data-action="examStart">开始模拟考试</button></div>`;
-        break;
-      case 'examLeave':
-        title = '暂时离开考试？';
-        content = `<div class="stack"><p>作答和标记会保留在当前本地演示会话中。下次从试卷准备页点“继续考试”，会回到这一题。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">继续作答</button><button class="primary" type="button" data-action="examLeaveConfirm">保存并离开</button></div></div>`;
-        break;
-      case 'answerSheet':
-        title = '答题卡';
-        content = `<div class="stack"><p class="small muted">点按题号跳转；圆点表示已作答，星号表示标记。</p><div class="mobile-answer-grid">${data.exam.questions.map((q, i) => `<button type="button" data-exam-question="${i}" class="${s.examQuestion === i ? 'current' : ''}"><strong>${i + 1}</strong><small>${s.examMarked.includes(q.id) ? '★ 标记' : s.examAnswers[q.id] !== undefined ? '● 已答' : '未答'}</small></button>`).join('')}</div><button class="secondary full" type="button" data-action="closeModal">继续作答</button></div>`;
-        break;
-      case 'examSubmit':
-        title = '确认交卷？';
-        content = `<div class="stack"><p>已答 ${Object.keys(s.examAnswers).length} / ${data.exam.questions.length} 个示例题。交卷后答案锁定，再查看复盘。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">继续作答</button><button class="danger-btn" type="button" data-action="examSubmitConfirm">确认交卷</button></div></div>`;
-        break;
-      case 'generateConfirm':
-        title = '确认生成示例习题';
-        content = `<div class="stack"><p>所选来源已经预览。正式生成需本人有效 Key、授权和调用上限确认。</p><div class="callout">${I('spark')}<span>此原型将打开内置示例题，不调用模型或记录用量。</span></div><button class="primary full" type="button" data-action="generateDemo">打开示例习题</button></div>`;
-        break;
-      case 'newNotebook':
-        title = '新建词本';
-        content = `<form class="form-grid" data-form="newNotebook"><label class="field">名称<input name="name" maxlength="40" required placeholder="例如：故事里的风景"></label><label class="field">学习语言<select name="language"><option>日语</option><option>英语</option></select></label><label class="field">简介<textarea name="description" placeholder="想把哪些词收在这里？"></textarea></label><button type="submit" class="primary full">创建词本</button></form>`;
-        break;
-      case 'newWord':
-        title = '添加词条';
-        content = `<form class="form-grid" data-form="newWord"><label class="field">词形<input name="word" required></label><label class="field">释义<input name="meaning" required></label><label class="field">个人例句（可选）<textarea name="sentence"></textarea></label><button type="submit" class="primary full">添加到当前词本</button></form>`;
-        break;
-      case 'bookActions':
-        title = '整理词本';
-        content = `<div class="stack"><button class="secondary full" type="button" data-action="renameBook">${I('edit')} 重命名</button><button class="danger-btn full" type="button" data-action="deleteBook">${I('trash')} 删除词本</button><p class="note">删本仅移除归类，不删除词条或学习历史。</p></div>`;
-        break;
-      case 'moveWord':
-        title = '整理词条归属';
-        content = `<div class="stack"><p class="small muted">一个词条可以进入多个词本，共用同一学习状态。</p>${s.notebooks.map((book) => `<label class="choice-row"><input type="checkbox" data-word-book="${book.id}" ${s.words.find((w) => w.id === s.selectedWord)?.book === book.id || s.words.find((w) => w.id === s.selectedWord)?.books?.includes(book.id) ? 'checked' : ''}><span>${e(book.title)}</span></label>`).join('')}<button class="primary full" type="button" data-action="saveWordBooks">保存归属</button></div>`;
-        break;
-      case 'clearCache':
-        title = '清理本机副本？';
-        content = `<div class="stack"><p>只清理本演示账号的本机副本状态。服务端完整解释与音频仍由正式服务保存。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">返回</button><button class="danger-btn" type="button" data-action="clearCacheConfirm">确认清理</button></div></div>`;
-        break;
-      case 'password':
-        title = '修改密码流程';
-        content = `<div class="stack"><p>正式应用会先验证旧密码与当前会话，提交成功后撤销两端旧会话，并要求重新登录。</p><div class="callout warn">${I('shield')}<span>本原型不收集真实密码，也不模拟已完成的安全变更。</span></div><button class="secondary full" type="button" data-action="closeModal">我知道了</button></div>`;
-        break;
-      case 'credential':
-        title = '个人凭据管理';
-        content = `<div class="stack"><p>正式流程会分别提供保存、能力测试、轮换与停用。测试前需看到最小样本、能力、调用次数与可能消耗的用量。</p><div class="callout warn">${I('shield')}<span>本原型不收集 API Key；已保存的解释与音频不会因停用 Key 而自动删除。</span></div><button class="secondary full" type="button" data-action="closeModal">返回设置</button></div>`;
-        break;
-      case 'quality': {
-        const m =
-          data.materials.find((x) => x.id === s.chosenMaterial) ||
-          data.materials[0];
-        title = '解析与来源状态';
-        content = `<div class="stack"><p><strong>${e(m.title)}</strong> · ${e(m.status)}</p><div class="callout">${I('shield')}<span>${m.type === 'exam' ? '题目、分值与听力稿仍待校对。' : m.type === 'textbook' ? '正文可学习；部分题目待补充答案。' : '章节与正文已就绪。'}</span></div><p class="note">示例文件、版本与源锚点未接入真实解析服务。</p></div>`;
-        break;
-      }
-      case 'textbookItem': {
-        const unit =
-          data.textbook.units.find((x) => x.id === s.textbookUnit) ||
-          data.textbook.units[0];
-        const index = s.textbookItemIndex || 0;
-        const line = {
-          unit1: 'はじめまして。よろしくお願いします。',
-          unit2: '駅まで一緒に行きましょう。',
-          unit3: 'コーヒーを一つください。',
-        }[unit.id];
-        const sample =
-          index === 0
-            ? `<p lang="ja" class="mobile-sample-line">${line}</p><p>${unit.id === 'unit1' ? '初次见面，请多关照。' : unit.id === 'unit2' ? '一起去车站吧。' : '请给我一杯咖啡。'}</p>`
-            : index === 1
-              ? `<div class="mobile-plain-list"><div class="row-wrap"><strong lang="ja">${unit.id === 'unit2' ? '駅' : unit.id === 'unit3' ? '注文' : '名前'}</strong><span class="row-copy"><small>${unit.id === 'unit2' ? '车站' : unit.id === 'unit3' ? '点单' : '姓名'}</small></span></div></div>`
-              : `<p lang="ja" class="mobile-sample-line">${unit.id === 'unit2' ? '駅へ行きます。' : unit.id === 'unit3' ? 'コーヒーをください。' : 'わたしは学生です。'}</p><p>${unit.id === 'unit1' ? '「は」提示话题，「です」表示礼貌判断。' : unit.id === 'unit2' ? '「へ」表示移动的方向。' : '「ください」表达礼貌请求。'}</p>`;
-        title = unit.items[index] || '单元内容';
-        content = `<div class="stack">${sample}<div class="callout">${I('book')}<span>出处：${e(unit.title)}</span></div><button class="secondary full" type="button" data-action="closeModal">回到单元</button></div>`;
-        break;
-      }
-      default:
-        title = '提示';
-        content = '<p>这是一个本地演示状态。</p>';
-    }
     return `<div class="modal-cover" data-action="closeModal"><section class="sheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="${e(title)}" data-stop="true"><div class="sheet-handle"></div><div class="sheet-head"><h2>${e(title)}</h2><button class="icon-btn" type="button" data-action="closeModal" aria-label="关闭">${I('close')}</button></div>${content}</section></div>`;
   }
   function settings() {
@@ -683,7 +678,21 @@
   function states() {
     return `<h1 class="page-title">每种状态，都说清原因。</h1><p class="page-subtitle">以下是原型状态样例，不代表当前账号真的离线或失权。</p><div class="stack" style="margin-top:22px"><div class="surface stack"><strong>没有材料</strong><p>添加小说、课本或试卷后，材料会出现在本人书库。</p>${btn('添加材料', 'import', 'secondary', 'plus')}</div><div class="surface stack"><strong>暂时离线</strong><p>有效权限租期内可阅读已缓存章节与解释；新的生成、设置保存和考试场次需要联网。</p>${btn('查看本机副本', 'cache', 'secondary')}</div><div class="surface stack"><strong>没有访问权限</strong><p>这份内容现在不可读取。请返回材料库或联系有权的管理员。</p>${btn('返回材料库', 'library', 'secondary')}</div><div class="surface stack"><strong>任务未完成</strong><p>示例：模型调用遇到网络故障，结果仍未知；可去任务页查看状态后再决定下一步。</p>${btn('查看任务', 'jobs', 'secondary')}</div><div class="surface stack"><strong>正在载入</strong><p>保留当前标题和列表骨架，等候服务结果，不用动画推算完成。</p><div class="meter"><span style="width:40%"></span></div></div></div>`;
   }
+  const extras = window.HarukaCollections({
+    s,
+    root,
+    mobile: true,
+    render: () => render(),
+    open: (name) => openModal(name),
+    close: () => closeModal(),
+    go: (route, options) => go(route, options),
+  });
   const views = {
+    query: () => extras.query(),
+    dailyWords: () => extras.dailyWords(),
+    sampleReader: () => extras.sampleReader(),
+    sampleTextbook: () => extras.sampleReader(),
+    sampleExamPrep: () => extras.sampleReader(),
     library,
     import: importScreen,
     material: materialScreen,
@@ -733,6 +742,12 @@
       ? focusSelector(document.activeElement)
       : '';
     if (!views[s.route]) s.route = 'library';
+    if (s.route === 'notebook') s.route = 'notebooks';
+    if (s.route === 'word' || s.route === 'wordEdit') {
+      s.route = 'notebooks';
+      s.modal = 'entryDetail';
+    }
+
     if (s.route === 'registrationStatus' && !s.registrationAccepted) {
       s.route = 'register';
       history.replaceState(

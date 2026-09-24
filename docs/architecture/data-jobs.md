@@ -24,8 +24,8 @@
 | LinguisticAnalysis/Sentence/Token | 内容版本、分析/规则/词典版本、语言、原文span | 派生标注不改canonical_text；新切句不能静默改变旧sentence_id的含义 |
 | FileObject/UploadIntent | owner、临时staging_key、独占final_key、用途、最终摘要/实际大小、状态、到期 | 客户端仅写临时对象；后端固定不可变final对象并验证后才发布；完成幂等 |
 | AvatarAsset | owner、源UploadIntent、受控格式/像素/摘要、final_key、revision/状态 | 只从avatar用途临时对象真实解码、去元数据、限制像素并重编码发布；资料指针原子替换，外链/材料对象/他人资产不能充当头像，旧资产受控GC |
-| CollectionItem/Tag/Bookmark/ReadingProgress | kind、词/笔记、出处快照、current_position、小说max_progress、revision | 标签关系同库；小说当前/最远分离，课本位置不表示完成度，考试进度另存；删除材料后收藏文本仍存在 |
-| VocabularyNotebook/NotebookItem | owner/library、名称/目标语、成员CollectionItem和revision | 多本多对多、单语匹配、关系唯一；同条目多本不复制进度，删本不删词；改词语言与成员增改共用父锁 |
+| CollectionItem/Tag/Bookmark/ReadingProgress | kind、各类型内容/卡片版本化载荷、笔记、出处快照、current_position、小说max_progress、revision | 标签关系同库；小说当前/最远分离，课本位置不表示完成度，考试进度另存；删除材料后收藏文本仍存在 |
+| VocabularyNotebook/NotebookItem | owner/library、名称/目标语、成员CollectionItem和revision | 六类收藏多本多对多、单语匹配、关系唯一；同条目多本不复制进度，删本不删收藏；改词语言与成员增改共用父锁 |
 | VocabularyLearningState/EffectiveLearningEvidence | item/learning_revision/skill、有效成绩证据、mastery/策略/证据版本 | [词汇学习](vocabulary-learning.md)只从有效证据派生；客户端/CSV不得写mastery，重评按原接受时间重放；无ReviewSchedule/due/SRS |
 | MistakeOccurrence/MistakeProjection/MistakeFavorite | 每次可靠错误事实、根题/考察点当前状态、用户独立收藏关系 | [AI习题](../modules/ai-exercises.md)按effective评分幂等记录；重评/纠正重算不删历史，收藏不改错误状态 |
 | Exercise/PracticeSession/Attempt/GradeRun | 冻结题目与依据、答案、提交幂等键、评分代次 | 同一提交不重复 Attempt；规则/AI 成绩有来源；有效成绩与历史分开 |
@@ -55,9 +55,9 @@
 - Material的来源格式、唯一业务类型material_type、语言与导入报告分开。MaterialRevision保留不可变SourceAsset/SourceUnit/ContentBlock，各类型独立编排NovelManifest、TextbookManifest或ExamPaperVersion；具体对象关系唯一维护在[解析数据结构](../contracts/material-structures.md)，类型固定和重新处理边界见[三类材料](../contracts/material-types.md)。语言分析版本中的Sentence/Token引用原文span；重新解析失败不切当前版本，收藏重绑失败保留快照。
 - ExamPaperVersion通过ExamStimulusItemBinding关联共享阅读/图片/表格/听力材料。文字听力稿和试卷正文提取分别建立ScriptSource，AI候选、人工确认、TTS AudioBinding和播放策略分层；隐藏稿件、答案和rubric不进入题面投影。场次冻结paper/script/audio/policy版本，后续修订不改变旧场次；P0不建立原始音频上传/转写关系。
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
-- CollectionItem 维护 kind、词句/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词允许为空，不能伪造材料出处。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
+- CollectionItem 维护 kind=word/phrase/grammar/sentence/excerpt/answer、内容/lemma/语言、上下文、状态、标签、笔记与 origin（selection/agent/exercise/csv_import/photo_import）；来源引用与文本快照分开。CollectionItem、Attempt 和 Card 均能关联可追溯 locator，CSV/拍照导入单词及无材料查询卡片允许为空，不能伪造材料出处。卡片收藏保存card_id/card_revision/schema_version及完整服务端校验载荷快照；目标语缺失时按[查询模块](../modules/query.md)接受显式语言确认，不改写原卡片；每用户同一卡片版本幂等，不接受客户端自报正文。每日单词以CollectionItem.created_at按本人时区查询，只计kind=word，不用NotebookItem.created_at、CSV来源时间或另建每日调度表。定位编码与重绑规则只在 [出处契约](../contracts/content-locator.md) 定义。
 - Exercise 区分 extracted/generated/derived_from_mistake，题面/题型载荷、答案、解析和评分依据各有职责；生成题必须追溯至CollectionItem、MistakeOccurrence、Attempt或ContentBlock，引用由服务事务校验同库归属及版本/状态。Attempt关联题目与本人作答、得分依据、错误标签和用时；冻结版本及评分发布规则防止后续改题/重评改写历史证据。
-- AgentMessage 保存结构化文字与卡片结果；Card 保存类型、版本化载荷及合法来源。消息保存和卡片成为可收藏业务结果不是同一成功条件；用户内容、模型候选和生成例句的标识按 [AI 与朗读](../modules/ai-speech.md) 维护。
+- AgentThread.mode区分query/contextual，无来源查询不强制材料ID。AgentMessage 保存结构化文字与卡片结果；Card 保存类型、版本化载荷及合法来源。消息保存和卡片成为可收藏业务结果不是同一成功条件；用户内容、模型候选和生成例句的标识按 [AI 与朗读](../modules/ai-speech.md) 维护。
 - CsvImportBatch 保存用户/资料库、协议版本、批次状态、进度与结果引用，不能用外部 CSV ID 决定所有者；导入的 preview/confirm/重复策略字段以 [CSV 契约](../contracts/vocabulary-csv.md) 为准。Job/外部调用记录和 CSV 批次各自表达领域状态，不互相代替。
 
 ## 3. 事务边界
@@ -162,3 +162,5 @@ Outbox 发布进程领取带租约事件，Kafka确认后标记发布；发布�
 - DAT-08：预签名重复PUT、校验前后覆盖、复制中源变更、完成/取消竞争及复制后PG失败，Worker只能读已验证final对象，孤立对象可回收。
 
 上述是实现与测试必须满足的约束；本次未创建数据库表或执行迁移。
+
+材料解析与任务状态通过[WebSocket进度契约](../contracts/job-progress.md)发布已提交状态，按Job代次/序号恢复；Agent文字和卡片继续使用SSE。原型本地模拟不等于已实现Job/Outbox或数据库结构。

@@ -14,7 +14,7 @@
 | [教材/试卷解析、听力与展示](../contracts/learning-presentation.md) | [解析数据结构](../contracts/material-structures.md)、[课本](../modules/textbooks.md)、[考试](../modules/exams.md)、[出处](../contracts/content-locator.md)、[Flutter](../engineering/flutter.md) | PRES-01～PRES-10、MSTR；八类内容/五类输入/题组、听力标记/脚本题目匹配/TTS绑定、原文投影、未知结构和媒体故障、三端状态；阶段2解析校对、3音频生成、4作答复盘分别验收 |
 | [学习：收藏、照片、公共作答/评分和诊断](../modules/vocabulary-practice.md) | [权限](../contracts/permissions.md)、[数据与任务](../architecture/data-jobs.md) | COL/PHOTO/PRA/DIAG；重复与来源、规则/AI评分、有效贡献 |
 | [AI习题与错题库](../modules/ai-exercises.md) | [学习证据](../architecture/vocabulary-learning.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md) | AIX-01～AIX-10；全部可靠错题留档/收藏/重评状态、单词本/教材/错题/诊断选源、稳定预览与显式生成、针对性原题/变式、无复习调度；阶段4验收 |
-| [多单词本与自动掌握](../modules/vocabulary-notebooks.md) | [学习证据/掌握](../architecture/vocabulary-learning.md)、[AI习题](../modules/ai-exercises.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-10、VL-01～VL-10；多对多归属、删本/删词、AI习题选源、自动掌握、辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |
+| [多单词本与自动掌握](../modules/vocabulary-notebooks.md) | [学习证据/掌握](../architecture/vocabulary-learning.md)、[AI习题](../modules/ai-exercises.md)、[权限](../contracts/permissions.md)、[CSV](../contracts/vocabulary-csv.md) | VNB-01～VNB-12、VL-01～VL-10；混合类型列表/详情与词本弹窗、每日单词、多对多归属、删本/删词、AI习题选源、自动掌握、辅助/多设备、重评重放；阶段3组织、4学习、5CSV分别验收 |
 | [单词CSV入口](../modules/vocabulary-practice.md) | [CSV唯一协议](../contracts/vocabulary-csv.md) | 原CSV清单；全部逻辑记录导出、v2词本归属与v1兼容、快照不恢复学习证据、预览/分批/重复策略、公式转义、跨账号往返 |
 | [考试：导入、文字听力、校对、答题、交卷与成绩](../modules/exams.md) | [解析数据结构](../contracts/material-structures.md)、[API](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[出处](../contracts/content-locator.md) | 原考试清单、MSTR/PRES及DAT；AI听力标记/匹配、人工确认、TTS冻结、草稿/截止/锁卷、媒体故障、评分恢复与重评 |
 | [AI与朗读：解释、卡片、对话和TTS](../modules/ai-speech.md) | [Agent运行层](../architecture/agent-runtime.md)、[API事件](../contracts/api.md) | AI/TTS；类型校验、权限/上限、流恢复、音频缓存与播放 |
@@ -48,3 +48,13 @@
 功能优先级只在产品总览维护，待决项只在 [决策待办](../decisions/pending.md) 维护。范围确认后，更新对应模块、受影响的公共契约、此映射和路线图；不得仅因为有测试素材或接口草案就扩大P0。
 
 旧PRD章节与新归属的保全映射见 [重组记录](reviews/reorganization.md)。历史章节号只用于追溯，开发应使用上面的有效入口。
+
+## DESIGN6新增正式验收追踪
+
+| 已确认范围 | 唯一正文 / 契约 | 正式交付阶段与状态 |
+| --- | --- | --- |
+| 材料直接阅读、列表详情及解析WebSocket | [材料](../modules/materials-reading.md)、[WSP-01～WSP-05](../contracts/job-progress.md) | 阶段2，待实现；电脑消息/任务入口分别唯一 |
+| 混合收藏、列表/弹窗、每日单词 | [VNB-10～VNB-12](../modules/vocabulary-notebooks.md) | 阶段3，待实现；CSV依旧阶段5且只含单词 |
+| 自由查询与完整卡片收藏 | [QRY-01～QRY-05](../modules/query.md)、[四种P0卡片](../modules/ai-speech.md) | 阶段4，待实现；不扩展任意外部工具权限 |
+
+DESIGN6仅取得文档与HTML交互证据，不勾选上述正式权限、模型、数据库和跨端验收。

@@ -14,7 +14,7 @@ python -m http.server 8765 --bind 127.0.0.1 --directory prototype
 
 ## 原型版本与现行依据
 
-该HTML在2026-09-23产品决策前按当时的[多单词本规格](../docs/modules/vocabulary-notebooks.md)、词汇学习方案、练习模块和[CSV v2契约](../docs/contracts/vocabulary-csv.md)制作。视觉仍可用于中性白灰底、蓝色Primary `#2563EB`、清晰排版和手机/电脑独立布局参考；其中每日复习、到期状态、暂停和旧掌握算法已经失效。现行功能以[AI习题与错题库](../docs/modules/ai-exercises.md)、[学习证据](../docs/architecture/vocabulary-learning.md)和[公共作答](../docs/modules/vocabulary-practice.md)为准。
+该HTML在2026-09-23产品决策前按当时的[多单词本规格](../docs/modules/vocabulary-notebooks.md)、词汇学习方案、练习模块和[CSV v2契约](../docs/contracts/vocabulary-csv.md)制作。2026-09-24已确认[产品设计语言「晴空频率」](../docs/product/design-language.md)，当前HTML尚未迁移：中性白灰底与蓝色Primary `#2563EB`属于旧视觉实现，不再作为现行色板/组件规范；手机/电脑独立布局只在既有边界内参考。其中每日复习、到期状态、暂停和旧掌握算法已经失效。现行功能以[AI习题与错题库](../docs/modules/ai-exercises.md)、[学习证据](../docs/architecture/vocabulary-learning.md)和[公共作答](../docs/modules/vocabulary-practice.md)为准。
 
 - 旧单词本首页仍展示到期词、新词、系统视图及个人词本；这些到期/每日数字不再是产品需求。多本共用词条的组织关系仍有效。
 - 手机仍保留旧“首页→本内词表→单词详情→复习”页面层级；其中“复习”页不能作为未来AI习题页面的流程、状态或验收依据。

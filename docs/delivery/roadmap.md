@@ -8,7 +8,7 @@
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。
 
-当前 [HTML 原型](../../prototype/README.md) 验证杂志式书库、搜索筛选、示例阅读和词句收藏，不设“继续阅读”。配色按最新要求改为中性底色与 Primary 主色，蓝色具体取值暂定。原型使用内存示例，不提供真实服务；正式应用的B0通过依据独立工程证据。尚未完成下方业务验收，不修改 MyHome、不连接生产服务。
+2026-09-24已文档化[产品设计语言「晴空频率」](../product/design-language.md)，整体方向已确认，具体实现初值待各切片验证。[当前 HTML 原型](../../prototype/README.md)仍是旧视觉与内存交互示例，未迁移新语言，不提供真实服务；不设“继续阅读”的边界保留。此文档交付不勾选下方业务验收，正式应用的B0通过依据仍是独立工程证据。
 
 多用户和账号功能已确定。推荐每账号一个私有资料库、邮箱密码登录和 Haruka 独立会话。注册开放策略、邮箱验证/找回方式、阅读器要求、默认供应商和原需求契约缺口统一见 [待决事项及锁定节点](../decisions/pending.md)；依赖项未闭环不能将相关能力标为ready。
 
@@ -51,6 +51,7 @@ B0各切片已完成必要测试与独立review。Windows/Linux干净检出、�
 参考收藏与出题只提前实现最小业务链路，阶段3/4仍负责其完整功能与最终验收；不能因参考流程通过就勾选整项功能。
 
 - 建立 Flutter 三端、Python 工程、登录/注册/设置页面及 CI 检查入口。
+- 在B1及相关页面切片按[产品设计语言](../product/design-language.md)建立共享主题、字体/空间、基础控件和状态/动效表达；只核对当期受影响的DESIGN检查项。后续阶段2材料、阶段3解释/收藏/朗读、阶段4习题/考试沿用同一语言，管理与设置随功能交付；新视觉尚未实现，不回写B0历史通过结论。
 - 按 [Flutter适配规范](../engineering/flutter.md) 在B0建立布局策略/平台入口，B1/B2证明独立视图与共享业务状态、重排/输入/任务不重复及账号隔离；阅读、考试、媒体等后续阶段分别补齐FLT适配与真机性能证据。
 - 按 [后端手册](../engineering/backend.md) 落实模块公开入口、依赖/事务生命周期；B0建立 [统一返回](../contracts/api-responses.md) 与异常/OpenAPI/语言基础，B1在真实身份和收藏流程验收API-07～API-10的当期范围，不把文档模板视为实现。
 - 按 [前端E2E](../engineering/testing/frontend-e2e.md) 建立Test ID单源生成、Key/Web语义定位原型及平台runner分工；按 [测试数据](../engineering/testing/data.md) 建立共享样本、声明式场景、工厂秘密通道与资源账本，映射UIE/TDS验收。

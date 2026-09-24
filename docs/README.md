@@ -7,6 +7,7 @@
 | 现在要做什么 | 先读 | 再按需查 |
 | --- | --- | --- |
 | 了解产品 | [产品总览](product/overview.md) | [待决事项](decisions/pending.md) |
+| 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md) | [Flutter适配](engineering/flutter.md)、对应模块；旧HTML原型尚未迁移 |
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |
 | 实现模型调用与Token统计 | [模型用量统计契约](contracts/model-usage.md) | [Agent运行层](architecture/agent-runtime.md)、[数据与任务](architecture/data-jobs.md)、[观测](operations/observability.md) |
@@ -47,7 +48,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 
 | 分类 | 唯一负责的正文 | 不在这里重复维护 |
 | --- | --- | --- |
-| product | 产品目标、范围/优先级、成功指标、非功能目标、范围外 | 详细操作、API字段、实施计划 |
+| product | 产品目标、范围/优先级、成功指标、非功能目标、范围外及统一产品设计语言 | 详细操作、API字段、实施计划 |
 | modules | 具体业务规则、操作/异常、前后端职责、功能验收 | 公共会话算法、权限代码定义、出处字段 |
 | architecture | 系统选型与依赖、认证/授权、持久任务、Agent机制 | 逐页操作或部署步骤 |
 | contracts | API/权限/CSV/出处等共同协议 | 另一套产品范围或重复生成字段事实 |

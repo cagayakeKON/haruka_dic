@@ -2,7 +2,7 @@
 
 ## 项目与当前状态
 
-Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用壳、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，B1/B2未实现；候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md。原型采用中性底色、Primary主色及杂志式排版，不设“继续阅读”；范围与示例边界见prototype/README.md。
+Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用壳、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，B1/B2未实现；候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md。现行产品设计语言为[「晴空频率」](docs/product/design-language.md)，整体方向已确认，原型与Flutter尚未迁移；不设“继续阅读”，旧原型范围与示例边界见prototype/README.md。
 
 文档任务只修改文档；用户要求开始实现时，按实施计划推进必要工程工作。不把计划当成已实现，不为了运行不存在的检查擅自创建项目骨架。
 
@@ -15,6 +15,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 | 任务 | 必须读取的权威正文 |
 | --- | --- |
 | 产品/功能 | [产品总览](docs/product/overview.md)、对应modules规格、[功能与验收追踪](docs/delivery/coverage.md) |
+| 产品视觉、组件、动效与文案 | [产品设计语言](docs/product/design-language.md)、[产品总览](docs/product/overview.md)、相关模块；落地Flutter时再读适配规范 |
 | 身份、页面、业务动作与数据 | [认证](docs/architecture/authentication.md)、[RBAC](docs/architecture/authorization.md)、[权限目录](docs/contracts/permissions.md)、[API](docs/contracts/api.md)、[数据与任务](docs/architecture/data-jobs.md) |
 | 建表、ORM、逻辑关联、数据隔离与迁移 | [数据库规范](docs/engineering/database.md)、相关数据/认证设计；按DB验收证明已实现范围 |
 | 阅读、选区、导入、CSV或考试 | 对应[小说](docs/modules/novels.md)/[课本](docs/modules/textbooks.md)/[考试](docs/modules/exams.md)模块，以及[三类材料](docs/contracts/material-types.md)、[解析数据结构](docs/contracts/material-structures.md)、[出处](docs/contracts/content-locator.md)、[CSV](docs/contracts/vocabulary-csv.md)所涉及的契约 |

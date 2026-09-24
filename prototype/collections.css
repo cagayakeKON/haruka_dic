@@ -292,20 +292,49 @@
   display: none;
 }
 .material-details-button {
-  align-self: stretch;
+  align-self: flex-start;
+  flex: none;
   width: 44px;
+  height: 44px;
   min-height: 44px;
+  margin: 6px 4px 0 0;
+  padding: 0;
   border: 0;
-  border-left: 1px solid var(--line);
+  border-radius: 12px;
   background: transparent;
   color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
 }
-.material-details-button span {
-  display: none;
+.material-details-button svg {
+  width: 18px;
+  height: 18px;
+}
+.material-details-button:focus-visible {
+  outline-offset: -3px;
+}
+@media (hover: hover) {
+  .material-details-button:hover {
+    background: var(--blue-soft);
+    color: var(--blue);
+  }
+}
+#phone-app .material-library .collection-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+#phone-app .material-library .collection-filters button {
+  padding-inline: 4px;
+}
+#phone-app .material-library .collection-heading {
+  margin-bottom: 18px;
+}
+#phone-app .material-library h1 {
+  font-size: 28px;
+}
+#phone-app .direct-material-main {
+  padding: 16px 0 16px 14px;
 }
 .collection-progress {
   display: grid;
@@ -536,34 +565,27 @@
     grid-template-columns: 1fr 220px;
     align-items: center;
   }
-  .collection-library-tools {
+  #desktop-app .collection-library-tools {
     grid-template-columns: 1fr minmax(200px, 300px);
     align-items: center;
   }
-  .direct-material-main {
+  #desktop-app .direct-material-main {
     padding: 22px 24px;
     gap: 24px;
   }
-  .direct-material-main .cover {
+  #desktop-app .direct-material-main .cover {
     width: 70px;
     height: 94px;
     font-size: 34px;
   }
-  .direct-material-copy strong {
+  #desktop-app .direct-material-copy strong {
     font-size: 19px;
   }
-  .direct-material-copy small {
+  #desktop-app .direct-material-copy small {
     font-size: 13px;
   }
-  .direct-material-main > svg {
+  #desktop-app .direct-material-main > svg {
     display: block;
-  }
-  .material-details-button {
-    width: 120px;
-    font-size: 12px;
-  }
-  .material-details-button span {
-    display: inline;
   }
   .query-prompts {
     grid-template-columns: 1fr 1fr;

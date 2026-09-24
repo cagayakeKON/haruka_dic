@@ -214,6 +214,9 @@
     const top = primary.includes(s.route);
     const unread = s.notifications.some((n) => n.unread);
 
+    if (s.route === 'library')
+      return `<header class="phone-head root-head library-head"><button class="head-brand library-brand" type="button" data-modal="prototypeInfo" aria-label="Haruka 原型说明" title="Haruka · 原型说明"><span class="head-mark" aria-hidden="true">h</span></button><div class="head-search" role="search">${I('search')}<input id="material-search" type="search" data-input="search" aria-label="搜索材料" aria-controls="material-list" placeholder="搜索材料" value="${e(s.search)}" enterkeyhint="search" autocomplete="off"><button class="head-search-clear" type="button" data-action="clearMaterialSearch" aria-label="清除搜索" ${s.search ? '' : 'hidden'}>${I('close')}</button></div><button class="icon-btn ${unread ? 'unread-dot' : ''}" type="button" data-go="notifications" aria-label="站内消息">${I('bell')}</button></header>`;
+
     return `<header class="phone-head ${top ? 'root-head' : ''}">${top ? '<div class="head-brand"><span class="head-mark" aria-hidden="true">h</span>haruka</div>' : `<button class="head-back" type="button" data-action="back" aria-label="返回上一页">${I('back')}</button><div class="head-title">${e(titles[s.route] || 'Haruka')}</div>`}<div class="head-actions">${top ? `<button class="preview-label" type="button" data-modal="prototypeInfo">原型</button><button class="icon-btn ${unread ? 'unread-dot' : ''}" type="button" data-go="notifications" aria-label="站内消息">${I('bell')}</button>` : ''}</div></header>`;
   };
   const nav = () =>
@@ -234,6 +237,11 @@
   }
   function library() {
     return extras.library();
+  }
+  function filterMaterials(value) {
+    s.search = value;
+    root.querySelector('#main-content').innerHTML = library();
+    root.querySelector('.head-search-clear').hidden = !value;
   }
 
   function importScreen() {
@@ -1202,6 +1210,13 @@
       openModal(action === 'materialQuality' ? 'quality' : action);
       return;
     }
+    if (action === 'clearMaterialSearch') {
+      filterMaterials('');
+      const input = root.querySelector('#material-search');
+      input.value = '';
+      input.focus();
+      return;
+    }
     if (action === 'clearSearch') {
       s.search = '';
       s.filter = 'all';
@@ -1613,6 +1628,10 @@
     }
     if (t.name === 'password' || t.name === 'confirmPassword')
       root.querySelector('[name="confirmPassword"]')?.setCustomValidity('');
+    if (t.dataset.input === 'search' && s.route === 'library') {
+      filterMaterials(t.value);
+      return;
+    }
     if (t.dataset.input === 'search') {
       const pos = t.selectionStart;
       s.search = t.value;

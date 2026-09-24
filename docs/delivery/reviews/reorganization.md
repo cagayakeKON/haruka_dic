@@ -249,3 +249,7 @@ architecture_review完成第1轮独立只读审查，发现MUR-01（P2）：用�
 非作者Agent `design_language_review` 完成第1轮独立只读review，定向核对本次diff、设置/Flutter/模块边界和旧视觉入口，未发现需要修复的缺陷，也无本轮必须采纳的建议；因此不追加第2轮。确认四个主色值及六项规则保留、确认层级准确、三类页面和考试/保存状态契约一致、各入口同步。
 
 必要检查只覆盖本次11份Markdown：通过锁定的 `markdownlint-cli2-bin.mjs --no-globs` 显式传入这11个文件，结果为11 files、0 issues；调用仓库 `scripts.quality.docs.inspect(root, paths)` 检查这11份文档的本地链接/锚点、路径大小写、围栏、冲突标记与明显私钥材料，结果为0 findings、0 unverified。旧视觉定向扫描仅保留明确替代说明及原型的历史实现描述；`git diff --check` 通过。本次没有运行Flutter/Python应用测试、模型调用、无障碍实测或三端验收，文档中的DESIGN项仍待对应实现。按本小阶段创建独立本地commit，实际哈希以Git日志和交付回复为证据，不默认push。
+
+## 22. 后续DESIGN4：手机排版与产品文案
+
+2026-09-24，阶段1内独立原型小阶段。手机端按用户要求继续优化移动操作、内容层级与排版，清理复述页面功能及讲解实现规则的说明文；原型边界保留在独立入口和必要操作提示。同步原型说明、设计语言、导航、路线图与项目入口，不改变业务范围或 B1/B2 状态。独立 review、修订和局部浏览器/文档检查见[手机排版与文案重构](2026-09-24-mobile-refinement.md)。

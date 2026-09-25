@@ -57,7 +57,6 @@
     practice: 'exercise',
     mistakes: 'exercise',
     mistake: 'mistakes',
-    agent: 'exercise',
     report: 'exercise',
     notifications: 'settings',
     jobs: 'settings',
@@ -115,7 +114,6 @@
     practice: '逐题练习',
     mistakes: '错题库',
     mistake: '错题详情',
-    agent: '学习 Agent',
     report: '学习诊断',
     notifications: '站内消息',
     settings: '设置',
@@ -425,7 +423,7 @@
       <button class="practice-create" type="button" data-go="exerciseBuilder"><span class="signal" aria-hidden="true"></span><strong>生成 AI 习题</strong><small>从词本、教材或错题中选源</small><span class="practice-create-action">选择来源 ${I('arrow')}</span></button>
       <div class="mobile-list-heading"><h2>已有习题</h2></div><div class="mobile-plain-list">${settingRow('practice', s.activeLanguage === '英语' ? '微光与希望' : '动作里的语气', '语境填空 · 1 题 · 示例', 'edit')}</div>
       <div class="mobile-list-heading"><h2>学习记录</h2></div><div class="mobile-plain-list">${settingRow('mistakes', '错题库', `${s.mistakes.filter((m) => m.state === '当前待纠正').length} 题待纠正`, 'warning')}${settingRow('report', '学习诊断', '最近 7 天', 'grid')}</div>
-      <button class="mobile-activity agent-entry" type="button" data-go="agent">${I('message')}<span>问学习 Agent</span>${I('arrow')}</button>`;
+`;
   }
   function exerciseBuilder() {
     return `<div class="exercise-builder"><p class="exercise-step"><strong>步骤 ${builderStep + 1} / 2</strong><span>${builderStep ? '设置与确认' : '选择来源'}</span></p><h1 tabindex="-1">${builderStep ? '设置与确认' : '想练习哪些内容？'}</h1>${!builderStep ? `${exerciseFlow.sources()}<div class="mobile-action-dock"><p class="exercise-selection-count" role="status">已选 ${practiceCandidateCount()} 项内容，相同收藏只计一次。</p><button type="button" class="primary full" data-action="builderNext" ${practiceCandidateCount() ? '' : 'disabled'}>下一步 · 设置与确认 ${I('arrow')}</button></div>` : `<div class="exercise-config">${exerciseFlow.settings()}${exerciseFlow.review()}</div>`}</div>`;
@@ -446,9 +444,6 @@
     const m =
       s.mistakes.find((x) => x.id === s.selectedMistake) || s.mistakes[0];
     return `<h1 class="page-title">${e(m.title)}</h1><p class="page-subtitle">${e(m.source)}</p><div style="margin:17px 0">${badge(m.state, m.state === '已经改进' ? 'good' : 'warn')}</div><div class="surface stack"><h2 style="font-size:16px">当时的作答</h2><p>${e(m.answer)}</p><div class="divider"></div></div><div class="button-row" style="margin-top:18px"><button class="secondary" type="button" data-action="favoriteMistake">${I('bookmark')} ${m.favorite ? '取消收藏' : '收藏错题'}</button><button class="primary" type="button" data-go="exerciseBuilder">针对它出题</button></div>`;
-  }
-  function agent() {
-    return `<div class="chat-context">${I('book')}<span>夏の手紙 · 第 03 章</span></div><h1 class="sr-only">学习 Agent</h1><div class="mobile-chat-thread">${s.messages.map((m) => `<article class="mobile-chat-bubble ${m.from === 'user' ? 'from-user' : 'from-agent'}"><span class="mobile-chat-name">${m.from === 'agent' ? 'HARUKA' : '你'}</span><p>${e(m.text)}</p>${m.source ? `<button class="text-btn" type="button" data-go="novel">${I('book')} ${e(m.source)} ${I('arrow')}</button>` : ''}</article>`).join('')}</div><form class="mobile-chat-compose" data-form="chat"><label class="field"><span class="sr-only">继续提问</span><textarea name="message" rows="1" required placeholder="继续提问…"></textarea></label><button class="primary" type="submit" aria-label="发送问题">${I('arrow')}</button></form>`;
   }
   function report() {
     return `<h1 class="page-title">学习诊断</h1><p class="page-subtitle">依据可靠作答和来源形成诊断；本页是虚构示例。</p><div class="stack" style="margin-top:23px"><div class="panel"><div class="eyebrow"><span class="signal"></span>最近 7 天</div><h2 style="font-size:20px;margin:12px 0">方向助词值得再练</h2><p>教材 Unit 02 的有效作答显示，「に / へ」仍容易混淆。</p><button class="text-btn" data-go="textbook" type="button">回到教材 ${I('arrow')}</button></div><div class="surface"><h2 style="font-size:18px;margin-bottom:10px">亮点</h2><p>在有语境的词义选择题里，你能留意句子的情绪与动作方式。</p></div><div class="surface"><h2 style="font-size:18px;margin-bottom:10px">下一步</h2><p class="muted">从教材或当前错题明确选源，预览后再生成针对性习题。</p><button class="primary full" style="margin-top:14px" type="button" data-go="exerciseBuilder">选择习题来源</button></div></div>`;
@@ -570,7 +565,7 @@
         case 'term': {
           const term = data.novel.terms[s.selectedTerm];
           title = '放回这句话';
-          content = `<div class="eyebrow"><span class="signal"></span>语境解释 · 示例</div><h2 style="font-size:31px;margin:11px 0 4px" lang="ja">${term.word}</h2><p class="small muted">${term.reading}</p><p style="margin:16px 0;line-height:1.85">${term.meaning}</p><div class="soft-panel"><strong lang="ja">${term.sentence}</strong><p class="small" style="margin-top:6px">${term.translation}</p></div><p class="note" style="margin:13px 0">出处：夏の手紙 · ${term.source}</p><div class="button-row"><button class="secondary" type="button" data-action="collectTerm">${I('bookmark')} ${s.collected.includes(s.selectedTerm) ? '已收藏' : '收藏词条'}</button><button class="secondary" type="button" data-action="askAgent">${I('message')} 问 Agent</button></div>`;
+          content = `<div class="eyebrow"><span class="signal"></span>语境解释 · 示例</div><h2 style="font-size:31px;margin:11px 0 4px" lang="ja">${term.word}</h2><p class="small muted">${term.reading}</p><p style="margin:16px 0;line-height:1.85">${term.meaning}</p><div class="soft-panel"><strong lang="ja">${term.sentence}</strong><p class="small" style="margin-top:6px">${term.translation}</p></div><p class="note" style="margin:13px 0">出处：夏の手紙 · ${term.source}</p><div class="button-row"><button class="secondary" type="button" data-action="collectTerm">${I('bookmark')} ${s.collected.includes(s.selectedTerm) ? '已收藏' : '收藏词条'}</button></div>`;
           break;
         }
         case 'chapters':
@@ -719,7 +714,6 @@
     practice,
     mistakes,
     mistake,
-    agent,
     report,
     notifications,
     settings,
@@ -851,7 +845,7 @@
     document.body.dataset.reduceMotion = s.reduceMotion ? 'on' : 'off';
     document.body.style.overflow = s.modal ? 'hidden' : '';
     const mainTab = primary.includes(s.route);
-    root.innerHTML = `<div class="phone-shell" data-page="${s.route}"><div class="page-content" ${s.modal ? 'inert' : ''}>${head()}<main class="screen ${['login', 'register', 'recovery', 'registrationStatus', 'recoveryStatus'].includes(s.route) ? 'auth-main' : ''} ${mainTab ? 'main-screen' : 'detail-screen'} ${['novel', 'material', 'import', 'notebook', 'agent', 'textbook', 'examRun', 'practice'].includes(s.route) || (s.route === 'exerciseBuilder' && builderStep === 0) ? 'with-dock' : ''}" id="main-content">${views[s.route]()}</main>${s.signedIn && mainTab ? nav() : ''}</div>${s.toast ? `<div class="toast" role="status">${e(s.toast)}</div>` : ''}${modal()}</div>`;
+    root.innerHTML = `<div class="phone-shell" data-page="${s.route}"><div class="page-content" ${s.modal ? 'inert' : ''}>${head()}<main class="screen ${['login', 'register', 'recovery', 'registrationStatus', 'recoveryStatus'].includes(s.route) ? 'auth-main' : ''} ${mainTab ? 'main-screen' : 'detail-screen'} ${['novel', 'material', 'import', 'notebook', 'textbook', 'examRun', 'practice'].includes(s.route) || (s.route === 'exerciseBuilder' && builderStep === 0) ? 'with-dock' : ''}" id="main-content">${views[s.route]()}</main>${s.signedIn && mainTab ? nav() : ''}</div>${s.toast ? `<div class="toast" role="status">${e(s.toast)}</div>` : ''}${modal()}</div>`;
     const sheet = root.querySelector('.sheet');
     if (s.route === 'novel') {
       const shell = root.querySelector('.phone-shell');
@@ -936,7 +930,10 @@
   }
   function setHashRoute() {
     const hash = decodeURIComponent(location.hash.slice(1));
-    const route = hash.split('?')[0] || 'library';
+    const requestedRoute = hash.split('?')[0] || 'library';
+    const route = requestedRoute === 'agent' ? 'exercise' : requestedRoute;
+    if (requestedRoute === 'agent')
+      history.replaceState(history.state, '', '#exercise');
     if (!views[route]) return;
     if (route === 'examRun' && examPaused) {
       history.replaceState(
@@ -1297,10 +1294,6 @@
         s.collected = s.collected.filter((x) => x !== s.selectedTerm);
       else s.collected.push(s.selectedTerm);
       render();
-      return;
-    }
-    if (action === 'askAgent') {
-      go('agent');
       return;
     }
     if (action === 'textbookSubmit') {
@@ -1762,41 +1755,6 @@
       toast('示例词条已更新。');
       return;
     }
-    if (form.dataset.form === 'chat') {
-      const message = String(values.message || '').trim();
-      if (!message) return;
-      s.messages.push(
-        { from: 'user', text: message },
-        {
-          from: 'agent',
-          text: '示例回复：「そっと」强调轻柔、不打扰；「静かに」更偏向没有声音。这里写夏风触碰脸颊，用「そっと」更贴近触感。',
-          source: '夏の手紙 · 第 03 章 · 第 1 段',
-        },
-      );
-      render();
-      requestAnimationFrame(() => {
-        root
-          .querySelector('.mobile-chat-compose textarea')
-          ?.focus({ preventScroll: true });
-        const last = root.querySelector(
-          '.mobile-chat-thread article:last-child',
-        );
-        const composer = root.querySelector('.mobile-chat-compose');
-        if (last && composer)
-          window.scrollTo({
-            top:
-              window.scrollY +
-              Math.max(
-                0,
-                last.getBoundingClientRect().bottom -
-                  composer.getBoundingClientRect().top +
-                  16,
-              ),
-            behavior: 'smooth',
-          });
-      });
-      return;
-    }
     if (['login', 'register', 'recovery'].includes(form.dataset.form)) {
       if (form.dataset.form === 'recovery') {
         recoveryAccepted = true;
@@ -1818,7 +1776,12 @@
       return;
     }
   });
-  const hash = decodeURIComponent(location.hash.slice(1)).split('?')[0];
+  const requestedHash = decodeURIComponent(location.hash.slice(1)).split(
+    '?',
+  )[0];
+  const hash = requestedHash === 'agent' ? 'exercise' : requestedHash;
+  if (requestedHash === 'agent')
+    history.replaceState(history.state, '', '#exercise');
   if (views[hash]) s.route = hash;
   if (hash === 'import' && location.hash.includes('?'))
     history.replaceState({ harukaMobileIndex: navigationIndex }, '', '#import');

@@ -45,7 +45,6 @@
     practice: "逐题练习",
     mistakes: "错题库",
     mistake: "错题详情",
-    agent: "学习 Agent",
     report: "学习诊断",
     notifications: "站内消息",
     jobs: "任务进度",
@@ -96,7 +95,6 @@
     practice: "exercise",
     mistakes: "exercise",
     mistake: "mistakes",
-    agent: "exercise",
     report: "exercise",
     notifications: "settings",
     jobs: "library",
@@ -219,7 +217,6 @@
     practice: "逐题练习",
     mistakes: "错题库",
     csv: "单词 CSV",
-    agent: "学习 Agent",
     report: "学习诊断",
     notifications: "站内消息",
     jobs: "任务进度",
@@ -309,7 +306,7 @@
   }
   function termContent() {
     const term = data.novel.terms[s.selectedTerm];
-    return `<p class="step-caption">词句解释</p><h2 class="word" lang="ja">${e(term.word)}</h2><p class="small muted">${e(term.reading)}</p><p class="term-meaning">${e(term.meaning)}</p><div class="sentence"><strong lang="ja">${e(term.sentence)}</strong><p>${e(term.translation)}</p></div><p class="note">夏の手紙 · ${e(term.source)}</p><div class="stack"><button type="button" class="secondary full" data-action="collectTerm">${I("bookmark")}${s.collected.includes(s.selectedTerm) ? "已收藏" : "收藏词条"}</button>${btn("问 Agent", "agent", "text-btn", "message")}</div>`;
+    return `<p class="step-caption">词句解释</p><h2 class="word" lang="ja">${e(term.word)}</h2><p class="small muted">${e(term.reading)}</p><p class="term-meaning">${e(term.meaning)}</p><div class="sentence"><strong lang="ja">${e(term.sentence)}</strong><p>${e(term.translation)}</p></div><p class="note">夏の手紙 · ${e(term.source)}</p><div class="stack"><button type="button" class="secondary full" data-action="collectTerm">${I("bookmark")}${s.collected.includes(s.selectedTerm) ? "已收藏" : "收藏词条"}</button></div>`;
   }
   function novel() {
     const text = data.novel.paragraphs
@@ -386,7 +383,7 @@
     return exerciseFlow.candidates().length;
   }
   function exercise() {
-    return `${head("", "练习")}<div class="practice-home"><button type="button" class="practice-create" data-go="exerciseBuilder"><span class="signal"></span><strong>生成 AI 习题</strong><span class="practice-create-bottom">选择来源 ${I("arrow")}</span></button><section class="surface practice-existing"><p class="step-caption">已有习题</p><h2>语境中的表达</h2><p class="muted">${e(s.activeLanguage)} · 1 道示例题</p>${btn("开始练习", "practice", "secondary", "arrow")}</section></div><div class="section-head"><h2>学习记录</h2></div><div class="grid-2"><button class="entry-card" type="button" data-go="mistakes"><span class="setting-icon">${I("warning")}</span><span class="row-copy"><strong>错题库</strong><small>${s.mistakes.filter((m) => m.state === "当前待纠正").length} 道待纠正</small></span>${I("chevron")}</button><button class="entry-card" type="button" data-go="report"><span class="setting-icon">${I("grid")}</span><span class="row-copy"><strong>学习诊断</strong><small>方向助词 · 语境词义</small></span>${I("chevron")}</button></div><div class="section-head"><h2>学习助手</h2></div><button class="entry-card" type="button" data-go="agent"><span class="setting-icon">${I("message")}</span><span class="row-copy"><strong>学习 Agent</strong><small>夏の手紙 · 第 03 章</small></span>${I("chevron")}</button>`;
+    return `${head("", "练习")}<div class="practice-home"><button type="button" class="practice-create" data-go="exerciseBuilder"><span class="signal"></span><strong>生成 AI 习题</strong><span class="practice-create-bottom">选择来源 ${I("arrow")}</span></button><section class="surface practice-existing"><p class="step-caption">已有习题</p><h2>语境中的表达</h2><p class="muted">${e(s.activeLanguage)} · 1 道示例题</p>${btn("开始练习", "practice", "secondary", "arrow")}</section></div><div class="section-head"><h2>学习记录</h2></div><div class="grid-2"><button class="entry-card" type="button" data-go="mistakes"><span class="setting-icon">${I("warning")}</span><span class="row-copy"><strong>错题库</strong><small>${s.mistakes.filter((m) => m.state === "当前待纠正").length} 道待纠正</small></span>${I("chevron")}</button><button class="entry-card" type="button" data-go="report"><span class="setting-icon">${I("grid")}</span><span class="row-copy"><strong>学习诊断</strong><small>方向助词 · 语境词义</small></span>${I("chevron")}</button></div>`;
   }
   function exerciseBuilder() {
     return `<div class="exercise-builder">${head("", "生成 AI 习题")}<p class="exercise-step"><strong>步骤 ${builderStep + 1} / 2</strong><span>${builderStep ? "设置与确认" : "选择来源"}</span></p>${!builderStep ? `${exerciseFlow.sources()}<p class="exercise-selection-count" role="status">已选 ${practiceCandidateCount()} 项内容，相同收藏只计一次。</p><div class="flow-actions"><button type="button" class="primary" data-action="builderNext" ${practiceCandidateCount() ? "" : "disabled"}>下一步 · 设置与确认 ${I("arrow")}</button></div>` : `<div class="exercise-config">${exerciseFlow.settings()}${exerciseFlow.review()}</div>`}</div>`;
@@ -405,10 +402,6 @@
       s.mistakes.find((x) => x.id === s.selectedMistake) || s.mistakes[0];
     return `${head("MISTAKE / DETAIL", e(m.title), e(m.source))}<div class="grid-aside" style="margin-top:22px"><div class="panel stack"><div>${tag(m.state, m.state === "已经改进" ? "good" : "warn")}</div><h2 style="font-size:19px">当时的作答</h2><p>${e(m.answer)}</p></div><aside class="surface stack"><h2 style="font-size:18px">下一步</h2><button type="button" class="secondary" data-action="favoriteMistake">${I("bookmark")} ${m.favorite ? "取消收藏" : "收藏错题"}</button>${btn("选择习题来源", "exerciseBuilder", "primary", "spark")}</aside></div>`;
   }
-  function agent() {
-    return `${head("", "学习 Agent")}<div class="agent-layout"><section class="chat-panel"><div class="chat-messages" aria-live="polite" aria-label="对话记录">${s.messages.map((m) => `<article class="chat-message ${m.from}"><p class="step-caption">${m.from === "agent" ? "Haruka" : "你"}</p><p>${e(m.text)}</p>${m.source ? `<button class="text-btn" type="button" data-go="novel">${e(m.source)} ${I("arrow")}</button>` : ""}</article>`).join("")}</div><form class="chat-composer" data-form="chat"><label class="field"><span class="sr-only">消息</span><textarea name="message" required placeholder="继续提问…" aria-describedby="chat-shortcut"></textarea></label><div class="composer-actions"><span id="chat-shortcut" class="note">Ctrl / ⌘ + Enter 发送 · 模拟对话</span><button class="primary" type="submit">发送 ${I("arrow")}</button></div></form></section><aside class="surface context-panel"><p class="step-caption">当前上下文</p><h2>夏の手紙</h2><p class="small muted">第 03 章 · 第 1 段</p><blockquote lang="ja">夏の風がそっと頬に触れた。</blockquote>${btn("回到原文", "novel", "secondary", "arrow")}</aside></div>`;
-  }
-
   function report() {
     return `${head("", "学习诊断")}<div class="grid-3" style="margin-top:22px"><div class="panel"><div class="eyebrow"><span class="signal"></span>薄弱点</div><h2 style="margin:13px 0 8px;font-size:21px">方向助词</h2><p>Unit 02 的有效作答显示「に / へ」容易混淆。</p>${btn("回到教材", "textbook", "text-btn")}</div><div class="surface"><div class="eyebrow"><span class="signal"></span>亮点</div><h2 style="margin:13px 0 8px;font-size:21px">语境词义</h2><p>能留意句子的情绪和动作方式。</p></div><div class="surface"><div class="eyebrow"><span class="signal"></span>下一步</div><h2 style="margin:13px 0 8px;font-size:21px">选源练习</h2><p>从教材或当前错题预览候选，再明确确认生成。</p>${btn("选择来源", "exerciseBuilder", "text-btn")}</div></div>`;
   }
@@ -534,7 +527,7 @@
     return `${head("", "角色与权限")}<div class="grid-aside" style="margin-top:23px"><div class="table-wrap"><table class="table"><thead><tr><th>角色</th><th>受众</th><th>成员</th><th>状态</th><th></th></tr></thead><tbody><tr><td>学习者</td><td>用户端</td><td>126</td><td>${tag("默认")}</td><td><button type="button" data-admin-item="学习者角色">预览</button></td></tr><tr><td>支持人员</td><td>管理端</td><td>2</td><td>${tag("受限")}</td><td><button type="button" data-admin-item="支持人员角色">预览</button></td></tr><tr><td>超级管理员</td><td>管理端</td><td>1</td><td>${tag("受保护", "warn")}</td><td><button type="button" data-admin-item="超级管理员角色">预览</button></td></tr></tbody></table></div><aside class="callout">${I("shield")}<span>角色变更仅为预览，不会发布。</span></aside></div>`;
   }
   function adminMenus() {
-    return `${head("", "页面与菜单")}<div class="grid-2" style="margin-top:23px"><div class="surface stack"><h2 style="font-size:19px">用户端导航</h2>${["材料库", "单词本", "AI 习题", "错题库", "学习 Agent", "设置"].map((x) => `<div class="check-row">${I("check")}<span>${x}</span>${tag("授权后显示")}</div>`).join("")}</div><div class="surface stack"><h2 style="font-size:19px">管理端导航</h2>${["用户与会话", "角色与权限", "注册策略", "任务与资源", "审计诊断"].map((x) => `<div class="check-row">${I("check")}<span>${x}</span>${tag("授权后显示")}</div>`).join("")}</div></div>`;
+    return `${head("", "页面与菜单")}<div class="grid-2" style="margin-top:23px"><div class="surface stack"><h2 style="font-size:19px">用户端导航</h2>${["材料库", "单词本", "AI 习题", "错题库", "查询", "学习诊断", "设置"].map((x) => `<div class="check-row">${I("check")}<span>${x}</span>${tag("授权后显示")}</div>`).join("")}</div><div class="surface stack"><h2 style="font-size:19px">管理端导航</h2>${["用户与会话", "角色与权限", "注册策略", "任务与资源", "审计诊断"].map((x) => `<div class="check-row">${I("check")}<span>${x}</span>${tag("授权后显示")}</div>`).join("")}</div></div>`;
   }
   function adminPolicy() {
     return `${head("", "注册策略")}<div class="grid-aside" style="margin-top:22px"><div class="surface form-grid"><label class="field">注册方式<select><option>需审批（示例）</option><option>关闭新注册（示例）</option></select></label><label class="field">邮箱验证<select><option>待选择</option><option>启用后校验</option></select></label><label class="field">账号恢复<select><option>待选择</option><option>邮件恢复</option><option>人工恢复</option></select></label><button class="primary" type="button" data-action="adminPreview">预览策略变化（演示）</button></div><aside class="callout warn">${I("warning")}<span>仅预览，不发布策略。</span></aside></div>`;
@@ -682,7 +675,6 @@
     practice,
     mistakes,
     mistake,
-    agent,
     report,
     notifications,
     jobs,
@@ -877,7 +869,8 @@
       root.querySelector("#main-content")?.focus();
       return;
     }
-    const [route, query = ""] = location.hash.slice(1).split("?");
+    const [requestedRoute, query = ""] = location.hash.slice(1).split("?");
+    const route = requestedRoute === "agent" ? "exercise" : requestedRoute;
     if (!views[route]) return;
     if (s.route === "examRun" && s.examRunning && route !== "examRun") {
       const destinationMaterial = history.state?.context?.chosenMaterial;
@@ -943,14 +936,6 @@
         }
       }
       return;
-    }
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.key === "Enter" &&
-      document.activeElement?.closest('[data-form="chat"]')
-    ) {
-      event.preventDefault();
-      root.querySelector('[data-form="chat"]').requestSubmit();
     }
     if (
       event.key === "/" &&
@@ -1587,24 +1572,6 @@
       toast("示例词条已更新。");
       return;
     }
-    if (form.dataset.form === "chat") {
-      const message = String(values.message || "").trim();
-      if (!message) return;
-      s.messages.push(
-        { from: "user", text: message },
-        {
-          from: "agent",
-          text: "「そっと」强调轻柔、不打扰的动作。在这句话里，它让夏风像一次轻轻的触碰。",
-          source: "夏の手紙 · 第 03 章",
-        },
-      );
-      form.reset();
-      render();
-      const messages = root.querySelector(".chat-messages");
-      messages.scrollTop = messages.scrollHeight;
-      root.querySelector("[name=message]")?.focus({ preventScroll: true });
-      return;
-    }
     if (
       ["login", "register", "recovery", "adminLogin"].includes(
         form.dataset.form,
@@ -1636,7 +1603,8 @@
       } else go("library");
     }
   });
-  const [hash, initialQuery = ""] = location.hash.slice(1).split("?");
+  const [requestedHash, initialQuery = ""] = location.hash.slice(1).split("?");
+  const hash = requestedHash === "agent" ? "exercise" : requestedHash;
   if (views[hash]) s.route = hash;
   if (hash === "exerciseBuilder")
     builderStep =

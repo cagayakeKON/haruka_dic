@@ -530,8 +530,7 @@ strong {
   display: none;
 }
 .mobile-action-dock,
-.reader-dock,
-.mobile-chat-compose {
+.reader-dock {
   position: fixed;
   z-index: 18;
   bottom: calc(var(--frame-gap) + var(--keyboard-inset));
@@ -1145,9 +1144,6 @@ input::file-selector-button {
 .practice-create-action svg {
   color: var(--lime);
 }
-.agent-entry {
-  margin-top: 20px;
-}
 .mobile-source-list {
   margin-bottom: 20px;
 }
@@ -1442,79 +1438,6 @@ input::file-selector-button {
 .mobile-answer-grid small {
   color: var(--muted);
   font-size: 12px;
-}
-.chat-context {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 24px;
-  padding: 12px 14px;
-  background: var(--blue-soft);
-  border-radius: 12px;
-  font-size: 13px;
-  color: var(--blue);
-}
-.mobile-chat-thread {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding-bottom: 16px;
-}
-.mobile-chat-bubble {
-  max-width: 94%;
-  width: fit-content;
-  padding: 16px;
-  border-radius: 20px;
-  background: var(--paper);
-}
-.mobile-chat-bubble.from-user {
-  align-self: flex-end;
-  background: var(--blue-soft);
-  border-bottom-right-radius: 6px;
-}
-.mobile-chat-bubble.from-agent {
-  align-self: flex-start;
-  border-bottom-left-radius: 6px;
-}
-.mobile-chat-name {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.6px;
-  margin-bottom: 8px;
-}
-.mobile-chat-bubble p {
-  line-height: 1.85;
-  overflow-wrap: anywhere;
-}
-.mobile-chat-bubble .text-btn {
-  justify-content: flex-start;
-  font-size: 12px;
-  padding: 12px 0 0;
-}
-.mobile-chat-bubble .text-btn svg {
-  width: 16px;
-  height: 16px;
-}
-.mobile-chat-compose {
-  display: flex;
-  align-items: end;
-  gap: 10px;
-}
-.mobile-chat-compose .field {
-  flex: 1;
-  min-width: 0;
-}
-.mobile-chat-compose textarea {
-  min-height: 52px;
-  max-height: 120px;
-  resize: none;
-}
-.mobile-chat-compose .primary {
-  width: 52px;
-  height: 52px;
-  padding: 0;
-  flex: none;
 }
 .stat {
   padding: 18px;
@@ -2030,8 +1953,7 @@ input::file-selector-button {
     height: 96px;
   }
   .mobile-action-dock,
-  .reader-dock,
-  .mobile-chat-compose {
+  .reader-dock {
     padding-inline: 16px;
   }
 }
@@ -2052,8 +1974,7 @@ input::file-selector-button {
   }
   .bottom-nav,
   .mobile-action-dock,
-  .reader-dock,
-  .mobile-chat-compose {
+  .reader-dock {
     border-radius: 0 0 28px 28px;
   }
 }

@@ -1525,76 +1525,6 @@ input[type="radio"] {
   gap: 6px;
   flex-wrap: wrap;
 }
-.agent-layout {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 20px;
-}
-.chat-panel {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: max(430px, calc(100dvh - 280px));
-  background: var(--paper);
-  border-radius: 20px;
-  overflow: hidden;
-}
-.chat-messages {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overscroll-behavior: contain;
-}
-.chat-message {
-  border-radius: 14px;
-  padding: 16px;
-  max-width: 92%;
-  align-self: flex-start;
-  background: var(--canvas);
-  line-height: 1.9;
-  flex: none;
-  overflow-wrap: anywhere;
-}
-.chat-message.user {
-  align-self: flex-end;
-  background: var(--blue-soft);
-}
-.chat-composer {
-  padding: 16px;
-  border-top: 1px solid var(--line);
-  background: var(--paper);
-}
-.chat-composer .field textarea {
-  min-height: 80px;
-  max-height: 160px;
-  resize: vertical;
-}
-.composer-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-}
-.composer-actions .note {
-  font-size: 12px;
-}
-.context-panel {
-  padding: 24px;
-}
-.context-panel h2 {
-  margin-bottom: 4px;
-}
-.context-panel blockquote {
-  margin: 24px 0;
-  font:
-    18px/1.9 "Yu Mincho",
-    serif;
-}
 .modal-backdrop {
   position: fixed;
   z-index: 50;
@@ -2068,17 +1998,6 @@ input[type="radio"] {
   }
   .settings-groups {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .agent-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 280px;
-    align-items: start;
-  }
-  .chat-panel {
-    height: max(460px, calc(100dvh - 240px));
-  }
-  .chat-messages {
-    padding: 28px;
   }
 }
 @media (min-width: 1500px) {

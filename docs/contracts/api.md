@@ -76,7 +76,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/POST diagnoses；GET diagnoses/{id} | 报告列表/详情/生成，数据范围与统计窗口 | diagnosis.read/generate+来源read |
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
 | POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新模型调用另验Key/上限；显式再解析使用expected_lookup_revision取得新查阅代次 |
-| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；mode=query/contextual、解释语言/可选目标语、可空材料引用；查询轮次提交文字与有序image_refs，由服务端AI判断语言任务，至少一项有效；run引用与流 | agent.read/use/delete，每工具独立授权；含图轮次检查本人视觉能力及全部附件 |
+| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 查询/功能运行记录与新轮次/删除，不提供聊天产品接口语义；mode=query/contextual、解释语言/可选目标语、可空材料引用；查询轮次提交文字与有序image_refs，由服务端AI判断语言任务，至少一项有效；run引用与流 | agent.read/use/delete，每工具独立授权；含图轮次检查本人视觉能力及全部附件 |
 | POST agent/threads/{id}/image-upload-intents；POST agent/threads/{id}/image-upload-intents/{intent_id}/complete | 仅query_image用途；当前会话的临时上传、真实解码/规范方向/去元数据/重编码后发布不可变图片 | agent.use、本人query会话；复用受控上传发布，不接受任意FileObject或URL |
 | GET agent/threads/{id}/images/{image_id}/content；DELETE agent/threads/{id}/images/{image_id} | 获取私有图片；删除未绑定的草稿附件，已绑定消息的附件返回冲突 | 读取需agent.read；草稿移除需agent.use及本人会话；逐次鉴权，private/no-store，正式会话删除与GC另行处理 |
 | POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；试卷隐藏听力稿不能作为任意客户端文本提交，须走试卷专用生成入口；ExamListeningAudioBinding不从此通用manifest端点交付，有限场次只走PlayAttempt；global_word生产者Job/Key/模型用量不返回给其他等候者，缺失不自动换用户Key |

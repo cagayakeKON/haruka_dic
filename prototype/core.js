@@ -47,7 +47,7 @@ window.HarukaCore = (() => {
       textbookUnit: 'unit1', textbookAnswer: -1, textbookSubmitted: false,
       examReady: false, examRunning: false, examFinished: false, examQuestion: 0, examAnswers: {}, examMarked: [], examDraft: '尚未保存',
       examScriptMatched: false, examAudioReady: false, playing: false,
-      messages: data.conversations.map(x => ({ ...x })), activeLanguage: '日语', targetLanguages: ['日语', '英语'],
+      activeLanguage: '日语', targetLanguages: ['日语', '英语'],
       profile: { displayName: '小遥', birthYear: '', gender: '未填写', timezone: 'Asia/Tokyo' },
       nativeLanguages: ['简体中文'], explanationLanguage: '简体中文',
       learningGoals: ['阅读', '考试'], level: '中级', useDemographics: false,

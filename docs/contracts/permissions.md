@@ -38,7 +38,7 @@
 | client.diagnosis.read/generate | 查看/生成薄弱点报告 | generate还需practice.read等实际数据权限、Key/上限；数据不足要说明 |
 | client.ai.explain | 词句解释、只读resolve、本人完整缓存结果与书内已查索引 | 实际来源read，批量索引逐项按业务状态裁剪；仅新外部调用要求Key/上限，缓存命中不发起供应商调用；不能作为任意工具操作许可 |
 | client.ai.feedback | 对本人解释结果提交反馈 | 该结果当前可读，不授权读取他人内容 |
-| client.agent.read/use/delete | 历史对话；创建空会话/新一轮；删除对话 | use需read；空会话不发起供应商调用，新run需Key/上限；工具再验具体业务权限；delete不删除已收藏的独立结果 |
+| client.agent.read/use/delete | 查询/功能运行记录；创建内部上下文/新一轮；删除查询记录或内部会话 | use需read；空会话不发起供应商调用，新run需Key/上限；工具再验具体业务权限；delete不删除已收藏的独立结果 |
 | client.speech.generate | 创建TTS合成请求 | 实际来源read，仅新调用要求本人Key/上限；试卷听力还需exam.read+exam.edit且只能使用已人工确认的脚本版本/题目绑定，成品保持private；标准收藏词音全局合并不授予读/取消他人Job或借Key权限，已有结果只读复用不发起供应商调用 |
 | client.speech.play | 读取音频清单、播放/缓存下载，含受控global_word | 实际来源可读且音频有效；试卷场次还需exam_session.read并匹配冻结资产/播放策略，领取新播放另需exam_session.save且由服务端账本计次，ExamListeningAudioBinding不能经通用speech媒体/离线缓存绕过PlayAttempt；开考时由start组合检查；标准词音需本人collection.read、词条/读音/profile匹配，无需生成权限或Key；非匿名全局媒体接口 |
 | client.exam.list/read | 试卷列表/版本题面 | read控制专用题面与状态，答案有独立DTO |
@@ -97,4 +97,4 @@ operator包含admin.login/dashboard.view/resource_metadata.read/job.read/cancel/
 
 PERM-01覆盖每个注册权限的allow/deny/未知/受众错误/范围错误；PERM-02覆盖全部组合依赖及复合请求受理（包括照片只识别/新增/合并权限分离）；PERM-03覆盖页面/按钮/API/Worker/Agent同一动作；PERM-04覆盖新增目录默认拒绝、旧客户端未知权限不放行；PERM-05覆盖模板种子升级不覆盖人工角色授权及只读角色无隐含模型调用路径；PERM-06覆盖无assign的账号/角色创建、初始授权、启停/删除deny角色与用户迁移均不能绕过授予边界。
 
-DESIGN6入口沿用既有权限：每日单词需要collection.read；按词本读取另需vocabulary_notebook.read。各类型收藏归本使用同一成员权限，语法/句子/习题卡片不以word权限语义伪造掌握。独立[查询](../modules/query.md)使用agent.read/use；图片上传意图、完成与未绑定附件移除使用agent.use，图片读取使用agent.read，均核对本人query会话、用途和版本；图片不能通过材料权限或管理身份旁路访问。卡片收藏需collection.create及卡片读取权限，选本另需vocabulary_notebook.read/update，不因能聊天而获得收藏写权。任务[WebSocket](job-progress.md)逐次核对client.job.read、本人任务及实际来源read，不能只在握手授权一次。
+DESIGN6入口沿用既有权限：每日单词需要collection.read；按词本读取另需vocabulary_notebook.read。各类型收藏归本使用同一成员权限，语法/句子/习题卡片不以word权限语义伪造掌握。独立[查询](../modules/query.md)使用agent.read/use；图片上传意图、完成与未绑定附件移除使用agent.use，图片读取使用agent.read，均核对本人query会话、用途和版本；图片不能通过材料权限或管理身份旁路访问。卡片收藏需collection.create及卡片读取权限，选本另需vocabulary_notebook.read/update，不因能调用AI而获得收藏写权。任务[WebSocket](job-progress.md)逐次核对client.job.read、本人任务及实际来源read，不能只在握手授权一次。

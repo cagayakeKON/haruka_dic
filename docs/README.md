@@ -43,7 +43,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 | [AI习题与错题库](modules/ai-exercises.md) | 显式选源生成、所有可靠错题留档/收藏、针对性题目 | [学习证据](architecture/vocabulary-learning.md)、[公共作答](modules/vocabulary-practice.md)、[数据与任务](architecture/data-jobs.md) |
 | [考试](modules/exams.md) | 试卷/文字听力稿校对、TTS准备、整卷答题、保存/交卷、成绩与重评 | [解析数据结构](contracts/material-structures.md)、[数据与任务](architecture/data-jobs.md)、[AI与朗读](modules/ai-speech.md)、[出处](contracts/content-locator.md) |
 | [查询](modules/query.md) | 单词/句段/语法/习题查询、语言图片翻译/解析/批改、学习卡片收藏与归本 | [AI卡片](modules/ai-speech.md)、[运行层](architecture/agent-runtime.md)、[单词本](modules/vocabulary-notebooks.md) |
-| [AI与朗读](modules/ai-speech.md) | 解释、对话、卡片、TTS与播放 | [Agent运行层](architecture/agent-runtime.md)、[模型用量](contracts/model-usage.md)、[API事件](contracts/api.md) |
+| [AI与朗读](modules/ai-speech.md) | 具体AI功能、卡片、共享Agent运行、TTS与播放 | [Agent运行层](architecture/agent-runtime.md)、[模型用量](contracts/model-usage.md)、[API事件](contracts/api.md) |
 | [管理后台](modules/admin.md) | 用户、角色、菜单、策略、任务与审计 | [RBAC](architecture/authorization.md)、[权限目录](contracts/permissions.md) |
 | [设置](modules/settings.md) | 个人资料/头像、语言档案、基础显示、个人Key、服务实例与缓存 | [认证隔离](architecture/authentication.md)、[配置](operations/configuration.md) |
 
@@ -74,6 +74,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [手机排版与文案重构](delivery/reviews/2026-09-24-mobile-refinement.md)：手机端 DESIGN4 的内容层级、触控操作、产品文案清理及局部验证。
 - [电脑端排版与交互重构](delivery/reviews/2026-09-24-desktop-refinement.md)：电脑端 DESIGN5 的移动优先布局、手机视觉对齐、键盘与历史导航、文案清理及局部验证。
 - [手机登录、注册与找回优化](delivery/reviews/2026-09-24-mobile-auth.md)：DESIGN7 紧凑表单、密码显隐、字段错误和受理页的局部验证。
+- [AI功能入口与共享Agent](delivery/reviews/2026-09-25-ai-without-chat.md)：DESIGN15 移除独立聊天，保留具体AI功能和后端复用。
 - [自动判断查询任务](delivery/reviews/2026-09-25-auto-query.md)：DESIGN14 移除类型选择，直接输入与纯图发送，AI推断及幂等契约。
 - [语言查询与学习卡片](delivery/reviews/2026-09-25-language-query-cards.md)：DESIGN13 语言任务边界、四类学习卡片、移除通用回答和紧凑词本列表。
 - [查询与习题任务流优化](delivery/reviews/2026-09-25-task-flow-refinement.md)：DESIGN12 输入优先、来源就地选择、具体范围与一次确认的体验评估及局部证据。

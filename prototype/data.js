@@ -55,9 +55,5 @@ window.HarukaData = Object.freeze({
     { id: 'n3', title: '「日语的日常表达」已完成解析', detail: '3 个单元可以学习。', time: '9 月 20 日', route: 'textbook', unread: false }
   ],
   practice: { prompt: '猫を起こさないように、ドアを（　）閉めた。', translation: '为了不把猫吵醒，轻轻关上门。', options: ['そっと', 'きっと', 'ずっと', 'もっと'], correct: 0, explanation: '「そっと」强调动作轻柔、避免打扰。' },
-  practiceEnglish: { prompt: 'A (　) of light appeared beyond the hill.', translation: '山的那边出现了一丝微光。', options: ['glimmer', 'thunder', 'silence', 'weight'], correct: 0, explanation: 'glimmer 是微弱的光，也可表示一丝希望。' },
-  conversations: [
-    { from: 'user', text: '这句话里的「そっと」有什么语气？' },
-    { from: 'agent', text: '它强调动作轻柔、不打扰。结合“夏风碰到脸颊”的场景，读起来很温和。可以回到原文，再看它与前一句的节奏。', source: '夏の手紙 · 第 03 章 · 第 1 段' }
-  ]
+  practiceEnglish: { prompt: 'A (　) of light appeared beyond the hill.', translation: '山的那边出现了一丝微光。', options: ['glimmer', 'thunder', 'silence', 'weight'], correct: 0, explanation: 'glimmer 是微弱的光，也可表示一丝希望。' }
 });

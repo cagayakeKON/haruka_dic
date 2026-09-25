@@ -151,7 +151,7 @@ platform实现按实际能力拆文件，例如files、audio、secure_storage；
 | AI习题/自动掌握/错题 | ai_exercises与collections只读状态组件 | AiExerciseService、MistakeService、VocabularyLearningService；选择/生成、错题事实/收藏、证据/掌握投影 | Job/Outbox、Pydantic AI、有效评分事务与确定性重算；无复习调度 |
 | AI习题/公共作答/诊断 | ai_exercises、practice | AiExercise/Mistake/Practice/Grading/LearnerService | 显式出题、全部错题账本/收藏、作答、主观评分、诊断 |
 | 试卷/考试 | exams | ExamPreparationService、ExamListeningService、ExamSession/GradeService | 独立试卷结构抽取；文字听力稿、AI候选/人工校对、私有TTS绑定；截止扫描、逐题批改 |
-| 对话/解释 | agent | Agent/ExplanationService | 按即时/持久路径处理 |
+| 语言查询/解释及AI共享运行 | agent | Agent/ExplanationService | 按即时/持久路径处理 |
 | 朗读 | speech、core/platform | SpeechService、AudioRepository | 合成、封装、音频存储 |
 | 个人资料/学习偏好/个人 Key | settings | ProfileService、AvatarService、SettingsService、CredentialService | 字段/revision校验、头像安全发布/GC、受控连接测试、配置失效 |
 | 日志 | core/telemetry | TelemetryIngestService | Outbox 审计日志投递 |

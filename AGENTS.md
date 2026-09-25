@@ -31,6 +31,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 
 - Flutter：Windows、Web、Android；Python 前后端分离。
 - 导入材料只适配小说、课本、试卷；material_type唯一，三类分别处理、建模和使用专属页面/controller，仅复用基础能力。文件格式单独定范围，不保留“其他/混合/文章/笔记”类型或跨类型皮肤切换；选错类型需显式创建新材料重新处理，保留旧记录。
+- 材料上传首版暂限日语/英语，三类及追加文字听力稿均由前后端/Worker复核；中文UI、释义和教材辅助说明不扩展材料白名单。日语NLP固定SudachiPy SplitMode.B（中粒度），英语固定spaCy；不提供粒度切换，具体字典/英语模型包及版本需工程验证，第三语言只保留明确降级的范围操作，见[语言准入](docs/contracts/material-types.md#11-首版材料语言)和[NLP适配](docs/architecture/text-analysis.md#11-已确认的日英nlp适配)。
 - OCR统一使用用户配置的视觉模型，经过Pydantic AI与统一任务/调用上限/日志入口；不建立或静默回退传统OCR。文件渲染/可用文本层直接提取仍是确定性处理，三类专用校验保持独立，详见[视觉OCR](docs/architecture/vision-recognition.md)。
 - EPUB真实文本直接解析，扫描/图像型PDF及图片使用本人视觉模型OCR；必须保留原书ruby的基础文字、注音及对应关系，不混入canonical_text，未可靠识别不以NLP猜测冒充原书读法，见[提取契约](docs/contracts/source-extraction.md)。所有已提交可学习文字（含AI释义/例句/译文/题目反馈）统一做[基础NLP](docs/architecture/text-analysis.md)，随内容预加载和持久保存；NLP失败不重调AI，长按使用已有标注，缺失仍可手动调整。源版本、分析版本、AI结果与TTS规格独立管理，考试可见性和格式开放阶段继续受原边界约束。
 - 独立查询界面支持文字/图片/图文混合输入、语言学习查询及单词/句子/语法/习题卡片收藏，查询由AI自动判断任务、输入区不显示类型选择；不支持自由问答或通用回答卡片，图片仅用于语言句段翻译、语法解析和习题批改；Web支持图片选择/粘贴，Android支持相册和直接拍照，附件为本人私有会话资产，含图查询使用本人视觉模型；沿用Agent权限/本人Key，不默认授权联网或任意工具。材料主入口直接阅读/学习/试卷准备，列表另设详情；解析进度使用有权WebSocket。

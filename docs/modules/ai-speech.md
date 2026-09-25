@@ -8,6 +8,8 @@ DESIGN21电脑小说的点句释义与正文查询复用非模态解析panel，�
 
 DESIGN23明确所有已提交学习文字使用[统一NLP存储与发布](../architecture/text-analysis.md)，覆盖AI释义/例句/译文/语法/题目反馈。AI成品先持久保存并登记确定性标注任务；已提交成品可收藏，气泡/ruby等待相应标注就绪，失败仍可手动范围操作且不重新调用AI。流式半成品继续只作预览；读音来源按[原书ruby](../contracts/source-extraction.md)与派生标注区分。
 
+DESIGN24正式NLP仅支持日语/英语（SudachiPy B / spaCy）。AI中文释义等辅助文字仍可朗读/查询/收藏，使用基础句段及字素范围操作，标注明确unsupported，不伪装自动分词；日英字段继续完整预处理，见[语言适配](../architecture/text-analysis.md#11-已确认的日英nlp适配)。
+
 ## 1. 范围、入口与权限
 
 DESIGN22统一[查询上下文](../contracts/query-context.md)、[系统缓存方案](../architecture/learning-cache.md#9-统一读写流程与配置矩阵)和[每模型TTS适配器](../architecture/tts-adapters.md)。手动查询预算在设置配置，朗读不直接继承。单词喇叭、查询词音、AI解释/例句以及全部有权学习文字都保存音频；标准收藏词音共享资格与私人音频仍严格区分，试卷限次音频不进入通用离线缓存。

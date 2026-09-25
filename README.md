@@ -1,6 +1,6 @@
 # Haruka（ハルカ）
 
-把用户自己的小说、课本和试卷，变成可阅读、可朗读、可练习和可模拟考试的语言学习资料库。当前只适配这三类，分别使用专用处理流程与页面。
+把用户自己的小说、课本和试卷，变成可阅读、可朗读、可练习和可模拟考试的语言学习资料库。当前只适配这三类，分别使用专用处理流程与页面。材料上传暂限日语和英语；日语NLP固定SudachiPy B中粒度，英语固定spaCy，详见[语言与分析设计](docs/architecture/text-analysis.md#11-已确认的日英nlp适配)。
 
 采用 Flutter（Windows、Web、Android）与 Python 前后端分离架构，学习 Agent 使用 Pydantic AI。支持多用户、管理后台与完整 RBAC；使用各用户自己的 API Key，朗读采用 Gemini/OpenRouter TTS，用户备份恢复仅为单词 CSV。
 

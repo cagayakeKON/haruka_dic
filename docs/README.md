@@ -9,7 +9,7 @@
 | 了解产品 | [产品总览](product/overview.md) | [待决事项](decisions/pending.md) |
 | 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md) | [手机/电脑独立HTML原型](../prototype/README.md)、[Flutter适配](engineering/flutter.md)、对应模块；正式Flutter视觉仍待落地 |
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
-| 实现全应用NLP/AI结果标注与ruby存储 | [统一文本分析](architecture/text-analysis.md)、[文件提取/ruby](contracts/source-extraction.md) | [物理字段](architecture/database-materials.md#27-全应用派生语言标注)、[缓存](architecture/learning-cache.md)、[DESIGN23记录](delivery/reviews/2026-09-26-text-analysis-ruby.md) |
+| 实现日英NLP（SudachiPy B / spaCy）、AI结果标注与ruby存储 | [统一文本分析](architecture/text-analysis.md)、[文件提取/ruby](contracts/source-extraction.md) | [物理字段](architecture/database-materials.md#27-全应用派生语言标注)、[缓存](architecture/learning-cache.md)、[DESIGN23记录](delivery/reviews/2026-09-26-text-analysis-ruby.md) |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |
 | 实现模型调用与Token统计 | [模型用量统计契约](contracts/model-usage.md) | [Agent运行层](architecture/agent-runtime.md)、[数据与任务](architecture/data-jobs.md)、[观测](operations/observability.md) |
 | 实现材料上传、解析数据或版本 | [三类解析数据结构](contracts/material-structures.md) | [三类材料](contracts/material-types.md)、[数据与任务](architecture/data-jobs.md)、对应功能模块 |

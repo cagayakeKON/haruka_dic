@@ -16,6 +16,8 @@ DESIGN22增加QCTX-01～05、TTSA-01～05与LC-12，覆盖可配置上下文、�
 
 DESIGN23新增SRC-01～04、NLP-01～07与LC-13：覆盖[直接提取/视觉OCR及ruby](../contracts/source-extraction.md)、[全应用标注发布/存储/缓存](../architecture/text-analysis.md)，并与QCTX/LC/NPREP现有验收联动。只有[文档审查证据](reviews/2026-09-26-text-analysis-ruby.md)，未运行原型或正式应用测试，验收项保持待实现。
 
+DESIGN24固定[日英上传](../contracts/material-types.md#11-首版材料语言)及[SudachiPy B / spaCy](../architecture/text-analysis.md#11-已确认的日英nlp适配)，新增TYPE-06、NLP-08并收窄NLP-02的第三语言边界；阶段2按样本/版本/缓存验证，正式验收未执行，见[文档记录](reviews/2026-09-26-ja-en-nlp.md)。
+
 ## 1. 按功能开始开发
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |

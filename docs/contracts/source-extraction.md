@@ -2,6 +2,8 @@
 
 状态：2026-09-26，DESIGN23设计，尚未实现。用户确认PDF/图片文字走视觉大语言模型识别并保留ruby，EPUB直接解析。本文明确按实际内容分派和注音保存；格式开放阶段仍由[三类材料](material-types.md)及OPEN-01管理，不把处理方案当成所有格式已经可导入。后续标注见[统一文本分析](../architecture/text-analysis.md)，供应商调用/授权唯一沿用[视觉OCR](../architecture/vision-recognition.md)。
 
+DESIGN24材料上传暂限日语/英语。直接提取和视觉OCR都须在正文发布前通过[语言准入](material-types.md#11-首版材料语言)，不能因可识别第三语言就标为支持；有效日英材料中的中文辅助说明和原书ruby继续保留。
+
 ## 1. 格式分派
 
 | 输入 | 提取路径 | 必须保留 |

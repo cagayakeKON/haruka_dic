@@ -12,6 +12,8 @@ DESIGN18多词查询按[多范围协议](content-locator.md#12-分词气泡与�
 
 DESIGN23正文/结果详情DTO按获准可见字段返回`text_analysis`投影：source_ref/version、analysis_version_id、schema/pipeline、当前范围的coverage/state、units（稳定字段/项、快照摘要、token/ruby）及sentences有序spans；与返回文字版本完全匹配，按unit游标有界分页。标注pending/failed不让已保存AI结果丢失，长按不调用模型。复用各领域读取/准备/任务恢复入口，不开放任意source_kind/JSONPath通用查询；考试服务先裁剪可见性，缓存键只处理最终有权投影。契约见[统一NLP](../architecture/text-analysis.md)和[源提取](source-extraction.md)。
 
+DESIGN24材料能力目录和导入/专用文字听力稿接口仅接受已发布ja/en范围，显式其他语言受理前拒绝，内容语言在提取/OCR后、正文发布前复核；不以客户端标签或语言设置代替校验。未知/不符沿现有质量校对及统一错误投影返回；发布前语言确认复用jobs读取/重试的注册分支，无需已发布正文或听力AI候选，载荷/权限/CAS及恢复唯一见[语言确认](material-types.md#12-发布前语言确认与恢复)。
+
 ## 1. HTTP与数据格式
 
 REST前缀/api/v1；管理业务在/api/v1/admin。请求/响应JSON使用snake_case，Dart DTO做显式映射。UUID使用字符串，日期UTC ISO 8601，分数等固定精度数字用十进制字符串；未知枚举客户端显示安全“不支持”状态，不能自动映射成功。
@@ -107,7 +109,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST exam-sessions/{id}/media-reports | 冻结题面asset引用、edit_epoch与幂等键；服务端受控复核后返回未确认/确认事实及revision，不接受客户端自判故障或任意URL | session.read+save、活动状态/截止/edit_epoch；只读题面不授予报告写入，服务端推导受影响叶子；确认持久化及锁卷/评分门槛见[考试故障处理](../modules/exams.md#必要媒体故障的场次处理) |
 | POST exam-sessions/{id}/grading-runs；GET {id}/results | 初次批改或新generation重评；部分/有效成绩 | exam_grade.request/regrade/read |
 | WebSocket jobs/events | [版本化进度、订阅、代次/序号与恢复](job-progress.md)；只订阅，不创建或重试任务 | client会话、job.read、本人Job与来源read；Web严格Origin，原生Bearer；每次交付与心跳重验，撤权关闭 |
-| GET jobs/{id}；POST {id}/cancel/retry | 当前阶段、可操作状态、结果引用 | read的结果另验来源read；cancel只需本人范围/可取消状态和job.cancel；仅retry重验原业务权限/模型调用意图 |
+| GET jobs/{id}；POST {id}/cancel/retry | 当前阶段、可操作状态、结果引用；语言校对GET及retry.language_confirmation分支见[语言确认](material-types.md#12-发布前语言确认与恢复) | read的结果另验来源read；语言证据额外检查导入/重解析/试卷校对权限；cancel只需本人范围/可取消状态和job.cancel；retry重验原业务权限/模型调用意图与语言确认输入版本，不能泛化为任意阶段修改 |
 | GET runs/{id}/events | Agent/解释的SSE文字、卡片及关联run状态；材料/通用任务进度使用jobs/events WebSocket | run类型所需read，不能只因有run_id放行 |
 | GET runs/{id}；POST runs/{id}/cancel | 持久运行快照/完整结果；取消意图 | 读需对应领域权限；取消需本人job.cancel，失去agent.use不妨碍仍获授权的停止操作 |
 | POST frontend-logs、admin/frontend-logs、frontend-logs/anonymous | 受众内批量/受限匿名，逐项接收结果 | 观测规范；不接收任意查询 |

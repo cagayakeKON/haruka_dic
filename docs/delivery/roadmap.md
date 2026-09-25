@@ -24,6 +24,8 @@
 
 DESIGN23在阶段2落实[提取/ruby](../contracts/source-extraction.md)与[统一NLP](../architecture/text-analysis.md)源适配、3表存储、全书覆盖及正文伴随标注；阶段3纳入AI解释/查询/卡片并验证与持久缓存复用，阶段4纳入题面/评分/诊断及交卷可见性。SRC-01～04、NLP-01～07按实际能力分阶段执行；PDF/图片按已确定开放格式执行，未确认组合不标可用。当前仅文档完成。
 
+DESIGN24阶段2仅交付日语/英语材料上传和NLP：日语SudachiPy B中粒度、英语spaCy；落实TYPE-06语言准入和NLP-08引擎/版本/缓存约束，锁定字典/英语模型包及依赖版本。第三语言材料与正式NLP不进入当前范围，中文UI/辅助释义按既有能力保留；仅[文档决策](reviews/2026-09-26-ja-en-nlp.md)，不勾选工程验收。
+
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。

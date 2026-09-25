@@ -345,3 +345,7 @@ architecture_review完成第1轮独立只读审查，发现MUR-01（P2）：用�
 ## DESIGN23 全应用NLP与原书ruby
 
 2026-09-26，基线1dd0600，用户确认将基础NLP/AI结果存储与缓存、PDF/图片视觉OCR及EPUB直接解析保留ruby写入文档。三张NLP设计表调整为通用分析版本/单元/句子，物理目标仍142；只修改文档，实际检查和独立review见[本轮记录](2026-09-26-text-analysis-ruby.md)。
+
+## DESIGN24 日英材料与NLP选型
+
+2026-09-26，基线c73c4d5，用户确认仅支持日语/英语材料上传，日语SudachiPy B中粒度、英语spaCy。同步准入、辅助文字降级、pipeline与缓存版本及阶段验收；只修改文档，检查和独立review见[本轮记录](2026-09-26-ja-en-nlp.md)。

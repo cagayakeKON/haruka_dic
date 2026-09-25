@@ -23,10 +23,7 @@ const fs = require("node:fs");
         await page.locator("[data-x=practice]").click();
         await expect(page).toHaveURL(/#exerciseBuilder/);
         await page.locator("[data-action=builderNext]").click();
-        await page.locator("[data-action=practicePreview]").click();
-        await expect(page.locator("main")).toContainText(
-          /2 (项示例候选|项候选来源)/,
-        );
+        await expect(page.locator("main")).toContainText(/2 项内容/);
         await page.evaluate(() => {
           location.hash = "query";
         });

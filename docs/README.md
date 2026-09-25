@@ -74,6 +74,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [手机排版与文案重构](delivery/reviews/2026-09-24-mobile-refinement.md)：手机端 DESIGN4 的内容层级、触控操作、产品文案清理及局部验证。
 - [电脑端排版与交互重构](delivery/reviews/2026-09-24-desktop-refinement.md)：电脑端 DESIGN5 的移动优先布局、手机视觉对齐、键盘与历史导航、文案清理及局部验证。
 - [手机登录、注册与找回优化](delivery/reviews/2026-09-24-mobile-auth.md)：DESIGN7 紧凑表单、密码显隐、字段错误和受理页的局部验证。
+- [查询与习题任务流优化](delivery/reviews/2026-09-25-task-flow-refinement.md)：DESIGN12 输入优先、来源就地选择、具体范围与一次确认的体验评估及局部证据。
 - [原型体验优化](delivery/reviews/2026-09-25-prototype-experience.md)：DESIGN11 默认入口返回、收藏整行操作、搜索/筛选恢复及手机焦点的局部验证。
 - [查询图片与拍照入口](delivery/reviews/2026-09-24-query-images.md)：DESIGN10 两端图片预览/发送、Web粘贴与手机拍照入口，正式能力仍待验收。
 - [手机页头与材料操作菜单](delivery/reviews/2026-09-24-tab-header-material-menu.md)：DESIGN9 当前tab标题、按需展开搜索、两端详情/删除菜单与局部验证。

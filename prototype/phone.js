@@ -8,6 +8,7 @@
     visibleMaterials,
   } = window.HarukaCore;
   const s = initialState();
+  const exerciseFlow = window.HarukaExerciseBuilder(s);
   const root = document.getElementById('phone-app');
   const primary = ['library', 'notebooks', 'query', 'exercise', 'settings'];
   const tabTitles = {
@@ -200,13 +201,31 @@
       render();
     }
   };
+  const returnToSources = () => {
+    if (history.state?.harukaBuilderFromSources && navigationIndex > 0) {
+      history.back();
+      return;
+    }
+    builderStep = 0;
+    history.replaceState(
+      {
+        ...history.state,
+        harukaBuilderStep: 0,
+        harukaBuilderFromSources: false,
+      },
+      '',
+      '#exerciseBuilder?step=1',
+    );
+    render();
+    window.scrollTo({ top: 0 });
+    root.querySelector('.exercise-builder h1')?.focus({ preventScroll: true });
+  };
   const back = () => {
     if (s.modal) return closeModal();
     if (s.route === 'examRun' && s.examRunning) return openModal('examLeave');
-    if (
-      (s.route === 'exerciseBuilder' && builderStep === 1) ||
-      (s.route === 'import' && s.importStep > 0)
-    ) {
+    if (s.route === 'exerciseBuilder' && builderStep === 1)
+      return returnToSources();
+    if (s.route === 'import' && s.importStep > 0) {
       history.back();
       return;
     }
@@ -399,91 +418,7 @@
     return `<h1 class="page-title">单词导入与导出</h1><p class="page-subtitle">导入前可预览词条与重复项。</p><div class="stack" style="margin-top:22px"><div class="surface stack"><h2 style="font-size:18px">导出词条</h2><p class="small muted">示例范围：全部词条 · 词本归属 · 释义与个人笔记。作答、错题和 AI 历史不在 CSV 中。</p><button class="secondary full" type="button" data-action="csvExport">${I('download')} 生成示例 CSV</button></div><div class="surface stack"><h2 style="font-size:18px">导入预览</h2><label class="field">选择 UTF-8 CSV<input type="file" data-file="csv" accept=".csv,text/csv"><small>${s.csvFile ? `已选择：${e(s.csvFile)}` : '仅演示文件选择，不读取文件内容。'}</small></label>${s.csvStep ? `<div class="soft-panel"><strong>示例预览 · 与所选文件内容无关</strong><p class="small">2 个词条 · 1 个重复项；导入不会恢复可信掌握历史。</p><div class="divider"></div><label class="choice-row"><input type="radio" name="duplicate" checked><span>重复项跳过</span></label><label class="choice-row"><input type="radio" name="duplicate"><span>只补充空字段</span></label></div><button class="primary full" type="button" data-action="csvConfirm">确认示例导入</button>` : `<button class="secondary full" type="button" data-action="csvPreview" ${s.csvFile ? '' : 'disabled'}>查看示例预览</button>`}</div></div>`;
   }
   function practiceCandidateCount() {
-    let count = 0;
-    if (s.practiceSources.includes('notebook')) {
-      const ids = s.notebooks
-        .filter(
-          (b) =>
-            b.language === s.activeLanguage &&
-            (s.practiceAllWords || s.practiceBookIds.includes(b.id)),
-        )
-        .map((b) => b.id);
-      count += s.words.filter(
-        (w) =>
-          w.kind === 'word' &&
-          w.language === s.activeLanguage &&
-          (s.practiceAllWords ||
-            ids.includes(w.book) ||
-            w.books?.some((id) => ids.includes(id))),
-      ).length;
-    }
-    if (s.activeLanguage === '日语') {
-      if (s.practiceSources.includes('collection')) count += s.collected.length;
-      if (
-        s.practiceSources.includes('textbook') &&
-        s.materials.some((material) => material.id === 'daily')
-      )
-        count += (
-          data.textbook.units.find((x) => x.id === s.practiceTextbookUnit) ||
-          data.textbook.units[0]
-        ).items.length;
-      if (s.practiceSources.includes('mistake'))
-        count += s.mistakes.filter(
-          (m) =>
-            s.practiceMistakeScope === 'all' ||
-            (s.practiceMistakeScope === 'current' &&
-              m.state === '当前待纠正') ||
-            (s.practiceMistakeScope === 'favorite' && m.favorite),
-        ).length;
-      if (s.practiceSources.includes('report')) count += 1;
-    }
-    return count;
-  }
-  function practiceSelectionSummary() {
-    const parts = [];
-    if (s.practiceSources.includes('notebook'))
-      parts.push(
-        s.practiceAllWords
-          ? `全部本人${s.activeLanguage}单词`
-          : `词本：${
-              s.notebooks
-                .filter((b) => s.practiceBookIds.includes(b.id))
-                .map((b) => b.title)
-                .join('、') || '未选词本'
-            }`,
-      );
-    if (s.practiceSources.includes('collection'))
-      parts.push(`手选收藏 ${s.collected.length} 项`);
-    if (
-      s.practiceSources.includes('textbook') &&
-      s.materials.some((material) => material.id === 'daily')
-    )
-      parts.push(
-        `教材：${(data.textbook.units.find((x) => x.id === s.practiceTextbookUnit) || data.textbook.units[0]).title}`,
-      );
-    if (s.practiceSources.includes('mistake'))
-      parts.push(
-        `错题：${{ all: '全部历史', current: '当前待纠正', favorite: '已收藏' }[s.practiceMistakeScope]}`,
-      );
-    if (s.practiceSources.includes('report')) parts.push('诊断：方向助词');
-    return parts.join(' · ');
-  }
-  function exerciseDetails() {
-    return `<div class="stack" style="margin-top:14px">${
-      s.practiceSources.includes('notebook')
-        ? `<div class="surface stack"><h2 style="font-size:16px">单词范围</h2><label class="choice-row"><input type="radio" name="wordScope" data-practice-all="true" ${s.practiceAllWords ? 'checked' : ''}><span>全部本人单词</span></label><label class="choice-row"><input type="radio" name="wordScope" data-practice-all="false" ${s.practiceAllWords ? '' : 'checked'}><span>选择词本</span></label>${
-            s.practiceAllWords
-              ? ''
-              : s.notebooks
-                  .filter((book) => book.language === s.activeLanguage)
-                  .map(
-                    (book) =>
-                      `<label class="choice-row"><input type="checkbox" data-practice-book="${book.id}" ${s.practiceBookIds.includes(book.id) ? 'checked' : ''}><span>${e(book.title)} · ${e(book.language)}</span></label>`,
-                  )
-                  .join('')
-          }</div>`
-        : ''
-    }${s.practiceSources.includes('collection') ? `<div class="soft-panel"><strong>手选收藏</strong><p class="small">已选 ${s.collected.length} 个词句</p></div>` : ''}${s.practiceSources.includes('textbook') ? `<div class="surface"><label class="field">教材单元<select data-practice-unit>${data.textbook.units.map((unit) => `<option value="${unit.id}" ${s.practiceTextbookUnit === unit.id ? 'selected' : ''}>${e(unit.title)}</option>`).join('')}</select></label></div>` : ''}${s.practiceSources.includes('mistake') ? `<div class="surface"><label class="field">错题范围<select data-practice-mistakes><option value="current" ${s.practiceMistakeScope === 'current' ? 'selected' : ''}>当前待纠正</option><option value="favorite" ${s.practiceMistakeScope === 'favorite' ? 'selected' : ''}>已收藏历史</option><option value="all" ${s.practiceMistakeScope === 'all' ? 'selected' : ''}>全部历史</option></select></label></div>` : ''}${s.practiceSources.includes('report') ? `<div class="soft-panel"><strong>诊断薄弱点：方向助词</strong><p class="small">方向助词：に / へ</p></div>` : ''}</div>`;
+    return exerciseFlow.candidates().length;
   }
   function exercise() {
     return `<p class="practice-language">${e(s.activeLanguage)}</p>
@@ -493,24 +428,7 @@
       <button class="mobile-activity agent-entry" type="button" data-go="agent">${I('message')}<span>问学习 Agent</span>${I('arrow')}</button>`;
   }
   function exerciseBuilder() {
-    const selected = s.practiceSources;
-    if (builderStep === 0) {
-      return `<div class="mobile-step-label">步骤 1 / 2</div><div class="mobile-intro"><h1>选择来源</h1><p>可选择多个来源。</p></div><label class="field mobile-language-select">学习语言<select data-setting="activeLanguage"><option ${s.activeLanguage === '日语' ? 'selected' : ''}>日语</option><option ${s.activeLanguage === '英语' ? 'selected' : ''}>英语</option></select></label><div class="mobile-plain-list mobile-source-list">${[
-        ['notebook', '我的词本', '选择一个或多个词本', 'layers'],
-        ['collection', '手选收藏', '已保存的词句', 'bookmark'],
-        ['textbook', '教材内容', '课文和原生题', 'book'],
-        ['mistake', '当前错题', '尚待纠正的题目', 'warning'],
-        ['report', '诊断薄弱点', '需要加强的内容', 'spark'],
-      ]
-        .map(
-          ([key, label, detail, icon]) =>
-            `<label class="choice-row"><input type="checkbox" data-source="${key}" ${selected.includes(key) ? 'checked' : ''}${key === 'textbook' && !s.materials.some((material) => material.id === 'daily') ? 'disabled' : ''}>${I(icon)}<span><strong>${label}</strong><small style="display:block;color:var(--muted)">${key === 'textbook' && !s.materials.some((material) => material.id === 'daily') ? '暂无可用教材' : detail}</small></span></label>`,
-        )
-        .join(
-          '',
-        )}</div>${exerciseDetails()}<div class="mobile-action-dock"><button type="button" class="primary full" data-action="builderNext" ${selected.length && practiceCandidateCount() ? '' : 'disabled'}>下一步 · 设置题目 ${I('arrow')}</button></div>`;
-    }
-    return `<div class="mobile-step-label">步骤 2 / 2</div><div class="mobile-intro"><h1>设置题目</h1><p>设置后可预览出题范围。</p></div><div class="mobile-source-summary"><strong>已选来源</strong><p>${e(practiceSelectionSummary())}</p><button class="text-btn" type="button" data-action="builderBack">修改来源 ${I('arrow')}</button></div><div class="surface form-grid"><label class="field">题型<select data-practice-type>${['语境填空', '词义选择', '翻译判断'].map((x) => `<option ${s.practiceQuestionType === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label><label class="field">题量<select data-practice-count>${['5 题', '10 题'].map((x) => `<option ${s.practiceCount === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label></div><button type="button" class="primary full" style="margin-top:18px" data-action="practicePreview" ${practiceCandidateCount() ? '' : 'disabled'}>预览候选范围</button>${s.practicePreview ? `<div class="panel stack" style="margin-top:18px"><div class="eyebrow"><span class="signal"></span>候选预览</div><h2 style="font-size:19px">${practiceCandidateCount()} 项候选来源</h2><p class="small muted">${e(s.activeLanguage)} · ${e(s.practiceQuestionType)} · ${e(s.practiceCount)}。</p><button type="button" class="primary full" data-modal="generateConfirm">确认生成示例习题</button></div>` : ''}`;
+    return `<div class="exercise-builder"><p class="exercise-step"><strong>步骤 ${builderStep + 1} / 2</strong><span>${builderStep ? '设置与确认' : '选择来源'}</span></p><h1 tabindex="-1">${builderStep ? '设置与确认' : '想练习哪些内容？'}</h1>${!builderStep ? `${exerciseFlow.sources()}<div class="mobile-action-dock"><p class="exercise-selection-count" role="status">已选 ${practiceCandidateCount()} 项内容，相同收藏只计一次。</p><button type="button" class="primary full" data-action="builderNext" ${practiceCandidateCount() ? '' : 'disabled'}>下一步 · 设置与确认 ${I('arrow')}</button></div>` : `<div class="exercise-config">${exerciseFlow.settings()}${exerciseFlow.review()}</div>`}</div>`;
   }
   function practice() {
     const p =
@@ -682,10 +600,6 @@
         case 'examSubmit':
           title = '确认交卷？';
           content = `<div class="stack"><p>已答 ${Object.keys(s.examAnswers).length} / ${data.exam.questions.length} 个示例题。交卷后答案锁定，再查看复盘。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">继续作答</button><button class="danger-btn" type="button" data-action="examSubmitConfirm">确认交卷</button></div></div>`;
-          break;
-        case 'generateConfirm':
-          title = '确认生成示例习题';
-          content = `<div class="stack"><p>所选来源已经预览。正式生成需本人有效 Key、授权和调用上限确认。</p><div class="callout">${I('spark')}<span>此原型将打开内置示例题，不调用模型或记录用量。</span></div><button class="primary full" type="button" data-action="generateDemo">打开示例习题</button></div>`;
           break;
         case 'newNotebook':
           title = '新建词本';
@@ -993,7 +907,9 @@
       root.querySelector(pageFocus)?.focus({ preventScroll: true });
     }
     if (renderedRoute !== s.route || restoreHeadingFocus) {
-      const heading = root.querySelector('.mobile-auth h1, .root-head h1');
+      const heading = root.querySelector(
+        '.mobile-auth h1, .root-head h1, .exercise-builder h1',
+      );
       document.title = heading
         ? `${heading.textContent} · Haruka`
         : 'Haruka · 手机端原型';
@@ -1068,6 +984,10 @@
     s.modal = history.state?.harukaModal || '';
     render();
     window.scrollTo({ top: sameView ? position : 0 });
+    if (route === 'exerciseBuilder' && !s.modal)
+      root
+        .querySelector('.exercise-builder h1')
+        ?.focus({ preventScroll: true });
   }
   window.addEventListener('hashchange', setHashRoute);
   window.addEventListener('popstate', setHashRoute);
@@ -1263,21 +1183,25 @@
       return;
     }
     if (action === 'back') return back();
-    if (action === 'builderBack') {
-      history.back();
-      return;
-    }
+    if (action === 'builderBack') return returnToSources();
     if (action === 'builderNext') {
       if (!practiceCandidateCount())
         return toast('当前范围没有示例候选，请调整来源。');
       builderStep = 1;
       history.pushState(
-        { harukaMobileIndex: ++navigationIndex, harukaBuilderStep: 1 },
+        {
+          harukaMobileIndex: ++navigationIndex,
+          harukaBuilderStep: 1,
+          harukaBuilderFromSources: true,
+        },
         '',
         '#exerciseBuilder?step=2',
       );
       render();
       window.scrollTo({ top: 0 });
+      root
+        .querySelector('.exercise-builder h1')
+        ?.focus({ preventScroll: true });
       return;
     }
     if (['materialQuality', 'textbookItem'].includes(action)) {
@@ -1457,24 +1381,22 @@
       return;
     }
     if (action === 'useNotebook') {
+      s.practiceAllowRepeat = false;
       s.practiceSources = [...new Set([...s.practiceSources, 'notebook'])];
       s.practiceAllWords = false;
       s.practiceBookIds = [s.selectedBook];
       s.activeLanguage =
         s.notebooks.find((b) => b.id === s.selectedBook)?.language ||
         s.activeLanguage;
-      s.practicePreview = false;
+
       go('exerciseBuilder');
       return;
     }
-    if (action === 'practicePreview') {
-      if (!practiceCandidateCount())
-        return toast('当前范围没有示例候选，请调整来源。');
-      s.practicePreview = true;
-      render();
-      return;
-    }
+
     if (action === 'generateDemo') {
+      if (!exerciseFlow.canGenerate()) return;
+      s.practiceAnswer = -1;
+      s.practiceSubmitted = false;
       s.practiceGenerated = true;
       go('practice');
       return;
@@ -1607,48 +1529,70 @@
       return;
     }
     if (t.dataset.source) {
+      s.practiceAllowRepeat = false;
       s.practiceSources = t.checked
         ? [...s.practiceSources, t.dataset.source]
         : s.practiceSources.filter((x) => x !== t.dataset.source);
-      s.practicePreview = false;
+
       render();
       return;
     }
     if (t.dataset.practiceAll !== undefined) {
+      s.practiceAllowRepeat = false;
       s.practiceAllWords = t.dataset.practiceAll === 'true';
-      s.practicePreview = false;
+
       render();
       return;
     }
     if (t.dataset.practiceBook) {
+      s.practiceAllowRepeat = false;
       s.practiceBookIds = t.checked
         ? [...s.practiceBookIds, t.dataset.practiceBook]
         : s.practiceBookIds.filter((id) => id !== t.dataset.practiceBook);
-      s.practicePreview = false;
+
+      render();
+      return;
+    }
+    if (t.dataset.practiceCollection) {
+      s.practiceAllowRepeat = false;
+      s.practiceCollectionIds = t.checked
+        ? [...s.practiceCollectionIds, t.dataset.practiceCollection]
+        : s.practiceCollectionIds.filter(
+            (id) => id !== t.dataset.practiceCollection,
+          );
+      render();
+      return;
+    }
+    if (t.dataset.practiceRepeat !== undefined) {
+      s.practiceAllowRepeat = t.checked;
       render();
       return;
     }
     if (t.dataset.practiceUnit !== undefined) {
+      s.practiceAllowRepeat = false;
       s.practiceTextbookUnit = t.value;
-      s.practicePreview = false;
+
       render();
       return;
     }
     if (t.dataset.practiceMistakes !== undefined) {
+      s.practiceAllowRepeat = false;
       s.practiceMistakeScope = t.value;
-      s.practicePreview = false;
+
       render();
       return;
     }
     if (t.dataset.practiceType !== undefined) {
+      s.practiceAllowRepeat = false;
       s.practiceQuestionType = t.value;
-      s.practicePreview = false;
+
       render();
       return;
     }
     if (t.dataset.practiceCount !== undefined) {
+      s.practiceAllowRepeat = false;
       s.practiceCount = t.value;
-      s.practicePreview = false;
+
       render();
       return;
     }
@@ -1688,8 +1632,8 @@
     if (t.dataset.setting) {
       s[t.dataset.setting] = t.value;
       if (s.route === 'exerciseBuilder') {
-        s.practicePreview = false;
         if (t.dataset.setting === 'activeLanguage') {
+          exerciseFlow.syncLanguage();
           s.practiceBookIds = s.practiceBookIds.filter((id) =>
             s.notebooks.some(
               (b) => b.id === id && b.language === s.activeLanguage,
@@ -1879,7 +1823,7 @@
   if (hash === 'import' && location.hash.includes('?'))
     history.replaceState({ harukaMobileIndex: navigationIndex }, '', '#import');
   history.replaceState(
-    { harukaMobileIndex: navigationIndex },
+    { ...history.state, harukaMobileIndex: navigationIndex },
     '',
     location.href,
   );

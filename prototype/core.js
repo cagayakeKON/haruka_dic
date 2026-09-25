@@ -43,7 +43,7 @@ window.HarukaCore = (() => {
       notifications: data.notifications.map(x => ({ ...x })), mistakes: data.mistakes.map(x => ({ ...x })),
       practiceSources: ['notebook'], practiceBookIds: ['dailywords'], practiceAllWords: false,
       practiceMistakeScope: 'current', practiceTextbookUnit: 'unit1', practiceQuestionType: '语境填空', practiceCount: '5 题',
-      practicePreview: false, practiceGenerated: false, practiceAnswer: -1, practiceSubmitted: false,
+      practiceGenerated: false, practiceAnswer: -1, practiceSubmitted: false,
       textbookUnit: 'unit1', textbookAnswer: -1, textbookSubmitted: false,
       examReady: false, examRunning: false, examFinished: false, examQuestion: 0, examAnswers: {}, examMarked: [], examDraft: '尚未保存',
       examScriptMatched: false, examAudioReady: false, playing: false,

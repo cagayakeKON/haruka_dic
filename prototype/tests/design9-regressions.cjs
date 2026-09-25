@@ -81,7 +81,6 @@ const fs = require('node:fs');
         );
       }
       await page.locator('[data-action=builderNext]').click();
-      await page.locator('[data-action=practicePreview]').click();
       await expect(page.locator('main')).toContainText(/4 项/);
       await page.evaluate(() => {
         location.hash = 'library';

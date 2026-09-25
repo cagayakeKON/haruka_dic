@@ -1,6 +1,6 @@
 # 数据库设计书：收藏、学习、AI 与持久结果
 
-状态：2026-09-25，DBDESIGN2 收敛稿；除 7.5 引用既有 B0 Outbox 基线外，**新增表与扩展列均待实现**。本次只给出 PostgreSQL 物理设计建议，不创建 ORM、迁移或真实业务数据。总则、已实现结构和 Redis 字典见[设计书主册](database-design.md)；材料、文件与考试场次见[材料分册](database-materials.md)。本分册承接现行产品/原型，不能把原型中的内存 `mastery`、`correct`、图片 URL 或示例 ID 直接作为数据库事实。
+状态：2026-09-25，DBDESIGN3 命名与关系稿；除 7.5 引用既有 B0 Outbox 基线外，**新增表与扩展列均待实现**。本次只给出 PostgreSQL 物理设计建议，不创建 ORM、迁移或真实业务数据。总则、已实现结构和 Redis 字典见[设计书主册](database-design.md)；材料、文件与考试场次见[材料分册](database-materials.md)，本册全部表的归属和基数见[关系清单](database-relations.md#23-收藏学习ai与任务62张)。本分册承接现行产品/原型，不能把原型中的内存 `mastery`、`correct`、图片 URL 或示例 ID 直接作为数据库事实。
 
 权威业务依据：[收藏与公共作答](../modules/vocabulary-practice.md)、[多单词本](../modules/vocabulary-notebooks.md)、[学习证据](vocabulary-learning.md)、[AI习题与错题](../modules/ai-exercises.md)、[查询](../modules/query.md)、[Agent运行](agent-runtime.md)、[AI与朗读](../modules/ai-speech.md)、[持久结果缓存](learning-cache.md)、[任务与事务](data-jobs.md)、[模型用量](../contracts/model-usage.md)、[CSV](../contracts/vocabulary-csv.md)。表名是本次设计选择，接口中的 ExerciseVersion/Attempt/GradeRun 等逻辑名称按下文映射，不能据此静默改接口。
 
@@ -43,14 +43,14 @@
 
 每日单词直接对 `kind='word'` 的实际 `created_at` 使用本人时区转换得到的 UTC 半开区间，分页与计数共用 `as_of`。不建每日调度表；归本/移动/重复收藏/CSV 补空均不改加入日期。mastery 不放在可写条目字段，来自 4.2 的只读投影。
 
-### 2.2 `tags`、`collection_tags`、`vocabulary_notebooks`、`notebook_items`
+### 2.2 `library_tags`、`collection_tag_links`、`vocabulary_notebooks`、`vocabulary_notebook_collection_links`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 唯一、索引、生命周期 |
 | --- | --- | --- |
-| tags / L+R | `name text NN`、`name_normalized text NN` | UK `(scope,name_normalized)`；服务控制长度；删除锁 tag 后显式解除成员，不删收藏 |
-| collection_tags / L | `collection_item_id uuid NN`、`tag_id uuid NN` | UK `(scope,collection_item_id,tag_id)`；IX `(scope,tag_id,collection_item_id)`；锁条目/tag验证双方同库 |
+| library_tags / L+R | `name text NN`、`name_normalized text NN` | UK `(scope,name_normalized)`；服务控制长度；删除锁 tag 后显式解除成员，不删收藏 |
+| collection_tag_links / L | `collection_item_id uuid NN`、`tag_id uuid NN` | UK `(scope,collection_item_id,tag_id)`；IX `(scope,tag_id,collection_item_id)`；锁条目/tag验证双方同库 |
 | vocabulary_notebooks / L+R | `name text NN`、`name_normalized text NN`、`target_language varchar(35) NN`、`description text NULL` | UK `(scope,target_language,name_normalized)`；IX `(scope,updated_at,id)`；删本显式删关系后删本，不碰收藏/证据 |
-| notebook_items / L+R | `notebook_id uuid NN`、`collection_item_id uuid NN` | UK `(scope,notebook_id,collection_item_id)`；IX `(scope,notebook_id,created_at,id)` 支撑入本时间，IX `(scope,collection_item_id,notebook_id)` 支撑删词检查 |
+| vocabulary_notebook_collection_links / L+R | `notebook_id uuid NN`、`collection_item_id uuid NN` | UK `(scope,notebook_id,collection_item_id)`；IX `(scope,notebook_id,created_at,id)` 支撑入本时间，IX `(scope,collection_item_id,notebook_id)` 支撑删词检查 |
 
 入本、移动、改词语言、改空本语言及删本均锁涉及的 notebook 和 collection 父行，采用统一顺序；涉及默认词本的选择/解除/删本，先锁user_extensions，再锁notebook→collection，与设置入口一致。修改本语言仅空本允许；移动是目标关系新增与指定来源关系移除的同一事务。系统“全部收藏/未分组”是查询视图，不创建伪 notebook。计数按条目 ID 去重，不存可由客户端改写的 count。
 
@@ -60,12 +60,12 @@
 
 锁源/目标条目验证同库、等价及无循环，成员迁移、tombstone与映射同事务。学习证据按原业务键去重重放，不能取更高掌握值直接覆盖。目标再合并时逐级解析保留链，不重写旧事实；公共时间不替代merged_at。
 
-### 2.4 `collection_selection_snapshots`、`collection_selection_members` — 全筛选批量操作
+### 2.4 `collection_selection_snapshots`、`collection_selection_item_links` — 全筛选批量操作
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 约束/访问与生命周期 |
 | --- | --- | --- |
 | collection_selection_snapshots / L+R | `action_code varchar(128) NN`、`filter_schema_version integer NN`、`filter_payload jsonb NN`、`as_of timestamptz NN`、`expires_at timestamptz NN`、`member_count bigint NN`、`selection_digest bytea NN` | IX `(scope,expires_at,id)`；count >=0，expires_at>as_of；快照不授权执行；过期且无在途批次可回收 |
-| collection_selection_members / L | `selection_id uuid NN`、`collection_item_id uuid NN`、`expected_revision bigint NN`、`ordinal integer NN` | UK `(scope,selection_id,collection_item_id)` 及 `(scope,selection_id,ordinal)`；锁快照/条目后写，执行重验权限/版本，不只处理当前页 |
+| collection_selection_item_links / L | `selection_id uuid NN`、`collection_item_id uuid NN`、`expected_revision bigint NN`、`ordinal integer NN` | UK `(scope,selection_id,collection_item_id)` 及 `(scope,selection_id,ordinal)`；锁快照/条目后写，执行重验权限/版本，不只处理当前页 |
 
 ### 2.5 `csv_import_batches`、`csv_import_rows`
 
@@ -79,12 +79,12 @@
 
 UK 行 `(scope,batch_id,ordinal)`；IX 批次 `(scope,state,created_at,id)`、行 `(scope,batch_id,state,ordinal)`。创建 awaiting_upload 批次、vocabulary_csv UploadIntent及容量预留同事务，无需创建Job占位；CHECK preview/confirmed/running/completed/partial 时对象、映射、摘要、总行数均非空。匹配 ID/revision 成对；direct_add 禁止读取/保存 matched 引用。确认与每批提交锁批次、目标条目和词本，按实际动作验证 create/read/update/本权限；行结果、游标、幂等记录同事务。已提交批次不可用过期重试再次插入；预览载荷按配置期限回收，结果摘要按业务留存配置保留。导出是获权条目快照/流，不另建“全库备份”聚合。
 
-### 2.6 `photo_word_imports`、`photo_word_candidates`
+### 2.6 `photo_word_imports`、`photo_word_import_candidates`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 约束/访问与生命周期 |
 | --- | --- | --- |
 | photo_word_imports / L+R | `file_object_id uuid NULL`、`job_id,ai_run_id uuid NULL`、`target_language varchar(35) NN`、`state varchar(24) NN`、`preview_generation bigint NN DEFAULT 1`、`expires_at timestamptz NN`、`confirmed_at timestamptz NULL` | P0 每批一个已验证照片；awaiting_upload/queued/recognizing/preview/confirmed/completed/failed/cancelled/unknown_outcome；IX `(scope,state,created_at,id)` |
-| photo_word_candidates / L+R | `photo_import_id uuid NN`、`generation bigint NN`、`ordinal integer NN`、`payload_schema_version integer NN`、`payload jsonb NN`、`quality varchar(24) NN`、`action varchar(24) NN`、`matched_item_id uuid NULL`、`expected_item_revision bigint NULL`、`result_item_id uuid NULL`、`error_code varchar(96) NULL` | UK `(scope,photo_import_id,generation,ordinal)`；quality valid/needs_confirmation/invalid；action new/skip/fill_empty/exclude；确认重验同 CSV 权限组合，不把预览当收藏 |
+| photo_word_import_candidates / L+R | `photo_import_id uuid NN`、`generation bigint NN`、`ordinal integer NN`、`payload_schema_version integer NN`、`payload jsonb NN`、`quality varchar(24) NN`、`action varchar(24) NN`、`matched_item_id uuid NULL`、`expected_item_revision bigint NULL`、`result_item_id uuid NULL`、`error_code varchar(96) NULL` | UK `(scope,photo_import_id,generation,ordinal)`；quality valid/needs_confirmation/invalid；action new/skip/fill_empty/exclude；确认重验同 CSV 权限组合，不把预览当收藏 |
 
 创建 awaiting_upload 批次、vocabulary_photo UploadIntent与容量预留同事务；CHECK queued/recognizing/preview/confirmed/completed 时 file_object_id非空，确认识别调用后才创建Job。两表由 photo import 父锁及所涉条目/词本锁保护；识别经本人视觉模型/Pydantic AI，使用公共 attempt/usage，不建传统 OCR 回退。完成幂等；仅草稿/无引用图片可按期限清理，已收藏词快照独立保存。
 
@@ -112,14 +112,14 @@ UK 行 `(scope,batch_id,ordinal)`；IX 批次 `(scope,state,created_at,id)`、�
 
 UK `(scope,exercise_root_id,question_version)`，IX `(scope,target_language,publication_state,created_at,id)`。公共教材绑定和 `exam_items.exercise_question_id` 引用此版本行；考试另外冻结分值/依据。题目发布锁来源/根题保护行并验证所有来源；已答题/冻结卷引用时保留版本。用户“删除 AI 错题”的具体 API/权限仍受 OPEN-10 阻断，本设计的 invalidated 支持既定内部作废/重放，不新增未确认人工改分流程。
 
-### 3.2 `question_grading_bases`、`question_source_refs`、`assessment_targets`
+### 3.2 `question_grading_bases`、`question_source_refs`、`question_assessment_targets`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 约束/职责 |
 | --- | --- | --- |
 | question_grading_bases / L+S | `exercise_question_id uuid NN`、`basis_version bigint NN`、`schema_version integer NN`、`mode varchar(16) NN`、`answer_payload jsonb NULL`、`rubric_payload jsonb NN`、`normalization_payload jsonb NN`、`basis_origin varchar(24) NN`、`basis_digest bytea NN` | UK `(scope,exercise_question_id,basis_version)`；mode rule/ai；origin source_answer/user_correction/ai_reference；S精确记录答案区/人工修订/AI生成依据出处与必要快照；隐藏读取接口与题面分离 |
 | 同表 | `quality_status varchar(16) NN`、`extraction_confidence numeric(5,4) NULL`、`confirmation_status varchar(24) NN`、`confirmed_by_user_id uuid NULL`、`confirmed_at timestamptz NULL`、`predecessor_basis_id uuid NULL`、`ai_run_id uuid NULL` | quality reliable/uncertain/invalid；confidence仅候选信息且0..1有限；confirmation candidate/confirmed/rejected/not_required，与来源类型独立；确认人/时间成对，确认与修订创建新不可变依据版本 |
 | question_source_refs / L+S | `exercise_question_id uuid NN`、`ordinal integer NN`、`role varchar(24) NN` | UK `(scope,exercise_question_id,ordinal)`；IX `(scope,source_kind,source_resource_id)` 支撑删除引用检查；role context/target/mistake/basis；模型引用逐一校验 |
-| assessment_targets / L | `exercise_question_id uuid NN`、`grading_basis_id uuid NN`、`scoring_item_key varchar(128) NN`、`collection_item_id uuid NN`、`learning_revision bigint NN`、`skill varchar(32) NN`、`allowed_assistance jsonb NN`、`schema_version integer NN` | UK `(scope,exercise_question_id,scoring_item_key,collection_item_id,learning_revision,skill)`；IX `(scope,collection_item_id,learning_revision)`；skill meaning_recognition/word_recall；只关联 kind=word |
+| question_assessment_targets / L | `exercise_question_id uuid NN`、`grading_basis_id uuid NN`、`scoring_item_key varchar(128) NN`、`collection_item_id uuid NN`、`learning_revision bigint NN`、`skill varchar(32) NN`、`allowed_assistance jsonb NN`、`schema_version integer NN` | UK `(scope,exercise_question_id,scoring_item_key,collection_item_id,learning_revision,skill)`；IX `(scope,collection_item_id,learning_revision)`；skill meaning_recognition/word_recall；只关联 kind=word |
 
 依据与目标发布后不可变。rule必须有非空答案且quality=reliable、确认满足当前业务要求；低置信度/未确认抽取不能仅凭模型数字变为规则权威。ai_reference明确显示AI参考/AI评估，不伪称原卷答案；人工确认记录本人操作者并经相应校对动作授权，不提供人工改成绩入口。评分叶子 `scoring_item_key` 由应用分配并在版本内稳定；总分不自动创建所有单词的 targets。题目、依据、源与词条在共同锁内校验作用域/版本，目标删除后历史保留且不能产生新词条。
 
@@ -180,14 +180,14 @@ UK 候选 `(scope,selection_id,ordinal)` 和 `(scope,selection_id,candidate_key)
 
 CHECK：practice 时 session_item 非空且 exam 两列为空；exam 时 exam 两列非空且 practice 为空。UK `(scope,practice_session_item_id) WHERE practice_session_item_id IS NOT NULL`、`(scope,exam_answer_id) WHERE exam_answer_id IS NOT NULL`，IX `(scope,accepted_at,id)`。考试 Attempt 只在交卷锁定后创建，后续评分由整场 `exam_sessions` 的 run/generation/effective 指针控制，不按单题提前回流。
 
-### 3.7 `learning_acceptance_counters`、`answer_exposures`
+### 3.7 `library_learning_acceptance_counters`、`answer_exposures`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 约束/职责 |
 | --- | --- | --- |
-| learning_acceptance_counters / L | `last_sequence bigint NN DEFAULT 0` | UK `(scope)`；只为提交/接受辅助动作分配单调序号，CHECK>=0，不是全库自增主键 |
+| library_learning_acceptance_counters / L | `last_sequence bigint NN DEFAULT 0` | UK `(scope)`；只为提交/接受辅助动作分配单调序号，CHECK>=0，不是全库自增主键 |
 | answer_exposures / L | `practice_session_item_id uuid NN`、`exercise_root_id,answer_lineage_id uuid NN`、`collection_item_id uuid NN`、`learning_revision bigint NN`、`exposure_kind varchar(16) NN`、`accepted_at timestamptz NN`、`accepted_sequence bigint NN` | kind hint/answer/feedback；UK `(scope,practice_session_item_id,collection_item_id,learning_revision,exposure_kind)`；IX `(scope,exercise_root_id,answer_lineage_id,collection_item_id,learning_revision,accepted_sequence)` |
 
-提交和曝光共同先锁学习接受计数器，再锁会话/题项/目标，分配接受序号；按序号判断“先看答案后提交”，时间同值也无歧义。曝光只在服务接受请求后生效，不用前端点击时间。仅对有 assessment_targets 的词写目标曝光，普通题辅助另在 Attempt 冻结。独立新根题不继承曝光，反馈后订正标 training_only；未发生实际测验的查看/播放不写掌握证据。
+提交和曝光共同先锁学习接受计数器，再锁会话/题项/目标，分配接受序号；按序号判断“先看答案后提交”，时间同值也无歧义。曝光只在服务接受请求后生效，不用前端点击时间。仅对有 question_assessment_targets 的词写目标曝光，普通题辅助另在 Attempt 冻结。独立新根题不继承曝光，反馈后订正标 training_only；未发生实际测验的查看/播放不写掌握证据。
 
 ### 3.8 `grading_runs`、`grading_results`
 
@@ -223,7 +223,7 @@ P0每个评分结果只有一次“我认为答对”反馈，没有独立复核
 
 projection 消费锁目标词/学习状态，复核当前 effective run、贡献版本和 learning_revision，重复事件 upsert 同键。旧证据事实仍可从不可变 Attempt/GradeResult 追溯；本表是可替换的当前证据投影。training_only 保留作答但不形成独立成功组；accepted_at+接受序号稳定，不能按消息抵达时间重放。
 
-### 4.2 `vocabulary_learning_states`
+### 4.2 `collection_word_learning_states`
 
 公共列 L + R。`collection_item_id uuid NN`、`learning_revision bigint NN`、`mastery_state varchar(24) NN DEFAULT 'new'`、`assessment_status varchar(24) NN DEFAULT 'ready'`、`policy_version varchar(64) NN`、`evidence_revision bigint NN DEFAULT 0`、`reason_schema_version integer NN`、`reason_payload jsonb NN`、`last_effective_attempt_at timestamptz NULL`、`effective_error_count bigint NN DEFAULT 0`、`rebuilt_at timestamptz NULL`。
 
@@ -244,24 +244,24 @@ occurrence UK `(scope,grading_result_id,knowledge_key)`，IX `(scope,target_lang
 
 只在 effective 发布事务插入 occurrence；重评替换贡献后重算 projection，保留旧 occurrence及其收藏组。invalidated 历史默认不作当前薄弱点，用户显式选择其收藏时也不能把旧错误答案当真值。删原题/材料保留最小复盘快照，回跳另验当前来源权限；公开读取不会返回他人答案或私人笔记。
 
-### 4.4 `learner_profiles`、`diagnosis_reports`、`diagnosis_evidence_refs`
+### 4.4 `learner_language_profiles`、`diagnosis_reports`、`diagnosis_report_evidence_refs`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 约束/职责 |
 | --- | --- | --- |
-| learner_profiles / L+R | `target_language varchar(35) NN`、`fact_revision bigint NN`、`data_as_of timestamptz NN`、`schema_version integer NN`、`statistics_payload jsonb NN` | UK `(scope,target_language)`；可重建有证据统计，未知/数据不足不填零能力 |
+| learner_language_profiles / L+R | `target_language varchar(35) NN`、`fact_revision bigint NN`、`data_as_of timestamptz NN`、`schema_version integer NN`、`statistics_payload jsonb NN` | UK `(scope,target_language)`；可重建有证据统计，未知/数据不足不填零能力 |
 | diagnosis_reports / L | `target_language,explanation_language varchar(35) NN`、`timezone varchar(64) NN`、`window_start_at,window_end_at,data_as_of timestamptz NN`、`fact_revision bigint NN`、`scope_material_id uuid NULL`、`snapshot_schema_version integer NN`、`statistics_snapshot jsonb NN`、`result_schema_version integer NN`、`result_payload jsonb NN`、`ai_run_id uuid NN` | IX `(scope,target_language,data_as_of,id)`；start<end；保存已提交统计/证据，题目数和待评/争议分开；报告正文不可变 |
-| diagnosis_evidence_refs / L+S | `diagnosis_report_id uuid NN`、`ordinal integer NN`、`fact_revision bigint NN`、`evidence_role varchar(32) NN` | UK `(scope,diagnosis_report_id,ordinal)`；IX `(scope,source_kind,source_resource_id)`；报告每个结论/动作引用有权事实 |
+| diagnosis_report_evidence_refs / L+S | `diagnosis_report_id uuid NN`、`ordinal integer NN`、`fact_revision bigint NN`、`evidence_role varchar(32) NN` | UK `(scope,diagnosis_report_id,ordinal)`；IX `(scope,source_kind,source_resource_id)`；报告每个结论/动作引用有权事实 |
 
 生成诊断显式授权且使用本人 Key；模型只解释程序统计。事实版本变化时旧报告显示“数据已更新”，不自动重调模型。建议存受控动作及类型化引用（在 result schema 内），点击再授权；不存任意可执行 URL。照片/查询批改卡不进入这些正式贡献。
 
 ## 5. 查询、内部会话与结构化结果
 
-### 5.1 `agent_threads`、`agent_messages`、`agent_message_attachments`
+### 5.1 `agent_threads`、`agent_thread_messages`、`agent_message_attachments`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 含义 |
 | --- | --- | --- |
 | agent_threads / L+R | `mode varchar(16) NN`、`state varchar(16) NN DEFAULT 'active'`、`active_run_id uuid NULL`、`turn_generation bigint NN DEFAULT 0`、`delete_generation bigint NN DEFAULT 0`、`deleted_at timestamptz NULL` | mode query/contextual；state active/deleted；内部功能上下文，不对应聊天页或会话管理产品 |
-| agent_messages / L | `agent_thread_id uuid NN`、`turn_generation bigint NN`、`ordinal integer NN`、`role varchar(16) NN`、`state varchar(24) NN`、`text_content text NULL`、`attachment_count integer NN DEFAULT 0` | role user/assistant/tool；submitted/committed/interrupted/rejected；文本与附件至少一项有内容（工具型按其 schema） |
+| agent_thread_messages / L | `agent_thread_id uuid NN`、`turn_generation bigint NN`、`ordinal integer NN`、`role varchar(16) NN`、`state varchar(24) NN`、`text_content text NULL`、`attachment_count integer NN DEFAULT 0` | role user/assistant/tool；submitted/committed/interrupted/rejected；文本与附件至少一项有内容（工具型按其 schema） |
 | 同表 | `explanation_language varchar(35) NN`、`target_language varchar(35) NULL`、`inferred_query_task varchar(32) NULL`、`ai_run_id uuid NULL`、`sdk_version varchar(64) NN`、`serialization_version varchar(64) NN`、`message_payload jsonb NULL` | 推断任务由服务端写入，发送输入不要求类型；SDK版本支持确定性历史读取 |
 | agent_message_attachments / L+R | `agent_thread_id uuid NN`、`agent_message_id uuid NULL`、`file_object_id,upload_intent_id uuid NN`、`asset_version bigint NN`、`ordinal integer NULL`、`state varchar(16) NN`、`expires_at timestamptz NULL` | draft/bound/removed；草稿可空 message/ordinal，bound 必须齐全；query_image 专用验证静态图；R供API image_refs.revision核对 |
 
@@ -293,23 +293,23 @@ UK `(scope,ai_run_id,ordinal,card_revision)`；IX `(scope,agent_message_id,ordin
 
 explanation UK `(scope,ai_run_id)`，IX `(scope,strict_key_digest,created_at,id)`；binding UK `(scope,binding_digest)`，IX `(scope,result_kind,result_id)` 与 `(scope,source_kind,source_resource_id)`；binding增加IX `(scope,material_id,material_revision_id,entry_kind,created_at,id)` 与 `(scope,material_id,chapter_or_lesson_id,created_at,id)`，均WHERE material_id IS NOT NULL AND released_at IS NULL。同 lemma 不同语境不共享解释；成功发布事务写历史binding，只有当前代次可切lookup有效指针。MaterialLearningIndex改为作用域查询投影：从未released且有材料列的binding连接learning_lookup_states，仅选result_kind/id/version与当前effective一致的绑定；lookup端也核对scope，旧成功结果仍保留绑定但不进入当前索引。不建material_learning_indexes实体表或独立投影Worker。原书删除只解除书属引用，独立收藏/合法历史仍保留。
 
-### 6.2 `learning_lookup_states`、`generation_slots`
+### 6.2 `learning_lookup_states`、`learning_generation_slots`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 含义 |
 | --- | --- | --- |
 | learning_lookup_states / L+R | `artifact_kind varchar(16) NN`、`lookup_key_digest bytea NN`、`key_schema_version integer NN`、`lookup_identity jsonb NN`、`lookup_generation bigint NN DEFAULT 0`、`selected_strict_key_digest bytea NULL`、`active_run_id uuid NULL`、`effective_result_id uuid NULL`、`effective_result_version bigint NULL` | 跨模型/Prompt配置的当前选用与有效指针；artifact explanation/card/audio；旧有效版在新任务完成前保留 |
-| generation_slots / L+R | `artifact_kind varchar(16) NN`、`strict_key_digest bytea NN`、`key_schema_version integer NN`、`active_run_id uuid NULL`、`execution_generation bigint NN DEFAULT 0`、`lease_owner varchar(128) NULL`、`lease_expires_at timestamptz NULL`、`fence bigint NN DEFAULT 0`、`state varchar(24) NN DEFAULT 'idle'` | idle/occupied/unknown；仅合并同配置调用，不决定当前解释指针 |
+| learning_generation_slots / L+R | `artifact_kind varchar(16) NN`、`strict_key_digest bytea NN`、`key_schema_version integer NN`、`active_run_id uuid NULL`、`execution_generation bigint NN DEFAULT 0`、`lease_owner varchar(128) NULL`、`lease_expires_at timestamptz NULL`、`fence bigint NN DEFAULT 0`、`state varchar(24) NN DEFAULT 'idle'` | idle/occupied/unknown；仅合并同配置调用，不决定当前解释指针 |
 
 UK lookup `(scope,artifact_kind,lookup_key_digest)`、slot `(scope,artifact_kind,strict_key_digest)`；IX slot `(lease_expires_at,id) WHERE state='occupied'`。effective ID/version 全空或全有；租约 owner/expires 全空或全有；代次/fence>=0。锁顺序 lookup→slot→run；发布同时比较 lookup_generation/selected key/active run/fence。Redis 锁失效不放行第二有效发布者；unknown 超时不等于可安全重调供应商。
 
 键内容唯一维护在[缓存匹配契约](learning-cache.md#4-命中规则与版本)：lookup 不含 Key/默认模型/Prompt；strict 包含真实语义输入/上下文/生成配置/协议。无材料手工输入包含全文+显式上下文的服务器摘要，不能把 NULL material 的查询合为一项。只读 resolve 不建 Job、不写学习记录、不用缓存缺失驱动模型调用。
 
-### 6.3 `audio_assets`、`audio_segments`、`playback_manifests`、`playback_manifest_segments`
+### 6.3 `audio_assets`、`audio_asset_segments`、`playback_manifests`、`playback_manifest_segments`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 含义 |
 | --- | --- | --- |
-| audio_assets / L | `strict_key_digest bytea NN`、`key_schema_version integer NN`、`synthesis_config jsonb NN`、`source_schema_version integer NN`、`source_identity jsonb NN`、`ai_run_id uuid NN`、`storage_reservation_id uuid NN`、`state varchar(24) NN`、`generation bigint NN`、`published_at timestamptz NULL` | 私有受控合成身份/声音/模型/输出配置与来源；容量引用身份分册 storage_reservations；queued/generating/ready/failed/cancelled/unknown_outcome/broken |
-| audio_segments / L | `audio_asset_id uuid NN`、`ordinal integer NN`、`file_object_id uuid NULL`、`state varchar(24) NN`、`text_start,text_end integer NN`、`source_spans jsonb NN`、`media_type varchar(64) NULL`、`codec varchar(32) NULL`、`sample_rate_hz,channels,bit_depth integer NULL`、`duration_ms,size_bytes bigint NULL`、`content_digest bytea NULL`、`timing_schema_version integer NN`、`timing_map jsonb NULL` | 真实独立音频或验证过的时间映射；ready 必须有对象/格式/长度/摘要；text_end>text_start>=0 |
+| audio_assets / L | `strict_key_digest bytea NN`、`key_schema_version integer NN`、`synthesis_config jsonb NN`、`source_schema_version integer NN`、`source_identity jsonb NN`、`ai_run_id uuid NN`、`storage_reservation_id uuid NN`、`state varchar(24) NN`、`generation bigint NN`、`published_at timestamptz NULL` | 私有受控合成身份/声音/模型/输出配置与来源；容量引用身份分册 user_storage_reservations；queued/generating/ready/failed/cancelled/unknown_outcome/broken |
+| audio_asset_segments / L | `audio_asset_id uuid NN`、`ordinal integer NN`、`file_object_id uuid NULL`、`state varchar(24) NN`、`text_start,text_end integer NN`、`source_spans jsonb NN`、`media_type varchar(64) NULL`、`codec varchar(32) NULL`、`sample_rate_hz,channels,bit_depth integer NULL`、`duration_ms,size_bytes bigint NULL`、`content_digest bytea NULL`、`timing_schema_version integer NN`、`timing_map jsonb NULL` | 真实独立音频或验证过的时间映射；ready 必须有对象/格式/长度/摘要；text_end>text_start>=0 |
 | playback_manifests / L | `schema_version integer NN`、`purpose varchar(24) NN`、`manifest_version bigint NN`、`state varchar(16) NN`、`source_identity jsonb NN`、`source_schema_version integer NN`、`config_digest bytea NN`、`published_at timestamptz NULL` | purpose reading/collection/card/exam_listening；building/ready/broken；清单可引用跨入口复用的同本人资产 |
 | playback_manifest_segments / L | `playback_manifest_id,audio_segment_id uuid NN`、`ordinal integer NN`、`source_spans jsonb NN`、`schema_version integer NN` | UK `(scope,playback_manifest_id,ordinal)`；IX `(scope,audio_segment_id)`；清单顺序与出处固定 |
 
@@ -356,7 +356,7 @@ speech 请求形状 CHECK：private 禁用全局列；global_word 禁用 private
 
 ### 6.7 调用前容量预留
 
-容量表唯一维护在[账号分册的技术限制与容量](database-identity.md)：`user_storage_states/storage_reservations` 按本人隔离，`global_storage_states/global_storage_reservations` 只由共享目录服务访问。本分册不重复建同名表。生成受理先取得容量根锁，在创建Job/Outbox同一事务写预留；音频资产/阶段使用预留ID，多个输出按同一预留汇总结算一次。上传可在无Job时以 upload_intent 作为预留目标。
+容量表唯一维护在[账号分册的技术限制与容量](database-identity.md)：`user_storage_states/user_storage_reservations` 按本人隔离，`global_storage_states/global_storage_reservations` 只由共享目录服务访问。本分册不重复建同名表。生成受理先取得容量根锁，在创建Job/Outbox同一事务写预留；音频资产/阶段使用预留ID，多个输出按同一预留汇总结算一次。上传可在无Job时以 upload_intent 作为预留目标。
 
 private 按本人、global_word 实例只计一份；预留不取代文件/引用事实。PG内完整卡片/解释以 serialized_size_bytes 保存按已登记输出schema确定性UTF-8序列化得到的逻辑内容字节，非PG页面占用；同一结果被多个来源引用不重复计量。其他PG模型成品（题目/诊断等）由其schema的确定性序列化长度进入容量账本，迁移字典须登记计量范围，不能只统计MinIO。过期仅在证明无有效租约/在途安全落盘后释放，unknown不自动退占用。超容量在调用前拒绝，不淘汰仍有引用的成功结果；跨容量根锁序遵循主册，所有新生成入口一致。
 
@@ -449,7 +449,7 @@ ModelCallUsage是每attempt至多一份的逻辑值对象，和attempt同scope/�
 
 UK `(owner,audience,action_code,key_digest)`；IX `(expires_at,id)`；state processing/committed/failed/unknown；result kind/id成对，HTTP状态有值时100..599。键只存摘要且动作/本人分区，同键异载荷409；safe_response仅受限结果引用/错误码，不含材料/密码/Token/Key。创建领域对象/结果引用与幂等提交同事务，提交结果未知不得擅自生成新键重放。记录TTL结束不抹去领域业务唯一键；长任务仍在运行时不能回收。认证改密的结果不明遵循专属协议，不以这张通用表自动重放。
 
-### 7.7 `notifications` — 本人站内任务提示
+### 7.7 `user_notifications` — 本人站内任务提示
 
 公共列 UO + R。`source_event_id uuid NN`、`job_id uuid NN`、`notification_kind varchar(48) NN`、`resource_kind varchar(48) NN`、`resource_id uuid NN`、`resource_version bigint NN`、`message_code varchar(128) NN`、`schema_version integer NN`、`safe_parameters jsonb NN`、`read_at timestamptz NULL`。
 

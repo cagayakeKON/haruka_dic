@@ -18,7 +18,7 @@ P0以本人 `CollectionItem(kind=word) + learning_revision` 作为具体词形/�
 
 ## 2. 有效学习证据
 
-题目发布时冻结 `assessment_targets`：本人条目/learning_revision、能力类别、评分项、答案/rubric版本及允许辅助。P0能力为词义识别和依据释义/有效语境主动回忆词形；没有实际测验的听力、发音或自由写作不显示已掌握。
+题目发布时冻结 `question_assessment_targets`：本人条目/learning_revision、能力类别、评分项、答案/rubric版本及允许辅助。P0能力为词义识别和依据释义/有效语境主动回忆词形；没有实际测验的听力、发音或自由写作不显示已掌握。
 
 | 结果/动作 | 证据处理 |
 | --- | --- |

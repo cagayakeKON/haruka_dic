@@ -64,7 +64,7 @@ R01 的过期绝不单独决定会话有效；即使索引仍在也要检查 R02
 | 字段 | 类型 / 空值 | 来源与规则 |
 | --- | --- | --- |
 | `user_id`, `session_id`, `audience` | uuid/uuid/enum，必需 | 与键、PG 会话完全一致 |
-| `transport` | enum，必需 | `web` / `native`，与 auth_sessions 相同；分别使用 Cookie / Bearer，禁止交叉使用 |
+| `transport` | enum，必需 | `web` / `native`，与 user_auth_sessions 相同；分别使用 Cookie / Bearer，禁止交叉使用 |
 | `absolute_expires_at_ms`, `idle_expires_at_ms` | int64，必需 | 服务器时间；idle 不超过 absolute |
 | `security_epoch`, `audience_epoch` | int64，必需 | 创建会话时捕获；每次受保护请求比对 PG |
 | `cookie_digest` | HMAC string，仅 Web 必需 | 与 R01 键摘要对应；不保存 Cookie 原值 |
@@ -115,7 +115,7 @@ R13 payload 与[任务进度事件](../contracts/job-progress.md)同源：`job_i
 
 R14 每条 Stream 字段为 `schema_version`、`event_id`、`generation`、`sequence`、`envelope_json`。Stream ID 仅作 Redis 传输游标，客户端的事实游标仍为 PG generation/sequence。重复 event_id/sequence 消费幂等；裁剪、淘汰、重连乱序或缺号时重新授权并查 PG 快照。采用精确最大长度或读取侧硬上限，不把近似裁剪误称严格容量。
 
-Pub/Sub 频道使用同样 namespace：`N:v1:notify:u:<u>:<a>`（会话/访问快照失效或站内任务提示唤醒），以及 `N:v1:notify:global-policy`（全局策略版本变化）。消息仅含 `schema_version,event_id,event_type,resource_id?,revision,occurred_at`，禁止私有正文。Job 唤醒由 R14 或同 scope 的受控通知转发。接收服务在每次向 WS/SSE 发送前重新检查权限；订阅频道名不赋予权限。Pub/Sub 丢失不影响撤权、任务事实或重连恢复；本人站内任务提示与已读时间保存于[学习分册](database-learning.md)的 notifications，不以 Pub/Sub 代替持久记录，不扩大为邮件/系统推送。
+Pub/Sub 频道使用同样 namespace：`N:v1:notify:u:<u>:<a>`（会话/访问快照失效或站内任务提示唤醒），以及 `N:v1:notify:global-policy`（全局策略版本变化）。消息仅含 `schema_version,event_id,event_type,resource_id?,revision,occurred_at`，禁止私有正文。Job 唤醒由 R14 或同 scope 的受控通知转发。接收服务在每次向 WS/SSE 发送前重新检查权限；订阅频道名不赋予权限。Pub/Sub 丢失不影响撤权、任务事实或重连恢复；本人站内任务提示与已读时间保存于[学习分册](database-learning.md)的 user_notifications，不以 Pub/Sub 代替持久记录，不扩大为邮件/系统推送。
 
 R15/R16 值为 `schema_version,holder_token,slot_id,fence,expires_at_ms`，holder_token 为服务端短随机值。`SET NX PX` 仅合并入口流量，释放/续期须比较 holder_token；获得/失去 Redis 键不决定 PG 占用是否释放。任何执行与发布必须通过持久 slot 的严格键、租约、fence、当前 lookup generation 和选用 run 检查。unknown 的供应商调用不能因 15 秒到期自动重试。
 

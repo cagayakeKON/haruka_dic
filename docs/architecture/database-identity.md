@@ -1,6 +1,6 @@
 # 数据库设计书：账号、权限与个人设置
 
-状态：DBDESIGN2 收敛基线 v0.2，2026-09-25。属于阶段1后续表设计文档切片；仅第1节记录已落地的 B0 物理结构，其余为拟实施设计，不代表登录、完整 RBAC 或设置已经实现。总规则、公共列组与分册入口见 [数据库设计书](database-design.md)。
+状态：DBDESIGN3 命名与关系基线 v0.3，2026-09-25。属于阶段1后续表设计文档切片；仅第1节记录已落地的 B0 物理结构，其余为拟实施设计，不代表登录、完整 RBAC 或设置已经实现。总规则、公共列组与分册入口见 [数据库设计书](database-design.md)。
 
 本分册依据 [认证](authentication.md)、[授权](authorization.md)、[账号](../modules/accounts.md)、[设置](../modules/settings.md)、[管理](../modules/admin.md)、[权限目录](../contracts/permissions.md) 和 [API](../contracts/api.md)。原型账号、语言、阅读、声音和显示页用于核对字段用途；原型内的固定年份、模型名、声音名与本机表单值不是数据库默认值。
 
@@ -279,12 +279,14 @@ scope_kind='identity'；归属：无私有归属列；生命周期：可变；B0
 
 以下均需新的 Alembic 迁移，不能修改已验收的0001迁移或把未来列写入现有生成字典。添加列先回填并验证，再收紧约束；B0自然主键保留，不为了整齐重建授权目录。
 
+DBDESIGN3另约定两项未来改名：`user_roles → user_role_links`、`role_permissions → role_permission_links`。它们仍分别承载用户↔角色、角色↔权限的多对多关系，原行ID/授权事实保留，不新增平行表。本节之后使用目标名，第1节和生成字典保留实际名；迁移边界及全部表的归属/基数见[命名与关系清单](database-relations.md)。本轮没有实施改名。
+
 | 表 | 新列/调整（拟） | 约束与索引/迁移依据 |
 | --- | --- | --- |
 | users | `password_version bigint NN DEFAULT 1`；`security_epoch bigint NN DEFAULT 0`；`revision bigint NN DEFAULT 1`；`email_verified_at timestamptz NULL`；`locked_until timestamptz NULL` | password_version/revision>=1、security_epoch>=0；B0已有两端epoch继续保留。账号全局epoch与受众epoch分别对比；旧哈希按1回填，不凭创建时间推定邮箱验证。拟加 `(status,created_at,id)` 管理列表索引；锁定为有期限安全属性，不扩展status枚举或形成永久锁号 |
 | roles | `name varchar(100) NN`；`description text NULL` | name仅显示非唯一；按既有code回填，更新revision。角色依赖/引用仍由授权服务限制删除 |
-| role_permissions | `data_scope varchar(24) NN` | 从permission_catalog回填并核对；CHECK self/platform_metadata，服务校验权限受众与范围。唯一键改为 `(role_id,permission_code,effect,data_scope)`；不另建可写casbin_rule |
-| menus | `parent_menu_id uuid NULL`；`component_key varchar(64) NULL`；`title varchar(100) NN`；`icon_key varchar(64) NULL`；`sort_order integer NN DEFAULT 0`；`permission_match varchar(3) NN DEFAULT 'all'` | parent同受众且无环；sort_order>=0，match=all/any。route_key改为可空以表示分组；叶子route/component由发布注册表匹配。将既有permission_code搬入menu_permissions后删除该列；父子索引 `(audience,parent_menu_id,sort_order,id)`。最低页面权限保持代码定义，表中条件只能追加 |
+| role_permission_links | `data_scope varchar(24) NN` | 从permission_catalog回填并核对；CHECK self/platform_metadata，服务校验权限受众与范围。唯一键改为 `(role_id,permission_code,effect,data_scope)`；不另建可写casbin_rule |
+| menus | `parent_menu_id uuid NULL`；`component_key varchar(64) NULL`；`title varchar(100) NN`；`icon_key varchar(64) NULL`；`sort_order integer NN DEFAULT 0`；`permission_match varchar(3) NN DEFAULT 'all'` | parent同受众且无环；sort_order>=0，match=all/any。route_key改为可空以表示分组；叶子route/component由发布注册表匹配。将既有permission_code搬入menu_permission_links后删除该列；父子索引 `(audience,parent_menu_id,sort_order,id)`。最低页面权限保持代码定义，表中条件只能追加 |
 | auth_policies | `require_email_verification boolean NN DEFAULT false`；`recovery_mode varchar(16) NN DEFAULT 'disabled'` | 仅在[账号待决](../decisions/pending.md)交付路径锁定后启用；recovery_mode=disabled/email/manual，部署必须具备所选交付能力；不把默认false当确认无需验证邮箱 |
 | admin_audit_events | `actor_user_id uuid NULL`；`audience varchar(10) NULL`；`permission_code varchar(100) NULL`；`target_type varchar(64) NULL`；`target_id uuid NULL`；`target_code varchar(100) NULL`；`operation_id uuid NULL`；`request_id uuid NULL`；`result varchar(24) NULL`；`reason_code varchar(64) NULL`；`payload_schema_version integer NN DEFAULT 1`；`change_summary jsonb NULL` | 扩展action长度到100并按发布事件注册，旧两动作CHECK由版本化允许清单替换；旧actor保留用于维护主体。新用户管理事件必须有actor_user_id/受众/安全结果；target_id与target_code按UUID实体/自然键目录择一，不能丢失permission/auth-policy等自然键目标；旧记录允许NULL且不伪造事实。summary只放白名单权限/状态差异，非完整对象。拟加 `(created_at,id)`、`(actor_user_id,created_at,id)`、`(target_type,target_id,created_at,id)`、`(action,created_at,id)`；按管理员授权时间窗口查询 |
 | outbox_events | B0字段保留；后续通用事件、聚合引用、重试/租约/发布时间由任务分册统一定义 | 不能把B0仅authorization.changed且audit_event_id必填的结构称为通用投递已实现；新旧事件兼容与索引见[总册](database-design.md)的任务分册入口 |
@@ -351,7 +353,7 @@ CHECK包括：三个组版本>=1、avatar_revision>=0、birth_year为空或>=190
 
 每个PATCH把expected_revision映射到相应组列，UPDATE只写该组白名单列并推进该组版本及updated_at，禁止整行ORM覆盖。资料和主题并发更新会短暂争用同一PG行锁，但不同组不发生无意义的版本冲突；同组旧版本仍409。涉及多个组的单次操作必须显式声明并在同一事务比较全部相关组版本；普通独立页面不能互相回滚。读取一个组只选择该组允许列，物理合表不扩大DTO或管理权限。子行与组版本、Outbox同事务提交。
 
-### study_profile_languages
+### user_languages
 
 列组：U；以 user_id 逻辑关联 user_extensions.user_id；修改由父行 study_revision 保护。
 
@@ -365,7 +367,7 @@ CHECK包括：三个组版本>=1、avatar_revision>=0、birth_year为空或>=190
 
 唯一 `(user_id,language_kind,language_tag)` 与 `(user_id,language_kind,sort_order)`；CHECK种类、sort_order>=0、native时level为空且goals空、level允许值、goals为模块允许集合子集。服务校验数组去重/上限、目标语能力、母语/目标语各自支持状态。父锁内显式删除偏好行；不是学习事实清理入口。
 
-### settings_model_bindings
+### user_model_bindings
 
 列组：U；以user_id关联user_extensions.user_id，随父settings_revision原子更新。
 
@@ -377,9 +379,9 @@ CHECK包括：三个组版本>=1、avatar_revision>=0、birth_year为空或>=190
 | parameters_schema_version | integer NN DEFAULT 1 | 模型参数白名单版本 |
 | parameters | jsonb NN DEFAULT '{}' | 有界采样/合成参数；空对象表示使用目录默认 |
 
-唯一 `(user_id,capability)`；反向索引 `(user_id,credential_id)` 支持删除Key影响预览/解绑。服务验证凭据和模型provider匹配、能力启用；模型停用不删历史run，仅阻止新调用。选择/解绑以及会影响绑定的凭据撤销都按user_extensions→provider_credentials稳定ID顺序取锁；不能撤销先锁凭据再补锁扩展行。仅轮换/重加密且不改绑定的路径可只锁凭据，不能随后反向取得扩展行锁。活动run冻结model/settings版本，不追着表内指针变化。
+唯一 `(user_id,capability)`；反向索引 `(user_id,credential_id)` 支持删除Key影响预览/解绑。服务验证凭据和模型provider匹配、能力启用；模型停用不删历史run，仅阻止新调用。选择/解绑以及会影响绑定的凭据撤销都按user_extensions→user_provider_credentials稳定ID顺序取锁；不能撤销先锁凭据再补锁扩展行。仅轮换/重加密且不改绑定的路径可只锁凭据，不能随后反向取得扩展行锁。活动run冻结model/settings版本，不追着表内指针变化。
 
-### settings_voice_bindings
+### user_voice_bindings
 
 列组：U；以user_id关联user_extensions.user_id，随父settings_revision原子更新。
 
@@ -396,7 +398,7 @@ AvatarAsset不再单独建表；专用投影及不可变文件字段见[文件�
 
 ## 4. 凭据与认证安全（拟新增）
 
-### provider_credentials
+### user_provider_credentials
 
 列组：U + R；scope_kind=user_owned；本人凭据服务/受控按用户运行的模型工厂可读必要密文，API只读安全掩码。
 
@@ -415,7 +417,7 @@ CHECK版本正值、provider/state枚举、密文与主密钥版本成对、acti
 
 显式Key能力测试复用[ai_runs](database-learning.md#72-ai_runs)的credential_test运行及安全结果字段，不再复制一张一对一测试摘要表。一次测试只选text/vision/tts中的一种；查询按本人credential_id/credential_version/精确provider与model_id/model_revision/capability取最近已结束的测试run，无记录为untested。迟到旧版本结论只作历史，不能认证新Key；用量仍以真实attempt为准，失败不将其他能力一并标无效。
 
-### auth_sessions
+### user_auth_sessions
 
 列组：U；scope_kind=user_owned；允许本人安全、认证与有权管理会话服务；不是一般资料读取。
 
@@ -435,7 +437,7 @@ CHECK版本正值、provider/state枚举、密文与主密钥版本成对、acti
 
 id映射API session_id/session_ref；不另存重复UUID列。CHECK受众/传输/平台枚举、epochs>=0、absolute_expires_at>created_at；admin仅web组合。索引 `(user_id,audience,created_at,id)` 本人列表；`(user_id,audience,id) WHERE revoked_at IS NULL` 撤销某端；`(absolute_expires_at,id)` 留存清理。认证按id取PG会话/用户并比较两层epoch、状态、期限，同时验证Redis存续；不存在Redis材料即重新登录。本人/管理员撤销共锁User→Session，持久撤销+安全审计+Outbox提交后清Redis。到期/撤销后按安全留存清理，不清用户学习事实。
 
-### auth_challenges
+### user_auth_challenges
 
 列组：U；scope_kind=identity，user_id绑定挑战目标身份；仅受限认证流程访问，无匿名查账号接口。
 
@@ -457,11 +459,11 @@ id映射API session_id/session_ref；不另存重复UUID列。CHECK受众/传输
 
 安全事件使用扩展后的admin_audit_events承载受控身份事件（actor_user_id允许匿名为空，actor为注册安全主体），而非建立有私有内容的通用日志表；登录拒绝等无业务事务事件使用独立受控追加入口。R、摘要和epoch均不返回普通资料DTO。
 
-### auth_challenge_deliveries
+### user_auth_challenge_deliveries
 
 条件表：仅在邮件模式获选并交付时建立。列组U+R；scope_kind=identity，限定通知Worker读取短期密文；管理/用户接口只返回安全受理状态。
 
-`challenge_id uuid NN → auth_challenges.id`；`encrypted_payload bytea NULL`；`encryption_key_version varchar(64) NULL`；`payload_schema_version integer NN DEFAULT 1`；`expires_at timestamptz NN`；`status varchar(16) NN`（pending/sent/failed/expired）；`attempt_count integer NN DEFAULT 0`；`next_attempt_at timestamptz NULL`；`last_error_code varchar(64) NULL`。
+`challenge_id uuid NN → user_auth_challenges.id`；`encrypted_payload bytea NULL`；`encryption_key_version varchar(64) NULL`；`payload_schema_version integer NN DEFAULT 1`；`expires_at timestamptz NN`；`status varchar(16) NN`（pending/sent/failed/expired）；`attempt_count integer NN DEFAULT 0`；`next_attempt_at timestamptz NULL`；`last_error_code varchar(64) NULL`。
 
 唯一 `(user_id,challenge_id)`；CHECK密文/keyring版本成对、正schema版本、非负次数、状态允许值；pending必须有密文。服务校验不晚于挑战期限，sent仅表示交付适配器已受理，不保证收件人收到。索引 `(status,next_attempt_at,id) WHERE status='pending'` 扫待发；`(expires_at,id)` 清密文。密文只包含发送所必需的地址/链接，Kafka/Outbox仅放本记录引用；只限本用途的Worker解密，不能进入日志。锁User→Challenge→Delivery，消费或失效后不再发送；已发/过期按短期保留策略清密文，不能为了重试永久保留原Token。此表存在不代表恢复邮件能力已选定或可用。
 
@@ -469,7 +471,7 @@ id映射API session_id/session_ref；不另存重复UUID列。CHECK受众/传输
 
 本节均为 `scope_kind=system_catalog`，无owner/user伪通配列；只允许发布注册、限定管理授权服务读写。所有关系新增/移除先锁authorization_revisions.global，再按稳定ID顺序锁相关User/Role/Menu等父行；同事务推进全局/用户版本、审计及Outbox。删除为限制删除或显式解除/迁移，不能配置ORM级联。
 
-### role_inheritances
+### role_inheritance_links
 
 列组：B；`child_role_id uuid NN → roles.id`，`parent_role_id uuid NN → roles.id`。唯一 `(child_role_id,parent_role_id)`；CHECK两者不同；反向索引 `(parent_role_id,child_role_id)` 支持上游改变的影响集合。子角色继承父角色；无环、深度和受保护边界在同一授权事务校验，单行CHECK不能证明无环。移除deny路径、停用父角色也做有效权限差异/授予边界复核。
 
@@ -489,11 +491,11 @@ CHECK分支完整：role类必须target_role_id有值且权限两列空；permis
 
 这是上限数据的推荐物理表达，不产生新动作权限：仍需相应assign/update权限，受保护目标另需protected_role.manage。账号目标若带多个角色，必须覆盖其完整有效角色集合；有未知/未覆盖角色拒绝，不能因其中一个普通角色匹配就管理高权账号。unassigned仅无角色pending账号的限定管理。操作者自身/已持有角色/继承/默认注册角色引发的升权仍由[授权协议](authorization.md)统一拒绝；表中没有allow_self_escalation开关。
 
-### permission_dependencies
+### permission_dependency_links
 
 列组：B；`permission_code varchar(100) NN → permission_catalog.code`；`required_permission_code varchar(100) NN → permission_catalog.code`。唯一 `(permission_code,required_permission_code)`；CHECK不同；反向 `(required_permission_code,permission_code)` 支持权限停用影响预览。仅发布可更新的静态必要依赖；运行时来源、题目状态或复合请求权限不能缩减成这张表的静态闭包。引用端点/能力尚未实现不自动取得授权。
 
-### menu_permissions
+### menu_permission_links
 
 列组：B；`menu_id uuid NN → menus.id`；`permission_code varchar(100) NN → permission_catalog.code`。唯一 `(menu_id,permission_code)`；反向 `(permission_code,menu_id)`。父menus.permission_match定义all/any，仅附加显示限制；迁移将B0menus.permission_code逐条搬入本表并校验条数，再移除旧列。菜单修改按父revision及全局policy_revision提交；不降低代码注册的路由最低权限。空分组可无附加权限，页面仍强制最低要求。
 
@@ -581,7 +583,7 @@ CHECK分支完整：role类必须target_role_id有值且权限两列空；permis
 
 `scope_kind=system_operation`，列组B+R；`catalog_code varchar(32) NN`（CHECK='global_word'，唯一）；`used_bytes bigint NN DEFAULT 0`；`reserved_bytes bigint NN DEFAULT 0`，非负。只由全局词音目录生成/GC服务维护，不受普通用户元数据查询读取。global_word成品计实例共享容量，私有生产Job/个人Key/供应商用量仍属原用户；不得用owner=NULL把本表作为所有私人缓存的总入口。预留与结算锁本行，与个人容量根使用固定顺序；GC删除字节成功并提交资产清理状态后才能扣减used。
 
-### storage_reservations
+### user_storage_reservations
 
 `scope_kind=user_owned`，列组U+R；私有上传/生成/受控清理容量服务可读写，普通API只返回安全可用/不足结果。
 

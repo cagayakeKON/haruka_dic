@@ -1,8 +1,10 @@
 # 数据库设计书：材料、阅读与考试
 
-状态：2026-09-25，DBDESIGN2，阶段1中的数据库设计文档切片；本文新增结构均为**待实现设计**，没有建表、迁移或数据库验收。入口与公共规则见[数据库设计书](database-design.md)，已存在的 `libraries` 由[身份分册](database-identity.md)登记。本文把[源结构契约](../contracts/material-structures.md)、[材料](../modules/materials-reading.md)、[小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[考试](../modules/exams.md)及[双端原型](../../prototype/README.md)映射为物理表，不改变它们的产品边界。
+状态：2026-09-25，DBDESIGN3，阶段1中的数据库设计文档切片；本文新增结构均为**待实现设计**，没有建表、迁移或数据库验收。入口与公共规则见[数据库设计书](database-design.md)，已存在的 `libraries` 由[身份分册](database-identity.md)登记。本文把[源结构契约](../contracts/material-structures.md)、[材料](../modules/materials-reading.md)、[小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[考试](../modules/exams.md)及[双端原型](../../prototype/README.md)映射为物理表，不改变它们的产品边界。
 
 ## 1. 字典约定与分层
+
+表名表达材料域、直接父对象或关联端点；全部表的归属、关系基数和唯一约束摘要见[关系清单](database-relations.md#22-材料阅读与考试46张)。本轮只改物理目标表名，`source_asset_id`、`content_block_id`、`exam_answer_id`等列名与接口逻辑ID保持既有含义。
 
 - `B` = `id uuid NN`（服务端 uuid4，PK）、`created_at/updated_at timestamptz NN DEFAULT now()`；`U` = B + `user_id uuid NN`；`L` = B + `owner_user_id/library_id uuid NN`；`R` = `revision bigint NN DEFAULT 1 CHECK >= 1`。公共时间更新遵循[数据库规范](../engineering/database.md)，只读历史行的 updated_at 不随访问改变。
 - `M` = L + `material_id uuid NN`；`V` = M + `material_revision_id uuid NN`。下文逐表写明列组，列组字段属于该表真实物理字段，不是 ORM 隐式关系。`NN` 为 NOT NULL，`NULL` 为允许 NULL；未写 DEFAULT 的列无服务端默认值。逗号分隔列在同一行表示各列具有所列相同类型/空值规则，语义按列名次序说明。
@@ -17,10 +19,10 @@
 | 原型中的信息/动作 | 真实持久事实 | 不直接入库的演示值 |
 | --- | --- | --- |
 | 材料标题、类型、语言、解析状态 | materials、material_revisions、专用 manifest、Job | 卡片颜色、图标、格式化“今天09:42”由界面派生 |
-| 小说章节/段落、选区、书签 | novel_*、content_blocks、reading_progress、bookmarks | 字号/行距/主题归本人设置，不复制到每个章节 |
+| 小说章节/段落、选区、书签 | novel_*、material_content_blocks、material_reading_progress、material_bookmarks | 字号/行距/主题归本人设置，不复制到每个章节 |
 | 课本单元、对话/词表/语法/习题 | textbook_*、公共 exercise_questions | 原型数组下标不能成为长期 option_id |
 | 试卷准备、脚本勾选、生成状态 | candidate/确认记录、script版本、audio binding、冻结卷 | 一个内存布尔值不能替代人工确认版本 |
-| 答题卡、已保存、标记、计时 | exam_sessions、exam_answers、服务端 deadline_at | 演示42:18、原卷38题/可操作3题不作默认值 |
+| 答题卡、已保存、标记、计时 | exam_sessions、exam_session_answers、服务端 deadline_at | 演示42:18、原卷38题/可操作3题不作默认值 |
 | 听力播放与续播 | 每场次 usage/play_attempt 账本 | 按钮点击/前端播放器事件不能扣次或退次 |
 
 文件二进制留在 MinIO；PG 保存权威对象引用和摘要。源结构、小说编排、课本编排、试卷冻结保持独立。公共题目、答案/rubric、普通作答和评分见[学习分册](database-learning.md)：`exercise_questions.id` 是不可变题目版本行，`question_grading_bases.id` 是独立隐藏依据；本分册不复制另一套公共题目/评分表。
@@ -40,7 +42,7 @@
 | original_filename | text NN | 显示名称，不能作为对象路径 |
 | declared_format | varchar(32) NN | 受支持能力目录格式，不当作实际检测结果 |
 | expected_size_bytes | bigint NN | 用户原始上传字节的声明大小 > 0；不是重编码输出大小 |
-| storage_reservation_id | uuid NN | 身份分册storage_reservations中的本人容量预留 |
+| storage_reservation_id | uuid NN | 身份分册user_storage_reservations中的本人容量预留 |
 | expected_sha256 | bytea NN | 原始上传字节的声明 SHA-256，32字节；在固定的服务端输入副本上验证 |
 | staging_object_key | text NN | 独占临时键，不接受客户端构造 |
 | status | varchar(24) NN | 上传合同状态 |
@@ -57,7 +59,7 @@
 | expires_at | timestamptz NN | 意图和配额预留截止 |
 | failure_code | varchar(80) NULL | 安全错误码，无正文/对象凭据 |
 
-UQ `staging_object_key`、`candidate_input_object_key WHERE ... IS NOT NULL`、`candidate_final_object_key WHERE ... IS NOT NULL`；IX `(user_id,status,expires_at,id)` 清理/本人未完成上传。CHECK 大小正数、摘要32字节、lease两列同空同有、输入验证三列全空或全有且成功值等于声明、purpose/type/target合法组合；completed 必须有 file_object_id。本人user_storage_states与目标聚合共同保护配额/意图，storage_reservations记录每次预留；并发预留不能仅查无锁 SUM 或仅依赖 Redis。签名/复制/解码在事务外，发布重验 generation、租约、权限、取消与期限。完成/取消/超时释放预留一次，失败对象与staging延迟回收。
+UQ `staging_object_key`、`candidate_input_object_key WHERE ... IS NOT NULL`、`candidate_final_object_key WHERE ... IS NOT NULL`；IX `(user_id,status,expires_at,id)` 清理/本人未完成上传。CHECK 大小正数、摘要32字节、lease两列同空同有、输入验证三列全空或全有且成功值等于声明、purpose/type/target合法组合；completed 必须有 file_object_id。本人user_storage_states与目标聚合共同保护配额/意图，user_storage_reservations记录每次预留；并发预留不能仅查无锁 SUM 或仅依赖 Redis。签名/复制/解码在事务外，发布重验 generation、租约、权限、取消与期限。完成/取消/超时释放预留一次，失败对象与staging延迟回收。
 
 完成处理先将可变staging流式复制到本代次独占、服务端控制的输入副本，在该固定副本上计算完整摘要/实际大小、核对原始声明并检查真实类型，不能只校验staging HEAD。后续处理只读取该副本，旧上传签名不能改变它。按purpose执行：primary_document、exam_listening_script、vocabulary_csv等不变换原始字节的路径，可在完整格式验证后把该对象作为final，最终大小/摘要仍与输入一致；avatar和query_image必须受限真实解码、规范方向、去元数据及重编码，写入另一独占final键，再对输出重新做真实格式/像素/解码/摘要/大小验证。vocabulary_photo若配置受控图像规范化，也采用相同的输入/输出分离规则。输出不再与原始expected_sha256/expected_size_bytes作相等要求，`file_objects.sha256/size_bytes`只描述最终输出；容量服务在发布前按输出实际大小重新核对/结算预留，不能用输入声明跳过输出限额。未变换与重编码两类都只有验证后的final能发布为FileObject；内部输入副本不能作为可读业务资产，未作为final使用时按临时对象规则清理。
 
@@ -163,10 +165,10 @@ UQ `(S,material_id,revision_number)`；IX `(S,material_id,status,id)` 查候选/
 
 | 表 | 列（PG类型；空值/默认；语义） | 唯一、检查与索引 |
 | --- | --- | --- |
-| `source_assets` | `file_object_id uuid NN` 本人验证对象；`purpose varchar(40) NN` 主文档/内嵌图/受控派生图等；`ordinal integer NN` 版本内序；`source_locator jsonb NULL` 原件位置；`pixel_width,pixel_height integer NULL` 实际图像像素；`duration_ms bigint NULL` 实际媒体时长 | UQ `(S,material_revision_id,ordinal)`；IX `(S,file_object_id,id)` GC反查；像素成对且正数，时长非负；资产purpose与对象真实格式匹配，由服务验证 |
-| `source_units` | `parent_source_unit_id uuid NULL` 层级；`unit_kind varchar(32) NN` spine/区段/获准页区域；`ordinal integer NN` 版本内全序；`source_asset_id uuid NN` 原件；`original_locator jsonb NN` EPUB路径/MD范围/获准页坐标；`schema_version smallint NN` 定位载荷版本 | UQ `(S,material_revision_id,ordinal)`；IX `(S,parent_source_unit_id,ordinal)`；拒绝自父，树无环/同版本由服务验证；不以页号猜测格式已开放 |
-| `content_blocks` | `source_unit_id uuid NN` 来源容器；`ordinal integer NN` unit内序；`block_kind varchar(32) NN` paragraph/title/list/table/caption等注册值；`canonical_text text NN` 规范文本（纯图块可为空文本）；`scalar_length integer NN` scalar长度；`content_origin varchar(32) NN` deterministic/vision/user_correction；`recognition_run_id uuid NULL` 视觉来源AiRun；`original_locator jsonb NN` 源范围；`schema_version smallint NN`；`presentation_payload jsonb NULL` 受控ruby/列表/表格样式而非脚本 | UQ `(S,source_unit_id,ordinal)`；IX `(S,material_revision_id,id)`；长度非负，vision需recognition_run_id；发布程序校验scalar_length与正文、原位范围/字素边界；非文字块不制造句子 |
-| `import_issues` | 另含R；`stage_code,kind varchar(64) NN` 阶段/问题；`severity varchar(16) NN` warning/blocking；`status varchar(24) NN` open/resolved/accepted；`source_refs jsonb NN` 有界出处；`schema_version smallint NN`；`resolution_code varchar(64) NULL`；`resolved_by_user_id uuid NULL`；`resolved_at timestamptz NULL` | IX `(S,material_revision_id,status,severity,id)`；关闭字段成对，用户确认与确定修复须可追溯；人工确认不得把不可用必要题面直接改成ready |
+| `material_source_assets` | `file_object_id uuid NN` 本人验证对象；`purpose varchar(40) NN` 主文档/内嵌图/受控派生图等；`ordinal integer NN` 版本内序；`source_locator jsonb NULL` 原件位置；`pixel_width,pixel_height integer NULL` 实际图像像素；`duration_ms bigint NULL` 实际媒体时长 | UQ `(S,material_revision_id,ordinal)`；IX `(S,file_object_id,id)` GC反查；像素成对且正数，时长非负；资产purpose与对象真实格式匹配，由服务验证 |
+| `material_source_units` | `parent_source_unit_id uuid NULL` 层级；`unit_kind varchar(32) NN` spine/区段/获准页区域；`ordinal integer NN` 版本内全序；`source_asset_id uuid NN` 原件；`original_locator jsonb NN` EPUB路径/MD范围/获准页坐标；`schema_version smallint NN` 定位载荷版本 | UQ `(S,material_revision_id,ordinal)`；IX `(S,parent_source_unit_id,ordinal)`；拒绝自父，树无环/同版本由服务验证；不以页号猜测格式已开放 |
+| `material_content_blocks` | `source_unit_id uuid NN` 来源容器；`ordinal integer NN` unit内序；`block_kind varchar(32) NN` paragraph/title/list/table/caption等注册值；`canonical_text text NN` 规范文本（纯图块可为空文本）；`scalar_length integer NN` scalar长度；`content_origin varchar(32) NN` deterministic/vision/user_correction；`recognition_run_id uuid NULL` 视觉来源AiRun；`original_locator jsonb NN` 源范围；`schema_version smallint NN`；`presentation_payload jsonb NULL` 受控ruby/列表/表格样式而非脚本 | UQ `(S,source_unit_id,ordinal)`；IX `(S,material_revision_id,id)`；长度非负，vision需recognition_run_id；发布程序校验scalar_length与正文、原位范围/字素边界；非文字块不制造句子 |
+| `material_import_issues` | 另含R；`stage_code,kind varchar(64) NN` 阶段/问题；`severity varchar(16) NN` warning/blocking；`status varchar(24) NN` open/resolved/accepted；`source_refs jsonb NN` 有界出处；`schema_version smallint NN`；`resolution_code varchar(64) NULL`；`resolved_by_user_id uuid NULL`；`resolved_at timestamptz NULL` | IX `(S,material_revision_id,status,severity,id)`；关闭字段成对，用户确认与确定修复须可追溯；人工确认不得把不可用必要题面直接改成ready |
 
 ### 2.7 派生语言标注
 
@@ -174,9 +176,9 @@ UQ `(S,material_id,revision_number)`；IX `(S,material_id,status,id)` 查候选/
 
 | 表 | 列（PG类型；空值/默认；语义） | 唯一、检查与索引 |
 | --- | --- | --- |
-| `linguistic_analysis_versions` | `analysis_number bigint NN`；`language varchar(35) NN`；`segmenter_version,tokenizer_version,dictionary_version varchar(80) NN`；`status varchar(24) NN` building/ready/failed/sealed；`job_id uuid NN`；`input_delete_generation bigint NN`；`published_at timestamptz NULL` | UQ `(S,material_revision_id,language,analysis_number)`；IX `(S,material_revision_id,status,published_at,id)`；序号>=1、代次非负；算法升级建新行，ready后不可改 |
-| `sentences` | `analysis_version_id uuid NN`；`content_block_id uuid NN`；`ordinal integer NN` 块内序；`start_scalar,end_scalar integer NN` 左闭右开范围；`language varchar(35) NN` | UQ `(S,analysis_version_id,content_block_id,ordinal)`；IX `(S,content_block_id,start_scalar,id)`；CHECK `0<=start_scalar<end_scalar`；范围/quote与当前块规范文本由服务验，不跨块拼表格 |
-| `tokens` | `analysis_version_id,content_block_id uuid NN`；`sentence_id uuid NULL` 无合法句子可空；`ordinal integer NN` 块内序；`start_scalar,end_scalar integer NN`；`lemma text NULL`；`reading text NULL`；`part_of_speech varchar(64) NULL`；`schema_version smallint NN`；`features jsonb NULL` 注册语言属性 | UQ `(S,analysis_version_id,content_block_id,ordinal)`；IX `(S,sentence_id,ordinal)`；CHECK合法非空范围；模型/分词器不能更改稳定源ID；新分析不重新解释旧sentence/token |
+| `material_analysis_versions` | `analysis_number bigint NN`；`language varchar(35) NN`；`segmenter_version,tokenizer_version,dictionary_version varchar(80) NN`；`status varchar(24) NN` building/ready/failed/sealed；`job_id uuid NN`；`input_delete_generation bigint NN`；`published_at timestamptz NULL` | UQ `(S,material_revision_id,language,analysis_number)`；IX `(S,material_revision_id,status,published_at,id)`；序号>=1、代次非负；算法升级建新行，ready后不可改 |
+| `material_sentences` | `analysis_version_id uuid NN`；`content_block_id uuid NN`；`ordinal integer NN` 块内序；`start_scalar,end_scalar integer NN` 左闭右开范围；`language varchar(35) NN` | UQ `(S,analysis_version_id,content_block_id,ordinal)`；IX `(S,content_block_id,start_scalar,id)`；CHECK `0<=start_scalar<end_scalar`；范围/quote与当前块规范文本由服务验，不跨块拼表格 |
+| `material_tokens` | `analysis_version_id,content_block_id uuid NN`；`sentence_id uuid NULL` 无合法句子可空；`ordinal integer NN` 块内序；`start_scalar,end_scalar integer NN`；`lemma text NULL`；`reading text NULL`；`part_of_speech varchar(64) NULL`；`schema_version smallint NN`；`features jsonb NULL` 注册语言属性 | UQ `(S,analysis_version_id,content_block_id,ordinal)`；IX `(S,sentence_id,ordinal)`；CHECK合法非空范围；模型/分词器不能更改稳定源ID；新分析不重新解释旧sentence/token |
 
 ## 3. 小说、课本和阅读记录
 
@@ -199,12 +201,12 @@ UQ `(S,material_id,revision_number)`；IX `(S,material_id,status,id)` 查候选/
 | --- | --- | --- |
 | `textbook_units` | `parent_unit_id uuid NULL` 可选原书层级；`ordinal integer NN` material_revision内稳定全序；`title text NN`；`title_origin varchar(24) NN` original/unstructured；`source_refs jsonb NN`；`schema_version smallint NN`；`quality_state varchar(24) NN` | UQ `(S,material_revision_id,ordinal)`；IX `(S,parent_unit_id,ordinal)`；禁自父、服务验无环；无可靠Unit使用“待整理内容”而非伪造原课程 |
 | `textbook_lessons` | `unit_id uuid NN`；`ordinal integer NN`；`title text NN`；`source_refs jsonb NN`；`schema_version smallint NN`；`quality_state varchar(24) NN` | UQ `(S,unit_id,ordinal)`；Unit/Lesson是领域身份，不借小说章节 |
-| `textbook_content_nodes` | `lesson_id uuid NN`；`ordinal integer NN`；`role varchar(32) NN` 八类受控角色；`source_refs jsonb NN`；`schema_version smallint NN`；`typed_payload jsonb NN` 小型角色载荷/结构引用；`quality_state varchar(24) NN` | UQ `(S,lesson_id,ordinal)`；role映射见展示契约，未知保留源与issue，不硬归第九类；大正文仍引用content_blocks，不整本JSON |
-| `textbook_content_edges` | `from_node_id,to_node_id uuid NN`；`relation_kind varchar(32) NN` translation_of/caption_of/example_of/exercise_for/answer_for；`evidence_refs jsonb NN`；`schema_version smallint NN`；`confirmation_status varchar(24) NN` | UQ `(S,from_node_id,to_node_id,relation_kind)`；IX `(S,to_node_id,relation_kind,id)`；CHECK from!=to，服务验同manifest/允许跨Lesson关系；answer_for不作为普通正文投影 |
+| `textbook_content_nodes` | `lesson_id uuid NN`；`ordinal integer NN`；`role varchar(32) NN` 八类受控角色；`source_refs jsonb NN`；`schema_version smallint NN`；`typed_payload jsonb NN` 小型角色载荷/结构引用；`quality_state varchar(24) NN` | UQ `(S,lesson_id,ordinal)`；role映射见展示契约，未知保留源与issue，不硬归第九类；大正文仍引用material_content_blocks，不整本JSON |
+| `textbook_content_node_links` | `from_node_id,to_node_id uuid NN`；`relation_kind varchar(32) NN` translation_of/caption_of/example_of/exercise_for/answer_for；`evidence_refs jsonb NN`；`schema_version smallint NN`；`confirmation_status varchar(24) NN` | UQ `(S,from_node_id,to_node_id,relation_kind)`；IX `(S,to_node_id,relation_kind,id)`；CHECK from!=to，服务验同manifest/允许跨Lesson关系；answer_for不作为普通正文投影 |
 | `textbook_dialogue_turns` | `content_node_id uuid NN`；`ordinal integer NN`；`speaker_label text NULL`；`source_locator jsonb NN`；`schema_version smallint NN` | UQ `(S,content_node_id,ordinal)`；说话人缺失为空，不按相同姓名合并发言；声音映射归生成spec |
 | `textbook_vocabulary_rows` | `content_node_id uuid NN`；`ordinal integer NN`；`term text NN`；`reading,part_of_speech,meaning,example text NULL` 原书对应列；`source_locator jsonb NN`；`schema_version smallint NN`；`extra_columns jsonb NULL` 具稳定列键的原书额外列 | UQ `(S,content_node_id,ordinal)`；缺列保持NULL；同词多行不去重，收藏另建本人collection，不把本表当词汇掌握 |
 | `textbook_table_cells` | `content_node_id uuid NN`；`row_index,column_index integer NN` 从1起；`row_span,column_span integer NN DEFAULT 1`；`is_header boolean NN DEFAULT false`；`source_locator jsonb NN`；`schema_version smallint NN`；`display_payload jsonb NN` 受控单元格内容 | UQ `(S,content_node_id,row_index,column_index)`；行列/跨度>0，发布服务验合并格不重叠/越界；不能展平丢列关系 |
-| `textbook_exercise_bindings` | `content_node_id uuid NN`；`exercise_question_id uuid NN` 不可变公共题版本；`grading_basis_id uuid NULL` 无依据可空；`ordinal integer NN`；`readiness varchar(24) NN` ready/needs_review/unavailable；`schema_version smallint NN`；`source_refs jsonb NN` | UQ `(S,content_node_id,ordinal)`、`(S,content_node_id,exercise_question_id)`；IX `(S,exercise_question_id,id)`；题面、选项/空位、题组与隐藏依据见学习分册，不复制评分；无依据不伪装标准答案 |
+| `textbook_content_node_question_links` | `content_node_id uuid NN`；`exercise_question_id uuid NN` 不可变公共题版本；`grading_basis_id uuid NULL` 无依据可空；`ordinal integer NN`；`readiness varchar(24) NN` ready/needs_review/unavailable；`schema_version smallint NN`；`source_refs jsonb NN` | UQ `(S,content_node_id,ordinal)`、`(S,content_node_id,exercise_question_id)`；IX `(S,exercise_question_id,id)`；题面、选项/空位、题组与隐藏依据见学习分册，不复制评分；无依据不伪装标准答案 |
 
 ### 3.3 阅读、书签、出处重绑
 
@@ -212,12 +214,12 @@ scope=library_owned；临时选区不持久建行，不设置“继续阅读/最
 
 | 表/列组 | 列（PG类型；空值/默认；语义） | 唯一、检查与索引/生命周期 |
 | --- | --- | --- |
-| `reading_progress` / V+R | `material_type varchar(16) NN` 仅novel/textbook；`last_locator jsonb NN`；`furthest_locator jsonb NULL` 仅小说；`last_order_key bigint NN`；`furthest_order_key bigint NULL` 小说源序度量；`accepted_at timestamptz NN` 服务接受时间；`client_instance_id uuid NN` 已验证设备/安装范围；`client_operation_seq bigint NN` 当前提交端递增序号 | UQ `(S,material_id,material_revision_id)`；IX `(S,material_id,accepted_at DESC,id)`；CHECK 序号非负、小说furthest配对且>=last_order_key、课本furthest全空。材料根+进度行锁/CAS；回读只改last，同版最远单调；新版本另行记录，旧定位不静默搬移 |
-| `bookmarks` / V | `locator jsonb NN`；`locator_digest bytea NN` 精确规范定位摘要32字节；`title text NULL` 短标题；`schema_version smallint NN` | UQ `(S,material_revision_id,locator_digest)`；IX `(S,material_id,created_at,id)`；摘要命中再比规范locator防碰撞，删除通过服务显式解除，不新增文件夹/全文搜索；原材料删除时书签可保留快照但禁回跳 |
-| `reading_open_events` / V | `open_request_id uuid NN` 业务去重；`opened_at timestamptz NN` 服务接受时间；`locator jsonb NN`；`schema_version smallint NN` | UQ `(S,open_request_id)`；IX `(S,opened_at,id)` 有界本人历史/计数；追加只读，不以遥测重放制造学习事实；留存上限由操作配置锁定，不建无限点击流水 |
-| `source_rebindings` / M | `source_kind varchar(32) NN` material_content/exam_listening_script；`source_version_id,target_version_id uuid NN` 同种版本；`source_locator jsonb NN`；`target_locator jsonb NULL` 仅resolved有值；`source_locator_digest bytea NN` 32字节；`schema_version smallint NN`；`status varchar(24) NN` resolved/ambiguous/unresolved；`mapping_method varchar(40) NN`；`validated_at timestamptz NN` | UQ `(S,source_kind,source_version_id,target_version_id,source_locator_digest)`；目标为唯一且程序验证才resolved，其他保留旧快照；文本相同不跨材料匹配 |
+| `material_reading_progress` / V+R | `material_type varchar(16) NN` 仅novel/textbook；`last_locator jsonb NN`；`furthest_locator jsonb NULL` 仅小说；`last_order_key bigint NN`；`furthest_order_key bigint NULL` 小说源序度量；`accepted_at timestamptz NN` 服务接受时间；`client_instance_id uuid NN` 已验证设备/安装范围；`client_operation_seq bigint NN` 当前提交端递增序号 | UQ `(S,material_id,material_revision_id)`；IX `(S,material_id,accepted_at DESC,id)`；CHECK 序号非负、小说furthest配对且>=last_order_key、课本furthest全空。材料根+进度行锁/CAS；回读只改last，同版最远单调；新版本另行记录，旧定位不静默搬移 |
+| `material_bookmarks` / V | `locator jsonb NN`；`locator_digest bytea NN` 精确规范定位摘要32字节；`title text NULL` 短标题；`schema_version smallint NN` | UQ `(S,material_revision_id,locator_digest)`；IX `(S,material_id,created_at,id)`；摘要命中再比规范locator防碰撞，删除通过服务显式解除，不新增文件夹/全文搜索；原材料删除时书签可保留快照但禁回跳 |
+| `material_reading_open_events` / V | `open_request_id uuid NN` 业务去重；`opened_at timestamptz NN` 服务接受时间；`locator jsonb NN`；`schema_version smallint NN` | UQ `(S,open_request_id)`；IX `(S,opened_at,id)` 有界本人历史/计数；追加只读，不以遥测重放制造学习事实；留存上限由操作配置锁定，不建无限点击流水 |
+| `material_source_rebindings` / M | `source_kind varchar(32) NN` material_content/exam_listening_script；`source_version_id,target_version_id uuid NN` 同种版本；`source_locator jsonb NN`；`target_locator jsonb NULL` 仅resolved有值；`source_locator_digest bytea NN` 32字节；`schema_version smallint NN`；`status varchar(24) NN` resolved/ambiguous/unresolved；`mapping_method varchar(40) NN`；`validated_at timestamptz NN` | UQ `(S,source_kind,source_version_id,target_version_id,source_locator_digest)`；目标为唯一且程序验证才resolved，其他保留旧快照；文本相同不跨材料匹配 |
 
-CHECK `source_rebindings.status='resolved'` 时必需target_locator，反向禁止非resolved携带可直接导航目标。源/目标版本、隐藏听力投影与quote范围由服务逐个验证，普通sources接口不能借重绑返回隐藏稿。位置/书签创建和材料删除均锁材料根；阅读冲突由expected_revision显式处理，离线只保留本次页面位置，不排队写进度。
+CHECK `material_source_rebindings.status='resolved'` 时必需target_locator，反向禁止非resolved携带可直接导航目标。源/目标版本、隐藏听力投影与quote范围由服务逐个验证，普通sources接口不能借重绑返回隐藏稿。位置/书签创建和材料删除均锁材料根；阅读冲突由expected_revision显式处理，离线只保留本次页面位置，不排队写进度。
 
 ## 4. 试卷准备与冻结
 
@@ -266,7 +268,7 @@ UQ `(S,exam_paper_id,version_number)`；IX `(S,exam_paper_id,status,id)`。CHECK
 | `exam_sections` | `parent_section_id uuid NULL`；`ordinal integer NN` 版本内全序；`title text NN`；`instructions text NULL`；`schema_version smallint NN`；`source_refs jsonb NN` | UQ `(S,exam_paper_version_id,ordinal)`；禁自父，服务验无环；任选等未实现规则阻止ready，不存未执行的伪规则 |
 | `exam_stimuli` | `section_id uuid NN`；`ordinal integer NN` section内序；`kind varchar(24) NN` reading/image/table/listening；`schema_version smallint NN`；`presentation_payload jsonb NN` 题面专用有界载荷；`source_refs jsonb NN`；`visibility varchar(24) NN` preparation/exam/post_submit；`required boolean NN` | UQ `(S,section_id,ordinal)`；题图只能引用验证的题面资产；listening题面无脚本/答案；必需媒体不能缺失后直接丢弃 |
 | `exam_items` | `section_id uuid NN`；`exercise_question_id uuid NN` 公共不可变题版本；`grading_basis_id uuid NULL` 确切隐藏依据版本；`ordinal integer NN` 全卷序；`original_number text NULL` 原题号；`business_type varchar(40) NN`；`interaction_type varchar(24) NN` 五类；`delivery_mode varchar(16) NN` visual/listening/mixed/unknown；`max_points numeric(10,2) NN`；`schema_version smallint NN`；`source_refs jsonb NN` | UQ `(S,exam_paper_version_id,ordinal)`、`(S,exam_paper_version_id,exercise_question_id)`；IX `(S,exercise_question_id,id)`；分值有限非负；ready不可unknown；公共题版本只复用纯题型/正文，分值/依据与试卷快照一致 |
-| `exam_stimulus_item_bindings` | `stimulus_id,exam_item_id uuid NN`；`ordinal integer NN` stimulus内题序；`confirmation_status varchar(24) NN`；`confirmed_by_user_id uuid NULL`；`confirmed_at timestamptz NULL`；`schema_version smallint NN`；`evidence_refs jsonb NN` | UQ `(S,stimulus_id,exam_item_id)`、`(S,stimulus_id,ordinal)`；IX `(S,exam_item_id,id)`；确认列成对；冻结前同版本/题范围完整校验 |
+| `exam_stimulus_item_links` | `stimulus_id,exam_item_id uuid NN`；`ordinal integer NN` stimulus内题序；`confirmation_status varchar(24) NN`；`confirmed_by_user_id uuid NULL`；`confirmed_at timestamptz NULL`；`schema_version smallint NN`；`evidence_refs jsonb NN` | UQ `(S,stimulus_id,exam_item_id)`、`(S,stimulus_id,ordinal)`；IX `(S,exam_item_id,id)`；确认列成对；冻结前同版本/题范围完整校验 |
 | `exam_preparation_issues` | 另含R；`kind varchar(64) NN`；`exam_item_id,stimulus_id,candidate_id uuid NULL` 类型要求的目标；`severity varchar(16) NN`；`status varchar(24) NN` open/resolved/rejected；`schema_version smallint NN`；`evidence_refs jsonb NN`；`resolution_code varchar(64) NULL`；`resolved_by_user_id uuid NULL`；`resolved_at timestamptz NULL` | IX `(S,exam_paper_version_id,status,severity,id)`；种类包括listening_type_review/listening_binding_review/script_missing/audio_missing；必要问题关闭必须绑定具体改版/确认，不允许只换状态 |
 
 契约逻辑对象 `ExamOption/ExamBlank/ExamGradingBasis` 物理映射到学习分册的公共题目选项/空位及 `question_grading_bases`；`exam_items.exercise_question_id/grading_basis_id` 冻结确切行ID。答案、rubric、隐藏解释不进入题面JSON、题图、朗读、Semantics或题面Redis键；完整原件只在本人校对动作组合下读取。
@@ -290,11 +292,11 @@ UQ `(S,exam_paper_id,version_number)`；IX `(S,exam_paper_id,status,id)`。CHECK
 | 表 | 其余列（PG类型；空值/默认；语义） | 唯一、检查与索引 |
 | --- | --- | --- |
 | `exam_listening_candidates` | 另含R；`ai_run_id uuid NN`；`generation bigint NN`；`ordinal integer NN`；`candidate_kind varchar(24) NN` item_type/script/item_binding；`exam_item_id,script_version_id,stimulus_id uuid NULL` 按kind约束；`proposed_delivery_mode varchar(16) NULL`；`confidence_status varchar(24) NN` 复核标签而非概率；`schema_version smallint NN`；`evidence_refs jsonb NN`；`unresolved_cues jsonb NN`；`status varchar(24) NN` pending/confirmed/rejected/superseded；`reviewed_by_user_id uuid NULL`；`reviewed_at timestamptz NULL` | UQ `(S,ai_run_id,ordinal)`；IX `(S,exam_paper_version_id,generation,status,id)`；非负generation；kind对应字段必需/禁用，item_type有item和候选mode；script有script版本；item_binding有script/stimulus且多题由下表引用；旧generation只历史入库不得覆盖人工确认 |
-| `exam_listening_candidate_items` | `candidate_id,exam_item_id uuid NN`；`ordinal integer NN` | UQ `(S,candidate_id,exam_item_id)`、`(S,candidate_id,ordinal)`；服务确认同卷、有效题号/范围及证据，模型ID不能直接授予引用 |
-| `exam_listening_bindings` | 另含R；`stimulus_id,script_version_id uuid NN`；`source_candidate_id uuid NULL` 人工从合法源建立可空；`confirmed_candidate_generation bigint NN`；`status varchar(24) NN` draft/confirmed/rejected；`confirmed_by_user_id uuid NULL`；`confirmed_at timestamptz NULL` | UQ `(S,exam_paper_version_id,stimulus_id)`；脚本唯一绑定该stimulus，其题目集合由同卷exam_stimulus_item_bindings提供；确认锁草稿、候选与引用目标，校验expected_revision、generation及人工改稿版本 |
+| `exam_listening_candidate_item_links` | `candidate_id,exam_item_id uuid NN`；`ordinal integer NN` | UQ `(S,candidate_id,exam_item_id)`、`(S,candidate_id,ordinal)`；服务确认同卷、有效题号/范围及证据，模型ID不能直接授予引用 |
+| `exam_listening_bindings` | 另含R；`stimulus_id,script_version_id uuid NN`；`source_candidate_id uuid NULL` 人工从合法源建立可空；`confirmed_candidate_generation bigint NN`；`status varchar(24) NN` draft/confirmed/rejected；`confirmed_by_user_id uuid NULL`；`confirmed_at timestamptz NULL` | UQ `(S,exam_paper_version_id,stimulus_id)`；脚本唯一绑定该stimulus，其题目集合由同卷exam_stimulus_item_links提供；确认锁草稿、候选与引用目标，校验expected_revision、generation及人工改稿版本 |
 | 同表：音频选用与播放策略 | `selected_synthesis_spec_id uuid NULL`；`play_limit_mode varchar(16) NULL` unlimited/finite；`max_plays integer NULL`；`allow_pause,allow_seek,allow_speed_change boolean NULL`；`transcript_visibility varchar(32) NULL` hidden/post_submit/approved_accessibility；`policy_schema_version smallint NULL`；`accessibility_settings jsonb NULL`；`policy_confirmed_by_user_id uuid NULL`；`policy_confirmed_at timestamptz NULL` | selected_synthesis_spec_id是独立音频指针，允许在策略确认前或后设定；其余列为播放策略组，未确认时全空，确认后除max_plays外齐全，finite需>0，unlimited为空。ready卷要求策略已确认且selected spec属于本binding、状态ready；本行与卷共同冻结，策略变更需新卷版本 |
 
-用户选择题组时服务端展开具体叶子题，正式关联逐项进入 `exam_stimulus_item_bindings`；不把item_ids永久只保存在JSON。每个疑似听力题和候选关系必须有对应preparation issue。确认、拒绝、改绑更新对应revision/操作者与Outbox；文字稿确认不自动执行模型/TTS调用。
+用户选择题组时服务端展开具体叶子题，正式关联逐项进入 `exam_stimulus_item_links`；不把item_ids永久只保存在JSON。每个疑似听力题和候选关系必须有对应preparation issue。确认、拒绝、改绑更新对应revision/操作者与Outbox；文字稿确认不自动执行模型/TTS调用。
 
 ### 5.3 合成规格、音频版本与播放规则
 
@@ -335,7 +337,7 @@ speaker/voice映射、SSML等仅经能力目录结构化构造，不接受任意
 
 IX `(S,exam_paper_id,started_at DESC,id DESC)` 历史及查询既有场次；IX `(status,deadline_at,id) WHERE status='in_progress' AND deadline_at IS NOT NULL` 固定职责截止扫描。既有未完成场次优先显示续答，幂等记录防止同一次开考重试重复创建，不额外规定用户永远只能有一场未完成考试。CHECK 终态时间/理由组合、deadline晚于started、代次非负。开始事务锁material→paper→冻结版本，预检必要音频并确认当前动作/客户端能力后建立计时场次；保存/接管/提交/超时共锁session，外部检查在锁外完成再锁内重验。
 
-### 6.2 `exam_answers` — 草稿与锁定答卷
+### 6.2 `exam_session_answers` — 草稿与锁定答卷
 
 列组 L + R，scope=library_owned；服务/API逻辑对象 ExamResponse 映射此表，不另外创建 exam_responses。
 
@@ -351,7 +353,7 @@ IX `(S,exam_paper_id,started_at DESC,id DESC)` 历史及查询既有场次；IX 
 | locked_at | timestamptz NULL | 交卷后不允许修改答案/标记 |
 | question_attempt_id | uuid NULL | 锁卷时创建的公共question_attempts，不在草稿阶段逐题评分 |
 
-UQ `(S,exam_session_id,exam_item_id)`；UQ `(S,question_attempt_id) WHERE question_attempt_id IS NOT NULL`；IX `(S,exam_session_id,locked_at,id)`。开考可以逐叶子创建空答案行，提交必须对全部叶子形成锁定快照，不能只保存“已答”从而漏计空答/媒体故障。普通草稿保存不分配学习接受序号，锁session检查截止/编辑代次，再CAS本行revision；迟到返回不覆盖新值。交卷/超时创建公共attempt并分配accepted_sequence时，必须在授权外层锁之后先锁本人library的 `learning_acceptance_counters`，再锁session→answer，按稳定叶子序在同事务分配序号；不得先持有session再补锁计数器，以免与辅助曝光路径形成反锁。手动交卷、截止任务和幂等重放统一使用这一顺序。锁卷、公共attempt创建、grading请求（若显式要求）与Outbox同事务；纯交卷保留未请求评分。
+UQ `(S,exam_session_id,exam_item_id)`；UQ `(S,question_attempt_id) WHERE question_attempt_id IS NOT NULL`；IX `(S,exam_session_id,locked_at,id)`。开考可以逐叶子创建空答案行，提交必须对全部叶子形成锁定快照，不能只保存“已答”从而漏计空答/媒体故障。普通草稿保存不分配学习接受序号，锁session检查截止/编辑代次，再CAS本行revision；迟到返回不覆盖新值。交卷/超时创建公共attempt并分配accepted_sequence时，必须在授权外层锁之后先锁本人library的 `library_learning_acceptance_counters`，再锁session→answer，按稳定叶子序在同事务分配序号；不得先持有session再补锁计数器，以免与辅助曝光路径形成反锁。手动交卷、截止任务和幂等重放统一使用这一顺序。锁卷、公共attempt创建、grading请求（若显式要求）与Outbox同事务；纯交卷保留未请求评分。
 
 ### 6.3 `exam_session_listening_usages` — 场次×共享听力计数
 
@@ -367,7 +369,7 @@ UQ `(S,exam_session_id,exam_item_id)`；UQ `(S,question_attempt_id) WHERE questi
 
 UQ `(S,exam_session_id,stimulus_id)`；CHECK finite时 `reserved_count + consumed_count <= max_plays`。创建场次时建立需要的usage，刷新/跨端不重新初始化。计数是PG事务内维护的账本汇总，play_attempts为明细；修复须受控核对，不能从客户端重算。unlimited可保留相同传输attempt以支撑恢复，但不执行有限次数拒绝，不将max_plays设成巨大魔数。
 
-### 6.4 `exam_listening_play_attempts` — 首字节、续播与终态事实
+### 6.4 `exam_session_listening_play_attempts` — 首字节、续播与终态事实
 
 列组 L + R，scope=library_owned；id 即接口 play_attempt_id。
 
@@ -398,8 +400,8 @@ UQ `(S,exam_session_id,idempotency_key_hash)`；IX `(S,usage_id,status,id)`；IX
 
 | 表 | 列（PG类型；空值/默认；语义） | 唯一、检查与索引 |
 | --- | --- | --- |
-| `exam_media_faults` | 另含R；`exam_session_id,exam_paper_version_id uuid NN`；`asset_kind varchar(24) NN` source_asset/audio_asset；`asset_id uuid NN` 已冻结必需资产；`confirmed_at timestamptz NN`；`reason_code varchar(64) NN`；`status varchar(24) NN` confirmed；`fault_revision bigint NN` 对应session递增事实版本；`idempotency_record_id uuid NN` | UQ `(S,exam_session_id,asset_kind,asset_id)`；IX `(S,exam_session_id,fault_revision)`；asset_kind联合引用按注册目标校验；只在可作答且期限内确认，P0无人工清除/改分状态 |
-| `exam_media_fault_items` | `fault_id,exam_item_id uuid NN`；`exam_session_id uuid NN` | UQ `(S,fault_id,exam_item_id)`；IX `(S,exam_session_id,exam_item_id,id)` 评分阻断查询；受影响叶子由冻结投影推导，不信任客户端列表 |
+| `exam_session_media_faults` | 另含R；`exam_session_id,exam_paper_version_id uuid NN`；`asset_kind varchar(24) NN` source_asset/audio_asset；`asset_id uuid NN` 已冻结必需资产；`confirmed_at timestamptz NN`；`reason_code varchar(64) NN`；`status varchar(24) NN` confirmed；`fault_revision bigint NN` 对应session递增事实版本；`idempotency_record_id uuid NN` | UQ `(S,exam_session_id,asset_kind,asset_id)`；IX `(S,exam_session_id,fault_revision)`；asset_kind联合引用按注册目标校验；只在可作答且期限内确认，P0无人工清除/改分状态 |
+| `exam_media_fault_item_links` | `fault_id,exam_item_id uuid NN`；`exam_session_id uuid NN` | UQ `(S,fault_id,exam_item_id)`；IX `(S,exam_session_id,exam_item_id,id)` 评分阻断查询；受影响叶子由冻结投影推导，不信任客户端列表 |
 
 故障与session.media_fault_revision同事务提交；锁卷保留事实，资源后来恢复不抹除本场影响。grading_runs领取/恢复/effective发布同时核对当前fault_revision，受影响题needs_review，不能空答零分或发布整卷有效贡献。锁卷后新报告不追认；P0提示新场次重考。评分代次/逐题结果/学习贡献只在学习分册维护，session active/effective 指针遵循[数据事务](data-jobs.md#6-评分代次与学习贡献)。
 
@@ -409,14 +411,14 @@ UQ `(S,exam_session_id,idempotency_key_hash)`；IX `(S,usage_id,status,id)`；IX
 
 | 来源 → 目标 | 所有者/版本校验与共同保护行 | 删除与保留语义 |
 | --- | --- | --- |
-| material_imports/upload_intents → users/libraries/目标聚合/容量预留 | 授权外层→容量根（同时涉及时global→user）→library/目标根；同用户、用途、有效意图、配额与generation | 未发布可到期；storage_reservations幂等释放；已引用final禁止临时TTL清理 |
-| materials/source_assets/script_sources → file_objects | material→paper（适用）→file；本人/合法purpose/verified final，按目标动作签名 | 解除材料引用不自动删除文件；复用新材料/听力/其他业务引用均需复核 |
-| source_units/content_blocks/三类manifest → material_revisions | material根；同owner/library/material/revision/type，parent无环 | 发布后不可变；有书签/结果/冻结快照/在途任务引用就保留必要范围 |
-| linguistic_* → content_blocks | material根；同内容版本、合法scalar与原文范围 | 重新分句仅新分析，旧sentence不改义；无引用分析才可回收 |
-| textbook_exercise_bindings/exam_items → exercise_questions/question_grading_bases | material→paper（适用）→公共题根；同scope/不可变版本/合法用途 | 已提交attempt/冻结场次保留题面、依据及必要题图，不靠删材料级联 |
+| material_imports/upload_intents → users/libraries/目标聚合/容量预留 | 授权外层→容量根（同时涉及时global→user）→library/目标根；同用户、用途、有效意图、配额与generation | 未发布可到期；user_storage_reservations幂等释放；已引用final禁止临时TTL清理 |
+| materials/material_source_assets/script_sources → file_objects | material→paper（适用）→file；本人/合法purpose/verified final，按目标动作签名 | 解除材料引用不自动删除文件；复用新材料/听力/其他业务引用均需复核 |
+| material_source_units/material_content_blocks/三类manifest → material_revisions | material根；同owner/library/material/revision/type，parent无环 | 发布后不可变；有书签/结果/冻结快照/在途任务引用就保留必要范围 |
+| material_analysis_versions/material_sentences/material_tokens → material_content_blocks | material根；同内容版本、合法scalar与原文范围 | 重新分句仅新分析，旧sentence不改义；无引用分析才可回收 |
+| textbook_content_node_question_links/exam_items → exercise_questions/question_grading_bases | material→paper（适用）→公共题根；同scope/不可变版本/合法用途 | 已提交attempt/冻结场次保留题面、依据及必要题图，不靠删材料级联 |
 | listening候选/绑定 → 脚本版本/Stimulus/Item | material→paper→草稿版本；generation、expected_revision及同卷全体关系 | 旧run只历史，人工确认不被迟到覆盖；已冻结绑定不能原地换脚本/音频 |
 | synthesis_specs/binding策略 → 私有音频/manifest | material→paper→binding→音频根；本人、严格规格、验证完成 | 持久成功不得按Redis TTL删；历史场次引用保留，允许清理无引用失败产物 |
-| exam_sessions/answers → 冻结卷/题/依据 | 新开考先material→paper；草稿保存session→answer；交卷/超时等有学习计序的路径统一learning_acceptance_counters→session→answer，验证冻结ID和当前场次动作 | material删除不终止已有合法场次或清除已保存答卷；不提供完整原书读取旁路 |
+| exam_sessions/answers → 冻结卷/题/依据 | 新开考先material→paper；草稿保存session→answer；交卷/超时等有学习计序的路径统一library_learning_acceptance_counters→session→answer，验证冻结ID和当前场次动作 | material删除不终止已有合法场次或清除已保存答卷；不提供完整原书读取旁路 |
 | usage/attempt/fault → session/冻结媒体 | session→usage→attempt或fault；edit_epoch、状态、deadline、asset版本 | 次数与交付事实持久，不能Redis清空后重置；终态不重开，故障不自动撤销 |
 | reading/bookmark/rebindings → 内容/脚本版本 | material→相应paper/script根→记录；同scope/版本/投影/边界 | 原版失效保留快照或明确不可回跳；不能按相同字串猜另一版本 |
 

@@ -25,8 +25,9 @@ SQLAlchemy的onupdate由其生成DML时应用，并不是数据库触发器；�
 
 | 对象 | 统一规则 | 示例 |
 | --- | --- | --- |
-| 表 | 小写snake_case、复数；不加tbl/t_；不用保留字或依赖双引号的大小写 | users、materials、exam_sessions |
-| 关联表 | 按业务方向命名；独立行ID和业务组合唯一约束并存 | collection_tags、user_roles |
+| 表 | 小写snake_case、复数（progress等不可数业务名保留）；以业务归属/直接父对象命名，不加tbl/t_或全祖先链 | users、user_extensions、material_content_blocks、exam_session_answers |
+| 专用多对多关联表 | 两端业务名+links；自关联带关系语义；独立行ID和业务组合唯一约束并存 | collection_tag_links、user_role_links、role_inheritance_links |
+| 关系基数 | 不写进表名，不用单复数猜测；字典列父/端点、1:0..1或1:N或M:N及唯一依据 | user_extensions按user唯一；user_languages按user×种类×语言唯一 |
 | 字段 | 小写snake_case；名称表达含义与单位，不使用含混的type/value/data | owner_user_id、duration_ms、size_bytes |
 | 时间/日期 | 时间点后缀_at，纯日期后缀_date；截止时间统一沿已发布业务契约 | created_at、expires_at、deadline |
 | 主键 | 业务实体默认id UUID，由后端使用标准uuid4生成；无需另建自增号 | 客户端/模型/CSV的ID不直接决定新对象ID |
@@ -35,6 +36,8 @@ SQLAlchemy的onupdate由其生成DML时应用，并不是数据库触发器；�
 | 索引 | ix_<table>_<columns>；部分/表达式索引使用稳定业务后缀 | ix_materials_owner_library_active_order |
 
 业务唯一性由单独UNIQUE/唯一索引表达，UUID不能代替业务去重。既有API中的session_id等语义名称可映射到物理id，但在字典登记，不能暗改接口。固定权限代码、受控幂等键等自然标识是否作主键须逐表说明，不强行给Alembic内部版本表加业务ID。
+
+完整目标命名和关系见[设计书清单](../architecture/database-relations.md)。独立状态绑定、业务目标及可重复编排明细保留bindings/targets/items等业务名称，不因引用两个对象就强加端点唯一或统一改成links。名称不代替作用域/存在性校验。B0实际`user_roles`、`role_permissions`在后续受控迁移前保持原名；设计目标`user_role_links`、`role_permission_links`不改写既有0001或生成字典。
 
 Base统一使用MetaData.naming_convention。命名模板包含全部组合列，CHECK显式给语义名称；无fk模板。控制标识符为ASCII、最多63字节，长名由统一工具确定性缩短并检查碰撞，不能由各迁移作者随意截断。名称改变也是需要审查的schema差异。[SQLAlchemy命名约定](https://docs.sqlalchemy.org/en/20/core/constraints.html#configuring-constraint-naming-conventions)
 
@@ -171,7 +174,7 @@ class TimestampMixin:
 
 
 class CollectionTag(TimestampMixin, Base):
-    __tablename__ = "collection_tags"
+    __tablename__ = "collection_tag_links"
     __table_args__ = (
         UniqueConstraint("owner_user_id", "library_id", "collection_id", "tag_id"),
         {"comment": "本人资料库内的收藏标签关联"},

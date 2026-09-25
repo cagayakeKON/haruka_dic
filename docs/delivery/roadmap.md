@@ -8,6 +8,8 @@
 
 2026-09-25 DBDESIGN2按用户要求完成[物理结构必要性与实施复杂度收敛](../architecture/database-convergence.md)：158张候选收敛为142张（含已有12张、条件表1张），逐表说明保留/合并理由。具体字段同步三分册，注册单扩展行、用量并入attempt，工程仍分切片落地；[本轮审查](reviews/2026-09-25-database-convergence.md)只记录文档证据。
 
+2026-09-25 DBDESIGN3完成[表命名与关系设计](../architecture/database-relations.md)：采用业务归属/直接父对象命名，专用多对多关联表使用links；逐项列出142表的父/端点、基数与唯一依据。46项目标名调整中2项是B0未来改名，现有12表及代码/迁移保持现状；[本轮审查](reviews/2026-09-25-database-naming.md)仍仅文档验收。
+
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。

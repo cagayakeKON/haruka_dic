@@ -256,6 +256,8 @@ occurrence UK `(scope,grading_result_id,knowledge_key)`，IX `(scope,target_lang
 
 ## 5. 查询、内部会话与结构化结果
 
+DESIGN22复用以下既有结构，不新增物理表。`agent_thread_messages.message_payload`存版本化QueryInput及ContextPlan，`ai_runs.input_refs/generation_config`冻结实际ContextSnapshot/模型预算；`explanations`的上下文快照和`cards.source_refs/payload`保存有界来源及结果上下文引用，详细字段见[上下文契约](../contracts/query-context.md)。`learning_lookup_states/learning_generation_slots`使用新版查阅/严格键。音频资产及全局声音profile的合成配置载荷冻结adapter/API契约及ResolvedSynthesisSpec，沿[适配器](tts-adapters.md)校验，不复制一套查询缓存表或每模型音频表。
+
 ### 5.1 `agent_threads`、`agent_thread_messages`、`agent_message_attachments`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 含义 |

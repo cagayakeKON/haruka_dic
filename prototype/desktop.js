@@ -10,6 +10,11 @@
   const s = initialState();
   const exerciseFlow = window.HarukaExerciseBuilder(s);
   const root = document.getElementById("desktop-app");
+  const learningPreferences = window.HarukaLearningPreferences({
+    s,
+    root,
+    render,
+  });
   const adminRoutes = [
     "adminOverview",
     "adminUsers",
@@ -53,6 +58,7 @@
     languages: "语言选项",
     appearance: "外观与无障碍",
     readingPrefs: "阅读偏好",
+    queryPreferences: "查询与上下文",
     model: "个人模型",
     speech: "朗读与声音",
     usage: "模型用量",
@@ -102,6 +108,7 @@
     languages: "settings",
     appearance: "settings",
     readingPrefs: "settings",
+    queryPreferences: "settings",
     model: "settings",
     speech: "settings",
     usage: "settings",
@@ -416,6 +423,7 @@
     ["languages", "语言选项", "globe"],
     ["appearance", "外观与无障碍", "sun"],
     ["readingPrefs", "阅读偏好", "book"],
+    ["queryPreferences", "查询与上下文", "message"],
     ["model", "个人模型", "spark"],
     ["speech", "朗读与声音", "headphones"],
     ["usage", "模型用量", "grid"],
@@ -427,7 +435,10 @@
     const groups = [
       ["账号与语言", ["profile", "languages", "security"]],
       ["阅读与显示", ["appearance", "readingPrefs", "speech"]],
-      ["模型与设备", ["model", "usage", "cache", "connection"]],
+      [
+        "模型与设备",
+        ["queryPreferences", "model", "usage", "cache", "connection"],
+      ],
     ];
     return `${head("", "我的")}<button type="button" class="profile-card" data-go="profile"><span class="avatar">遥</span><span class="row-copy"><strong>${e(s.profile.displayName)}</strong><small>${e(s.activeLanguage || "未设置学习语言")} · ${e(s.level)}</small></span>${I("chevron")}</button><div class="settings-groups">${groups
       .map(
@@ -443,6 +454,8 @@
   }
 
   function settingContentCore(route) {
+    if (route === "queryPreferences")
+      return learningPreferences.contextSettings();
     if (route === "profile")
       return `<h2>个人资料</h2><p class="subtitle">均为可选信息，仅本人可见。</p><form class="form-grid" data-form="profile"><label class="field">显示名<input name="displayName" maxlength="40" value="${e(s.profile.displayName)}"><small>留空时显示“学习者”。</small></label><label class="field">出生年份（可选）<input type="number" name="birthYear" min="1900" max="2026" value="${e(s.profile.birthYear)}"></label><label class="field">性别（可选）<select name="gender">${["未填写", "女", "男", "非二元", "自我描述", "不愿说明"].map((x) => `<option ${s.profile.gender === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><label class="field">时区<select name="timezone"><option value="Asia/Tokyo" ${s.profile.timezone === "Asia/Tokyo" ? "selected" : ""}>东京 / Asia/Tokyo</option><option value="Asia/Shanghai" ${s.profile.timezone === "Asia/Shanghai" ? "selected" : ""}>上海 / Asia/Shanghai</option><option value="UTC" ${s.profile.timezone === "UTC" ? "selected" : ""}>UTC</option></select></label><button class="primary" type="submit">保存资料</button></form>`;
     if (route === "languages")
@@ -453,12 +466,10 @@
       return `<h2>阅读偏好</h2><div class="form-grid"><label class="field">字体风格<select data-setting="readingFont"><option value="serif" ${s.readingFont === "serif" ? "selected" : ""}>有书感的衬线体</option><option value="sans" ${s.readingFont === "sans" ? "selected" : ""}>清晰的无衬线体</option></select></label><label class="field">字号：${s.readingSize}px<input type="range" min="16" max="24" value="${s.readingSize}" data-range="readingSize"></label><label class="field">行距：${s.lineHeight.toFixed(1)}<input type="range" min="1.6" max="2.4" step="0.1" value="${s.lineHeight}" data-range="lineHeight"></label><label class="field">阅读主题<select data-setting="readingTheme"><option value="light" ${s.readingTheme === "light" ? "selected" : ""}>浅色</option><option value="dark" ${s.readingTheme === "dark" ? "selected" : ""}>深色</option><option value="sepia" ${s.readingTheme === "sepia" ? "selected" : ""}>暖纸色</option></select></label><div class="soft-panel" style="background:${s.readingTheme === "sepia" ? "#f7ead4" : s.readingTheme === "dark" ? "#192535" : "var(--blue-soft)"};color:${s.readingTheme === "dark" ? "#edf3ff" : "#152b42"};font-family:${s.readingFont === "serif" ? "'Yu Mincho',serif" : "'Segoe UI',sans-serif"};font-size:${s.readingSize}px;line-height:${s.lineHeight}">朝の光が、白いカーテンを通して部屋に広がった。</div><button class="primary" type="button" data-action="saveSettings">保存偏好</button></div>`;
     if (route === "model")
       return `<h2>个人模型</h2><p class="subtitle">使用本人 Key。文本、视觉和 TTS 能力独立选择与验证。</p><div class="form-grid"><label class="field">供应商<select data-setting="modelProvider"><option ${s.modelProvider === "OpenRouter" ? "selected" : ""}>OpenRouter</option><option ${s.modelProvider === "Gemini" ? "selected" : ""}>Gemini</option></select></label><label class="field">个人 API Key<input type="password" value="••••••••••••" disabled><small>原型不接收 API Key。</small></label><div class="grid-3"><div class="tile"><strong>文本解释</strong><small>需要文本模型能力</small></div><div class="tile"><strong>视觉识别</strong><small>扫描需明确范围和上限</small></div><div class="tile"><strong>云端朗读</strong><small>需 TTS 能力</small></div></div><button class="secondary" type="button" data-action="modelTest">模拟测试文本能力</button><p class="note">示例状态：${e(s.modelStatus)}。测试不发送任何请求。</p></div>`;
-    if (route === "speech")
-      return `<h2>朗读与声音</h2><div class="form-grid"><label class="field">TTS 供应商<select data-setting="speechProvider"><option ${s.speechProvider === "Gemini TTS" ? "selected" : ""}>Gemini TTS</option><option ${s.speechProvider === "OpenRouter TTS" ? "selected" : ""}>OpenRouter TTS</option></select></label><label class="field">默认声音<select data-setting="speechVoice">${["日语 · 清晰自然（示例）", "英语 · 清晰自然（示例）"].map((voice) => `<option ${(s.speechVoice || "日语 · 清晰自然（示例）") === voice ? "selected" : ""}>${voice}</option>`).join("")}</select></label><label class="field">播放倍速：${s.speechSpeed.toFixed(1)}×<input type="range" min="0.7" max="1.5" step="0.1" value="${s.speechSpeed}" data-range="speechSpeed"></label><div class="callout">${I("headphones")}<span>试听仅演示控件，不播放音频。</span></div><div class="button-row"><button type="button" class="secondary" data-action="speechPreview">试听界面状态</button><button type="button" class="primary" data-action="saveSettings">保存偏好</button></div></div>`;
+    if (route === "speech") return learningPreferences.speechSettings();
     if (route === "usage")
       return `<h2>模型用量</h2><div class="tabs" style="margin-bottom:17px">${["7 天", "30 天", "90 天"].map((x) => `<button type="button" data-usage-range="${x}" aria-pressed="${s.usageRange === x}">${x}</button>`).join("")}</div><div class="grid-3"><div class="stat"><strong>12</strong><span>示例调用</span></div><div class="stat"><strong>2</strong><span>结果复用事件</span></div><div class="stat"><strong>未提供</strong><span>部分音频用量</span></div></div><div class="table-wrap" style="margin-top:17px"><table class="table"><thead><tr><th>能力</th><th>示例调用</th><th>输入</th><th>输出</th><th>缓存读取</th></tr></thead><tbody><tr><td>文本解释</td><td>8</td><td>12,480</td><td>3,240</td><td>1,800</td></tr><tr><td>TTS</td><td>3</td><td>未提供</td><td>未提供</td><td>未提供</td></tr><tr><td>视觉识别</td><td>1</td><td>1,520</td><td>480</td><td>未提供</td></tr></tbody></table></div>`;
-    if (route === "cache")
-      return `<h2>本机缓存</h2><p class="subtitle">当前账号的阅读、已查解释和允许离线的音频副本。</p><div class="grid-2"><div class="stat"><strong>${s.cacheCleared ? "已清理" : "42 MB"}</strong><span>示例本机副本</span></div><div class="surface"><strong>服务端成果</strong><p class="small muted" style="margin-top:8px">清理本机不会删除已保存的解释和音频。</p></div></div><button class="danger-btn" type="button" data-modal="clearCache">${I("trash")} 清除此账号本机缓存</button>`;
+    if (route === "cache") return learningPreferences.cacheSettings();
     return `<h2>安全与账号</h2><div class="stack"><div class="surface"><strong>当前设备会话</strong><p class="small muted" style="margin-top:6px">演示账号 · 用户端</p></div><div class="callout">${I("shield")}<span>修改密码后，所有设备需要重新登录。</span></div><div class="button-row"><button class="secondary" type="button" data-modal="password">修改密码</button><button class="danger-btn" type="button" data-action="logout">退出演示账号</button></div><p class="note">此原型不接收真实密码、邮箱或 API Key。</p></div>`;
   }
   function settingContent(route) {
@@ -718,6 +729,7 @@
     languages: settingPage,
     appearance: settingPage,
     readingPrefs: settingPage,
+    queryPreferences: settingPage,
     model: settingPage,
     speech: settingPage,
     usage: settingPage,
@@ -742,6 +754,7 @@
     adminSecurity,
   };
   function render() {
+    learningPreferences.sync();
     novelLearning.refresh();
     motion.beforeRender();
     const oldPanel = root.querySelector("[data-reader-panel-body]");

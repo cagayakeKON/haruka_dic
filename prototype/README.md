@@ -8,6 +8,8 @@ DESIGN20增加小说“阅读 / 解析”开关、ruby与点句详解/朗读/收
 
 DESIGN21修复电脑4K阅读区的空列与错位：目录、正文和非模态右侧解析panel按窗口展开，正文限制行宽，电脑窄窗口将panel放在正文下方。点句释义与正文查词复用panel，正文可同时操作，保留嵌套查询返回、收藏归本、章节准备和朗读；手机仍用底部dialog。两端资源版本更新为design21，电脑独立样式见`desktop-reader.css`。局部验证为`node prototype/tests/design21-desktop-panel.cjs`，实际范围与边界见[DESIGN21记录](../docs/delivery/reviews/2026-09-25-desktop-reader-panel.md)。
 
+DESIGN22在“我的 → 查询与上下文”加入查询上下文预算（默认10,000 tokens），有快捷值和自定义保存；查询页可补充上下文，结果展开显示前后文与复用状态。“朗读与声音”按模型联动声音/能力；本机缓存页区分副本与已保存成果，清理后可取回同一解释。`learning-preferences.js/css`只维护当前页面内存示例，模型能力为虚构配置、Token为字符估算，刷新全重置；没有真实TTS适配器、NLP、持久缓存或模型调用。资源版本design22；定点脚本`node prototype/tests/design22-context-cache.cjs`，证据见[本轮记录](../docs/delivery/reviews/2026-09-26-context-tts-cache.md)。
+
 ## 页面清单
 
 | 范围 | 手机端 | 电脑端 |

@@ -12,6 +12,8 @@ DESIGN20新增[章节准备契约](../contracts/novel-preparation.md)及NPREP-01
 
 DESIGN21修订电脑4K阅读布局与非模态解析panel，沿用NOV-003、SEL-003、TTS-008及NPREP对应交互；[局部记录](reviews/2026-09-25-desktop-reader-panel.md)只证明HTML布局、查询/收藏/播放和返回行为，不勾选正式三端、服务端或NPREP验收。
 
+DESIGN22增加QCTX-01～05、TTSA-01～05与LC-12，覆盖可配置上下文、逐模型音频协议及全部查询/朗读入口缓存。原型局部证据见[本轮记录](reviews/2026-09-26-context-tts-cache.md)，正式服务端、NLP、模型和三端验收仍未完成。
+
 ## 1. 按功能开始开发
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |

@@ -1,0 +1,70 @@
+.learning-preferences {
+  margin-top: 24px;
+}
+.learning-preferences h2 {
+  font-size: 19px;
+}
+.learning-preferences p {
+  line-height: 1.75;
+}
+.learning-preferences > p {
+  margin-bottom: 18px;
+}
+.learning-preferences form {
+  margin-top: 18px;
+}
+.context-budget-example {
+  background: var(--blue-soft);
+  padding: 16px;
+  border-radius: 14px;
+}
+.context-budget-example p {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.context-presets {
+  flex-wrap: wrap;
+}
+.context-presets button {
+  flex: 1;
+  min-width: 70px;
+}
+.cache-layer-grid {
+  display: grid;
+  gap: 16px;
+}
+.query-context-detail,
+.query-context-input {
+  font-size: 13px;
+  color: var(--muted);
+  margin-block: 12px;
+}
+.query-context-detail summary,
+.query-context-input summary {
+  cursor: pointer;
+  padding-block: 10px;
+}
+.query-context-detail p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-block: 8px;
+}
+.query-context-detail > div {
+  border-left: 2px solid var(--line);
+  padding-left: 12px;
+  margin-block: 12px;
+}
+.query-context-input textarea {
+  width: 100%;
+  min-height: 90px;
+}
+.query-context-detail:focus-within,
+.query-context-input:focus-within {
+  color: var(--ink);
+}
+@media (min-width: 1180px) {
+  #desktop-app .cache-layer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

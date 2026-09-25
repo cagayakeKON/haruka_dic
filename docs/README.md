@@ -14,6 +14,7 @@
 | 实现材料上传、解析数据或版本 | [三类解析数据结构](contracts/material-structures.md) | [三类材料](contracts/material-types.md)、[数据与任务](architecture/data-jobs.md)、对应功能模块 |
 | 实现教材/试卷解析、听力与展示 | [解析展示契约](contracts/learning-presentation.md) | [解析数据结构](contracts/material-structures.md)、[课本](modules/textbooks.md)、[考试](modules/exams.md)、[AI与朗读](modules/ai-speech.md)、[出处](contracts/content-locator.md) |
 | 实现小说解析模式与按章多选准备 | [章节准备契约](contracts/novel-preparation.md) | [小说](modules/novels.md)、[结果缓存](architecture/learning-cache.md)、[本轮原型](delivery/reviews/2026-09-25-novel-preparation.md) |
+| 实现手动查询上下文/预算与TTS逐模型适配 | [查询上下文](contracts/query-context.md)、[TTS适配器](architecture/tts-adapters.md) | [系统缓存](architecture/learning-cache.md)、[设置](modules/settings.md)、[DESIGN22记录](delivery/reviews/2026-09-26-context-tts-cache.md) |
 | 实现私有解释/TTS缓存和全局单词发音 | [学习结果缓存](architecture/learning-cache.md) | [AI与朗读](modules/ai-speech.md)、[收藏](modules/vocabulary-practice.md)、[设置](modules/settings.md)、[数据与任务](architecture/data-jobs.md) |
 | 实现图文查询、Web粘贴、Android相册/拍照与卡片收藏 | [查询](modules/query.md) | [AI卡片](modules/ai-speech.md)、[API](contracts/api.md)、[单词本](modules/vocabulary-notebooks.md) |
 | 实现任务实时进度 | [WebSocket进度](contracts/job-progress.md) | [任务](architecture/data-jobs.md)、[认证](architecture/authentication.md)、[材料](modules/materials-reading.md) |

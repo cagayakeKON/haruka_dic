@@ -10,6 +10,11 @@
   const s = initialState();
   const exerciseFlow = window.HarukaExerciseBuilder(s);
   const root = document.getElementById('phone-app');
+  const learningPreferences = window.HarukaLearningPreferences({
+    s,
+    root,
+    render,
+  });
   const primary = ['library', 'notebooks', 'query', 'exercise', 'settings'];
   const tabTitles = {
     library: '材料库',
@@ -64,6 +69,7 @@
     languages: 'settings',
     appearance: 'settings',
     readingPrefs: 'settings',
+    queryPreferences: 'settings',
     model: 'settings',
     speech: 'settings',
     usage: 'settings',
@@ -121,6 +127,7 @@
     languages: '语言选项',
     appearance: '外观与无障碍',
     readingPrefs: '阅读偏好',
+    queryPreferences: '查询与上下文',
     model: '个人模型',
     speech: '朗读与声音',
     usage: '模型用量',
@@ -453,7 +460,7 @@
   const settingRow = (route, label, detail, icon) =>
     `<button class="setting-row" type="button" data-go="${route}"><span class="setting-icon">${I(icon)}</span><span class="row-copy"><strong>${label}</strong><small>${e(detail)}</small></span>${I('chevron')}</button>`;
   function settingsCore() {
-    return `<button type="button" class="mobile-profile-row" data-go="profile"><span class="mobile-avatar">遥</span><span class="row-copy"><strong>${e(s.profile.displayName)}</strong><small>个人资料与隐私</small></span>${I('chevron')}</button><div class="mobile-list-heading"><h2>学习偏好</h2></div><div class="mobile-plain-list">${settingRow('languages', '语言选项', `学习：${e(s.activeLanguage)} · 解释：${e(s.explanationLanguage)}`, 'globe')}${settingRow('appearance', '外观与无障碍', '主题、动态与对比度', 'sun')}${settingRow('readingPrefs', '阅读偏好', '字体、字号与阅读主题', 'book')}${settingRow('speech', '朗读与声音', '声音和播放倍速', 'headphones')}</div><div class="mobile-list-heading"><h2>模型与数据</h2></div><div class="mobile-plain-list">${settingRow('model', '个人模型', '模型与 API Key', 'spark')}${settingRow('usage', '模型用量', '调用次数与 Token', 'grid')}${settingRow('cache', '本机缓存', '阅读与音频', 'database')}</div><div class="mobile-list-heading"><h2>账号与动态</h2></div><div class="mobile-plain-list">${settingRow('notifications', '站内消息', '任务和结果提醒', 'bell')}${settingRow('jobs', '任务进度', '导入与生成结果', 'clock')}${settingRow('security', '安全与账号', '会话与退出', 'shield')}</div>`;
+    return `<button type="button" class="mobile-profile-row" data-go="profile"><span class="mobile-avatar">遥</span><span class="row-copy"><strong>${e(s.profile.displayName)}</strong><small>个人资料与隐私</small></span>${I('chevron')}</button><div class="mobile-list-heading"><h2>学习偏好</h2></div><div class="mobile-plain-list">${settingRow('languages', '语言选项', `学习：${e(s.activeLanguage)} · 解释：${e(s.explanationLanguage)}`, 'globe')}${settingRow('appearance', '外观与无障碍', '主题、动态与对比度', 'sun')}${settingRow('readingPrefs', '阅读偏好', '字体、字号与阅读主题', 'book')}${settingRow('speech', '朗读与声音', '声音和播放倍速', 'headphones')}</div><div class="mobile-list-heading"><h2>模型与数据</h2></div><div class="mobile-plain-list">${settingRow('queryPreferences', '查询与上下文', '前后文预算与取文范围', 'message')}${settingRow('model', '个人模型', '模型与 API Key', 'spark')}${settingRow('usage', '模型用量', '调用次数与 Token', 'grid')}${settingRow('cache', '本机缓存', '阅读与音频', 'database')}</div><div class="mobile-list-heading"><h2>账号与动态</h2></div><div class="mobile-plain-list">${settingRow('notifications', '站内消息', '任务和结果提醒', 'bell')}${settingRow('jobs', '任务进度', '导入与生成结果', 'clock')}${settingRow('security', '安全与账号', '会话与退出', 'shield')}</div>`;
   }
   function profileCore() {
     return `<h1 class="page-title">你好，${e(s.profile.displayName)}。</h1><p class="page-subtitle">资料仅自己可见。</p><form class="surface form-grid" data-form="profile" style="margin-top:22px"><label class="field">显示名<input name="displayName" value="${e(s.profile.displayName)}" maxlength="40"><small>可以留空，界面会显示“学习者”。</small></label><label class="field">出生年份（可选）<input name="birthYear" type="number" min="1900" max="2026" placeholder="不填写也可以" value="${e(s.profile.birthYear)}"></label><label class="field">性别（可选）<select name="gender">${['未填写', '女', '男', '非二元', '自我描述', '不愿说明'].map((x) => `<option ${s.profile.gender === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label><label class="field">时区<select name="timezone"><option value="Asia/Tokyo" ${s.profile.timezone === 'Asia/Tokyo' ? 'selected' : ''}>东京 / Asia/Tokyo</option><option value="Asia/Shanghai" ${s.profile.timezone === 'Asia/Shanghai' ? 'selected' : ''}>上海 / Asia/Shanghai</option><option value="UTC" ${s.profile.timezone === 'UTC' ? 'selected' : ''}>UTC</option></select></label><div class="callout">${I('shield')}<span>出生年份与性别默认不用于 AI。</span></div><button type="submit" class="primary full">保存资料</button></form>`;
@@ -471,14 +478,16 @@
     return `<p class="page-subtitle">解释、视觉识别和 TTS 分别显示能力与调用范围。</p><div class="surface form-grid" style="margin-top:22px"><label class="field">供应商<select data-setting="modelProvider"><option ${s.modelProvider === 'OpenRouter' ? 'selected' : ''}>OpenRouter</option><option ${s.modelProvider === 'Gemini' ? 'selected' : ''}>Gemini</option></select></label><label class="field">个人 API Key<input type="password" value="••••••••••••" disabled><small>原型不接收 API Key。</small></label><div class="divider"></div><div class="row-copy"><strong>文本解释</strong><small>用于词句解释与对话</small></div><div class="row-copy"><strong>视觉识别</strong><small>用于识别图片中的文字</small></div><div class="row-copy"><strong>朗读 TTS</strong><small>Gemini / OpenRouter TTS</small></div><button type="button" class="secondary full" data-action="modelTest">模拟测试所选文本能力</button><p class="note">当前示例状态：${e(s.modelStatus)}。模拟测试不发送请求、Key 或材料。</p></div><button class="text-btn" type="button" data-go="usage" style="margin-top:12px">查看模型用量 ${I('arrow')}</button>`;
   }
   function speech() {
-    return `<p class="page-subtitle">朗读使用本人配置的 Gemini / OpenRouter TTS；已有音频会标注生成时的配置。</p><div class="surface form-grid" style="margin-top:22px"><label class="field">TTS 供应商<select data-setting="speechProvider"><option ${s.speechProvider === 'Gemini TTS' ? 'selected' : ''}>Gemini TTS</option><option ${s.speechProvider === 'OpenRouter TTS' ? 'selected' : ''}>OpenRouter TTS</option></select></label><label class="field">默认声音<select><option>日语 · 清晰自然（示例）</option><option>英语 · 清晰自然（示例）</option></select></label><label class="field">播放倍速：${s.speechSpeed.toFixed(1)}×<input type="range" min="0.7" max="1.5" step="0.1" value="${s.speechSpeed}" data-range="speechSpeed"></label><div class="callout">${I('headphones')}<span>试听为模拟状态，不播放音频。</span></div><button class="secondary full" type="button" data-action="speechPreview">${I('play')} 试听界面状态</button><button class="primary full" type="button" data-action="saveSpeech">保存朗读偏好</button></div>`;
+    return learningPreferences.speechSettings();
   }
+
   function usage() {
     return `<p class="page-subtitle">以下为示例用量。</p><div class="tabs" aria-label="时间范围">${['7 天', '30 天', '90 天'].map((x) => `<button type="button" data-usage-range="${x}" aria-pressed="${s.usageRange === x}">${x}</button>`).join('')}</div><div class="two"><div class="stat"><strong>12</strong><span>示例调用</span></div><div class="stat"><strong>2</strong><span>示例结果复用</span></div></div><div class="section-head"><h2>按能力</h2></div><div class="list"><div class="row-wrap">${I('spark')}<span class="row-copy"><strong>文本解释 · 8 次</strong><small>输入 12,480 · 输出 3,240 · 缓存读取 1,800</small></span></div><div class="row-wrap">${I('headphones')}<span class="row-copy"><strong>朗读 TTS · 3 次</strong><small>音频用量：未提供</small></span></div><div class="row-wrap">${I('grid')}<span class="row-copy"><strong>视觉识别 · 1 次</strong><small>供应商部分指标：未提供</small></span></div></div>`;
   }
   function cache() {
-    return `<p class="page-subtitle">查看本机存储与可离线内容。</p><div class="stack" style="margin-top:22px"><div class="surface"><div class="section-head" style="margin-top:0"><h2>本机副本</h2>${badge(s.cacheCleared ? '已清理' : '示例 42 MB')}</div><div class="row-copy"><strong>已读章节与解释</strong><small>已读章节与查过的解释</small></div><div class="divider"></div><div class="row-copy"><strong>允许离线的音频</strong><small>不包含限制播放次数的试卷听力</small></div></div><button class="danger-btn full" type="button" data-modal="clearCache">${I('trash')} 清除此账号本机缓存</button><div class="callout">${I('shield')}<span>清理后可重新下载，不会删除已保存的材料与解释。</span></div></div>`;
+    return learningPreferences.cacheSettings();
   }
+
   function security() {
     return `<div class="surface" style="margin-top:22px">${settingRow('profile', '本人资料', '头像、显示名与可选资料', 'user')}<div class="setting-row"><span class="setting-icon">${I('lock')}</span><span class="row-copy"><strong>修改密码</strong><small>正式成功后所有会话需重新登录</small></span><button class="text-btn" type="button" data-modal="password">查看流程</button></div><div class="setting-row"><span class="setting-icon">${I('shield')}</span><span class="row-copy"><strong>当前设备会话</strong><small>演示身份 · 用户端</small></span></div></div><button class="danger-btn full" type="button" data-action="logout" style="margin-top:19px">退出演示账号</button><p class="note" style="margin-top:15px">本原型不接收密码、真实登录邮箱或 API Key。</p>`;
   }
@@ -728,6 +737,7 @@
     languages,
     appearance,
     readingPrefs,
+    queryPreferences: () => learningPreferences.contextSettings(),
     model,
     speech,
     usage,
@@ -744,6 +754,7 @@
     onboarding,
   };
   function render() {
+    learningPreferences.sync();
     novelLearning.refresh();
     motion.beforeRender();
     const pageFocus =

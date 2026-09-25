@@ -4,6 +4,8 @@
 
 DESIGN21确认电脑小说阅读器使用非模态右侧解析panel，与正文并行操作，并修复4K及窄窗口排版；手机保留底部dialog。原型与文档的[局部记录](../delivery/reviews/2026-09-25-desktop-reader-panel.md)只证明HTML行为，正式阅读及AI/朗读能力仍按阶段2/3交付。
 
+DESIGN22明确手动查询自动携带有权上下文，预算可在设置调整；[查询上下文](../contracts/query-context.md)、[逐模型TTS适配](../architecture/tts-adapters.md)及[统一持久缓存](../architecture/learning-cache.md)共同覆盖词音、解释与逐句朗读。HTML仅演示设置和内存复用，不代表正式服务已实现。
+
 ## 1. 产品定位与已确认边界
 
 Haruka（ハルカ）只适配用户自己的小说、课本和试卷三类材料，将阅读、朗读、解释、收藏、练习、评分与诊断连接成个人语言学习过程。“课本”与“教材”指同一类：

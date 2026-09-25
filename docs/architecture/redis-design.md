@@ -96,9 +96,11 @@ R04 除 `schema_version/updated_at_ms` 两个公共字段外，每个 Hash field
 
 ### R06 本人设置投影
 
-payload 只含 `settings_revision`、`timezone`、`ui_locale`、`display_preferences`、`reading_preferences`、`speech_preferences`、`model_bindings`（provider/model/capability/版本及 credential_id 引用）。这是user_extensions设置字段组及模型/声音子表的白名单读取投影；key的ver和信封source_revision都取settings_revision，资料/学习组变化不复用为设置版本，preferences由对应有限列组装，不额外增加一套PG列。不存密文 Key、可恢复 Key、头像字节、人口字段或能力探测原文。合表不扩大缓存载荷，资料/学习语言不顺带放进R06；三个组的事务分别发出对应失效事件。模型调用必须从 PG 获取当前凭据状态/版本，在当前调用的内存中解密；本缓存不能证明 Key 仍有效。
+payload 只含 `settings_revision`、`timezone`、`ui_locale`、`display_preferences`、`reading_preferences`、`speech_preferences`、`query_context_budget_tokens`、`model_bindings`（provider/model/capability/版本及 credential_id 引用）。这是user_extensions设置字段组及模型/声音子表的白名单读取投影；key的ver和信封source_revision都取settings_revision，资料/学习组变化不复用为设置版本，preferences由对应有限列组装，不额外增加一套PG列。不存密文 Key、可恢复 Key、头像字节、人口字段或能力探测原文。合表不扩大缓存载荷，资料/学习语言不顺带放进R06；三个组的事务分别发出对应失效事件。模型调用必须从 PG 获取当前凭据状态/版本，在当前调用的内存中解密；本缓存不能证明 Key 仍有效。
 
 ## 4. 学习结果、媒体与幂等字段
+
+DESIGN22 R07查阅键纳入[ContextPlan实际语境](../contracts/query-context.md)，R08 provenance返回安全的context_summary及本人有权快照引用，R09配置摘要包含展开后的模型适配契约。R06设置投影按settings_revision更新查询预算；不存私有长篇上下文或TTS字节。R07～R11若用于不属于library的本人输入，模板中的`l:<l>`整体替换为固定`personal`分段；仍必须保留u/client，禁止空library或owner通配。持久模型下线不删除既有R08/R09，命中始终另验来源。
 
 | ID | payload 字段与类型 | 读取与失效规则 |
 | --- | --- | --- |

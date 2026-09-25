@@ -340,6 +340,7 @@ DBDESIGN3另约定两项未来改名：`user_roles → user_role_links`、`role_
 | reading_line_height | numeric(4,2) NULL | 行高倍率 |
 | reading_theme | varchar(8) NULL | light/dark/sepia |
 | playback_speed | numeric(3,2) NN DEFAULT 1.0 | 播放倍速，0.70–1.50，不改变合成键 |
+| query_context_budget_tokens | integer NN DEFAULT 10000 | 本人查询补充前后文预算，CHECK 1000～64000；实际服务硬上限与模型窗口另验，规则见[上下文](../contracts/query-context.md)；属于settings_revision组 |
 | explanation_detail | varchar(16) NULL | concise/standard/geek的展示策略，使用发布允许值 |
 | exercise_defaults_schema_version | integer NN DEFAULT 1 | 有限默认偏好的schema版本 |
 | exercise_defaults | jsonb NULL | 仅题型、方向、建议题数；无词本ID、掌握阈值、答案/AI输出 |
@@ -514,12 +515,14 @@ CHECK分支完整：role类必须target_role_id有值且权限两列空；permis
 | supports_text / supports_vision | boolean NN DEFAULT false / boolean NN DEFAULT false | 已登记文本/图片能力 |
 | supports_tools / supports_structured_output | boolean NN DEFAULT false / boolean NN DEFAULT false | 工具/结构化输出能力 |
 | supports_tts | boolean NN DEFAULT false | TTS独立能力，不由text推断 |
+| tts_adapter_id / tts_adapter_version | varchar(128) NULL / varchar(64) NULL | TTS时必须齐全，指向受发布注册的精确模型/API契约；未知适配不能启用新合成 |
+| tts_contract_schema_version / tts_contract | integer NULL / jsonb NULL | TTS时正版本+有限能力对象，含API家族/声音与输入输出限制；定义见[适配器](tts-adapters.md)，不可含凭据、代码或任意HTTP模板 |
 | verified_at | timestamptz NULL | 受控能力验证时间 |
 | verification_code | varchar(64) NULL | 验证证据的安全引用代码 |
 | parameters_schema_version | integer NN DEFAULT 1 | 允许参数结构版本 |
 | parameter_constraints | jsonb NN DEFAULT '{}' | 有界参数名/类型/范围、支持输出格式；无Prompt/秘密 |
 
-唯一 `(provider,model_code)`；CHECKprovider允许值、正schema版本、JSON对象。目录规模有界，按唯一键/PK取模型；先不为各布尔能力单列建索引。启停锁本模型与全局策略根，已引用条目保留；不硬删导致历史run丢模型含义。
+唯一 `(provider,model_code)`；CHECKprovider允许值、正schema版本、JSON对象；supports_tts为true时四个tts契约列齐全且版本正，false时均空。适配登记只保留当前发布引用，历史run/音频冻结自身展开规格，不另建适配器历史表。目录规模有界，按唯一键/PK取模型；先不为各布尔能力单列建索引。启停锁本模型与全局策略根，已引用条目保留；不硬删导致历史run丢模型含义。
 
 ### voice_catalog_entries
 

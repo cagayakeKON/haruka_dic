@@ -12,6 +12,8 @@
 
 DESIGN21进一步修复电脑4K阅读布局，将小说点句解析及正文查询改为非模态右侧panel，正文保持可操作，手机保留底部dialog。实际原型检查见[局部记录](docs/delivery/reviews/2026-09-25-desktop-reader-panel.md)，正式应用未修改。
 
+DESIGN22完善查询上下文设置、逐模型TTS适配与统一缓存方案；双端原型加入预算、上下文及缓存状态演示，见[局部记录](docs/delivery/reviews/2026-09-26-context-tts-cache.md)。正式业务未实现。
+
 ## 从这里开始
 
 | 你要做的事 | 入口 |

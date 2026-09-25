@@ -23,31 +23,37 @@ window.HarukaNovelLearning = ({
     docked && s.route === 'novel' && !!s.readerPanelOpen;
   const allowed = () =>
     s.signedIn && !s.adminArea && s.materials.some((m) => m.id === 'summer');
-  const key = (sentence) => `summer-v1:${sentence.id}:ja:default`;
-  const record = (c) => {
-    if (!records.has(c))
-      records.set(c, {
+  const key = (sentence, spec = s.learningDemo.speechIdentity()) =>
+    `summer-v1:${sentence.id}:ja:${spec}`;
+  const record = (c, spec = s.learningDemo.speechIdentity()) => {
+    const recordKey = JSON.stringify([c, spec]);
+    const previous = [...records.values()].find((item) => item.chapter === c);
+    if (!records.has(recordKey))
+      records.set(recordKey, {
+        chapter: c,
+        spec,
         draft: ['analysis', 'audio'],
-        analysis: new Set(),
+        analysis: previous?.analysis || new Set(),
         audio: new Set(),
-        localAnalysis: new Set(),
+        localAnalysis: previous?.localAnalysis || new Set(),
         running: new Set(),
         failed: false,
         paused: false,
         generated: { analysis: 0, audio: 0 },
       });
-    const r = records.get(c);
+    const r = records.get(recordKey);
     chapters[c].sentences.forEach((sentence) => {
-      if (audioCache.has(key(sentence))) r.audio.add(sentence.id);
+      if (audioCache.has(key(sentence, spec))) r.audio.add(sentence.id);
     });
     return r;
   };
-  const local = (c, type, sentence) =>
+  const local = (c, type, sentence, spec = s.learningDemo.speechIdentity()) =>
     type === 'audio'
-      ? audioCache.has(key(sentence))
-      : record(c).localAnalysis.has(sentence.id);
-  const count = (c, type) =>
-    chapters[c].sentences.filter((sentence) => local(c, type, sentence)).length;
+      ? audioCache.has(key(sentence, spec))
+      : record(c, spec).localAnalysis.has(sentence.id);
+  const count = (c, type, spec = s.learningDemo.speechIdentity()) =>
+    chapters[c].sentences.filter((sentence) => local(c, type, sentence, spec))
+      .length;
   const hasMissing = (c) =>
     record(c).draft.some(
       (type) => count(c, type) < chapters[c].sentences.length,
@@ -206,10 +212,11 @@ window.HarukaNovelLearning = ({
   function step() {
     if (!allowed()) return reset();
     let panelChanged = false;
-    for (const [c, r] of records) {
+    for (const r of records.values()) {
+      const c = r.chapter;
       for (const type of [...r.running]) {
         const sentence = chapters[c].sentences.find(
-          (item) => !local(c, type, item),
+          (item) => !local(c, type, item, r.spec),
         );
         if (!sentence) {
           r.running.delete(type);
@@ -218,8 +225,16 @@ window.HarukaNovelLearning = ({
         if (!r[type].has(sentence.id)) {
           r[type].add(sentence.id);
           r.generated[type]++;
-        } else if (type === 'audio') audioCache.add(key(sentence));
-        else r.localAnalysis.add(sentence.id);
+          if (type === 'audio')
+            s.learningDemo.rememberAudio(key(sentence, r.spec), false);
+          else s.learningDemo.rememberPrepared(card(sentence, c));
+        } else if (type === 'audio') {
+          audioCache.add(key(sentence, r.spec));
+          s.learningDemo.rememberAudio(key(sentence, r.spec));
+        } else {
+          r.localAnalysis.add(sentence.id);
+          s.learningDemo.rememberPrepared(card(sentence, c), true);
+        }
         if (
           (s.modal === 'selectionQuery' || panelActive()) &&
           s.selectionMessage?.selection?.novelSentenceId === sentence.id
@@ -228,9 +243,18 @@ window.HarukaNovelLearning = ({
           s.selectionMessage.card = ready
             ? { ...ready, selection: s.selectionMessage.selection }
             : null;
+          if (ready && s.selectionMessage.context)
+            Object.assign(
+              s.selectionMessage,
+              s.learningDemo.rememberQuery(
+                s.selectionMessage.card,
+                s.selectionMessage.context,
+                sentence.text,
+              ),
+            );
           panelChanged = true;
         }
-        if (count(c, type) === chapters[c].sentences.length)
+        if (count(c, type, r.spec) === chapters[c].sentences.length)
           r.running.delete(type);
       }
     }
@@ -409,6 +433,16 @@ window.HarukaNovelLearning = ({
     clearInterval(timer);
     timer = null;
   });
+  root.addEventListener(
+    'click',
+    (event) => {
+      if (event.target.closest('[data-action=clearCacheConfirm]')) {
+        audioCache.clear();
+        for (const r of records.values()) r.localAnalysis.clear();
+      }
+    },
+    true,
+  );
   return {
     current,
     panelActive,
@@ -431,14 +465,13 @@ window.HarukaNovelLearning = ({
       );
       return sentence ? card(sentence) : null;
     },
-    audioKey: (text) =>
-      s.route === 'novel'
-        ? key(
-            current().sentences.find(
-              (sentence) => sentence.text.trim() === text.trim(),
-            ) || { id: text.trim() },
-          )
-        : null,
+    audioKey: (text) => {
+      if (s.route !== 'novel') return null;
+      const sentence = current().sentences.find(
+        (item) => item.text.trim() === text.trim(),
+      );
+      return sentence ? key(sentence) : null;
+    },
     tokens: (text, element) =>
       s.route === 'novel' &&
       !s.modal &&

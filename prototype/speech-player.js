@@ -42,16 +42,18 @@ window.HarukaSpeechPlayer = ({ s, root, novel }) => {
   function prepare() {
     if (!playback || playback.paused) return;
     // At most the current sentence and two successors, never the whole chapter.
-    playback.items
-      .slice(playback.index, playback.index + 3)
-      .forEach((item) => prepared.add(item.key));
+    playback.items.slice(playback.index, playback.index + 3).forEach((item) => {
+      prepared.add(item.key);
+      const reused = s.learningDemo.rememberAudio(item.key);
+      item.cacheNotice ||= reused ? "已复用音频" : "音频已保存（演示）";
+    });
   }
   function paint() {
     if (!player || !playback) return;
     const p = playback,
       item = p.items[p.index];
     player.querySelector('[role="status"]').textContent =
-      `${p.completed ? (p.mode === "continuous" ? "本章已读完" : "播放完毕") : p.paused ? "已暂停" : "播放中"} · 无实际音频`;
+      `${p.completed ? (p.mode === "continuous" ? "本章已读完" : "播放完毕") : p.paused ? "已暂停" : "播放中"} · 无实际音频 · ${item.cacheNotice || ""}`;
     player.querySelector(".playback-text").textContent = item.text;
     player.querySelector(".playback-count").textContent =
       p.mode === "continuous"
@@ -133,7 +135,7 @@ window.HarukaSpeechPlayer = ({ s, root, novel }) => {
         item(
           text,
           novel.audioKey(text) ||
-            `${context}:${language === "日语" ? "ja" : language}:${text.trim()}`,
+            `${s.learningDemo.speechIdentity()}:${language === "日语" ? "ja" : language}:${text}`,
         ),
       ],
       index: 0,

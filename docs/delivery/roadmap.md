@@ -4,6 +4,8 @@
 
 文档整理与应用交付分别记账：[本轮重组记录](reviews/reorganization.md) 维护迁移、review及提交证据，不勾选下列工程验收。未来开发遵循 [AGENTS.md](../../AGENTS.md) 的前后端并行、分阶段提交、必要测试与review规则；本页不重复维护另一套频率要求。
 
+2026-09-25 DBDESIGN1新增[数据库设计书](../architecture/database-design.md)：核对B0已有12表，设计账号权限、材料考试、收藏学习/AI的字段、逻辑关联与[Redis键](../architecture/redis-design.md)，并映射下方实施阶段。属于阶段1内文档小阶段，业务结构仍需按B1/B2及后续功能分批迁移/验证；本次没有创建表、修改运行缓存或完成工程验收，见[设计审查记录](reviews/2026-09-25-database-design.md)。
+
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。

@@ -18,6 +18,7 @@
 | 设计产品视觉、组件、动效与文案 | [产品设计语言：晴空频率](docs/product/design-language.md) |
 | 按功能或职责查阅文档 | [文档导航](docs/README.md) |
 | 查看实施阶段和验收要求 | [路线图](docs/delivery/roadmap.md) |
+| 查阅表结构、逻辑关联与Redis缓存字段 | [数据库设计书](docs/architecture/database-design.md) |
 | 查看已选方案与待决事项 | [决策索引](docs/decisions/README.md) |
 | 让Agent开始工作 | [AGENTS.md](AGENTS.md) |
 

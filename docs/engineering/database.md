@@ -2,7 +2,7 @@
 
 状态：2026-09-22，B0已建立12张账号/授权初始化基础表、UTC公共Mixin、受控迁移与字典检查器，局部证据见 [数据库切片](../delivery/reviews/2026-09-22-b0-identity.md)。不使用数据库外键；后续业务表仍按本文实施，未实现的隔离/删除/任务验收不计为通过。
 
-本文维护物理结构、公共字段、无外键关联、隔离与数据库变更规则。业务聚合/事务/任务状态以 [数据与任务](../architecture/data-jobs.md) 为准，身份和授权分别以 [认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准；操作流程见 [部署与恢复](../operations/deployment-recovery.md)，测试执行频率以根 [AGENTS.md](../../AGENTS.md) 为准。
+本文维护物理结构、公共字段、无外键关联、隔离与数据库变更规则。具体表结构与Redis键设计见[数据库设计书](../architecture/database-design.md)，其新增结构尚未实施。业务聚合/事务/任务状态以 [数据与任务](../architecture/data-jobs.md) 为准，身份和授权分别以 [认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准；操作流程见 [部署与恢复](../operations/deployment-recovery.md)，测试执行频率以根 [AGENTS.md](../../AGENTS.md) 为准。
 
 ## 1. 总体边界
 
@@ -212,7 +212,7 @@ ORM模型、迁移和实际反射schema须一致；仅比较Alembic head不够�
 
 ## 13. 数据字典与建表审查
 
-工程建立后，以SQLAlchemy MetaData/列注释及Table.info中的受审查扩展元数据为单一模型说明来源；Alembic记录变化，实际PG反射用于验证。按 [生成流程](scaffold.md) 导出contracts/database-schema.json，登记在受管生成清单中。它是内部数据库字典，不直接生成前端DTO或公开管理查表接口；本文不预建空文件或第二套手写字段字典。
+工程建立后，以SQLAlchemy MetaData/列注释及Table.info中的受审查扩展元数据为单一模型说明来源；Alembic记录变化，实际PG反射用于验证。按 [生成流程](scaffold.md) 导出contracts/database-schema.json，登记在受管生成清单中。它是内部数据库字典，不直接生成前端DTO或公开管理查表接口。用户要求的[数据库设计书](../architecture/database-design.md)维护未实现结构的可审查方案，并注明B0摘录基线；表实施后将字段与关系转入模型/生成字典，设计书链接实际来源，不并行维护另一套已实现字段真相。
 
 | 字典层级 | 必需内容 |
 | --- | --- |

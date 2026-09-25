@@ -301,3 +301,7 @@ architecture_review完成第1轮独立只读审查，发现MUR-01（P2）：用�
 ## DESIGN15 AI功能入口与共享Agent
 
 2026-09-25，基线fce1f1a。用户明确不建设专门Agent聊天界面；原型移除练习与阅读中的问Agent入口及聊天页，文档保留Pydantic AI作为各业务功能共享后端运行层。此决策覆盖历史独立聊天设计，详见[AI功能入口与共享Agent](2026-09-25-ai-without-chat.md)。
+
+## DBDESIGN1 数据库与Redis设计书
+
+2026-09-25，基线259ee0c。按用户要求对照设计、原型和文档制定表结构与Redis字段；B0现有12表与拟新增业务结构分开，说明作用域、字段/约束/索引、逻辑关联、生命周期与分期实施。新增[设计书总册](../../architecture/database-design.md)及四个分册，实际文档检查和独立review见[交付记录](2026-09-25-database-design.md)。仅文档，不执行迁移或勾选业务验收。

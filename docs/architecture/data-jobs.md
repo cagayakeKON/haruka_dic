@@ -1,6 +1,6 @@
 # 数据约束、事务与持久任务
 
-状态：设计基线 v0.1，2026-09-22，未实现。此文是跨功能的持久化/并发契约，功能细节见 [功能索引](../delivery/coverage.md)，权限见 [RBAC](authorization.md)。不是已经存在的 DDL。
+状态：设计基线 v0.1，2026-09-22，未实现。此文是跨功能的持久化/并发契约，功能细节见 [功能索引](../delivery/coverage.md)，权限见 [RBAC](authorization.md)。不是已经存在的 DDL。逻辑职责到具体表/字段的映射见2026-09-25[数据库设计书](database-design.md)，Redis字段见[缓存分册](redis-design.md)；设计完成不代表本篇业务已经实现。
 
 ## 1. 通用数据规则
 

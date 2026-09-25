@@ -16,7 +16,7 @@ const file = {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const results = [],
     errors = [];
-  fs.mkdirSync('artifacts/design13', { recursive: true });
+  fs.mkdirSync('artifacts/design14', { recursive: true });
   try {
     for (const [platform, width] of [
       ['phone', 320],
@@ -45,10 +45,12 @@ const file = {
       await expect(
         page.getByRole('button', { name: '天空为什么是蓝色的？', exact: true }),
       ).toHaveCount(0);
-      await expect(page.locator('[data-x=queryMode]')).toHaveCount(4);
+      await expect(
+        page.locator('[data-x=queryMode], .query-task-help, .query-task-label'),
+      ).toHaveCount(0);
       await fits();
       await page.screenshot({
-        path: `artifacts/design13/${label}-query.png`,
+        path: `artifacts/design14/${label}-query.png`,
         fullPage: true,
       });
       for (const [kind, question, detail] of [
@@ -57,7 +59,6 @@ const file = {
         ['grammar', 'に 和 へ 有什么区别？', '往车站去，强调方向。'],
         ['exercise', '批改：昨日、図書館に行きます。', '行きました'],
       ]) {
-        await page.locator(`[data-x=queryMode][data-id=${kind}]`).click();
         await page.locator('#query-input').fill(question);
         await page.getByRole('button', { name: '发送问题' }).click();
         const card = page.locator('.learning-card').last();
@@ -65,7 +66,7 @@ const file = {
         await expect(card).toContainText(detail);
         await fits();
         await card.screenshot({
-          path: `artifacts/design13/${label}-${kind}.png`,
+          path: `artifacts/design14/${label}-${kind}.png`,
         });
         await card.locator('[data-x=saveCard]').click();
         await page
@@ -100,7 +101,7 @@ const file = {
         await navigate('query');
       }
       results.push(
-        `${label}: four typed learning cards retain full payload through save, filter and detail; no generic answer kind`,
+        `${label}: input automatically routes four samples to typed cards that retain full payload through save, filter and detail; no generic answer kind`,
       );
       await navigate('notebooks');
       await expect(page.locator('[data-x=kind][data-id=answer]')).toHaveCount(
@@ -115,7 +116,7 @@ const file = {
       await fits();
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({
-        path: `artifacts/design13/${label}-notebook.png`,
+        path: `artifacts/design14/${label}-notebook.png`,
         fullPage: true,
       });
       await page.locator('[data-x=entry]').first().focus();
@@ -135,32 +136,27 @@ const file = {
       );
       await navigate('query');
       const count = await page.locator('.learning-card').count();
-      for (const kind of ['word', 'sentence', 'grammar', 'exercise']) {
-        await page.locator(`[data-x=queryMode][data-id=${kind}]`).click();
-        await page.locator('#query-input').fill('天空为什么是蓝色的？');
+      for (const question of [
+        '天空为什么是蓝色的？',
+        'Write an investment plan',
+        'そっと是什么意思？顺便帮我订机票',
+      ]) {
+        await page.locator('#query-input').fill(question);
         await page.getByRole('button', { name: '发送问题' }).click();
         await expect(page.locator('.learning-card')).toHaveCount(count);
         await expect(page.locator('.query-notice').last()).toContainText(
           '不会回答非语言问题',
         );
       }
-      await page.locator('[data-x=queryMode][data-id=word]').click();
       const chooser = page.waitForEvent('filechooser');
       await page.getByRole('button', { name: '添加图片', exact: true }).click();
       await (await chooser).setFiles(file);
       await expect(page.locator('[data-query-images] img')).toHaveCount(1);
-      await expect(
-        page.getByRole('button', { name: '发送问题' }),
-      ).toBeDisabled();
-      await expect(page.locator('[data-query-task-help]')).toBeVisible();
-      await page.locator('[data-x=queryMode][data-id=exercise]').click();
+      await expect(page.locator('#query-input')).toHaveValue('');
       await expect(
         page.getByRole('button', { name: '发送问题' }),
       ).toBeEnabled();
       await page.getByRole('button', { name: '发送问题' }).click();
-      await expect(page.locator('.query-notice').last()).toContainText(
-        '语言习题批改',
-      );
       await expect(page.locator('.query-notice').last()).toContainText(
         '图片尚未识别',
       );
@@ -170,13 +166,13 @@ const file = {
       );
       await fits();
       results.push(
-        `${label}: non-language requests produce no cards; images require a language task and unprocessed images cannot be collected`,
+        `${label}: non-language requests produce no cards; image-only input can send without choosing a type; unprocessed images cannot be collected`,
       );
       await page.close();
     }
     expect(errors).toEqual([]);
     fs.writeFileSync(
-      'artifacts/design13/language.json',
+      'artifacts/design14/language.json',
       JSON.stringify(results, null, 2),
     );
     console.log(

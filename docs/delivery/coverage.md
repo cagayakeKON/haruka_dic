@@ -55,6 +55,6 @@
 | --- | --- | --- |
 | 材料直接阅读、列表详情及解析WebSocket | [材料](../modules/materials-reading.md)、[WSP-01～WSP-05](../contracts/job-progress.md) | 阶段2，待实现；电脑消息/任务入口分别唯一 |
 | 混合收藏、列表/弹窗、每日单词 | [VNB-10～VNB-12](../modules/vocabulary-notebooks.md) | 阶段3，待实现；CSV依旧阶段5且只含单词 |
-| 语言图文查询、图片翻译/语法/习题批改与分类型卡片收藏 | [QRY-01～QRY-09](../modules/query.md)、[四种P0卡片](../modules/ai-speech.md) | 阶段4，待实现；不支持自由问答/通用回答类型，不扩展任意外部工具权限 |
+| AI自动判断的语言图文查询、图片翻译/语法/习题批改与分类型卡片收藏 | [QRY-01～QRY-09](../modules/query.md)、[四种P0卡片](../modules/ai-speech.md) | 阶段4，待实现；不支持自由问答/通用回答类型，不扩展任意外部工具权限 |
 
 DESIGN6仅取得文档与HTML交互证据，不勾选上述正式权限、模型、数据库和跨端验收。

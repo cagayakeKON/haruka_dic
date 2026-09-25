@@ -17,35 +17,15 @@ window.HarukaLearningCards = (() => {
     exercise: 'edit',
     excerpt: 'bookmark',
   };
-  const tasks = [
-    {
-      id: 'word',
-      label: '单词',
-      hint: '输入单词或短语，如 そっと',
-      prompt: 'そっと 是什么意思？',
-    },
-    {
-      id: 'sentence',
-      label: '句子',
-      hint: '输入需要翻译、解析的句子或文章',
-      prompt: '翻译：夏の風がそっと頬に触れた。',
-    },
-    {
-      id: 'grammar',
-      label: '语法',
-      hint: '输入语法点或语言用法问题',
-      prompt: 'に 和 へ 有什么区别？',
-    },
-    {
-      id: 'exercise',
-      label: '习题',
-      hint: '粘贴语言习题与自己的答案，或上传题目图片',
-      prompt: '批改：昨日、図書館に行きます。',
-    },
+  const prompts = [
+    'そっと 是什么意思？',
+    '翻译：夏の風がそっと頬に触れた。',
+    'に 和 へ 有什么区别？',
+    '批改：昨日、図書館に行きます。',
   ];
-  function sample(question, task) {
+  function sample(question) {
     const q = question.trim();
-    if (task === 'word' && ['そっと', 'そっと 是什么意思？'].includes(q))
+    if (['そっと', 'そっと 是什么意思？'].includes(q))
       return {
         kind: 'word',
         word: 'そっと',
@@ -60,7 +40,6 @@ window.HarukaLearningCards = (() => {
         ],
       };
     if (
-      task === 'sentence' &&
       [
         '夏の風がそっと頬に触れた。',
         '翻译：夏の風がそっと頬に触れた。',
@@ -75,10 +54,7 @@ window.HarukaLearningCards = (() => {
         segments: ['夏の風が', 'そっと', '頬に触れた。'],
         rule: '名词 + に + 触れる：触碰到某物。',
       };
-    if (
-      task === 'grammar' &&
-      ['に 和 へ 有什么区别？', 'に / へ', 'に和へ的区别'].includes(q)
-    )
+    if (['に 和 へ 有什么区别？', 'に / へ', 'に和へ的区别'].includes(q))
       return {
         kind: 'grammar',
         word: 'に / へ',
@@ -100,7 +76,6 @@ window.HarukaLearningCards = (() => {
         ],
       };
     if (
-      task === 'exercise' &&
       ['批改：昨日、図書館に行きます。', '昨日、図書館に行きます。'].includes(q)
     )
       return {
@@ -125,5 +100,5 @@ window.HarukaLearningCards = (() => {
   function render(card, action = '') {
     return `<article class="learning-card kind-${e(card.kind)}" data-card-kind="${e(card.kind)}" data-card-id="${e(card.id)}"><header class="learning-card-header"><span class="learning-type">${I(icons[card.kind])}${e(kinds[card.kind])}</span><span class="learning-language">${e(card.language)} · 示例</span></header>${content(card)}<footer class="learning-card-footer"><span>${card.kind === 'exercise' ? '批改示例 · 不计入成绩' : '查询 · 内置示例'}</span><div><button class="text-btn" type="button" data-x="queryAgain">再查一个</button>${action}</div></footer></article>`;
   }
-  return { kinds, icons, tasks, sample, content, render };
+  return { kinds, icons, prompts, sample, content, render };
 })();

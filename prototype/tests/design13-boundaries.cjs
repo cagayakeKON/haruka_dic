@@ -41,7 +41,9 @@ const fs = require('node:fs');
       await page.goto(`${url}#appearance`);
       await page.locator('[data-setting=theme]').selectOption('dark');
       await page.goto(`${url}#query`);
-      await page.locator('[data-x=prompt][data-task=word]').click();
+      await page
+        .getByRole('button', { name: 'そっと 是什么意思？', exact: true })
+        .click();
       await page.getByRole('button', { name: '发送问题' }).click();
       await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark');
       await expect(page.locator('.learning-card')).toContainText('轻轻地');

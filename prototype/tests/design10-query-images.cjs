@@ -47,7 +47,6 @@ const fs = require('node:fs');
       const send = page.getByRole('button', { name: '发送问题' });
       const draftImages = page.locator('[data-query-images] .query-image-tile');
       await expect(send).toBeDisabled();
-      await page.locator('[data-x=queryMode][data-id=sentence]').click();
       const chooser = page.waitForEvent('filechooser');
       await page.getByRole('button', { name: '添加图片', exact: true }).click();
       await (await chooser).setFiles([file, { ...file, name: 'second.png' }]);

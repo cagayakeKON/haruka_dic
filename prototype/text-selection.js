@@ -3,10 +3,12 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
   const { escape: e, icon: I } = window.HarukaCore;
   let snapshot,
     toolbar,
-    player,
     timer,
     pointer,
     suppressClick = false;
+  const speech = window.HarukaSpeechPlayer({ s, root });
+  let selectedTokens = new Set(),
+    adjustedRange;
   let epoch = 0,
     gestureOwner = null;
   const scopeOf = (node) =>
@@ -24,6 +26,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     toolbar?.remove();
     toolbar = null;
     snapshot = null;
+    CSS.highlights?.delete("haruka-focus");
   };
   function capture() {
     if (toolbar?.contains(document.activeElement)) return;
@@ -59,6 +62,10 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     const prefix = range.cloneRange();
     prefix.selectNodeContents(start);
     prefix.setEnd(range.startContainer, range.startOffset);
+    speech.pause();
+    speech.focus(range.startContainer);
+    selectedTokens = new Set();
+    adjustedRange = null;
     snapshot = {
       text,
       source,
@@ -68,13 +75,40 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       range: range.cloneRange(),
       element: start,
       offset: prefix.toString().length,
+      tokens: [
+        ...new Intl.Segmenter(undefined, { granularity: "word" }).segment(text),
+      ],
     };
     toolbar?.remove();
     toolbar = document.createElement("div");
     toolbar.className = "text-selection-toolbar";
     toolbar.setAttribute("role", "toolbar");
     toolbar.setAttribute("aria-label", "选中文字");
-    toolbar.innerHTML = `<span class="selection-preview">${e(text)}</span><div><button type="button" data-selection-action="read">${I("headphones")}朗读</button><button type="button" data-selection-action="query">${I("search")}查询</button><button type="button" data-selection-action="dismiss" aria-label="收起选区工具">${I("close")}</button></div>`;
+    toolbar.innerHTML = `<div class="sentence-panel-head"><span>选句学习</span><button type="button" data-selection-action="read" aria-label="朗读整句" title="朗读整句">${I("speaker")}</button><button type="button" data-selection-action="dismiss" aria-label="收起选区工具">${I("close")}</button></div><span class="selection-preview sr-only">${e(text)}</span><div class="sentence-tokens" role="group" aria-label="选择要查询的词">${snapshot.tokens.map((part, i) => (part.isWordLike ? `<button type="button" class="word-bubble" data-selection-token="${i}" aria-pressed="false">${e(part.segment)}</button>` : `<span class="sentence-punctuation">${e(part.segment)}</span>`)).join("")}</div><div class="selection-query-line"><span class="selection-scope" role="status">查询整句</span><button type="button" data-selection-action="query">${I("search")}查询</button></div><details class="selection-adjust"><summary>调整范围</summary><p>可在原文拖选，或在这里调整字词边界。</p><div><label>起点<select data-selection-boundary="start" aria-label="选区起点"></select></label><label>终点<select data-selection-boundary="end" aria-label="选区终点"></select></label></div></details>`;
+    const graphemes = [
+      ...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(
+        text,
+      ),
+    ];
+    toolbar.querySelector('[data-selection-boundary="start"]').innerHTML =
+      graphemes
+        .map(
+          (part) =>
+            `<option value="${part.index}">${part.index + 1} · ${e(text.slice(part.index, part.index + 10))}</option>`,
+        )
+        .join("");
+    toolbar.querySelector('[data-selection-boundary="end"]').innerHTML =
+      graphemes
+        .map(
+          (part) =>
+            `<option value="${part.index + part.segment.length}">${part.index + part.segment.length} · ${e(part.segment)}</option>`,
+        )
+        .join("");
+    toolbar.querySelector('[data-selection-boundary="end"]').value = String(
+      text.length,
+    );
+    if (window.Highlight)
+      CSS.highlights?.set("haruka-focus", new Highlight(range));
     host().append(toolbar);
     position();
   }
@@ -86,37 +120,98 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     toolbar.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))}px`;
     toolbar.style.top = `${Math.max(12, Math.min(rect.bottom + 10, window.innerHeight - toolbar.offsetHeight - 12))}px`;
   }
-  function read(selected) {
-    player?.remove();
-    player = document.createElement("section");
-    player.className = "selection-player";
-    player.setAttribute("aria-label", "朗读演示");
-    player.innerHTML = `<div><strong>朗读演示</strong><span role="status">播放中 · 无实际音频</span></div><p>${e(selected.text)}</p><div class="selection-playback"><button type="button" data-selection-action="pause">${I("pause")}暂停</button><label>语速<select aria-label="朗读语速"><option>0.7×</option><option selected>1.0×</option><option>1.2×</option><option>1.5×</option></select></label><button type="button" data-selection-action="stop">${I("close")}停止</button></div>`;
-    host().append(player);
-    player.querySelector("button").focus({ preventScroll: true });
+  function queryRanges() {
+    if (adjustedRange) return [adjustedRange];
+    if (!selectedTokens.size) return [{ start: 0, end: snapshot.text.length }];
+    const indices = [...selectedTokens].sort((a, b) => a - b),
+      ranges = [];
+    let previous;
+    for (const i of indices) {
+      const part = snapshot.tokens[i];
+      const contiguous =
+        previous !== undefined &&
+        snapshot.tokens.slice(previous + 1, i).every((p) => !p.isWordLike);
+      if (contiguous) ranges.at(-1).end = part.index + part.segment.length;
+      else
+        ranges.push({
+          start: part.index,
+          end: part.index + part.segment.length,
+        });
+      previous = i;
+    }
+    return ranges;
+  }
+  function updateScope() {
+    if (!snapshot || !toolbar) return;
+    const ranges = queryRanges();
+    toolbar
+      .querySelectorAll("[data-selection-token]")
+      .forEach((button) =>
+        button.setAttribute(
+          "aria-pressed",
+          String(selectedTokens.has(Number(button.dataset.selectionToken))),
+        ),
+      );
+    const invalid = ranges.some((part) => part.end <= part.start);
+    const tooMany = ranges.length > 3;
+    toolbar.querySelector(".selection-scope").textContent = invalid
+      ? "终点需要在起点之后"
+      : tooMany
+        ? "每次最多查询3组，请减少选择"
+        : !selectedTokens.size && !adjustedRange
+          ? "查询整句"
+          : ranges
+              .map((part) => snapshot.text.slice(part.start, part.end))
+              .join(" / ");
+    toolbar.querySelector('[data-selection-action="query"]').disabled =
+      invalid || tooMany;
+    position();
   }
   // Capture before page-level click handlers, so selecting a list row never opens it.
   document.addEventListener(
     "click",
     (event) => {
+      const bubble = event.target.closest("[data-selection-token]");
+      if (bubble && toolbar?.contains(bubble)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const index = Number(bubble.dataset.selectionToken);
+        if (selectedTokens.has(index)) selectedTokens.delete(index);
+        else selectedTokens.add(index);
+        adjustedRange = null;
+        updateScope();
+        return;
+      }
+      const pronunciation = event.target.closest("[data-pronounce]");
+      if (
+        pronunciation &&
+        root.contains(pronunciation) &&
+        allowed() &&
+        !pronunciation.closest("[inert]")
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        clearToolbar();
+        window.getSelection()?.removeAllRanges();
+        speech.read(
+          pronunciation.dataset.pronounce,
+          pronunciation.dataset.language,
+        );
+        return;
+      }
       const action = event.target.closest("[data-selection-action]");
       if (action && root.contains(action)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         const kind = action.dataset.selectionAction;
-        if (kind === "stop") {
-          player?.remove();
-          player = null;
+        if (kind === "continuous") {
+          clearToolbar();
+          window.getSelection()?.removeAllRanges();
+          speech.continuous();
           return;
         }
-        if (kind === "pause") {
-          const paused = action.dataset.paused !== "true";
-          action.dataset.paused = String(paused);
-          action.innerHTML = `${I(paused ? "play" : "pause")}${paused ? "继续" : "暂停"}`;
-          player.querySelector('[role="status"]').textContent =
-            `${paused ? "已暂停" : "播放中"} · 无实际音频`;
-          return;
-        }
+        if (kind === "stop") return speech.stop();
+        if (kind === "pause") return speech.toggle();
         const selected = snapshot;
         if (kind === "dismiss") {
           clearToolbar();
@@ -130,10 +225,23 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
           !allowed()
         )
           return clearToolbar();
-        if (kind === "read") read(selected);
+        if (kind === "read")
+          speech.read(
+            selected.text,
+            selected.element.closest("[lang]")?.lang || "",
+          );
         if (kind === "query")
           onQuery({
-            text: selected.text,
+            text: queryRanges()
+              .map((part) => selected.text.slice(part.start, part.end))
+              .join(" / "),
+            sentence: selected.text,
+            ranges: queryRanges().map((part) => ({
+              ...part,
+              text: selected.text.slice(part.start, part.end),
+            })),
+            queryMode:
+              queryRanges().length > 1 ? "separate_words" : "contiguous",
             source: selected.source,
             route: selected.route,
             offset: selected.offset,
@@ -160,13 +268,44 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     true,
   );
   document.addEventListener("selectionchange", capture);
+  document.addEventListener("change", (event) => {
+    if (
+      !toolbar?.contains(event.target) ||
+      !event.target.matches("[data-selection-boundary]")
+    )
+      return;
+    adjustedRange = {
+      start: Number(
+        toolbar.querySelector('[data-selection-boundary="start"]').value,
+      ),
+      end: Number(
+        toolbar.querySelector('[data-selection-boundary="end"]').value,
+      ),
+    };
+    selectedTokens.clear();
+    updateScope();
+  });
+  document.addEventListener(
+    "toggle",
+    (event) => {
+      if (event.target.matches?.(".selection-adjust")) position();
+    },
+    true,
+  );
   document.addEventListener(
     "pointerdown",
     (event) => {
       if (event.target.closest(".text-selection-toolbar")) {
-        event.preventDefault();
+        if (!event.target.closest("select,summary,details"))
+          event.preventDefault();
         return;
       }
+      if (
+        event.target.closest(
+          "[data-pronounce],.selection-player,[data-selection-action]",
+        )
+      )
+        return;
       suppressClick = false;
       gestureOwner = null;
       clearTimeout(timer);
@@ -175,7 +314,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       pointer = scope
         ? { x: event.clientX, y: event.clientY, scope, epoch }
         : null;
-      if (!pointer || event.pointerType !== "touch" || !event.isPrimary) return;
+      if (!pointer || !event.isPrimary || event.button > 0) return;
       const initial = pointer;
       timer = setTimeout(() => {
         if (pointer !== initial || initial.epoch !== epoch) return;
@@ -183,7 +322,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
         if (!caret || !initial.scope.contains(caret.startContainer)) return;
         const block =
           caret.startContainer.parentElement.closest(
-            "p,h2,h3,strong,small,.answer-copy",
+            "[data-reading-sentence],p,h2,h3,h4,strong,small,.answer-copy",
           ) || initial.scope;
         if (!initial.scope.contains(block) && block !== initial.scope) return;
         const before = caret.cloneRange();
@@ -303,15 +442,14 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     pointer = null;
     epoch++;
     clearToolbar();
-    player?.remove();
+    speech.stop(true);
   });
   function refresh() {
     epoch++;
     clearTimeout(timer);
     pointer = null;
     clearToolbar();
-    player?.remove();
-    player = null;
+    speech.refresh();
     if (!allowed()) return;
     const selectors = {
       novel: ".prose,.reading-prose",
@@ -333,7 +471,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       selectionQuery: ".learning-card-content",
       entryDetail: ".learning-card-content,.entry-detail > p:not(.note)",
       textbookItem:
-        ".stack > p:not(.step-caption),.row-wrap strong,.row-wrap small",
+        ".stack > p:not(.step-caption),.row-wrap strong,.row-wrap small,.textbook-word strong,.textbook-word small",
     };
     const selector = s.modal ? modalSelectors[s.modal] : selectors[s.route];
     if (!selector) return;

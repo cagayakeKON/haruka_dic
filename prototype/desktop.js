@@ -307,7 +307,7 @@
 
   function novel() {
     const text = data.novel.paragraphs.map((p) => `<p>${e(p)}</p>`).join("");
-    return `<div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div><p class="selection-hint">选中文字，即可朗读或查询。</p><div class="reader-shell"><aside class="chapter-nav">${chapterList()}</aside><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 03 章 / 12 章</p><h2 lang="ja">窓の向こう</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>窓の向こう</span><span>03 / 12</span></footer></article></div>`;
+    return `<div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary" data-selection-action="continuous">${I("headphones")}连续朗读</button><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div><p class="selection-hint">长按选句，点选词汇后查询。</p><div class="reader-shell"><aside class="chapter-nav">${chapterList()}</aside><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 03 章 / 12 章</p><h2 lang="ja">窓の向こう</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>窓の向こう</span><span>03 / 12</span></footer></article></div>`;
   }
 
   function textbook() {
@@ -573,7 +573,27 @@
       const sample = (samples[unit.id] || samples.unit1)[
         s.textbookItemIndex || 0
       ];
-      content = `<div class="stack"><p class="step-caption">${e(unit.title)}</p><p lang="ja" class="sample-sentence">${e(sample[0])}</p><p>${e(sample[1])}</p></div>`;
+      const vocabulary = {
+        unit1: [
+          ["学生", "学生"],
+          ["先生", "老师"],
+          ["会社員", "公司职员"],
+        ],
+        unit2: [
+          ["駅", "车站"],
+          ["右", "右"],
+          ["左", "左"],
+        ],
+        unit3: [
+          ["注文", "点单"],
+          ["水", "水"],
+          ["コーヒー", "咖啡"],
+        ],
+      };
+      content =
+        s.textbookItemIndex === 1
+          ? `<div class="stack">${vocabulary[unit.id].map(([word, meaning]) => `<div class="textbook-word"><span><strong lang="ja">${e(word)}</strong><small>${e(meaning)}</small></span>${window.HarukaLearningCards.pronounce(word)}</div>`).join("")}</div>`
+          : `<div class="stack"><p class="step-caption">${e(unit.title)}</p><p lang="ja" class="sample-sentence">${e(sample[0])}</p><p>${e(sample[1])}</p></div>`;
     } else if (s.modal === "examScript") {
       title = "校对听力候选";
       content = `<div class="stack"><p>题组：听力 · 第 03 题</p><div class="soft-panel"><strong>文字稿候选</strong><p lang="ja" style="margin-top:8px">明日は駅の南口で会いましょう。</p></div><p class="small muted">来源：试卷正文 · 听力题组 1。</p><label class="check-row"><input id="exam-script-confirm" type="checkbox"><span>我已核对脚本与题组、小题的对应关系</span></label><button class="primary" type="button" data-action="confirmScript">确认示例匹配</button></div>`;

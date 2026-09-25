@@ -12,6 +12,7 @@ window.HarukaCore = (() => {
     chevron: '<path d="m9 18 6-6-6-6"/>', arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>', back: '<path d="m15 18-6-6 6-6"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
     bookmark: '<path d="M5 4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v18l-7-5-7 5V4Z"/>',
+    speaker: '<path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
     headphones: '<path d="M3 14v-2a9 9 0 0 1 18 0v2M5 14h3v7H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2Zm11 0h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3v-7Z"/>',
     check: '<path d="m4 12 5 5L20 6"/>', close: '<path d="M5 5 19 19M19 5 5 19"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',

@@ -18,6 +18,8 @@
   background: #fff;
   color: #183743;
   box-shadow: 0 8px 32px #102c4030;
+  max-height: min(65vh, 560px);
+  overflow: auto;
 }
 .selection-preview {
   display: block;
@@ -28,7 +30,8 @@
   font-size: 12px;
   color: #50626d;
 }
-.text-selection-toolbar > div,
+.sentence-panel-head,
+.selection-query-line,
 .selection-playback {
   display: flex;
   gap: 8px;
@@ -50,8 +53,172 @@
   font: inherit;
   cursor: pointer;
 }
-.text-selection-toolbar button:not(:last-child) {
+.sentence-panel-head > span,
+.selection-scope {
   flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.text-selection-toolbar .sentence-panel-head button {
+  padding: 8px;
+}
+.sentence-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 4px;
+  padding: 14px 4px;
+  align-items: center;
+}
+.text-selection-toolbar .word-bubble {
+  min-width: 32px;
+  border-radius: 16px;
+  background: #f2f6fa;
+  border: 1px solid #d6e2eb;
+  font-size: 16px;
+  padding: 8px 10px;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.text-selection-toolbar .word-bubble[aria-pressed="true"] {
+  background: #244fba;
+  color: #fff;
+  border-color: #244fba;
+  box-shadow: inset 0 -3px #142b65;
+}
+.sentence-punctuation {
+  white-space: pre-wrap;
+}
+.selection-adjust {
+  font-size: 12px;
+  color: #50626d;
+  margin-top: 12px;
+}
+.selection-adjust summary {
+  cursor: pointer;
+  padding: 8px;
+}
+.selection-adjust p {
+  padding: 0 8px;
+}
+.selection-adjust > div {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+}
+.selection-adjust label {
+  flex: 1;
+  min-width: 0;
+}
+.selection-adjust select {
+  width: 100%;
+  min-height: 44px;
+}
+.text-selection-toolbar button:focus-visible,
+.word-speaker:focus-visible {
+  outline: 3px solid #244fba;
+  outline-offset: 2px;
+}
+::highlight(haruka-focus) {
+  background: #cbdffb;
+  color: #163251;
+}
+[data-reading-sentence].is-speaking {
+  background: #e2f2c3;
+  border-radius: 4px;
+  box-shadow: 0 2px #709333;
+}
+.word-speaker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #315cac;
+  cursor: pointer;
+}
+.word-speaker:hover {
+  background: #edf3ff;
+}
+.word-speaker svg {
+  width: 18px;
+  height: 18px;
+}
+.learning-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.learning-title-row .learning-title {
+  min-width: 0;
+}
+.collection-row {
+  display: flex;
+  align-items: center;
+}
+.collection-row-open {
+  flex: 1;
+  min-width: 0;
+}
+.collection-row > .word-speaker {
+  margin-right: 4px;
+}
+.textbook-word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.textbook-word > span {
+  flex: 1;
+}
+.textbook-word small {
+  display: block;
+  color: var(--muted);
+}
+.playback-position {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.playback-position progress {
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+  accent-color: #4066c8;
+}
+body:has(.selection-player) .mobile-reader {
+  padding-bottom: 220px;
+}
+body:has(.text-selection-toolbar) .selection-player {
+  visibility: hidden;
+}
+#phone-app .selection-player {
+  bottom: calc(88px + env(safe-area-inset-bottom));
+}
+#phone-app [role="dialog"] .selection-player,
+#desktop-app [role="dialog"] .selection-player {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  margin-top: 16px;
+}
+.selection-player .playback-text {
+  max-height: 54px;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .reader-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 .text-selection-toolbar svg,
 .selection-player svg {
@@ -117,7 +284,7 @@
   line-height: 1.7;
 }
 .reader-dock {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 .reader-shell {
   grid-template-columns: minmax(0, 760px);
@@ -130,10 +297,7 @@
 }
 @media (max-width: 600px) {
   .text-selection-toolbar {
-    left: 12px !important;
-    top: auto !important;
-    bottom: calc(18px + env(safe-area-inset-bottom));
-    width: calc(100vw - 24px) !important;
+    max-height: 60vh;
   }
   .selection-player {
     bottom: calc(18px + env(safe-area-inset-bottom));

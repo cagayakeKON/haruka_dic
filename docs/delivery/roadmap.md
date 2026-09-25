@@ -12,6 +12,8 @@
 
 2026-09-25 DESIGN16统一选区，DESIGN17按用户补充覆盖普通学习及交卷后复盘文字“选中文字 → 朗读或查询 → 查询结果可收藏”，含AI解释/中文/例句。HTML与文档同步见[局部记录](reviews/2026-09-25-unified-text-selection.md)；[DESIGN17记录](reviews/2026-09-25-question-collection.md)补充题目直接收藏与交卷门槛。正式应用仍按B1基础查询收藏、阶段3通用解释/TTS及阶段4已发布学习结果接入，不提前宣称模型、音频或原生触控已实现。
 
+2026-09-25 DESIGN18确认单词喇叭、长按句子分词浮层及小说当前章连续朗读。阶段2实现句/词范围与可纠错选择，阶段3接入单词/句子音频与有界连续队列、逐句持久缓存和暂停恢复，阶段4保持交卷门槛及已发布卡片复用。原型与文档记录见[局部交付](reviews/2026-09-25-sentence-speech.md)，不勾选正式音频或业务验收。
+
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。

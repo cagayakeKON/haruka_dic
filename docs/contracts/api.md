@@ -4,7 +4,9 @@
 
 协议归属：认证传输与会话轮换见 [认证设计](../architecture/authentication.md)，权限代码见 [权限目录](permissions.md)，选区/来源字段见 [出处协议](content-locator.md)，CSV文件格式见 [CSV契约](vocabulary-csv.md)。模块只引用这些协议并描述用户行为，不再定义另一套字段；未来根contracts中的生成OpenAPI由后端schema单向导出，不与本文手工双向维护字段表。
 
-DESIGN16共用选区工具条不新增通用执行接口。朗读仍走speech/resolve与明确的speech/requests；材料/解释查询按实际来源走explanations或agent轮次，收藏仍提交完整card_id/card_revision与归本选择。非材料可见文字按[出处协议](content-locator.md#11-非材料学习文字的选区)传受控资源/版本/字段范围，服务端重取并授权；不可提交隐藏答案、试卷稿件或客户端正文冒充已发布源。
+DESIGN18分词浮层、单词喇叭和连续朗读复用现有领域接口，不新增通用执行接口。朗读仍走speech/resolve与明确的speech/requests；材料/解释查询按实际来源走explanations或agent轮次，收藏仍提交完整card_id/card_revision与归本选择。非材料可见文字按[出处协议](content-locator.md#11-非材料学习文字的选区)传受控资源/版本/字段范围，服务端重取并授权；不可提交隐藏答案、试卷稿件或客户端正文冒充已发布源。
+
+DESIGN18多词查询按[多范围协议](content-locator.md#12-分词气泡与多范围查询)提交有序目标与父句，独立结果卡分别可收藏，原文由服务端重取。连续播放manifest绑定当前章/起始句/结束边界与版本；只读resolve不能生成，明确生成的请求绑定该范围及本人配置，预取仅在窗口内执行且逐阶段重查权限。播放模式和片段内暂停位置不进入合成键；服务端逐句保存音频，不增加整章缓存接口。
 
 ## 1. HTTP与数据格式
 

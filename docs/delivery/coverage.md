@@ -4,6 +4,8 @@
 
 DESIGN17[题目直接收藏与交卷后学习](reviews/2026-09-25-question-collection.md)覆盖COL-005/006；DESIGN16原型局部证据见[统一选区交互](reviews/2026-09-25-unified-text-selection.md)；SEL-001～003及QRY-10的正式三端/服务端验收仍待实现，不以HTML演示勾选。
 
+DESIGN18补充单词喇叭、句子分词气泡与小说连续朗读；新增SEL-004、TTS-008、NOV-005、LC-11，HTML局部证据见[原型记录](reviews/2026-09-25-sentence-speech.md)，正式服务端/音频/三端验收仍未执行。
+
 ## 1. 按功能开始开发
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |
@@ -21,7 +23,7 @@ DESIGN17[题目直接收藏与交卷后学习](reviews/2026-09-25-question-colle
 | [考试：导入、文字听力、校对、答题、交卷与成绩](../modules/exams.md) | [解析数据结构](../contracts/material-structures.md)、[API](../contracts/api.md)、[数据与任务](../architecture/data-jobs.md)、[出处](../contracts/content-locator.md) | 原考试清单、MSTR/PRES及DAT；AI听力标记/匹配、人工确认、TTS冻结、草稿/截止/锁卷、媒体故障、评分恢复与重评 |
 | [AI与朗读：解释、卡片、共享运行和TTS](../modules/ai-speech.md) | [Agent运行层](../architecture/agent-runtime.md)、[API事件](../contracts/api.md) | AI/TTS/SEL；普通学习及交卷后复盘文字共用选区朗读/查询、结果收藏，类型校验、权限/上限、流恢复、音频缓存与播放 |
 | [模型用量统计](../contracts/model-usage.md) | [数据与任务](../architecture/data-jobs.md)、[设置](../modules/settings.md)、[管理后台](../modules/admin.md)、[观测](../operations/observability.md) | USAGE-01～USAGE-09；attempt幂等、input/output/cache分项、unknown/null与混合组完整性、应用缓存区分、本人/管理聚合和日志边界 |
-| [词句解析与TTS的持久保存/缓存](../architecture/learning-cache.md) | [AI/朗读](../modules/ai-speech.md)、[收藏](../modules/vocabulary-practice.md)、[设置](../modules/settings.md)、[数据与任务](../architecture/data-jobs.md) | LC-01～LC-10；未收藏也保存、书内语境索引、跨端复用、全局标准词音与私人关联/用量、生成合并/版本、容量与GC、权限/离线 |
+| [词句解析与TTS的持久保存/缓存](../architecture/learning-cache.md) | [AI/朗读](../modules/ai-speech.md)、[收藏](../modules/vocabulary-practice.md)、[设置](../modules/settings.md)、[数据与任务](../architecture/data-jobs.md) | LC-01～LC-11；未收藏也保存、书内语境索引、跨端复用、全局标准词音与私人关联/用量、生成合并/版本、容量与GC、权限/离线 |
 | [后台：用户、角色、菜单、策略和运维](../modules/admin.md) | [RBAC](../architecture/authorization.md)、[权限目录](../contracts/permissions.md) | ADM/PERM；两端显示/接口一致、deny/继承/撤权、防提权与首末管理员 |
 | [设置：资料、头像、语言、Key、服务实例与缓存](../modules/settings.md) | [认证与隔离](../architecture/authentication.md)、[API/头像传输](../contracts/api.md)、[运行配置](../operations/configuration.md) | PROFILE/SET/CACHE；资料隐私/并发、头像安全发布、语言组合/历史、显示无障碍、凭据轮换、账号代次、离线租期与迟到响应 |
 | [统一日志与业务埋点](../operations/observability.md) | 各模块的事件映射、[MyHome接入](../operations/myhome-integration.md) | 原观测清单；全部来源/info事件、关联、脱敏、补传与采集缺口 |

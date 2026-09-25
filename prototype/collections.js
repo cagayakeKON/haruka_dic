@@ -314,7 +314,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   connect();
 
   function row(w) {
-    return `<article class="collection-row" data-kind="${e(w.kind)}"><button class="collection-row-open" type="button" data-x="entry" data-id="${w.id}" aria-label="查看 ${e(w.word)}"><span class="collection-type-icon" aria-hidden="true">${I(learningCards.icons[w.kind])}</span><span class="collection-copy"><span class="collection-word-line"><strong>${e(w.word)}</strong>${w.reading ? `<small>${e(w.reading)}</small>` : ""}</span><span class="collection-meaning">${e(w.meaning)}</span></span><span class="collection-kind">${e(kinds[w.kind])}</span><span class="collection-open-label" aria-hidden="true">${I("chevron")}</span></button></article>`;
+    return `<article class="collection-row" data-kind="${e(w.kind)}"><button class="collection-row-open" type="button" data-x="entry" data-id="${w.id}" aria-label="查看 ${e(w.word)}"><span class="collection-type-icon" aria-hidden="true">${I(learningCards.icons[w.kind])}</span><span class="collection-copy"><span class="collection-word-line"><strong>${e(w.word)}</strong>${w.reading ? `<small>${e(w.reading)}</small>` : ""}</span><span class="collection-meaning">${e(w.meaning)}</span></span><span class="collection-kind">${e(kinds[w.kind])}</span><span class="collection-open-label" aria-hidden="true">${I("chevron")}</span></button>${w.kind === "word" ? learningCards.pronounce(w.word, w.language) : ""}</article>`;
   }
   function emptyCollection() {
     if (s.collectionSearch.trim() || s.collectionKind !== "all")
@@ -392,7 +392,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
       return `<div class="sample-reader"><span class="collection-kind">试卷准备 · 导入演示</span><h1>${e(m.title)}</h1><p>文件未解析，暂无题目可校对。</p><div class="callout"><span>本地任务只演示进度，不能开始考试。</span></div><button class="primary" type="button" disabled>开始考试</button><button class="secondary" type="button" data-go="library">返回材料库</button></div>`;
     if (m.type === "textbook")
       return `<div class="sample-reader"><span class="collection-kind">课本学习 · 导入演示</span><h1>${e(m.title)}</h1><p>文件未解析，暂无可学习单元。</p><button class="secondary" type="button" data-go="library">返回材料库</button></div>`;
-    return `<div class="sample-reader"><span class="collection-kind">内置示例正文</span><h1>${e(m.title)}</h1>${m.id === "rain" ? '<h2>雨停之后</h2><p lang="ja">雨が上がった。窓を開けると、庭の木々が光っていた。私は本を閉じて、外へ出た。</p><p>雨停了。推开窗，庭院里的树木闪着光。我合上书，走到屋外。</p>' : "<p>此文件没有被读取或解析。当前仅演示任务进度，实际正文需要正式解析服务。</p>"}<button class="secondary" type="button" data-go="library">返回材料库</button></div>`;
+    return `<div class="sample-reader"><span class="collection-kind">内置示例正文</span><h1>${e(m.title)}</h1>${m.id === "rain" ? '<button class="secondary" type="button" data-selection-action="continuous">连续朗读</button><div data-novel-prose><h2>雨停之后</h2><p lang="ja">雨が上がった。窓を開けると、庭の木々が光っていた。私は本を閉じて、外へ出た。</p></div><p>雨停了。推开窗，庭院里的树木闪着光。我合上书，走到屋外。</p>' : "<p>此文件没有被读取或解析。当前仅演示任务进度，实际正文需要正式解析服务。</p>"}<button class="secondary" type="button" data-go="library">返回材料库</button></div>`;
   }
   function canSendQuery() {
     return !preparingImages && !!(s.queryDraft?.trim() || s.queryImages.length);
@@ -423,23 +423,32 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         message: s.selectionMessage,
         scroll: root.querySelector("[role=dialog]")?.scrollTop || 0,
       });
-    const result = learningCards.sample(selection.text);
-    const message = {
-      id: id(),
-      question: selection.text,
-      selection,
-      images: [],
-      card: result
-        ? {
-            ...result,
-            id: id(),
-            source: `${selection.source} · 选区查询`,
-            selection,
-          }
-        : null,
-      notice: "这段文字没有内置查询示例。本原型未调用 AI，未生成可收藏的结果。",
-    };
-    s.queryMessages.push(message);
+    const parts =
+      selection.queryMode === "separate_words"
+        ? selection.ranges
+        : [{ text: selection.text }];
+    const messages = parts.map((part) => {
+      const result = learningCards.sample(part.text);
+      return {
+        id: id(),
+        question: part.text,
+        selection,
+        images: [],
+        card: result
+          ? {
+              ...result,
+              id: id(),
+              source: `${selection.source} · 选区查询`,
+              selection,
+            }
+          : null,
+        notice: `“${part.text}”没有内置查询示例。本原型未调用 AI，未生成可收藏的结果。`,
+      };
+    });
+    const message = messages[0];
+    if (messages.length > 1)
+      message.relatedIds = messages.map((item) => item.id);
+    s.queryMessages.push(...messages);
     s.selectionMessage = message;
     show("selectionQuery");
     root.querySelector("[role=dialog]").scrollTop = 0;
@@ -565,10 +574,27 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     if (s.modal === "selectionQuery") {
       const message = s.selectionMessage;
       title = "查询结果";
-      const saved =
-        message?.card && s.words.some((w) => w.cardId === message.card.id);
+      const group = message?.relatedIds
+        ? message.relatedIds
+            .map((id) => s.queryMessages.find((item) => item.id === id))
+            .filter(Boolean)
+        : message
+          ? [message]
+          : [];
       content = message
-        ? `<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.question)}</div>${message.card ? learningCards.render(message.card, `<button type="button" class="text-btn" data-x="saveCard" data-id="${message.card.id}" ${saved ? "disabled" : ""}>${I("bookmark")}${saved ? "已收藏" : "收藏"}</button>`, false) : `<p role="status">${e(message.notice)}</p>`}`
+        ? `<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.selection.sentence || message.question)}${group.length > 1 ? "<p>分别查询所选词汇</p>" : ""}</div>${group
+            .map((item) => {
+              const saved =
+                item.card && s.words.some((w) => w.cardId === item.card.id);
+              return item.card
+                ? learningCards.render(
+                    item.card,
+                    `<button type="button" class="text-btn" data-x="saveCard" data-id="${item.card.id}" ${saved ? "disabled" : ""}>${I("bookmark")}${saved ? "已收藏" : "收藏"}</button>`,
+                    false,
+                  )
+                : `<p role="status">${e(item.notice)}</p>`;
+            })
+            .join("")}`
         : "<p>选区已失效，请重新选择。</p>";
     } else if (s.modal === "queryImagePreview") {
       const item = [

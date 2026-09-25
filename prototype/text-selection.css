@@ -139,3 +139,44 @@
     bottom: calc(18px + env(safe-area-inset-bottom));
   }
 }
+
+.question-collect {
+  margin: 10px 0;
+}
+.exam-review-list {
+  display: grid;
+  gap: 16px;
+}
+.exam-review-item {
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #dde5ee);
+  border-radius: 18px;
+  padding: 18px;
+  min-width: 0;
+}
+.exam-review-item .section-head {
+  margin: 0 0 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.exam-review-item h3 {
+  font-size: 14px;
+}
+.exam-review-text h4 {
+  font-size: 18px;
+  line-height: 1.8;
+  margin: 0 0 12px;
+}
+.exam-review-text ol,
+.collected-question ol {
+  padding-left: 24px;
+  line-height: 1.9;
+}
+.exam-review-text p,
+.collected-question p {
+  margin: 10px 0 0;
+  line-height: 1.8;
+}
+.collected-question {
+  margin: 16px 0;
+}

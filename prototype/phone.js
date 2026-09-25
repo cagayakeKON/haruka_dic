@@ -201,6 +201,8 @@
       harukaMobileIndex: nested ? navigationIndex : ++navigationIndex,
       harukaModal: name,
       harukaSelectionMessage: s.selectionMessage?.id,
+      harukaQuestionRef:
+        name === 'saveQuestion' ? s.questionDraft?.questionOrigin : null,
       harukaBuilderStep: builderStep,
     };
     history[nested ? 'replaceState' : 'pushState'](state, '', location.href);
@@ -367,26 +369,8 @@
     return `<div class="mobile-intro"><h1>${e(unit.title)}</h1></div><div class="mobile-list-heading"><h2>单元内容</h2></div><div class="mobile-plain-list">${unit.items.map((item, i) => `<button type="button" class="mobile-unit-row" data-action="textbookItem" data-index="${i}"><span class="setting-icon">${I(['book', 'library', 'spark', 'edit'][i])}</span><span class="row-copy"><strong>${e(item)}</strong><small>${['会话与课文', '词汇与释义', '用法与例句', '逐题练习'][i]}</small></span>${I('chevron')}</button>`).join('')}</div><div class="mobile-action-dock"><button class="primary full" type="button" data-go="textbookPractice">做课后题 ${I('arrow')}</button></div>`;
   }
   function textbookPractice() {
-    const examples = {
-      unit1: {
-        prompt: '「わたしは学生です」中的「は」有什么作用？',
-        options: ['提示话题', '表示移动方向', '表示过去时间', '连接并列句'],
-        correct: 0,
-        explanation: '「は」提示句子的话题。',
-      },
-      unit2: {
-        ...data.textbook.question,
-        explanation: '「へ」标示移动的方向。',
-      },
-      unit3: {
-        prompt: '在咖啡馆点餐时，「ください」通常表达什么？',
-        options: ['请给我', '欢迎回来', '我已吃完', '请稍等'],
-        correct: 0,
-        explanation: '「ください」在这里表达礼貌请求。',
-      },
-    };
-    const q = examples[s.textbookUnit] || examples.unit1;
-    return `<div class="mobile-step-label">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || '当前单元')} · 示例题</div><div class="mobile-intro"><h1>课后题</h1></div><div class="surface stack"><h2 class="mobile-question">${e(q.prompt)}</h2><div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? 'correct' : i === s.textbookAnswer ? 'wrong' : '') : ''}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? 'disabled' : ''}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join('')}</div>${s.textbookSubmitted ? `<div class="feedback ${s.textbookAnswer === q.correct ? 'correct' : 'wrong'}"><strong>${s.textbookAnswer === q.correct ? '回答正确' : `这题选 ${String.fromCharCode(65 + q.correct)}`}</strong><div>${e(q.explanation)}</div></div><button type="button" class="secondary full" data-action="textbookReset">重新作答</button>` : `<button type="button" class="primary full" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? 'disabled' : ''}>确认答案</button>`}</div>`;
+    const q = extras.textbookQuestion();
+    return `<div class="mobile-step-label">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || '当前单元')} · 示例题</div><div class="mobile-intro"><h1>课后题</h1></div><div class="surface stack"><h2 class="mobile-question">${e(q.prompt)}</h2>${extras.questionButton('textbook', s.textbookUnit)}<div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? 'correct' : i === s.textbookAnswer ? 'wrong' : '') : ''}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? 'disabled' : ''}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join('')}</div>${s.textbookSubmitted ? `<div class="feedback ${s.textbookAnswer === q.correct ? 'correct' : 'wrong'}"><strong>${s.textbookAnswer === q.correct ? '回答正确' : `这题选 ${String.fromCharCode(65 + q.correct)}`}</strong><div>${e(q.explanation)}</div></div><button type="button" class="secondary full" data-action="textbookReset">重新作答</button>` : `<button type="button" class="primary full" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? 'disabled' : ''}>确认答案</button>`}</div>`;
   }
   function examPrep() {
     if (s.examRunning)
@@ -402,7 +386,7 @@
     const count = data.exam.questions.filter(
       (q) => s.examAnswers[q.id] === q.correct,
     ).length;
-    return `<h1 class="page-title">这次模拟已交卷。</h1><p class="page-subtitle">3 道示例题 · 本次作答结果</p><div class="brand-panel" style="margin-top:22px"><div class="eyebrow" style="color:#d8f36a">示例客观题</div><h2 style="font-size:42px;margin:6px 0">${count} / ${data.exam.questions.length}</h2><p>答对题数</p></div><div class="section-head"><h2>逐题复盘</h2></div><div class="list">${data.exam.questions.map((q, i) => `<div class="row-wrap"><span class="pill-count">${i + 1}</span><span class="row-copy"><strong>${e(q.group)} · ${e(q.text)}</strong><small>你的选择：${s.examAnswers[q.id] === undefined ? '未作答' : e(q.options[s.examAnswers[q.id]])} · 参考答案：${e(q.options[q.correct])}</small></span></div>`).join('')}</div><div class="button-row" style="margin-top:20px">${btn('查看错题库', 'mistakes', 'secondary')}${btn('返回书库', 'library', 'primary')}</div>`;
+    return `<h1 class="page-title">这次模拟已交卷。</h1><p class="page-subtitle">3 道示例题 · 本次作答结果</p><div class="brand-panel" style="margin-top:22px"><div class="eyebrow" style="color:#d8f36a">示例客观题</div><h2 style="font-size:42px;margin:6px 0">${count} / ${data.exam.questions.length}</h2><p>答对题数</p></div><div class="section-head"><h2>逐题复盘</h2></div>${extras.examReview()}<div class="button-row" style="margin-top:20px">${btn('查看错题库', 'mistakes', 'secondary')}${btn('返回书库', 'library', 'primary')}</div>`;
   }
   function notebooks() {
     return extras.notebooks();
@@ -441,7 +425,7 @@
       s.activeLanguage === '英语' ? data.practiceEnglish : data.practice;
     return `<div class="question-meta"><span>${e(s.activeLanguage)} · 语境填空</span><span>1 / 1</span></div><div class="question-progress" aria-hidden="true"><span></span></div>
       <h1 class="question-title">选择合适的词</h1><p class="question-translation">${e(p.translation)}</p><p class="question-prompt" lang="${s.activeLanguage === '英语' ? 'en' : 'ja'}">${e(p.prompt)}</p>
-      <div class="answer-list">${p.options.map((option, i) => `<button class="answer ${s.practiceSubmitted ? (i === p.correct ? 'correct' : i === s.practiceAnswer ? 'wrong' : '') : ''}" type="button" data-practice-answer="${i}" aria-pressed="${s.practiceAnswer === i}" ${s.practiceSubmitted ? 'disabled' : ''}><span class="answer-letter">${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(option)}</span>${s.practiceSubmitted && i === p.correct ? I('check') : ''}</button>`).join('')}</div>
+      ${extras.questionButton('practice', s.activeLanguage)}<div class="answer-list">${p.options.map((option, i) => `<button class="answer ${s.practiceSubmitted ? (i === p.correct ? 'correct' : i === s.practiceAnswer ? 'wrong' : '') : ''}" type="button" data-practice-answer="${i}" aria-pressed="${s.practiceAnswer === i}" ${s.practiceSubmitted ? 'disabled' : ''}><span class="answer-letter">${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(option)}</span>${s.practiceSubmitted && i === p.correct ? I('check') : ''}</button>`).join('')}</div>
       ${s.practiceSubmitted ? `<div class="feedback ${s.practiceAnswer === p.correct ? 'correct' : 'wrong'}"><strong>${s.practiceAnswer === p.correct ? '答对了' : `正确答案是 ${String.fromCharCode(65 + p.correct)}`}</strong><p>${e(p.explanation)}</p></div>` : ''}
       <div class="mobile-action-dock">${s.practiceSubmitted ? '<button type="button" class="primary full" data-action="practiceReset">再练一次</button>' : `<button class="primary full" type="button" data-action="practiceSubmit" ${s.practiceAnswer < 0 ? 'disabled' : ''}>确认答案</button>`}</div>`;
   }
@@ -991,6 +975,7 @@
     const selectionOrigin = extras.restoreSelectionMessage(
       history.state?.harukaSelectionMessage,
     );
+    extras.restoreQuestionDraft(history.state?.harukaQuestionRef);
     render();
     const activeSheet = root.querySelector('[role=dialog]');
     if (activeSheet)

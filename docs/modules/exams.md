@@ -7,7 +7,7 @@
 | 产品范围 | 个人语言学习中的模拟考试，Windows/Web/Android 共用后端 |
 | 配套 | [PRD](../product/overview.md)、[架构总览](../architecture/overview.md)、[Agent 运行层](../architecture/agent-runtime.md)、[认证与隔离](../architecture/authentication.md)、[管理后台与 RBAC](../architecture/authorization.md)、[日志与埋点](../operations/observability.md) |
 
-DESIGN16：试卷准备、作答、成绩/复盘及其弹窗均不接入[全局选区朗读/查询工具条](ai-speech.md#21-全局选区交互)。现有听力脚本校对、生成、冻结与场次播放仍使用专用入口；已发布评分/解析按本模块展示，不通过通用选区重新生成提示。离开试卷后对有权保留的收藏/错题快照的操作仍须校验其来源与当前可见性。
+DESIGN17按用户补充修订：试卷准备、作答及提交未确认时禁用通用选区和题目收藏；服务端确认交卷成功后，可在有权可见的题面、已提交作答与已发布解析上使用[选区朗读/查询](ai-speech.md#21-全局选区交互)，也可直接[收藏任一题目](vocabulary-practice.md#题目直接收藏)。不要求先评分、答错或查询；评分等待/失败时仍可收藏已存在的题面与作答，不把未发布答案/解析填入快照。听力脚本可见性及有限播放账本仍遵循冻结策略，不能借通用朗读重生成隐藏稿件。
 
 ## 1. 范围、入口与权限
 

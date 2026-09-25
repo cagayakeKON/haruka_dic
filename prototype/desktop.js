@@ -317,26 +317,8 @@
     return `${head("", "日语的日常表达")}<div class="textbook-layout"><nav class="setting-menu unit-menu" aria-label="单元目录">${data.textbook.units.map((x, i) => `<button type="button" ${x.id === s.textbookUnit ? 'aria-current="page"' : ""} data-unit="${x.id}"><span class="unit-number">${String(i + 1).padStart(2, "0")}</span>${e(x.title.replace(/^Unit \d+ · /, ""))}</button>`).join("")}</nav><section class="surface"><div class="section-head"><h2>${e(unit.title)}</h2>${btn("做课后题", "textbookPractice", "primary", "edit")}</div><div class="unit-content-list">${unit.items.map((item, i) => `<button class="material-row" type="button" ${i === 3 ? 'data-go="textbookPractice"' : `data-modal="textbookItem" data-index="${i}"`}><span class="setting-icon">${I(["book", "library", "spark", "edit"][i])}</span><span class="row-copy"><strong>${e(item)}</strong></span>${I("chevron")}</button>`).join("")}</div></section></div>`;
   }
   function textbookPractice() {
-    const examples = {
-      unit1: {
-        prompt: "「わたしは学生です」中的「は」有什么作用？",
-        options: ["提示话题", "表示移动方向", "表示过去时间", "连接并列句"],
-        correct: 0,
-        explanation: "「は」提示句子的话题。",
-      },
-      unit2: {
-        ...data.textbook.question,
-        explanation: "「へ」标示移动的方向。",
-      },
-      unit3: {
-        prompt: "在咖啡馆点餐时，「ください」通常表达什么？",
-        options: ["请给我", "欢迎回来", "我已吃完", "请稍等"],
-        correct: 0,
-        explanation: "「ください」在这里表达礼貌请求。",
-      },
-    };
-    const q = examples[s.textbookUnit] || examples.unit1;
-    return `<div class="focused-page">${head("", "课后题")}<p class="step-caption">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || "当前单元")} · 示例题</p><section class="surface question-panel"><h2>${e(q.prompt)}</h2><div class="answer-list">${q.options.map((a, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? "correct" : i === s.textbookAnswer ? "wrong" : "") : ""}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(a)}</span></button>`).join("")}</div>${s.textbookSubmitted ? `<div class="feedback" role="status"><strong>${s.textbookAnswer === q.correct ? "回答正确" : "这题选 A"}</strong><p>${e(q.explanation)}</p></div><button class="secondary" type="button" data-action="textbookReset">重新作答</button>` : `<button class="primary" type="button" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
+    const q = extras.textbookQuestion();
+    return `<div class="focused-page">${head("", "课后题")}<p class="step-caption">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || "当前单元")} · 示例题</p><section class="surface question-panel"><h2>${e(q.prompt)}</h2>${extras.questionButton("textbook", s.textbookUnit)}<div class="answer-list">${q.options.map((a, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? "correct" : i === s.textbookAnswer ? "wrong" : "") : ""}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(a)}</span></button>`).join("")}</div>${s.textbookSubmitted ? `<div class="feedback" role="status"><strong>${s.textbookAnswer === q.correct ? "回答正确" : "这题选 A"}</strong><p>${e(q.explanation)}</p></div><button class="secondary" type="button" data-action="textbookReset">重新作答</button>` : `<button class="primary" type="button" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
   }
 
   function examPrep() {
@@ -353,7 +335,7 @@
     const score = data.exam.questions.filter(
       (q) => s.examAnswers[q.id] === q.correct,
     ).length;
-    return `${head("", "考试结果")}<div class="grid-3" style="margin-top:23px"><div class="stat"><strong>${score} / ${data.exam.questions.length}</strong><span>示例客观题</span></div><div class="stat"><strong>${data.exam.questions.length - score}</strong><span>需要回看的示例题</span></div><div class="stat"><strong>已交卷</strong><span>示例答卷状态</span></div></div><div class="section-head"><h2>逐题复盘</h2>${btn("查看错题库", "mistakes", "secondary")}</div><div class="table-wrap"><table class="table"><thead><tr><th>题号</th><th>部分</th><th>你的选择</th><th>参考答案</th></tr></thead><tbody>${data.exam.questions.map((q, i) => `<tr><td>${i + 1}</td><td>${e(q.group)}</td><td>${s.examAnswers[q.id] === undefined ? "未作答" : e(q.options[s.examAnswers[q.id]])}</td><td>${e(q.options[q.correct])}</td></tr>`).join("")}</tbody></table></div>`;
+    return `${head("", "考试结果")}<div class="grid-3" style="margin-top:23px"><div class="stat"><strong>${score} / ${data.exam.questions.length}</strong><span>示例客观题</span></div><div class="stat"><strong>${data.exam.questions.length - score}</strong><span>需要回看的示例题</span></div><div class="stat"><strong>已交卷</strong><span>示例答卷状态</span></div></div><div class="section-head"><h2>逐题复盘</h2>${btn("查看错题库", "mistakes", "secondary")}</div>${extras.examReview()}`;
   }
   function notebooks() {
     return extras.notebooks();
@@ -382,7 +364,7 @@
   function practice() {
     const p =
       s.activeLanguage === "英语" ? data.practiceEnglish : data.practice;
-    return `<div class="focused-page">${head("", "逐题练习")}<p class="step-caption">${e(s.activeLanguage)} · 语境填空 · 内置示例 01</p><section class="surface question-panel"><p class="muted">${e(p.translation)}</p><h2 lang="${s.activeLanguage === "英语" ? "en" : "ja"}">${e(p.prompt)}</h2><div class="answer-list">${p.options.map((answer, i) => `<button class="answer ${s.practiceSubmitted ? (i === p.correct ? "correct" : i === s.practiceAnswer ? "wrong" : "") : ""}" type="button" data-practice-answer="${i}" aria-pressed="${s.practiceAnswer === i}" ${s.practiceSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join("")}</div>${s.practiceSubmitted ? `<div class="feedback ${s.practiceAnswer === p.correct ? "correct" : "wrong"}" role="status"><strong>${s.practiceAnswer === p.correct ? "回答正确" : `这题选 ${String.fromCharCode(65 + p.correct)}`}</strong><p>${e(p.explanation)}</p></div><button class="secondary" type="button" data-action="practiceReset">重新作答</button>` : `<button class="primary" type="button" data-action="practiceSubmit" ${s.practiceAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
+    return `<div class="focused-page">${head("", "逐题练习")}<p class="step-caption">${e(s.activeLanguage)} · 语境填空 · 内置示例 01</p><section class="surface question-panel"><p class="muted">${e(p.translation)}</p><h2 lang="${s.activeLanguage === "英语" ? "en" : "ja"}">${e(p.prompt)}</h2>${extras.questionButton("practice", s.activeLanguage)}<div class="answer-list">${p.options.map((answer, i) => `<button class="answer ${s.practiceSubmitted ? (i === p.correct ? "correct" : i === s.practiceAnswer ? "wrong" : "") : ""}" type="button" data-practice-answer="${i}" aria-pressed="${s.practiceAnswer === i}" ${s.practiceSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join("")}</div>${s.practiceSubmitted ? `<div class="feedback ${s.practiceAnswer === p.correct ? "correct" : "wrong"}" role="status"><strong>${s.practiceAnswer === p.correct ? "回答正确" : `这题选 ${String.fromCharCode(65 + p.correct)}`}</strong><p>${e(p.explanation)}</p></div><button class="secondary" type="button" data-action="practiceReset">重新作答</button>` : `<button class="primary" type="button" data-action="practiceSubmit" ${s.practiceAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
   }
 
   function mistakes() {

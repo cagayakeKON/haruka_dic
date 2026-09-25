@@ -2,6 +2,8 @@
 
 状态：设计基线 v0.2，2026-09-23，待工程注册和测试。此文是具体权限代码、依赖与功能映射的唯一目录；[RBAC](../architecture/authorization.md) 定义求值、授予与撤权规则。下面斜线分隔的动作均须展开成独立代码，不能把整串当通配符授予。
 
+题目直接收藏需collection.create及实际题目/作答/来源read权限，归本另验词本权限；试卷额外校验本人exam_session.read和服务端submitted状态，评分完成不是前置条件。选区朗读/查询仍分别需要speech.play/generate、ai.explain或agent.use，交卷不自动赋权，也不公开隐藏听力稿/未发布评分。详见[题目收藏](../modules/vocabulary-practice.md#题目直接收藏)。
+
 ## 1. 共同求值规则
 
 所有client业务动作要求active账号、client受众登录资格、动作allow且无匹配deny、self范围和对象状态；admin业务要求admin受众与目标管理范围。角色名只作初始模板，不能出现在日常业务if判断里。派生动作依赖按AND计算，禁止用“有写权限就自动给读权限”补授。

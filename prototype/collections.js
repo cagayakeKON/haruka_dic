@@ -47,6 +47,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     s.queryMessages = [];
     s.selectionMessage = null;
     s.saveCardReturn = false;
+    s.questionDraft = null;
     selectionBackstack = [];
     s.queryDraft = "";
     queryImageError = "";
@@ -443,6 +444,82 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     show("selectionQuery");
     root.querySelector("[role=dialog]").scrollTop = 0;
   }
+  function textbookQuestion(unit = s.textbookUnit) {
+    return {
+      unit1: {
+        prompt: "「わたしは学生です」中的「は」有什么作用？",
+        options: ["提示话题", "表示移动方向", "表示过去时间", "连接并列句"],
+        correct: 0,
+        explanation: "「は」提示句子的话题。",
+      },
+      unit2: {
+        ...data.textbook.question,
+        explanation: "「へ」标示移动的方向。",
+      },
+      unit3: {
+        prompt: "在咖啡馆点餐时，「ください」通常表达什么？",
+        options: ["请给我", "欢迎回来", "我已吃完", "请稍等"],
+        correct: 0,
+        explanation: "「ください」在这里表达礼貌请求。",
+      },
+    }[unit];
+  }
+  function questionSnapshot(kind, questionId) {
+    if (!s.signedIn || s.adminArea) return null;
+    let question,
+      submitted,
+      answer,
+      source,
+      language = "日语";
+    if (kind === "practice" && questionId === s.activeLanguage) {
+      language = s.activeLanguage;
+      question = language === "英语" ? data.practiceEnglish : data.practice;
+      submitted = s.practiceSubmitted;
+      answer = s.practiceAnswer;
+      source = `AI 习题 · ${language} · 语境填空`;
+    } else if (kind === "textbook") {
+      question = textbookQuestion(questionId);
+      if (questionId !== s.textbookUnit) return null;
+      submitted = s.textbookSubmitted;
+      answer = s.textbookAnswer;
+      source = `日语的日常表达 · ${data.textbook.units.find((unit) => unit.id === questionId)?.title}`;
+    } else if (kind === "exam" && s.examFinished && !s.examRunning) {
+      question = data.exam.questions.find((q) => q.id === questionId);
+      submitted = true;
+      answer = s.examAnswers[questionId];
+      source = `${data.exam.title} · ${question?.group} · ${questionId}`;
+    }
+    if (!question) return null;
+    return {
+      kind: "exercise",
+      word: question.prompt || question.text,
+      meaning: source,
+      language,
+      questionKey: `${kind}:${questionId}:v1`,
+      questionOrigin: { kind, id: questionId, version: 1 },
+      questionOptions: [...question.options],
+      source,
+      ...(submitted
+        ? {
+            originalAnswer: question.options[answer] || "未作答",
+            referenceAnswer: question.options[question.correct],
+            detail: question.explanation || "交卷后的客观题参考答案示例。",
+          }
+        : { detail: "作答前收藏，仅保存题面和选项。" }),
+    };
+  }
+  function questionButton(kind, questionId) {
+    const question = questionSnapshot(kind, questionId);
+    if (!question) return "";
+    const saved = s.words.some(
+      (word) => word.questionKey === question.questionKey,
+    );
+    return `<button class="secondary question-collect" type="button" data-x="saveQuestion" data-question-kind="${kind}" data-id="${e(questionId)}" ${saved ? "disabled" : ""}>${I("bookmark")}${saved ? "已收藏题目" : "收藏题目"}</button>`;
+  }
+  function examReview() {
+    if (!s.examFinished || s.examRunning) return "";
+    return `<div class="exam-review-list">${data.exam.questions.map((q, i) => `<article class="exam-review-item" data-question-id="${q.id}"><div class="section-head"><h3>第 ${i + 1} 题 · ${e(q.group)}</h3>${questionButton("exam", q.id)}</div><div class="exam-review-text"><h4>${e(q.text)}</h4><ol type="A">${q.options.map((option) => `<li>${e(option)}</li>`).join("")}</ol><p>你的选择：${s.examAnswers[q.id] === undefined ? "未作答" : e(q.options[s.examAnswers[q.id]])}</p><p>参考答案：${e(q.options[q.correct])}</p></div></article>`).join("")}</div>`;
+  }
   function returnFromSelection() {
     if (mobile) return false;
     if (s.modal === "saveCard" && s.saveCardReturn) {
@@ -529,15 +606,35 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         : "<p>该收藏已不可用。</p>";
     } else if (s.modal === "editEntry") {
       title = "编辑收藏";
-      content = `<form class="form-grid" data-x-form="editEntry">${w.cardId ? `<p class="note">学习卡片保留收藏时的完整内容。</p>` : `<label class="field">内容<textarea name="word" required maxlength="2000">${e(w.word)}</textarea></label><label class="field">释义<textarea name="meaning" required maxlength="4000">${e(w.meaning)}</textarea></label>`}<label class="field">个人笔记<textarea name="note" maxlength="4000">${e(w.note || "")}</textarea></label><button class="primary" type="submit">保存</button></form>`;
-    } else if (s.modal === "entryBooks" || s.modal === "saveCard") {
-      title = s.modal === "saveCard" ? "收藏卡片" : "归入单词本";
+      content = `<form class="form-grid" data-x-form="editEntry">${w.cardId || w.questionKey ? `<p class="note">学习卡片保留收藏时的完整内容。</p>` : `<label class="field">内容<textarea name="word" required maxlength="2000">${e(w.word)}</textarea></label><label class="field">释义<textarea name="meaning" required maxlength="4000">${e(w.meaning)}</textarea></label>`}<label class="field">个人笔记<textarea name="note" maxlength="4000">${e(w.note || "")}</textarea></label><button class="primary" type="submit">保存</button></form>`;
+    } else if (["entryBooks", "saveCard", "saveQuestion"].includes(s.modal)) {
+      title =
+        s.modal === "saveQuestion"
+          ? "收藏题目"
+          : s.modal === "saveCard"
+            ? "收藏卡片"
+            : "归入单词本";
       const card = s.queryMessages.find(
         (m) => m.card?.id === s.savingCard,
       )?.card;
-      const target = s.modal === "saveCard" ? card : w;
+      const target =
+        s.modal === "saveQuestion"
+          ? s.questionDraft
+          : s.modal === "saveCard"
+            ? card
+            : w;
+      if (
+        s.modal === "saveQuestion" &&
+        (!target ||
+          s.words.some((word) => word.questionKey === target.questionKey))
+      ) {
+        return {
+          title,
+          content: `<p>${target ? "这道题已收藏。" : "此收藏步骤已失效，请回到题目重新操作。"}</p><button class="secondary" type="button" data-action="closeModal">返回题目</button>`,
+        };
+      }
       const books = s.notebooks.filter((b) => b.language === target?.language);
-      content = `<form class="form-grid" data-x-form="${s.modal === "saveCard" ? "saveCard" : "entryBooks"}">${books.map((b) => `<label class="check-row choice-row"><input type="checkbox" name="books" value="${b.id}" ${s.modal === "entryBooks" && belongs(w, b.id) ? "checked" : ""}><span>${e(b.title)}</span></label>`).join("") || "<p>暂无同语言单词本，可先收藏到全部收藏。</p>"}<button class="primary" type="submit">${s.modal === "saveCard" ? "确认收藏" : "保存归类"}</button></form>`;
+      content = `<form class="form-grid" data-x-form="${s.modal}">${s.modal === "saveQuestion" ? `<p>${e(target?.word || "题目已不可用")}</p><p class="note">保存完整题目和当前可见内容，可选单词本归类。</p>` : ""}${books.map((b) => `<label class="check-row choice-row"><input type="checkbox" name="books" value="${b.id}" ${s.modal === "entryBooks" && belongs(w, b.id) ? "checked" : ""}><span>${e(b.title)}</span></label>`).join("") || "<p>暂无同语言单词本，可先收藏到全部收藏。</p>"}<button class="primary" type="submit">${s.modal === "entryBooks" ? "保存归类" : "确认收藏"}</button></form>`;
     } else if (s.modal === "addEntry") {
       title = "添加收藏";
       content = `<form class="form-grid" data-x-form="entry"><label class="field">类型<select name="kind">${Object.entries(
@@ -693,6 +790,16 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
       }
       if (key === "tasks") show("tasks");
       if (key === "openJob") openMaterial(value);
+      if (key === "saveQuestion") {
+        const card = questionSnapshot(target.dataset.questionKind, value);
+        if (
+          !card ||
+          s.words.some((word) => word.questionKey === card.questionKey)
+        )
+          return;
+        s.questionDraft = card;
+        show("saveQuestion");
+      }
       if (key === "saveCard") {
         if (!s.queryMessages.some((message) => message.card?.id === value))
           return;
@@ -845,7 +952,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
       }
       if (action === "editEntry") {
         const w = s.words.find((x) => x.id === s.selectedWord);
-        if (!w.cardId) {
+        if (!w.cardId && !w.questionKey) {
           w.word = text("word") || w.word;
           w.meaning = text("meaning") || w.meaning;
         }
@@ -882,6 +989,34 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         resultElement.tabIndex = -1;
         resultElement.focus({ preventScroll: true });
         resultElement.scrollIntoView({ block: "start" });
+      }
+      if (action === "saveQuestion") {
+        const card = s.questionDraft;
+        if (
+          !card ||
+          !questionSnapshot(card.questionOrigin.kind, card.questionOrigin.id)
+        )
+          return;
+        const books = values.getAll("books");
+        if (
+          books.some(
+            (book) =>
+              !s.notebooks.some(
+                (b) => b.id === book && b.language === card.language,
+              ),
+          )
+        )
+          return;
+        if (!s.words.some((word) => word.questionKey === card.questionKey)) {
+          s.words.unshift({
+            ...card,
+            id: id(),
+            books,
+            createdAt: new Date().toISOString(),
+          });
+        }
+        close();
+        s.questionDraft = null;
       }
       if (action === "saveCard") {
         const card = s.queryMessages.find(
@@ -1009,6 +1144,12 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     guardMaterialRoute,
     restoreListFocus,
     querySelection,
+    textbookQuestion,
+    questionButton,
+    examReview,
+    restoreQuestionDraft: (ref) => {
+      s.questionDraft = ref ? questionSnapshot(ref.kind, ref.id) : null;
+    },
     returnFromSelection,
     restoreSelectionMessage,
     restoreSelectionFocus,

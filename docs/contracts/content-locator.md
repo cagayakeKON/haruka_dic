@@ -2,6 +2,8 @@
 
 状态：2026-09-23，设计基线，尚未实现。本篇为材料、收藏、卡片、题目与CSV共用的出处协议唯一正文；用户操作见 [材料与阅读](../modules/materials-reading.md)，源层/三类领域结构见 [解析数据结构](material-structures.md)，资源归属见 [认证与隔离](../architecture/authentication.md)。
 
+题目直接收藏引用已校验题目版本及必要的场次/作答身份，服务端按[收藏投影](../modules/vocabulary-practice.md#题目直接收藏)重取可见字段。试卷交卷成功后允许选区引用当前有权复盘文字，未发布评分/隐藏听力稿仍拒绝；提交状态必须从本人场次读取，客户端locator不授予交卷后权限。
+
 ## 1. 不可变内容与选区
 
 推荐 `source_locator` 使用 `locator_schema_version=1`，并以`target_kind`作为可辨识联合类型。所有分支共用以下信封字段；字段是业务存储与接口契约，不得作为日志自由属性上传。

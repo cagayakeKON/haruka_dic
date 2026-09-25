@@ -16,7 +16,8 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
   const allowed = () =>
     s.signedIn &&
     !s.adminArea &&
-    !/exam/i.test(s.route) &&
+    (!/exam/i.test(s.route) ||
+      (s.route === "examResult" && s.examFinished && !s.examRunning)) &&
     !/exam/i.test(s.modal);
   const host = () => root.querySelector('[role="dialog"]') || root;
   const clearToolbar = () => {
@@ -50,6 +51,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
               novel: "夏の手紙 · 第 03 章",
               textbook: "课本 · 当前单元",
               query: "查询结果",
+              examResult: "试卷 · 已交卷复盘",
               report: "学习诊断",
               practice: "AI 习题",
               textbookPractice: "课后题",
@@ -324,6 +326,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       mistakes: "[data-mistake] strong,.table td strong",
       mistake:
         ".page-title,.page-heading h1,.surface p,.panel p,.question-panel p",
+      examResult: ".exam-review-text",
       report: ".panel h2,.panel p,.surface h2,.surface p",
     };
     const modalSelectors = {

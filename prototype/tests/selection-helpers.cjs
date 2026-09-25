@@ -2,6 +2,7 @@
 async function selectText(page, selector, text, touch = false) {
   const target = page.locator(selector).filter({ hasText: text }).first();
   await target.scrollIntoViewIfNeeded();
+  await target.evaluate((el) => el.scrollIntoView({ block: "center" }));
   const points = await target.evaluate((el, text) => {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     let node;

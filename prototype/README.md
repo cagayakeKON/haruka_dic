@@ -40,7 +40,9 @@ DESIGN14的直接输入、自动匹配、纯图片发送及文档契约修订见
 
 DESIGN15移除练习页“问学习Agent”、阅读中的“问Agent”、独立聊天页面/输入/状态和管理菜单样例；旧 `#agent` 入口归并到练习页，既有历史返回不恢复聊天。查询、词句解释、出题/批改与诊断仍各自可用；后端Agent保留为共享运行设计，未实现正式模型调用。实际记录见[AI功能入口与共享Agent](../docs/delivery/reviews/2026-09-25-ai-without-chat.md)，定点回归：`node prototype/tests/design15-ai-actions.cjs`。
 
-DESIGN16统一非试卷学习文字交互：触控长按默认选句，键鼠划选，同一工具条提供朗读/查询，查询结果可经归本弹窗收藏。AI解释、中文说明和例句也可继续选择；移除阅读页点词即查、独立朗读按钮与预先显示的词义侧栏。原型用浏览器选区/本页内存演示；播放器明确无实际音频，未知文字不产生可收藏假卡片。试卷准备/作答/结果及其弹窗排除，专用听力保留。正式缓存缺失时同位置“生成并朗读”、权限和来源校验由[AI与朗读](../docs/modules/ai-speech.md#21-全局选区交互)定义，HTML不声称已实现。定点检查：`node prototype/tests/design16-selection.cjs`；修订回归：`node prototype/tests/design16-regressions.cjs`；记录见[统一选区交互](../docs/delivery/reviews/2026-09-25-unified-text-selection.md)。
+DESIGN16统一非试卷学习文字交互：触控长按默认选句，键鼠划选，同一工具条提供朗读/查询，查询结果可经归本弹窗收藏。AI解释、中文说明和例句也可继续选择；移除阅读页点词即查、独立朗读按钮与预先显示的词义侧栏。原型用浏览器选区/本页内存演示；播放器明确无实际音频，未知文字不产生可收藏假卡片。DESIGN17进一步开放交卷后的复盘选区，提交前仍禁用，专用听力保留。正式缓存缺失时同位置“生成并朗读”、权限和来源校验由[AI与朗读](../docs/modules/ai-speech.md#21-全局选区交互)定义，HTML不声称已实现。定点检查：`node prototype/tests/design16-selection.cjs`；修订回归：`node prototype/tests/design16-regressions.cjs`；记录见[统一选区交互](../docs/delivery/reviews/2026-09-25-unified-text-selection.md)。
+
+DESIGN17：普通AI习题/教材题增加直接“收藏题目”，无需先查询或作答，沿用归本弹窗；保存题干、选项、来源及当前可见作答/参考答案，作答前快照不含隐藏答案，已有快照不会自动补入后来评分。错题历史原有收藏入口及查询习题卡片整卡收藏继续可用。试卷在本次演示交卷成功后，逐题复盘显示完整题面/选项/作答/参考答案，开放选区朗读、查询及结果收藏，并为每题提供直接收藏。正式边界为服务端submitted，不要求评分完成；HTML只有即时示例客观题评分，不代表真实等待/失败评分、权限或持久保存已实现。记录见[题目收藏与交卷后学习](../docs/delivery/reviews/2026-09-25-question-collection.md)，定点回归：`node prototype/tests/design17-question-collection.cjs`。
 
 ## 演示边界
 

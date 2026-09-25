@@ -4,7 +4,7 @@
 
 配套：[产品设计语言](../product/design-language.md)、[项目结构](../architecture/project-structure.md)、[代码规范](coding.md)、[API返回与多语言](../contracts/api-responses.md)、[前端测试](testing/frontend-e2e.md)、[设置与缓存](../modules/settings.md)。具体业务状态/权限以modules、认证/RBAC与API为准，本篇不另定义保存、评分或授权流程。视觉、组件表达、动效与文案以「晴空频率」专题为准；[HTML原型](../../prototype/README.md)有独立的手机移动优先流程与电脑工作台，只按其标注的边界参考，不能视为Flutter实现或验收。Flutter实际证据只记录在 [工程记录](../delivery/reviews/2026-09-22-scaffold-foundation.md)。
 
-DESIGN16共享可选择文本组件覆盖非试卷学习内容及已提交AI解释；触控长按默认选句、手柄扩选与键鼠选择使用同一朗读/查询工具条，完整结果再收藏。按实际输入方式适配，检查列表/作答误触、弹窗焦点、安全区、缩放和来源位置恢复；原型浏览器触控测试不替代Android实体手柄/辅助技术验收。交互唯一正文见[AI与朗读](../modules/ai-speech.md#21-全局选区交互)。
+DESIGN16/17共享可选择文本组件覆盖普通学习及交卷后复盘内容及已提交AI解释；触控长按默认选句、手柄扩选与键鼠选择使用同一朗读/查询工具条，完整结果再收藏。按实际输入方式适配，检查列表/作答误触、弹窗焦点、安全区、缩放和来源位置恢复；原型浏览器触控测试不替代Android实体手柄/辅助技术验收。交互唯一正文见[AI与朗读](../modules/ai-speech.md#21-全局选区交互)。
 
 ## 1. 共享与独立实现的边界
 

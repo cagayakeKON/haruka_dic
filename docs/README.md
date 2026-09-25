@@ -75,6 +75,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [电脑端排版与交互重构](delivery/reviews/2026-09-24-desktop-refinement.md)：电脑端 DESIGN5 的移动优先布局、手机视觉对齐、键盘与历史导航、文案清理及局部验证。
 - [手机登录、注册与找回优化](delivery/reviews/2026-09-24-mobile-auth.md)：DESIGN7 紧凑表单、密码显隐、字段错误和受理页的局部验证。
 - [AI功能入口与共享Agent](delivery/reviews/2026-09-25-ai-without-chat.md)：DESIGN15 移除独立聊天，保留具体AI功能和后端复用。
+- [统一选区朗读与查询](delivery/reviews/2026-09-25-unified-text-selection.md)：DESIGN16双端原型、结果收藏及非试卷学习文字规则。
 - [物理结构与复杂度收敛](delivery/reviews/2026-09-25-database-convergence.md)：DBDESIGN2逐表审查158个候选，收敛为142个物理目标，仍仅文档。
 - [表名与关系设计](delivery/reviews/2026-09-25-database-naming.md)：DBDESIGN3按归属/端点命名，142表逐项标明基数与唯一依据，代码和B0实际结构未改。
 - [数据库与Redis设计](delivery/reviews/2026-09-25-database-design.md)：DBDESIGN1 对照当前原型/契约记录B0基线与业务表/缓存字段方案；尚未执行业务建表或迁移。

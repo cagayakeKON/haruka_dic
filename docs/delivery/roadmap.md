@@ -10,6 +10,8 @@
 
 2026-09-25 DBDESIGN3完成[表命名与关系设计](../architecture/database-relations.md)：采用业务归属/直接父对象命名，专用多对多关联表使用links；逐项列出142表的父/端点、基数与唯一依据。46项目标名调整中2项是B0未来改名，现有12表及代码/迁移保持现状；[本轮审查](reviews/2026-09-25-database-naming.md)仍仅文档验收。
 
+2026-09-25 DESIGN16按用户确认收敛为非试卷学习文字“选中文字 → 朗读或查询 → 查询结果可收藏”，含AI解释/中文/例句。HTML与文档同步见[局部记录](reviews/2026-09-25-unified-text-selection.md)；正式应用仍按B1基础查询收藏、阶段3通用解释/TTS及阶段4已发布学习结果接入，不提前宣称模型、音频或原生触控已实现。
+
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。
@@ -123,7 +125,7 @@ B0各切片已完成必要测试与独立review。Windows/Linux干净检出、�
 
 ### 阶段 3：解释、收藏与 TTS
 
-- 实现选区工具条、Pydantic AI 流式解释、带出处的收藏/笔记及 Pydantic 结构和业务校验；Flutter 接收应用事件协议。
+- 实现统一选区朗读/查询工具条、Pydantic AI 流式解释与结果收藏、带出处的收藏/笔记及 Pydantic 结构和业务校验；Flutter 接收应用事件协议。
 - 实现[多单词本](../modules/vocabulary-notebooks.md)创建/编辑/删除、混合类型成员与批量、条目列表/详情dialog、切换/管理词本dialog、每日单词、缺资料/过滤统计与出题候选控制；冻结learning_revision和只读掌握响应边界。阶段4完成真实学习投影，阶段5完成CSV迁移，不在阶段3用手动开关替代掌握。
 - 接入选定 Gemini/OpenRouter TTS 路径，处理实际音频格式、句子映射与有限预取。
 - 对已人工确认的试卷听力脚本/题目绑定生成私有持久TTS，验证脚本不来自答案/rubric，保存声音/模型/格式配置、segment映射与冻结AudioBinding；不得进入global_word或静默回退系统TTS。

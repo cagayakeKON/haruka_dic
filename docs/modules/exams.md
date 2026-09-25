@@ -7,6 +7,8 @@
 | 产品范围 | 个人语言学习中的模拟考试，Windows/Web/Android 共用后端 |
 | 配套 | [PRD](../product/overview.md)、[架构总览](../architecture/overview.md)、[Agent 运行层](../architecture/agent-runtime.md)、[认证与隔离](../architecture/authentication.md)、[管理后台与 RBAC](../architecture/authorization.md)、[日志与埋点](../operations/observability.md) |
 
+DESIGN16：试卷准备、作答、成绩/复盘及其弹窗均不接入[全局选区朗读/查询工具条](ai-speech.md#21-全局选区交互)。现有听力脚本校对、生成、冻结与场次播放仍使用专用入口；已发布评分/解析按本模块展示，不通过通用选区重新生成提示。离开试卷后对有权保留的收藏/错题快照的操作仍须校验其来源与当前可见性。
+
 ## 1. 范围、入口与权限
 
 导入入口从“小说 / 课本 / 试卷”三类中选择试卷，创建 `material_type=exam` 的材料，由专用处理器进入题目结构化流程；类型/格式与分派以 [三类材料契约](../contracts/material-types.md) 为准。书库提供试卷筛选和独立卡片，打开后显示开考/继续答题/批改状态/历史成绩，不进入小说阅读器或课本单元页。

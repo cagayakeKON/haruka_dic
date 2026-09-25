@@ -38,7 +38,7 @@ window.HarukaCore = (() => {
     return {
       route: 'library', previousRoute: 'library', filter: 'all', search: '', chosenMaterial: 'summer',
       importType: '', importFile: '', importStep: 0, importAnalyze: false, importComplete: false,
-      selectedTerm: 'soft', collected: ['soft'], selectedBook: 'dailywords', selectedWord: 'soft',
+      collected: ['soft'], selectedBook: 'dailywords', selectedWord: 'soft',
       notebooks: data.notebooks.map(x => ({ ...x })), words: data.words.map(x => ({ ...x })),
       notifications: data.notifications.map(x => ({ ...x })), mistakes: data.mistakes.map(x => ({ ...x })),
       practiceSources: ['notebook'], practiceBookIds: ['dailywords'], practiceAllWords: false,
@@ -46,7 +46,7 @@ window.HarukaCore = (() => {
       practiceGenerated: false, practiceAnswer: -1, practiceSubmitted: false,
       textbookUnit: 'unit1', textbookAnswer: -1, textbookSubmitted: false,
       examReady: false, examRunning: false, examFinished: false, examQuestion: 0, examAnswers: {}, examMarked: [], examDraft: '尚未保存',
-      examScriptMatched: false, examAudioReady: false, playing: false,
+      examScriptMatched: false, examAudioReady: false,
       activeLanguage: '日语', targetLanguages: ['日语', '英语'],
       profile: { displayName: '小遥', birthYear: '', gender: '未填写', timezone: 'Asia/Tokyo' },
       nativeLanguages: ['简体中文'], explanationLanguage: '简体中文',

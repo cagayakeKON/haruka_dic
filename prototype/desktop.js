@@ -116,7 +116,6 @@
     "selectedWord",
     "selectedMistake",
     "textbookUnit",
-    "selectedTerm",
     "examQuestion",
   ];
   const navigationState = () => ({
@@ -146,6 +145,7 @@
     render();
   };
   const closeModal = () => {
+    if (extras.returnFromSelection()) return;
     s.modal = "";
     render();
   };
@@ -304,19 +304,10 @@
   function chapterList() {
     return `<h2>章节目录</h2>${data.novel.chapters.map((chapter, i) => `<button type="button" ${i === 2 ? 'aria-current="page"' : ""} data-action="chapter" data-index="${i}"><span>${String(i + 1).padStart(2, "0")}</span>${e(chapter)}</button>`).join("")}`;
   }
-  function termContent() {
-    const term = data.novel.terms[s.selectedTerm];
-    return `<p class="step-caption">词句解释</p><h2 class="word" lang="ja">${e(term.word)}</h2><p class="small muted">${e(term.reading)}</p><p class="term-meaning">${e(term.meaning)}</p><div class="sentence"><strong lang="ja">${e(term.sentence)}</strong><p>${e(term.translation)}</p></div><p class="note">夏の手紙 · ${e(term.source)}</p><div class="stack"><button type="button" class="secondary full" data-action="collectTerm">${I("bookmark")}${s.collected.includes(s.selectedTerm) ? "已收藏" : "收藏词条"}</button></div>`;
-  }
+
   function novel() {
-    const text = data.novel.paragraphs
-      .map((p, i) => {
-        const key = i === 0 ? "soft" : i === 1 ? "smile" : "";
-        const token = key === "soft" ? "そっと" : "微笑んだ";
-        return `<p>${key ? e(p).replace(token, `<button type="button" class="term" data-term="${key}" aria-pressed="${s.selectedTerm === key}">${token}</button>`) : e(p)}</p>`;
-      })
-      .join("");
-    return `<div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="secondary" data-action="toggleSpeech">${I(s.playing ? "pause" : "headphones")}${s.playing ? "暂停" : "朗读"}</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div><div class="reader-shell"><aside class="chapter-nav">${chapterList()}</aside><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 03 章 / 12 章</p><h2 lang="ja">窓の向こう</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>窓の向こう</span><span>03 / 12</span></footer></article><aside class="insight" aria-label="词句解释">${termContent()}</aside></div>`;
+    const text = data.novel.paragraphs.map((p) => `<p>${e(p)}</p>`).join("");
+    return `<div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div><p class="selection-hint">选中文字，即可朗读或查询。</p><div class="reader-shell"><aside class="chapter-nav">${chapterList()}</aside><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 03 章 / 12 章</p><h2 lang="ja">窓の向こう</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>窓の向こう</span><span>03 / 12</span></footer></article></div>`;
   }
 
   function textbook() {
@@ -345,7 +336,7 @@
       },
     };
     const q = examples[s.textbookUnit] || examples.unit1;
-    return `<div class="focused-page">${head("", "课后题")}<p class="step-caption">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || "当前单元")} · 示例题</p><section class="surface question-panel"><h2>${e(q.prompt)}</h2><div class="answer-list">${q.options.map((a, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? "correct" : i === s.textbookAnswer ? "wrong" : "") : ""}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span>${e(a)}</button>`).join("")}</div>${s.textbookSubmitted ? `<div class="feedback" role="status"><strong>${s.textbookAnswer === q.correct ? "回答正确" : "这题选 A"}</strong><p>${e(q.explanation)}</p></div><button class="secondary" type="button" data-action="textbookReset">重新作答</button>` : `<button class="primary" type="button" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
+    return `<div class="focused-page">${head("", "课后题")}<p class="step-caption">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || "当前单元")} · 示例题</p><section class="surface question-panel"><h2>${e(q.prompt)}</h2><div class="answer-list">${q.options.map((a, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? "correct" : i === s.textbookAnswer ? "wrong" : "") : ""}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(a)}</span></button>`).join("")}</div>${s.textbookSubmitted ? `<div class="feedback" role="status"><strong>${s.textbookAnswer === q.correct ? "回答正确" : "这题选 A"}</strong><p>${e(q.explanation)}</p></div><button class="secondary" type="button" data-action="textbookReset">重新作答</button>` : `<button class="primary" type="button" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
   }
 
   function examPrep() {
@@ -356,7 +347,7 @@
   function examRun() {
     const q = data.exam.questions[s.examQuestion];
     const count = Object.keys(s.examAnswers).length;
-    return `<div class="section-head" style="margin-top:0"><div>${head("", "整卷作答")}</div>${tag("计时示意 42:18", "warn")}</div><div class="grid-aside" style="margin-top:22px"><div class="surface stack-lg"><div class="eyebrow"><span class="signal"></span>${e(q.group)} · 第 ${s.examQuestion + 1} 题</div><h2 style="font-size:20px">${e(q.text)}</h2>${q.group === "听力" ? `<div class="callout">${I("headphones")}<span>原型不播放音频。</span></div><button class="secondary" type="button" data-action="examPlay">播放听力（界面示意）</button>` : ""}<div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer" data-exam-answer="${i}" aria-pressed="${s.examAnswers[q.id] === i}"><span>${String.fromCharCode(65 + i)}</span>${e(answer)}</button>`).join("")}</div><div class="button-row"><button class="secondary" type="button" data-action="examMark">${I("bookmark")} ${s.examMarked.includes(q.id) ? "取消标记" : "标记此题"}</button><button class="secondary" type="button" data-action="examSave">保存草稿</button><button class="secondary" type="button" data-action="examPrev" ${s.examQuestion === 0 ? "disabled" : ""}>上一题</button><button class="secondary" type="button" data-action="examNext" ${s.examQuestion === data.exam.questions.length - 1 ? "disabled" : ""}>下一题</button></div></div><aside class="stack"><div class="panel"><h2 style="font-size:18px">答题卡</h2><p class="small muted" style="margin:6px 0 15px">已答 ${count} / ${data.exam.questions.length} 个示例题 · ${e(s.examDraft)}</p><div class="button-row">${data.exam.questions.map((item, i) => `<button type="button" class="${s.examQuestion === i ? "primary" : "secondary"}" data-exam-question="${i}">${s.examMarked.includes(item.id) ? "★ " : ""}${i + 1}${s.examAnswers[item.id] !== undefined ? " ·" : ""}</button>`).join("")}</div></div><button class="danger-btn full" type="button" data-modal="examSubmit">交卷</button></aside></div>`;
+    return `<div class="section-head" style="margin-top:0"><div>${head("", "整卷作答")}</div>${tag("计时示意 42:18", "warn")}</div><div class="grid-aside" style="margin-top:22px"><div class="surface stack-lg"><div class="eyebrow"><span class="signal"></span>${e(q.group)} · 第 ${s.examQuestion + 1} 题</div><h2 style="font-size:20px">${e(q.text)}</h2>${q.group === "听力" ? `<div class="callout">${I("headphones")}<span>原型不播放音频。</span></div><button class="secondary" type="button" data-action="examPlay">播放听力（界面示意）</button>` : ""}<div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer" data-exam-answer="${i}" aria-pressed="${s.examAnswers[q.id] === i}"><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join("")}</div><div class="button-row"><button class="secondary" type="button" data-action="examMark">${I("bookmark")} ${s.examMarked.includes(q.id) ? "取消标记" : "标记此题"}</button><button class="secondary" type="button" data-action="examSave">保存草稿</button><button class="secondary" type="button" data-action="examPrev" ${s.examQuestion === 0 ? "disabled" : ""}>上一题</button><button class="secondary" type="button" data-action="examNext" ${s.examQuestion === data.exam.questions.length - 1 ? "disabled" : ""}>下一题</button></div></div><aside class="stack"><div class="panel"><h2 style="font-size:18px">答题卡</h2><p class="small muted" style="margin:6px 0 15px">已答 ${count} / ${data.exam.questions.length} 个示例题 · ${e(s.examDraft)}</p><div class="button-row">${data.exam.questions.map((item, i) => `<button type="button" class="${s.examQuestion === i ? "primary" : "secondary"}" data-exam-question="${i}">${s.examMarked.includes(item.id) ? "★ " : ""}${i + 1}${s.examAnswers[item.id] !== undefined ? " ·" : ""}</button>`).join("")}</div></div><button class="danger-btn full" type="button" data-modal="examSubmit">交卷</button></aside></div>`;
   }
   function examResult() {
     const score = data.exam.questions.filter(
@@ -391,7 +382,7 @@
   function practice() {
     const p =
       s.activeLanguage === "英语" ? data.practiceEnglish : data.practice;
-    return `<div class="focused-page">${head("", "逐题练习")}<p class="step-caption">${e(s.activeLanguage)} · 语境填空 · 内置示例 01</p><section class="surface question-panel"><p class="muted">${e(p.translation)}</p><h2 lang="${s.activeLanguage === "英语" ? "en" : "ja"}">${e(p.prompt)}</h2><div class="answer-list">${p.options.map((answer, i) => `<button class="answer ${s.practiceSubmitted ? (i === p.correct ? "correct" : i === s.practiceAnswer ? "wrong" : "") : ""}" type="button" data-practice-answer="${i}" aria-pressed="${s.practiceAnswer === i}" ${s.practiceSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span>${e(answer)}</button>`).join("")}</div>${s.practiceSubmitted ? `<div class="feedback ${s.practiceAnswer === p.correct ? "correct" : "wrong"}" role="status"><strong>${s.practiceAnswer === p.correct ? "回答正确" : `这题选 ${String.fromCharCode(65 + p.correct)}`}</strong><p>${e(p.explanation)}</p></div><button class="secondary" type="button" data-action="practiceReset">重新作答</button>` : `<button class="primary" type="button" data-action="practiceSubmit" ${s.practiceAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
+    return `<div class="focused-page">${head("", "逐题练习")}<p class="step-caption">${e(s.activeLanguage)} · 语境填空 · 内置示例 01</p><section class="surface question-panel"><p class="muted">${e(p.translation)}</p><h2 lang="${s.activeLanguage === "英语" ? "en" : "ja"}">${e(p.prompt)}</h2><div class="answer-list">${p.options.map((answer, i) => `<button class="answer ${s.practiceSubmitted ? (i === p.correct ? "correct" : i === s.practiceAnswer ? "wrong" : "") : ""}" type="button" data-practice-answer="${i}" aria-pressed="${s.practiceAnswer === i}" ${s.practiceSubmitted ? "disabled" : ""}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join("")}</div>${s.practiceSubmitted ? `<div class="feedback ${s.practiceAnswer === p.correct ? "correct" : "wrong"}" role="status"><strong>${s.practiceAnswer === p.correct ? "回答正确" : `这题选 ${String.fromCharCode(65 + p.correct)}`}</strong><p>${e(p.explanation)}</p></div><button class="secondary" type="button" data-action="practiceReset">重新作答</button>` : `<button class="primary" type="button" data-action="practiceSubmit" ${s.practiceAnswer < 0 ? "disabled" : ""}>确认答案</button>`}</section></div>`;
   }
 
   function mistakes() {
@@ -564,9 +555,6 @@
         .replace(/^<h2>.*?<\/h2>/, "")
         .replace('data-action="saveSettings"', 'data-action="closeModal"')
         .replace("保存偏好", "完成");
-    } else if (s.modal === "term") {
-      title = "词句解释";
-      content = termContent();
     } else if (s.modal === "examLeave") {
       title = "暂时离开考试？";
       content = `<div class="stack"><p>当前答案保留在此页面；刷新页面会丢失。计时仅为示意。</p><div class="button-row"><button class="secondary" type="button" data-action="closeModal">继续作答</button><button class="primary" type="button" data-action="examLeave">暂时离开</button></div></div>`;
@@ -642,6 +630,11 @@
     }
     return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog ${s.modal === "tasks" ? "task-drawer" : s.modal === "materialActions" ? "material-menu-dialog" : ""}" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
   }
+  const selection = window.HarukaTextSelection({
+    s,
+    root,
+    onQuery: (value) => extras.querySelection(value),
+  });
   const extras = window.HarukaCollections({
     s,
     root,
@@ -846,6 +839,7 @@
     } else if (samePage && focused)
       root.querySelector(focused)?.focus({ preventScroll: true });
     extras.restoreListFocus();
+    selection.refresh();
     renderedRoute = s.route;
     history.replaceState(navigationState(), "", pageHash());
     root.querySelectorAll(".table-wrap").forEach((table) => {
@@ -953,7 +947,7 @@
   });
   root.addEventListener("click", (event) => {
     const target = event.target.closest(
-      "[data-action],[data-go],[data-modal],[data-filter],[data-material],[data-import-type],[data-term],[data-unit],[data-book],[data-word],[data-mistake],[data-notification],[data-practice-answer],[data-textbook-answer],[data-exam-question],[data-exam-answer],[data-usage-range],[data-admin-item]",
+      "[data-action],[data-go],[data-modal],[data-filter],[data-material],[data-import-type],[data-unit],[data-book],[data-word],[data-mistake],[data-notification],[data-practice-answer],[data-textbook-answer],[data-exam-question],[data-exam-answer],[data-usage-range],[data-admin-item]",
     );
     if (!target || target.disabled) return;
     if (
@@ -986,12 +980,7 @@
       render();
       return;
     }
-    if (target.dataset.term) {
-      s.selectedTerm = target.dataset.term;
-      if (matchMedia("(min-width: 1180px)").matches) render();
-      else openModal("term");
-      return;
-    }
+
     if (target.dataset.unit) {
       s.textbookUnit = target.dataset.unit;
       s.textbookAnswer = -1;
@@ -1111,25 +1100,13 @@
       toast("本地演示任务已创建；文件没有上传。");
       return;
     }
-    if (action === "toggleSpeech") {
-      s.playing = !s.playing;
-      toast(
-        s.playing ? "朗读控件处于播放状态；没有实际音频。" : "朗读控件已暂停。",
-      );
-      return;
-    }
+
     if (action === "bookmark") return toast("示例书签已加入本地阅读状态。");
     if (action === "chapter")
       return toast(
         `第 ${Number(target.dataset.index) + 1} 章为目录示例；当前正文仍是第 03 章。`,
       );
-    if (action === "collectTerm") {
-      s.collected = s.collected.includes(s.selectedTerm)
-        ? s.collected.filter((x) => x !== s.selectedTerm)
-        : [...s.collected, s.selectedTerm];
-      render();
-      return;
-    }
+
     if (action === "textbookSubmit") {
       s.textbookSubmitted = true;
       render();

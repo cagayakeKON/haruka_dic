@@ -40,6 +40,8 @@ DESIGN14的直接输入、自动匹配、纯图片发送及文档契约修订见
 
 DESIGN15移除练习页“问学习Agent”、阅读中的“问Agent”、独立聊天页面/输入/状态和管理菜单样例；旧 `#agent` 入口归并到练习页，既有历史返回不恢复聊天。查询、词句解释、出题/批改与诊断仍各自可用；后端Agent保留为共享运行设计，未实现正式模型调用。实际记录见[AI功能入口与共享Agent](../docs/delivery/reviews/2026-09-25-ai-without-chat.md)，定点回归：`node prototype/tests/design15-ai-actions.cjs`。
 
+DESIGN16统一非试卷学习文字交互：触控长按默认选句，键鼠划选，同一工具条提供朗读/查询，查询结果可经归本弹窗收藏。AI解释、中文说明和例句也可继续选择；移除阅读页点词即查、独立朗读按钮与预先显示的词义侧栏。原型用浏览器选区/本页内存演示；播放器明确无实际音频，未知文字不产生可收藏假卡片。试卷准备/作答/结果及其弹窗排除，专用听力保留。正式缓存缺失时同位置“生成并朗读”、权限和来源校验由[AI与朗读](../docs/modules/ai-speech.md#21-全局选区交互)定义，HTML不声称已实现。定点检查：`node prototype/tests/design16-selection.cjs`；修订回归：`node prototype/tests/design16-regressions.cjs`；记录见[统一选区交互](../docs/delivery/reviews/2026-09-25-unified-text-selection.md)。
+
 ## 演示边界
 
 - 全部材料、账号、消息、错题、用量与管理数据均为虚构样本，交互状态只留在当前页面内存；刷新会复位。
@@ -75,6 +77,6 @@ python -X utf8 prototype/serve.py
 
 内置“雨上がり”在约60秒内接收服务端模拟进度，完成后可读其内置短文。文件导入同样只创建模拟任务，演示结束明确无正文；课本保留单元不可用状态，试卷保留准备/不能开考状态，不把虚构文件标成真实可读。服务端短期内存按每页随机会话分区，刷新重置；这不是正式认证、持久Job或生产WebSocket协议实现。
 
-查询支持选择PNG/JPEG/WebP、本机粘贴图片、缩略图放大/移除和纯图/图文发送；原型限制每轮4张、单张10MB/2400万像素。手机“拍照”使用capture=environment请求系统采集，具体行为取决于浏览器/设备；桌面预览可能仍显示文件选择，并非原生Android相机/权限已交付。含图消息统一显示“图片尚未识别”，不伪造任务识别结果，没有结果收藏按钮，不会将内置文字答案冒充看图结果；取消/失败保留原草稿，退出清理图片与查询内存。查询只提供四个语言学习内置样例；非样例输入只显示范围与未生成提示，没有通用回答或可收藏占位卡。这是本地样例匹配，不表示正式语言意图/OCR判断已实现。收藏保留完整卡片，类型分别进入单词/语法/句子/习题筛选。每日单词仅按实际本页加入日期显示单词，不生成任务或复习配额。
+查询支持选择PNG/JPEG/WebP、本机粘贴图片、缩略图放大/移除和纯图/图文发送；原型限制每轮4张、单张10MB/2400万像素。手机“拍照”使用capture=environment请求系统采集，具体行为取决于浏览器/设备；桌面预览可能仍显示文件选择，并非原生Android相机/权限已交付。含图消息统一显示“图片尚未识别”，不伪造任务识别结果，没有结果收藏按钮，不会将内置文字答案冒充看图结果；取消/失败保留原草稿，退出清理图片与查询内存。查询只提供四类语言学习内置样例；非样例输入只显示范围与未生成提示，没有通用回答或可收藏占位卡。这是本地样例匹配，不表示正式语言意图/OCR判断已实现。收藏保留完整卡片，类型分别进入单词/语法/句子/习题筛选。每日单词仅按实际本页加入日期显示单词，不生成任务或复习配额。
 
 已有仓库E2E依赖与Edge环境下，局部浏览器回归：`node prototype/tests/design6.cjs`；修订项定点回归：`node prototype/tests/design6-regressions.cjs`。结果写入被忽略的 artifacts/design6，不作为正式应用测试证据。手机身份页定点回归：`node prototype/tests/design7-auth.cjs`；焦点与对比度修订检查：`node prototype/tests/design7-auth-regressions.cjs`。结果与截图写入 artifacts/design7；仅检查本次表单与邻接流程，不替代正式认证或实体软键盘验收。材料库层级定点回归：`node prototype/tests/design8-library.cjs`，结果与截图写入 artifacts/design8。手机tab页头、搜索及双端材料菜单/删除回归：`node prototype/tests/design9-navigation.cjs`；历史焦点与删除来源修订定点回归：`node prototype/tests/design9-regressions.cjs`，结果与截图写入 artifacts/design9。

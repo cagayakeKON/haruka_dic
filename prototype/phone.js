@@ -181,16 +181,31 @@
     }, 3500);
   };
   const openModal = (name) => {
-    const nested = !!s.modal;
-    if (!nested) modalReturnFocus = focusSelector(document.activeElement);
+    const selectionStep =
+      name === 'selectionQuery' ||
+      (name === 'saveCard' && s.modal === 'selectionQuery');
+    const nested = !!s.modal && !selectionStep;
+    if (selectionStep)
+      history.replaceState(
+        {
+          ...history.state,
+          harukaModalScroll:
+            root.querySelector('[role=dialog]')?.scrollTop || 0,
+        },
+        '',
+        location.href,
+      );
+    if (!s.modal) modalReturnFocus = focusSelector(document.activeElement);
     s.modal = name;
     const state = {
       harukaMobileIndex: nested ? navigationIndex : ++navigationIndex,
       harukaModal: name,
+      harukaSelectionMessage: s.selectionMessage?.id,
       harukaBuilderStep: builderStep,
     };
     history[nested ? 'replaceState' : 'pushState'](state, '', location.href);
     render();
+    if (selectionStep) root.querySelector('[role=dialog]').scrollTop = 0;
   };
   const closeModal = () => {
     if (history.state?.harukaModal) history.back();
@@ -339,15 +354,8 @@
       s.readingFont === 'serif'
         ? "'Yu Mincho','Noto Serif JP',serif"
         : "'Segoe UI','Microsoft YaHei',sans-serif";
-    const text = data.novel.paragraphs
-      .map((paragraph, i) => {
-        const key = i === 0 ? 'soft' : i === 1 ? 'smile' : null;
-        const token =
-          key === 'soft' ? 'そっと' : key === 'smile' ? '微笑んだ' : '';
-        return `<p>${key ? e(paragraph).replace(token, `<button class="term-button" type="button" data-term="${key}" aria-pressed="${s.selectedTerm === key}">${token}</button>`) : e(paragraph)}</p>`;
-      })
-      .join('');
-    return `<div class="mobile-reader-meta">第 03 章 / 12 章</div><h1 class="mobile-reader-title" lang="ja">窓の向こう</h1><article class="reader mobile-reader" style="--reader-paper:${readerPaper};--reader-ink:${readerInk};--reader-font:${readerFont}"><div class="reading-prose" lang="ja" style="--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}">${text}</div><div class="reader-bottom"><span>窓の向こう</span><span>03 / 12</span></div></article><div class="reader-dock" aria-label="阅读操作"><button type="button" data-modal="chapters">${I('library')}<span>目录</span></button><button type="button" data-modal="readerSettings">${I('settings')}<span>排版</span></button><button type="button" data-action="toggleSpeech">${I(s.playing ? 'pause' : 'headphones')}<span>${s.playing ? '暂停' : '朗读'}</span></button><button type="button" data-action="bookmark">${I('bookmark')}<span>书签</span></button></div>`;
+    const text = data.novel.paragraphs.map((p) => `<p>${e(p)}</p>`).join('');
+    return `<p class="selection-hint">长按选句，调整选区后朗读或查询。</p><div class="mobile-reader-meta">第 03 章 / 12 章</div><h1 class="mobile-reader-title" lang="ja">窓の向こう</h1><article class="reader mobile-reader" style="--reader-paper:${readerPaper};--reader-ink:${readerInk};--reader-font:${readerFont}"><div class="reading-prose" lang="ja" style="--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}">${text}</div><div class="reader-bottom"><span>窓の向こう</span><span>03 / 12</span></div></article><div class="reader-dock" aria-label="阅读操作"><button type="button" data-modal="chapters">${I('library')}<span>目录</span></button><button type="button" data-modal="readerSettings">${I('settings')}<span>排版</span></button><button type="button" data-action="bookmark">${I('bookmark')}<span>书签</span></button></div>`;
   }
   function textbookUnits() {
     return `<div class="mobile-intro"><p class="step-caption">课本 · 日语</p><h1>日语的日常表达</h1></div><div class="mobile-list-heading"><h2>单元目录</h2><span>${data.textbook.units.length} 个可用单元</span></div><div class="mobile-plain-list">${data.textbook.units.map((unit, i) => `<button class="mobile-unit-row" type="button" data-textbook-unit="${unit.id}"><span class="mobile-unit-number">${String(i + 1).padStart(2, '0')}</span><span class="row-copy"><strong>${e(unit.title.replace(/^Unit \d+ · /, ''))}</strong><small>课文 · 词汇 · 语法 · 练习</small></span>${I('chevron')}</button>`).join('')}</div>`;
@@ -378,7 +386,7 @@
       },
     };
     const q = examples[s.textbookUnit] || examples.unit1;
-    return `<div class="mobile-step-label">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || '当前单元')} · 示例题</div><div class="mobile-intro"><h1>课后题</h1></div><div class="surface stack"><h2 class="mobile-question">${e(q.prompt)}</h2><div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? 'correct' : i === s.textbookAnswer ? 'wrong' : '') : ''}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? 'disabled' : ''}><span>${String.fromCharCode(65 + i)}</span>${e(answer)}</button>`).join('')}</div>${s.textbookSubmitted ? `<div class="feedback ${s.textbookAnswer === q.correct ? 'correct' : 'wrong'}"><strong>${s.textbookAnswer === q.correct ? '回答正确' : `这题选 ${String.fromCharCode(65 + q.correct)}`}</strong><div>${e(q.explanation)}</div></div><button type="button" class="secondary full" data-action="textbookReset">重新作答</button>` : `<button type="button" class="primary full" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? 'disabled' : ''}>确认答案</button>`}</div>`;
+    return `<div class="mobile-step-label">${e(data.textbook.units.find((x) => x.id === s.textbookUnit)?.title || '当前单元')} · 示例题</div><div class="mobile-intro"><h1>课后题</h1></div><div class="surface stack"><h2 class="mobile-question">${e(q.prompt)}</h2><div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer ${s.textbookSubmitted ? (i === q.correct ? 'correct' : i === s.textbookAnswer ? 'wrong' : '') : ''}" data-textbook-answer="${i}" aria-pressed="${s.textbookAnswer === i}" ${s.textbookSubmitted ? 'disabled' : ''}><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join('')}</div>${s.textbookSubmitted ? `<div class="feedback ${s.textbookAnswer === q.correct ? 'correct' : 'wrong'}"><strong>${s.textbookAnswer === q.correct ? '回答正确' : `这题选 ${String.fromCharCode(65 + q.correct)}`}</strong><div>${e(q.explanation)}</div></div><button type="button" class="secondary full" data-action="textbookReset">重新作答</button>` : `<button type="button" class="primary full" data-action="textbookSubmit" ${s.textbookAnswer < 0 ? 'disabled' : ''}>确认答案</button>`}</div>`;
   }
   function examPrep() {
     if (s.examRunning)
@@ -388,7 +396,7 @@
   function examRun() {
     const q = data.exam.questions[s.examQuestion];
     const answered = Object.keys(s.examAnswers).length;
-    return `<div class="mobile-exam-status"><span>示例剩余 42:18</span><span>已答 ${answered} / ${data.exam.questions.length}</span></div><div class="mobile-exam-commands"><button type="button" class="text-btn" data-modal="answerSheet">${I('grid')} 答题卡</button><button type="button" class="text-btn" data-action="examSave">${I('check')} 保存</button><button type="button" class="text-btn mobile-submit" data-modal="examSubmit">交卷</button></div><div class="mobile-intro"><h1>第 ${s.examQuestion + 1} 题</h1><p>${e(q.group)} · ${e(s.examDraft)}</p></div><div class="surface stack"><h2 class="mobile-question">${e(q.text)}</h2>${q.group === '听力' ? `<div class="callout">${I('headphones')}<span>原型没有可播放的听力音频。</span></div><button type="button" class="secondary full" data-action="examPlay">${I('play')} 播放听力（示意）</button>` : ''}<div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer" data-exam-answer="${i}" aria-pressed="${s.examAnswers[q.id] === i}"><span>${String.fromCharCode(65 + i)}</span>${e(answer)}</button>`).join('')}</div><button type="button" class="text-btn mobile-mark" data-action="examMark">${I('bookmark')} ${s.examMarked.includes(q.id) ? '取消标记' : '标记稍后检查'}</button></div><div class="mobile-action-dock mobile-exam-dock"><button class="secondary" type="button" data-action="examPrev" ${s.examQuestion === 0 ? 'disabled' : ''}>${I('back')} 上一题</button><button class="primary" type="button" data-action="examNext" ${s.examQuestion === data.exam.questions.length - 1 ? 'disabled' : ''}>下一题 ${I('arrow')}</button></div>`;
+    return `<div class="mobile-exam-status"><span>示例剩余 42:18</span><span>已答 ${answered} / ${data.exam.questions.length}</span></div><div class="mobile-exam-commands"><button type="button" class="text-btn" data-modal="answerSheet">${I('grid')} 答题卡</button><button type="button" class="text-btn" data-action="examSave">${I('check')} 保存</button><button type="button" class="text-btn mobile-submit" data-modal="examSubmit">交卷</button></div><div class="mobile-intro"><h1>第 ${s.examQuestion + 1} 题</h1><p>${e(q.group)} · ${e(s.examDraft)}</p></div><div class="surface stack"><h2 class="mobile-question">${e(q.text)}</h2>${q.group === '听力' ? `<div class="callout">${I('headphones')}<span>原型没有可播放的听力音频。</span></div><button type="button" class="secondary full" data-action="examPlay">${I('play')} 播放听力（示意）</button>` : ''}<div class="answer-list">${q.options.map((answer, i) => `<button type="button" class="answer" data-exam-answer="${i}" aria-pressed="${s.examAnswers[q.id] === i}"><span>${String.fromCharCode(65 + i)}</span><span class="answer-copy">${e(answer)}</span></button>`).join('')}</div><button type="button" class="text-btn mobile-mark" data-action="examMark">${I('bookmark')} ${s.examMarked.includes(q.id) ? '取消标记' : '标记稍后检查'}</button></div><div class="mobile-action-dock mobile-exam-dock"><button class="secondary" type="button" data-action="examPrev" ${s.examQuestion === 0 ? 'disabled' : ''}>${I('back')} 上一题</button><button class="primary" type="button" data-action="examNext" ${s.examQuestion === data.exam.questions.length - 1 ? 'disabled' : ''}>下一题 ${I('arrow')}</button></div>`;
   }
   function examResult() {
     const count = data.exam.questions.filter(
@@ -562,12 +570,7 @@
           title = '原型说明';
           content = `<div class="stack"><p>所有材料与记录均为虚构示例。操作只保留在本页，刷新后重置。</p><p>文件不上传，不调用模型，不生成音频。请勿输入真实密码或 API Key。</p><button class="secondary full" type="button" data-go="states">查看空白、离线与失败状态</button></div>`;
           break;
-        case 'term': {
-          const term = data.novel.terms[s.selectedTerm];
-          title = '放回这句话';
-          content = `<div class="eyebrow"><span class="signal"></span>语境解释 · 示例</div><h2 style="font-size:31px;margin:11px 0 4px" lang="ja">${term.word}</h2><p class="small muted">${term.reading}</p><p style="margin:16px 0;line-height:1.85">${term.meaning}</p><div class="soft-panel"><strong lang="ja">${term.sentence}</strong><p class="small" style="margin-top:6px">${term.translation}</p></div><p class="note" style="margin:13px 0">出处：夏の手紙 · ${term.source}</p><div class="button-row"><button class="secondary" type="button" data-action="collectTerm">${I('bookmark')} ${s.collected.includes(s.selectedTerm) ? '已收藏' : '收藏词条'}</button></div>`;
-          break;
-        }
+
         case 'chapters':
           title = '章节目录';
           content = `<div class="list">${data.novel.chapters.map((chapter, i) => `<button class="row" type="button" data-action="chapter" data-index="${i}"><span class="pill-count">${i + 1}</span><span class="row-copy"><strong>${e(chapter)}</strong><small>${i === 2 ? '正在阅读' : '章节示例'}</small></span>${I('chevron')}</button>`).join('')}</div>`;
@@ -679,6 +682,11 @@
   function states() {
     return `<h1 class="page-title">每种状态，都说清原因。</h1><p class="page-subtitle">以下是原型状态样例，不代表当前账号真的离线或失权。</p><div class="stack" style="margin-top:22px"><div class="surface stack"><strong>没有材料</strong><p>添加小说、课本或试卷后，材料会出现在本人书库。</p>${btn('添加材料', 'import', 'secondary', 'plus')}</div><div class="surface stack"><strong>暂时离线</strong><p>有效权限租期内可阅读已缓存章节与解释；新的生成、设置保存和考试场次需要联网。</p>${btn('查看本机副本', 'cache', 'secondary')}</div><div class="surface stack"><strong>没有访问权限</strong><p>这份内容现在不可读取。请返回材料库或联系有权的管理员。</p>${btn('返回材料库', 'library', 'secondary')}</div><div class="surface stack"><strong>任务未完成</strong><p>示例：模型调用遇到网络故障，结果仍未知；可去任务页查看状态后再决定下一步。</p>${btn('查看任务', 'jobs', 'secondary')}</div><div class="surface stack"><strong>正在载入</strong><p>保留当前标题和列表骨架，等候服务结果，不用动画推算完成。</p><div class="meter"><span style="width:40%"></span></div></div></div>`;
   }
+  const selection = window.HarukaTextSelection({
+    s,
+    root,
+    onQuery: (value) => extras.querySelection(value),
+  });
   const extras = window.HarukaCollections({
     s,
     root,
@@ -922,6 +930,7 @@
         .querySelector('[data-action="openTabSearch"]')
         ?.focus({ preventScroll: true });
     extras.restoreListFocus();
+    selection.refresh();
     history.replaceState(
       { ...history.state, harukaMaterial: s.chosenMaterial },
       '',
@@ -979,7 +988,14 @@
     builderStep = step;
     if (route === 'import') s.importStep = importStep;
     s.modal = history.state?.harukaModal || '';
+    const selectionOrigin = extras.restoreSelectionMessage(
+      history.state?.harukaSelectionMessage,
+    );
     render();
+    const activeSheet = root.querySelector('[role=dialog]');
+    if (activeSheet)
+      activeSheet.scrollTop = history.state?.harukaModalScroll || 0;
+    extras.restoreSelectionFocus(selectionOrigin);
     window.scrollTo({ top: sameView ? position : 0 });
     if (route === 'exerciseBuilder' && !s.modal)
       root
@@ -1058,7 +1074,7 @@
     }
 
     const target = event.target.closest(
-      '[data-action],[data-go],[data-modal],[data-filter],[data-material],[data-import-type],[data-term],[data-textbook-unit],[data-book],[data-word],[data-mistake],[data-notification],[data-practice-answer],[data-textbook-answer],[data-exam-question],[data-exam-answer],[data-usage-range]',
+      '[data-action],[data-go],[data-modal],[data-filter],[data-material],[data-import-type],[data-textbook-unit],[data-book],[data-word],[data-mistake],[data-notification],[data-practice-answer],[data-textbook-answer],[data-exam-question],[data-exam-answer],[data-usage-range]',
     );
     if (!target || target.disabled) return;
     if (
@@ -1105,11 +1121,7 @@
       render();
       return;
     }
-    if (target.dataset.term) {
-      s.selectedTerm = target.dataset.term;
-      openModal('term');
-      return;
-    }
+
     if (target.dataset.textbookUnit) {
       s.textbookUnit = target.dataset.textbookUnit;
       s.textbookAnswer = -1;
@@ -1272,15 +1284,7 @@
       toast('本地演示任务已创建；文件没有上传。');
       return;
     }
-    if (action === 'toggleSpeech') {
-      s.playing = !s.playing;
-      toast(
-        s.playing
-          ? '朗读控件已切换为播放状态；没有实际音频。'
-          : '朗读控件已暂停。',
-      );
-      return;
-    }
+
     if (action === 'bookmark') return toast('示例书签已加入本地阅读状态。');
     if (action === 'chapter') {
       toast(
@@ -1289,13 +1293,7 @@
       closeModal();
       return;
     }
-    if (action === 'collectTerm') {
-      if (s.collected.includes(s.selectedTerm))
-        s.collected = s.collected.filter((x) => x !== s.selectedTerm);
-      else s.collected.push(s.selectedTerm);
-      render();
-      return;
-    }
+
     if (action === 'textbookSubmit') {
       s.textbookSubmitted = true;
       render();

@@ -27,6 +27,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   s.dailyDate = today();
   s.queryMessages = [];
   s.queryImages = [];
+  let selectionBackstack = [];
   const promptLimitMessage = "草稿已接近字数上限，请先精简后再添加示例。";
   let queryImageError = "";
   let preparingImages = false;
@@ -44,6 +45,9 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     imageUrls.forEach(releaseImage);
     s.queryImages = [];
     s.queryMessages = [];
+    s.selectionMessage = null;
+    s.saveCardReturn = false;
+    selectionBackstack = [];
     s.queryDraft = "";
     queryImageError = "";
     preparingImages = false;
@@ -399,11 +403,97 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     const messages = `<div class="query-messages" aria-live="polite">${s.queryMessages.map((message) => `<div class="query-question">${message.images?.length ? `<div class="query-image-strip">${queryImageStrip(message.images)}</div>` : ""}${message.question ? `<p>${e(message.question)}</p>` : ""}</div>${message.card ? learningCards.render(message.card, `<button class="text-btn" type="button" data-x="saveCard" data-id="${message.card.id}" ${s.words.some((w) => w.cardId === message.card.id) ? "disabled" : ""}>${I("bookmark")}${s.words.some((w) => w.cardId === message.card.id) ? "已收藏" : "收藏"}</button>`) : `<div class="query-notice" role="status">${I("book")}<p>${e(message.notice)}</p></div>`}`).join("")}</div>`;
     return `<div class="query-page ${empty ? "is-empty" : ""}">${mobile ? "" : `<div class="collection-heading"><h1>查询</h1><span class="collection-kind">语言学习</span></div>`}${empty ? `<p class="query-intro">理解一个词，读懂一句话。</p>${composer}${welcome}` : `${messages}${composer}`}</div>`;
   }
+  function querySelection(selection) {
+    if (mobile)
+      history.replaceState(
+        {
+          ...history.state,
+          harukaSelectionMessage: s.selectionMessage?.id,
+          harukaModalScroll:
+            root.querySelector("[role=dialog]")?.scrollTop || 0,
+        },
+        "",
+        location.href,
+      );
+    else
+      selectionBackstack.push({
+        route: s.route,
+        modal: s.modal,
+        message: s.selectionMessage,
+        scroll: root.querySelector("[role=dialog]")?.scrollTop || 0,
+      });
+    const result = learningCards.sample(selection.text);
+    const message = {
+      id: id(),
+      question: selection.text,
+      selection,
+      images: [],
+      card: result
+        ? {
+            ...result,
+            id: id(),
+            source: `${selection.source} · 选区查询`,
+            selection,
+          }
+        : null,
+      notice: "这段文字没有内置查询示例。本原型未调用 AI，未生成可收藏的结果。",
+    };
+    s.queryMessages.push(message);
+    s.selectionMessage = message;
+    show("selectionQuery");
+    root.querySelector("[role=dialog]").scrollTop = 0;
+  }
+  function returnFromSelection() {
+    if (mobile) return false;
+    if (s.modal === "saveCard" && s.saveCardReturn) {
+      s.saveCardReturn = false;
+      show("selectionQuery");
+      return true;
+    }
+    if (s.modal !== "selectionQuery") return false;
+    const origin = s.selectionMessage?.selection;
+    const previous = selectionBackstack.pop();
+    if (!previous || previous.route !== s.route) {
+      selectionBackstack = [];
+      return false;
+    }
+    s.selectionMessage = previous.message;
+    s.modal = previous.modal;
+    render();
+    const dialog = root.querySelector("[role=dialog]");
+    if (dialog) dialog.scrollTop = previous.scroll;
+    restoreSelectionFocus(origin);
+    return true;
+  }
+  function restoreSelectionFocus(origin) {
+    if (!origin || origin.route !== s.route || origin.modal !== s.modal) return;
+    const container = root.querySelector("[role=dialog]") || root;
+    const element =
+      container.querySelectorAll("[data-study-text]")[origin.scopeIndex];
+    if (element) {
+      element.tabIndex = -1;
+      element.focus({ preventScroll: true });
+    }
+  }
+  function restoreSelectionMessage(messageId) {
+    const previous = s.selectionMessage;
+    s.selectionMessage =
+      s.queryMessages.find((message) => message.id === messageId) || null;
+    return previous?.id !== messageId ? previous?.selection : null;
+  }
   function dialog() {
     let title;
     let content;
     const w = s.words.find((x) => x.id === s.selectedWord);
-    if (s.modal === "queryImagePreview") {
+    if (s.modal === "selectionQuery") {
+      const message = s.selectionMessage;
+      title = "查询结果";
+      const saved =
+        message?.card && s.words.some((w) => w.cardId === message.card.id);
+      content = message
+        ? `<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.question)}</div>${message.card ? learningCards.render(message.card, `<button type="button" class="text-btn" data-x="saveCard" data-id="${message.card.id}" ${saved ? "disabled" : ""}>${I("bookmark")}${saved ? "已收藏" : "收藏"}</button>`, false) : `<p role="status">${e(message.notice)}</p>`}`
+        : "<p>选区已失效，请重新选择。</p>";
+    } else if (s.modal === "queryImagePreview") {
       const item = [
         ...s.queryImages,
         ...s.queryMessages.flatMap((message) => message.images || []),
@@ -606,6 +696,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
       if (key === "saveCard") {
         if (!s.queryMessages.some((message) => message.card?.id === value))
           return;
+        s.saveCardReturn = s.modal === "selectionQuery";
         s.savingCard = value;
         show("saveCard");
       }
@@ -801,14 +892,15 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
             ...card,
             id: id(),
             cardId: card.id,
-            source: "查询 · 学习卡片示例",
+            source: card.source || "查询 · 学习卡片示例",
             books: values.getAll("books"),
             createdAt: new Date().toISOString(),
             mastery: "尚无有效证据",
           });
           savedCardFocus = card.id;
         }
-        close();
+        if (s.saveCardReturn && !mobile) show("selectionQuery");
+        else close();
       }
     },
     true,
@@ -916,6 +1008,10 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     resetQueryImages,
     guardMaterialRoute,
     restoreListFocus,
+    querySelection,
+    returnFromSelection,
+    restoreSelectionMessage,
+    restoreSelectionFocus,
     notebooks,
     dailyWords,
     query,

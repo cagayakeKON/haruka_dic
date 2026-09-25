@@ -2,6 +2,8 @@
 
 状态：2026-09-23，待实现设计。“课本”与其他文档的“教材”是同一业务类型 `textbook`。类型边界见 [三类材料契约](../contracts/material-types.md)，共用上传/书库/出处操作见 [材料模块](materials-reading.md)，TextbookManifest/Unit/Lesson/ContentNode/Edge关系见[解析数据结构](../contracts/material-structures.md#42-课本)；本模块独立于小说阅读和整卷考试。
 
+课本正文、词表、例句以及普通课后题的题干/选项/已发布反馈统一支持[选区朗读与查询](ai-speech.md#21-全局选区交互)，查询结果再收藏；选文字不提交答案或切换题目。
+
 ## 1. 范围、入口与权限
 
 导入时选择课本，打开后进入单元目录/学习页。P0 覆盖 Unit/Lesson 及[八类内容展示](../contracts/learning-presentation.md#2-教材的八类内容展示)，包含课文、对话、词表、语法、例句译文、图片图注、通用表格和习题，按题型作答和逐题反馈；不把书籍字数百分比当学习完成度。P0 文件基础为 MD/EPUB，PDF/TXT/OCR 按产品优先级后续接入；单元完成度、讲练分屏仍为 P1。

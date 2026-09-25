@@ -157,7 +157,7 @@ haruka-manage提供db status、db upgrade、seed apply、admin init等明确子�
 
 ## 7. 参考实现和验收归属
 
-B1用合成材料版本/选区作为合法来源，经正式登录、me/access、POST collections与GET collections完成本人收藏新增和列表，贯通DTO、Repository、Riverpod、服务授权、迁移和日志；无需为此先实现全部上传/阅读器，也不增加未经设计的来源类型。
+B1用合成材料版本/选区作为合法来源，经正式登录、me/access、选区只读查询已准备的已提交卡片、POST collections与GET collections完成本人收藏新增和列表，贯通DTO、Repository、Riverpod、服务授权、迁移和日志；无需为此先实现全部上传/阅读器，也不增加未经设计的来源类型。
 
 B2从B1收藏创建正式 `POST ai-exercise-selections` 预览，确认后调用 `POST ai-exercise-generations` 生成一个小规模AI习题集；Job、Outbox、Kafka、Worker、SSE和持久化均用正式机制，只在dev/test把模型调用注入Fake。验证成功、拒绝、重复投递、取消/故障和A/B隔离；Fake不能证明真实供应商能力、实际usage口径或AI质量，也不建立词汇复习或到期调度。
 

@@ -3,6 +3,7 @@ const {
   expect,
 } = require('../../tools/e2e/node_modules/@playwright/test');
 const fs = require('node:fs');
+const { selectText } = require('./selection-helpers.cjs');
 
 (async () => {
   fs.mkdirSync('artifacts/design15', { recursive: true });
@@ -57,10 +58,9 @@ const fs = require('node:fs');
       await expect(page.locator('[data-source=notebook]')).toBeVisible();
       await noChat();
       await route('novel');
-      await page.locator('[data-term]').first().click();
-      await expect(
-        page.getByRole('button', { name: /已收藏|收藏词条/ }),
-      ).toBeVisible();
+      await selectText(page, '.prose p,.reading-prose p', 'そっと');
+      await page.locator('[data-selection-action=query]').click();
+      await expect(page.locator('[data-x=saveCard]')).toBeVisible();
       await noChat();
       await page.screenshot({
         path: `artifacts/design15/${platform}-${width}-explanation.png`,
@@ -70,7 +70,9 @@ const fs = require('node:fs');
       await route('query');
       await page.locator('#query-input').fill('そっと');
       await page.locator('#query-input').press('Control+Enter');
-      await expect(page.locator('.learning-card')).toContainText('轻轻地');
+      await expect(page.locator('.learning-card').last()).toContainText(
+        '轻轻地',
+      );
       await noChat();
       results.push(
         `${platform}/${width}: no chat entry; diagnosis, source selection, reading explanation and language query remain available`,
@@ -81,7 +83,9 @@ const fs = require('node:fs');
       await noChat();
       await page.goBack();
       await expect(page).toHaveURL(/#query$/);
-      await expect(page.locator('.learning-card')).toContainText('轻轻地');
+      await expect(page.locator('.learning-card').last()).toContainText(
+        '轻轻地',
+      );
       await page.goForward();
       await expect(page).toHaveURL(/#exercise$/);
       await page.goto(`${url}#agent`);

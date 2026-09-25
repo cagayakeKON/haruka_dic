@@ -4,6 +4,8 @@
 
 协议归属：认证传输与会话轮换见 [认证设计](../architecture/authentication.md)，权限代码见 [权限目录](permissions.md)，选区/来源字段见 [出处协议](content-locator.md)，CSV文件格式见 [CSV契约](vocabulary-csv.md)。模块只引用这些协议并描述用户行为，不再定义另一套字段；未来根contracts中的生成OpenAPI由后端schema单向导出，不与本文手工双向维护字段表。
 
+DESIGN16共用选区工具条不新增通用执行接口。朗读仍走speech/resolve与明确的speech/requests；材料/解释查询按实际来源走explanations或agent轮次，收藏仍提交完整card_id/card_revision与归本选择。非材料可见文字按[出处协议](content-locator.md#11-非材料学习文字的选区)传受控资源/版本/字段范围，服务端重取并授权；不可提交隐藏答案、试卷稿件或客户端正文冒充已发布源。
+
 ## 1. HTTP与数据格式
 
 REST前缀/api/v1；管理业务在/api/v1/admin。请求/响应JSON使用snake_case，Dart DTO做显式映射。UUID使用字符串，日期UTC ISO 8601，分数等固定精度数字用十进制字符串；未知枚举客户端显示安全“不支持”状态，不能自动映射成功。

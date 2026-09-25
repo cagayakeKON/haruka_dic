@@ -54,6 +54,16 @@ window.HarukaLearningCards = (() => {
         segments: ['夏の風が', 'そっと', '頬に触れた。'],
         rule: '名词 + に + 触れる：触碰到某物。',
       };
+    if (q === '窓を開けると、夏の風がそっと頬に触れた。')
+      return {
+        kind: 'sentence',
+        word: q,
+        language: '日语',
+        meaning: '打开窗户，夏风轻轻拂过脸颊。',
+        detail:
+          '「窓を開けると」表示打开窗户后发生的情景；「そっと」描写轻柔的触感。',
+        segments: ['窓を開けると、', '夏の風が', 'そっと頬に触れた。'],
+      };
     if (['に 和 へ 有什么区别？', 'に / へ', 'に和へ的区别'].includes(q))
       return {
         kind: 'grammar',
@@ -97,8 +107,8 @@ window.HarukaLearningCards = (() => {
       card.examples || (card.sentence ? [{ text: card.sentence }] : []);
     return `<div class="learning-card-content"><h2 class="learning-title">${e(card.word)}</h2>${card.reading || card.partOfSpeech ? `<div class="learning-pronunciation">${card.reading ? `<span>${e(card.reading)}</span>` : ''}${card.partOfSpeech ? `<span class="learning-pos">${e(card.partOfSpeech)}</span>` : ''}</div>` : ''}<div class="learning-definition"><span class="learning-label">${card.kind === 'sentence' ? '译文' : card.kind === 'exercise' ? '订正重点' : card.kind === 'grammar' ? '核心用法' : '释义'}</span><p>${e(card.meaning)}</p></div>${card.segments?.length ? `<div class="learning-segments">${card.segments.map((part) => `<span>${e(part)}</span>`).join('')}</div>` : ''}${card.kind === 'exercise' && card.correction ? `<div class="learning-correction"><div><span class="learning-label">原作答</span><p>${e(card.originalAnswer)}</p></div><div><span class="learning-label">建议订正</span><p>${e(card.correction)}</p></div></div><p class="learning-corrected">${e(card.correctedSentence)}</p>` : ''}${card.detail ? `<p class="learning-explanation">${e(card.detail)}</p>` : ''}${card.rule ? `<div class="learning-rule">${I('layers')}<span>${e(card.rule)}</span></div>` : ''}${card.comparisons?.length ? `<div class="learning-comparison">${card.comparisons.map((item) => `<section><h3>${e(item.label)}</h3><p>${e(item.text)}</p><small>${e(item.translation)}</small></section>`).join('')}</div>` : ''}${examples.length ? `<section class="learning-examples"><h3>语境例句</h3>${examples.map((example, index) => `<div><span class="example-number">${String(index + 1).padStart(2, '0')}</span><p>${e(example.text)}${example.translation ? `<small>${e(example.translation)}</small>` : ''}</p></div>`).join('')}</section>` : ''}</div>`;
   }
-  function render(card, action = '') {
-    return `<article class="learning-card kind-${e(card.kind)}" data-card-kind="${e(card.kind)}" data-card-id="${e(card.id)}"><header class="learning-card-header"><span class="learning-type">${I(icons[card.kind])}${e(kinds[card.kind])}</span><span class="learning-language">${e(card.language)} · 示例</span></header>${content(card)}<footer class="learning-card-footer"><span>${card.kind === 'exercise' ? '批改示例 · 不计入成绩' : '查询 · 内置示例'}</span><div><button class="text-btn" type="button" data-x="queryAgain">再查一个</button>${action}</div></footer></article>`;
+  function render(card, action = '', showAgain = true) {
+    return `<article class="learning-card kind-${e(card.kind)}" data-card-kind="${e(card.kind)}" data-card-id="${e(card.id)}"><header class="learning-card-header"><span class="learning-type">${I(icons[card.kind])}${e(kinds[card.kind])}</span><span class="learning-language">${e(card.language)} · 示例</span></header>${content(card)}<footer class="learning-card-footer"><span>${card.kind === 'exercise' ? '批改示例 · 不计入成绩' : '查询 · 内置示例'}</span><div>${showAgain ? '<button class="text-btn" type="button" data-x="queryAgain">再查一个</button>' : ''}${action}</div></footer></article>`;
   }
   return { kinds, icons, prompts, sample, content, render };
 })();

@@ -22,6 +22,8 @@
 
 2026-09-26 DESIGN22完善[查询上下文](../contracts/query-context.md)、[TTS逐模型适配](../architecture/tts-adapters.md)与系统缓存；阶段2实现有权取文/稳定计划及设置，阶段3同时交付查询resolve、完整持久音频、每模型契约测试与多层缓存验收，阶段4保持试卷限制。原型仅内存模拟，见[局部记录](reviews/2026-09-26-context-tts-cache.md)。
 
+DESIGN23在阶段2落实[提取/ruby](../contracts/source-extraction.md)与[统一NLP](../architecture/text-analysis.md)源适配、3表存储、全书覆盖及正文伴随标注；阶段3纳入AI解释/查询/卡片并验证与持久缓存复用，阶段4纳入题面/评分/诊断及交卷可见性。SRC-01～04、NLP-01～07按实际能力分阶段执行；PDF/图片按已确定开放格式执行，未确认组合不标可用。当前仅文档完成。
+
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。

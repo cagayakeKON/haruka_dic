@@ -2,6 +2,8 @@
 
 状态：设计基线，2026-09-23；全部为待实现设计。需求依据为 [PRD](../product/overview.md)，公共响应、版本冲突及幂等以 [API 契约](../contracts/api.md) 为准，执行与事务以 [数据与任务](../architecture/data-jobs.md) 为准。本文只维护三类材料共用的导入/书库及小说、课本共用的出处/阅读位置操作；上传后的公共来源层与三套领域对象见[解析数据结构](../contracts/material-structures.md)，专用流程分别见 [小说](novels.md)、[课本](textbooks.md)、[试卷](exams.md)，类型字段与分派规则见 [三类材料契约](../contracts/material-types.md)。
 
+DESIGN23的格式分派、原书ruby与OCR阶段复用统一见[提取契约](../contracts/source-extraction.md)。可靠文本直接提取，扫描/图片文字使用本人视觉大语言模型；原件注音与后续NLP补充读音分开保留。正文发布后事务登记[基础NLP](../architecture/text-analysis.md)任务，按章/有界单元处理并随文字加载标注，不在长按时调用模型。
+
 ## 1. 范围、入口与权限
 
 | 功能 | P0 | 后续边界 |

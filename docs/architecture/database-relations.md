@@ -2,6 +2,8 @@
 
 版本：DBDESIGN3 / v0.3，2026-09-25；基线提交 `7fed5fc`。本轮只调整设计表名、补齐关系说明，承接DBDESIGN2的142张物理目标，不增删表、不合并字段、不改变业务唯一性。**46个目标名调整，其中2个对应B0已有表的未来改名，44个属于未建表设计。代码、模型、迁移和生成字典保持现状。**
 
+DESIGN23（2026-09-26）进一步将第44～46项材料专用NLP改为全应用分析版本/句子/单元，token收进单元有界JSONB。三项替换仍占3表，总计142不变；本分册分类只表示字典位置，这3表同时服务非材料学习资源。旧命名稿的46项调整说明保留为历史基线，当前三项字段以[文本分册](database-materials.md#27-全应用派生语言标注)为准。
+
 ## 1. 命名规则与阅读方法
 
 - 表名表达业务归属或直接父对象：个人配置使用 `user_*`，材料源数据使用 `material_*`，场次答案使用 `exam_session_answers`。根实体保留 `users`、`materials`、`jobs` 等业务名称，不把所有库内表机械加上user/library全祖先链。
@@ -17,7 +19,7 @@
 
 ## 2. 全部142张目标表
 
-编号延续本轮讨论中的全表顺序；前12项为B0实体，其中第5、6项显示未来目标名。邮件交付条件表是第20项，未选邮件模式时目标为141张。Redis18类键及逻辑DTO不计入表数。
+编号延续本轮讨论中的全表顺序；前12项为B0实体，其中第5、6项显示未来目标名。邮件交付条件表是第20项，未选邮件模式时目标为141张。Redis19类键及逻辑DTO不计入表数。
 
 ### 2.1 账号、权限、配置与容量（34张）
 
@@ -75,9 +77,9 @@
 | 41 | `material_source_units` | material_revisions；material_source_assets | 两者各1:N；单元另有可选自父 | UQ(S,material_revision_id,ordinal)，同版本树由服务验 |
 | 42 | `material_content_blocks` | material_source_units | 1:N内容块 | UQ(S,source_unit_id,ordinal) |
 | 43 | `material_import_issues` | material_revisions | 1:N问题 | PK(id)，不把某种问题限定为单条 |
-| 44 | `material_analysis_versions` | material_revisions | 1:N分析版本 | UQ(S,material_revision_id,language,analysis_number) |
-| 45 | `material_sentences` | material_analysis_versions；material_content_blocks | 两者各1:N句子明细 | UQ(S,analysis_version_id,content_block_id,ordinal) |
-| 46 | `material_tokens` | material_analysis_versions；material_content_blocks | 两者各1:N；sentence引用可空 | UQ(S,analysis_version_id,content_block_id,ordinal) |
+| 44 | `text_analysis_versions` | 已注册材料/解释/卡片/收藏/题目等源版本 | 每源版本1:N pipeline分析；当前选用1:0..1 | UQ(S,source_kind,source_resource_id,source_version,pipeline_digest)，desired/selected各自部分唯一见分册 |
+| 45 | `text_analysis_sentences` | text_analysis_versions；text_analysis_units为锚定单元 | 分析1:N句；锚定单元1:N，spans可跨单元 | UQ(S,analysis_version_id,sentence_identity_digest)及(S,analysis_version_id,anchor_unit_id,ordinal) |
+| 46 | `text_analysis_units` | text_analysis_versions | 1:N有界字段/块单元；词序列为JSONB值对象 | UQ(S,analysis_version_id,unit_identity_digest)及(S,analysis_version_id,ordinal) |
 | 47 | `novel_chapters` | material_revisions（novel） | 1:N章节 | UQ(S,material_revision_id,ordinal) |
 | 48 | `novel_chapter_blocks` | novel_chapters；material_content_blocks为来源 | 章节1:N编排项；同块可多次/分范围引用 | UQ(S,chapter_id,ordinal)，不添加章节×块唯一 |
 | 49 | `textbook_units` | material_revisions（textbook） | 1:N单元，含可选自父 | UQ(S,material_revision_id,ordinal) |
@@ -205,9 +207,9 @@
 | `source_units` | `material_source_units` | 尚未建表；功能切片直接使用新目标名 |
 | `content_blocks` | `material_content_blocks` | 尚未建表；功能切片直接使用新目标名 |
 | `import_issues` | `material_import_issues` | 尚未建表；功能切片直接使用新目标名 |
-| `linguistic_analysis_versions` | `material_analysis_versions` | 尚未建表；功能切片直接使用新目标名 |
-| `sentences` | `material_sentences` | 尚未建表；功能切片直接使用新目标名 |
-| `tokens` | `material_tokens` | 尚未建表；功能切片直接使用新目标名 |
+| `linguistic_analysis_versions`（DBDESIGN3曾称material_analysis_versions） | `text_analysis_versions` | DESIGN23扩大为已注册学习资源；未建表 |
+| `sentences`（DBDESIGN3曾称material_sentences） | `text_analysis_sentences` | DESIGN23支持跨unit范围；未建表 |
+| `tokens`（DBDESIGN3曾称material_tokens） | `text_analysis_units`中的token数组 | DESIGN23将逐词行收敛为有界块值对象，原表名额替换为unit；未建表 |
 | `textbook_content_edges` | `textbook_content_node_links` | 尚未建表；功能切片直接使用新目标名 |
 | `textbook_exercise_bindings` | `textbook_content_node_question_links` | 尚未建表；功能切片直接使用新目标名 |
 | `reading_progress` | `material_reading_progress` | 尚未建表；功能切片直接使用新目标名 |

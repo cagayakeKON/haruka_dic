@@ -2,6 +2,8 @@
 
 状态：2026-09-22，用户已确认 OCR 统一使用视觉模型；下述执行合同待实现。适用于获准格式中的扫描页、图片文字识别及拍照识词，不改变 [三类材料](../contracts/material-types.md) 的独立处理边界，也不自动将 PDF/多图/扫描件提升为 P0。
 
+DESIGN23补齐[文件提取与原书ruby](../contracts/source-extraction.md)：扫描/图像型PDF、图片及必要的EPUB嵌图走本人视觉模型；EPUB真实文字/注音直接解析。OCR分别返回基础文字和注音候选，校验映射后发布source_ruby，不将注音串入正文。完整阶段成品先保存为私有FileObject并由JobStage引用，发布重试复用成品；后续[基础NLP](text-analysis.md)与AI详解分别执行。
+
 ## 1. 技术边界
 
 所有 OCR 经过统一 VisionRecognitionService，由 [Pydantic AI 运行层](agent-runtime.md) 使用用户配置的视觉模型进行类型化调用。沿用允许的 OpenRouter/Gemini 供应商入口；具体模型通过图像输入、结构化输出及英/日样本验证后启用，默认型号仍由 OPEN-04 管理。统一的是调用、凭据、上限、任务和识别协议，不要求所有业务使用同一个提示词或同一个模型型号。

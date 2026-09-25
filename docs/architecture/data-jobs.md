@@ -4,6 +4,8 @@
 
 DESIGN20[章节准备](../contracts/novel-preparation.md)以现有持久Job/Outbox编排：冻结本人小说章/源/标注/配置及非空components集合，按句复用Explanation/Audio与GenerationSlot，分项维护实际提交进度及有界遍历检查点。关闭页面不取消服务端批次，暂停停止新调用，重试先resolve并只补缺失；本机下载状态不冒充PG成品状态。原有Job状态保持不变，章节分项状态与操作意图由注册任务载荷/检查点承载，不为多选新增物理表。
 
+DESIGN23按[提取契约](../contracts/source-extraction.md)持久化OCR完整候选为内部FileObject并由JobStage.result_refs持有；发布失败先恢复成品。源/AI成品发布与[确定性NLP](text-analysis.md) Job/Outbox同事务，可编辑源同时绑定已验证实际输入快照；后者按有界发布组及stage fence提交单元和句子，失败不重调AI；关联锁、选用CAS与GC见数据库分册。
+
 ## 1. 通用数据规则
 
 - PostgreSQL 是身份撤销、权限、业务状态、任务和审计的真相；Redis 只承载可丢失的会话材料/缓存/通知/限流，Kafka 只传事件，MinIO 保存被数据库引用的私有对象。
@@ -23,7 +25,7 @@ DESIGN20[章节准备](../contracts/novel-preparation.md)以现有持久Job/Outb
 | Role/权限关系/Revision | 见 RBAC | 继承 DAG、合法范围、唯一绑定、版本、授予边界、最后管理员约束 |
 | Material/Revision/SourceAsset/SourceUnit/ContentBlock | 固定material_type、当前版本指针、状态、delete_generation、不可变源资产/结构/规范文本/定位 | revision不可变；同库引用；节点不能跨版本拼接；AI不覆盖原文/类型，共用来源层不直接构成万能阅读器，完整契约见[解析数据结构](../contracts/material-structures.md) |
 | NovelManifest/Chapter/Block、TextbookManifest/Unit/Lesson/ContentNode/Edge | 各自的内容版本、领域节点、源块/课本Exercise引用与质量状态 | 两套专用产物，只引用匹配类型/版本/所有者的来源；试卷使用下方独立Exam聚合 |
-| LinguisticAnalysis/Sentence/Token | 内容版本、分析/规则/词典版本、语言、原文span | 派生标注不改canonical_text；新切句不能静默改变旧sentence_id的含义 |
+| TextAnalysisVersion/Unit/Sentence及token值对象 | 已注册源版本/字段、分析/引擎/词典版本、不可变有界快照、原文spans | [统一NLP](text-analysis.md)覆盖全应用学习文字；词序列存unit JSONB，新切句不改旧句ID；原书ruby与派生读音分开 |
 | FileObject/UploadIntent | owner、临时staging_key、独占final_key、用途、最终摘要/实际大小、状态、到期 | 客户端仅写临时对象；后端固定不可变final对象并验证后才发布；完成幂等 |
 | AvatarAsset | owner、源UploadIntent、受控格式/像素/摘要、final_key、revision/状态 | 只从avatar用途临时对象真实解码、去元数据、限制像素并重编码发布；资料指针原子替换，外链/材料对象/他人资产不能充当头像，旧资产受控GC |
 | CollectionItem/Tag/Bookmark/ReadingProgress | kind、各类型内容/卡片版本化载荷、笔记、出处快照、current_position、小说max_progress、revision | 标签关系同库；小说当前/最远分离，课本位置不表示完成度，考试进度另存；删除材料后收藏文本仍存在 |

@@ -6,6 +6,8 @@ DESIGN21确认电脑小说阅读器使用非模态右侧解析panel，与正文�
 
 DESIGN22明确手动查询自动携带有权上下文，预算可在设置调整；[查询上下文](../contracts/query-context.md)、[逐模型TTS适配](../architecture/tts-adapters.md)及[统一持久缓存](../architecture/learning-cache.md)共同覆盖词音、解释与逐句朗读。HTML仅演示设置和内存复用，不代表正式服务已实现。
 
+DESIGN23把材料提取、ruby保留和[全应用基础NLP](../architecture/text-analysis.md)连成统一流程：扫描/图片PDF及图片走视觉OCR，EPUB直接解析；源注音与补充读音分别保存。AI释义/例句/译文/题目反馈同样预处理，文字与标注一起加载，长按不临时调用模型；AI结果和音频持久保存/复用沿DESIGN22。详细[提取契约](../contracts/source-extraction.md)已设计，正式实现及格式优先级不因文档完成提前。
+
 ## 1. 产品定位与已确认边界
 
 Haruka（ハルカ）只适配用户自己的小说、课本和试卷三类材料，将阅读、朗读、解释、收藏、练习、评分与诊断连接成个人语言学习过程。“课本”与“教材”指同一类：

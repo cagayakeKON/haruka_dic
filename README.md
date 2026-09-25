@@ -4,6 +4,8 @@
 
 采用 Flutter（Windows、Web、Android）与 Python 前后端分离架构，学习 Agent 使用 Pydantic AI。支持多用户、管理后台与完整 RBAC；使用各用户自己的 API Key，朗读采用 Gemini/OpenRouter TTS，用户备份恢复仅为单词 CSV。
 
+DESIGN23补齐全应用NLP标注、AI成品存储、EPUB直接提取及扫描/图片视觉OCR保留ruby的[设计方案](docs/architecture/text-analysis.md)与[局部记录](docs/delivery/reviews/2026-09-26-text-analysis-ruby.md)。仅文档，未修改原型或正式应用。
+
 ## 当前状态
 
 阶段1的 **B0 可重复工程基础已验收**：包含 [Flutter三端应用壳](frontend/README.md)、[可安装Python后端](backend/README.md)、[本地基础设施](dev/README.md)、受控数据库初始化、前端契约、开发编排和质量门禁。Windows/Linux干净检出、仓库外正式入口、三端交互及完整B0证据矩阵已通过，详见 [B0验收记录](docs/delivery/reviews/2026-09-22-b0-acceptance.md)。B1登录/收藏/RBAC参考流程和B2持久任务闭环尚未实现，阶段1仍在进行。

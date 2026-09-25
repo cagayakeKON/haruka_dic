@@ -2,6 +2,8 @@
 
 状态：2026-09-25，DESIGN22用户确认带上下文查询、设置可配置及默认一万预算；其余范围/算法/实现上限为本轮设计，正式业务未实现。操作见[查询](../modules/query.md)，源范围见[出处](content-locator.md)，命中与并发唯一维护于[学习结果缓存](../architecture/learning-cache.md)。
 
+DESIGN23取句和字段范围使用[统一NLP](../architecture/text-analysis.md)中已发布的TextAnalysisSentence/Unit；NLP版本与计量token分开。分析升级后若实际目标和计划范围/正文不变，可映射回相同语境查阅身份；不得仅因sentence_id或analysis_version变化使已有结果失效。新范围、读音提示或源ruby变化按各自真实依赖处理。
+
 ## 1. 预算设置
 
 设置“查询与上下文”提供`query_context_budget_tokens`，默认 **10000 tokens**，表示当前目标之外的前后文合计预算，不是字符数、固定句数或必须填满的额度。原型及推荐首版接受1000～64000的整数，提供5000/10000/20000快捷值及自定义输入；最终服务硬上限由版本化配置发布。该字段属于本人Settings投影/settings_revision；保存不调用模型、不重算旧结果、不改变在途任务。

@@ -2,6 +2,8 @@
 
 状态：2026-09-25，DESIGN20确认解析模式、全书基础NLP及按章多选准备，沿用分词浮层与连续朗读；正式业务待实现设计。小说是独立业务模块；类型/格式、重新处理和版本边界见 [三类材料契约](../contracts/material-types.md)，共用上传/书库/进度写入规则见 [材料模块](materials-reading.md)，NovelManifest/Chapter/Block与独立语言分析版本见[解析数据结构](../contracts/material-structures.md#41-小说)。
 
+DESIGN23采用[格式/ruby提取](../contracts/source-extraction.md)及[统一NLP](../architecture/text-analysis.md)：正文、原书注音和程序补充读音分层；全书基础标注持久保存，句子/块加载时携带token与ruby。表结构调整为analysis/version、unit与sentence，词气泡读取已有单元数组；失败只补NLP，不重新生成解释/音频。
+
 ## 1. 范围、入口与权限
 
 导入时选择小说；书库小说卡打开章节阅读器。首版覆盖连续横排阅读、目录、字体/主题、选区、书签/进度和有权使用的解释/收藏/朗读；不把小说自动转成课程或试卷。P0 文件基础为 MD/EPUB，PDF/TXT/OCR 仍按产品优先级后续接入。

@@ -216,3 +216,22 @@ TTL唯一值见[Redis目录](redis-design.md#2-键目录与-ttl)：结果副本3
 供应商Prompt缓存是另一项可选传输优化：仅供应商文档及本人配置支持时使用，不作为应用结果命中依据。缓存句柄按owner/credential/provider/model及内容协议分区，过期重新发送合法输入，不丢业务结果；仍创建真实attempt并按供应商报告记录cache_read/write。首版不承诺主动创建供应商缓存资源或节省比例。
 
 新增验收LC-12：遍历上表全部朗读入口及手动查询，清本机/Redis、换Key/倍速/URL后供应商计数不增加；语境/声音变化正确隔离，未知结果不命中。与QCTX-01～05、TTSA-01～05及既有LC-01～11共同构成阶段3正式缓存验收，HTML计数只是演示。
+
+## 10. 源提取、NLP与AI成品的完整链路
+
+DESIGN23把[文件提取/原书ruby](../contracts/source-extraction.md)及[全应用NLP](text-analysis.md)纳入上述四层方案。以下都是已提交业务成品或其副本，不能仅因页面离开、Redis过期或用户未收藏而丢失。
+
+| 成品 | 持久位置 | 缺失/失败时的恢复 |
+| --- | --- | --- |
+| 原文件、受控页图 | FileObject/MinIO及来源资产引用 | 重新下载既有对象；不能无授权重新取外链或改源 |
+| 完整视觉OCR候选 | 私有FileObject JSON对象 + JobStage.result_refs | 业务发布失败复用已保存识别稿/原书ruby候选；仅未成功阶段按原授权/unknown规则恢复 |
+| 已发布正文与原书ruby | MaterialRevision/ContentBlock及presentation_payload | 按源版本读取；原书注音校正建新源版本，不靠NLP覆盖 |
+| 基础NLP单元/句子/token/ruby | text_analysis_versions/units/sentences，词序列为unit JSONB | 本机/Redis miss回PG；真正未完成仅恢复确定性NLP任务，不重识别或重调AI |
+| AI解释及卡片 | Explanation/Card完整结构化载荷、上下文/配置及source bindings | 保留成功结果；其内部文本NLP失败只修复标注 |
+| 完整音频 | AudioAsset/Manifest及MinIO | 只修复下载/发布；换模型或有效读音时明确匹配新规格 |
+
+NLP单元随文字按需下载，计入现有本机文本容量，不再增加用户必须理解的一套缓存开关。R19仅为有界热点副本，所有可见范围与来源动作都在返回前验证；考试隐藏答案/稿件的标注与统计也不能下发。本机没有相应完整标注时提供准备状态/手动范围，不能因为要做到长按即时而偷偷调用视觉/文本模型。
+
+NLP版本升级不直接改变AI/TTS键：以确定的原文目标/ContextPlan和实际ResolvedSynthesisSpec判断语义是否变化。单纯token边界变化而目标、上下文、读音均相同，可复用既有解释/音频；读音变化可能只影响TTS，目标范围变化可能影响查询。原书注音与NLP读音均保留各自来源，实际用作发音提示时才加入合成语义输入。
+
+GC从业务根、独立收藏快照、冻结考试版本和在途Job追踪到标注/候选/音频；仍有合法引用不按TTL/LRU删服务端成果，无引用旧分析允许受控回收。原书删除不能借NLP快照继续读取原书，独立收藏使用自己的有限文本和权限。LC-13与NLP-04～07联动验证：清本机/Redis只回源、NLP失败不重复AI、格式/OCR/ruby/NLP多版本依赖准确、隐藏内容与跨账号隔离。

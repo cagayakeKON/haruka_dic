@@ -14,6 +14,8 @@ DESIGN21修订电脑4K阅读布局与非模态解析panel，沿用NOV-003、SEL-
 
 DESIGN22增加QCTX-01～05、TTSA-01～05与LC-12，覆盖可配置上下文、逐模型音频协议及全部查询/朗读入口缓存。原型局部证据见[本轮记录](reviews/2026-09-26-context-tts-cache.md)，正式服务端、NLP、模型和三端验收仍未完成。
 
+DESIGN23新增SRC-01～04、NLP-01～07与LC-13：覆盖[直接提取/视觉OCR及ruby](../contracts/source-extraction.md)、[全应用标注发布/存储/缓存](../architecture/text-analysis.md)，并与QCTX/LC/NPREP现有验收联动。只有[文档审查证据](reviews/2026-09-26-text-analysis-ruby.md)，未运行原型或正式应用测试，验收项保持待实现。
+
 ## 1. 按功能开始开发
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |

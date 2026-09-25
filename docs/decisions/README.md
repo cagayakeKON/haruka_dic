@@ -2,6 +2,8 @@
 
 状态：2026-09-23 设计记录，未代表工程验证。本页保存已确认边界、DEC 选择/理由与导航；OPEN 项及尚未满足的就绪门禁统一在 [待决清单](pending.md)。需求冲突时用户最新明确要求优先；[产品总览](../product/overview.md) 定义范围，各专题维护详细契约。
 
+DESIGN23（2026-09-26）确认[文件提取与原书ruby](../contracts/source-extraction.md)及[全应用NLP存储/缓存](../architecture/text-analysis.md)：扫描/图片由视觉模型OCR，EPUB文本直接解析；所有已提交学习文字预处理，AI结果内文本同样标注，三张NLP设计表收敛为分析版本/单元/句子。格式开放范围、真实模型/词典与质量仍按各门禁验证。
+
 ## 1. 已确认
 
 Flutter用户端Windows/Web/Android；Python前后端分离；复用MyHome基础设施；多用户注册登录；管理后台与完整RBAC；学习Agent采用Pydantic AI；Gemini/OpenRouter TTS；试卷模式/整卷考试/AI批改；全量来源日志与前端埋点汇入MyHome Alloy/Loki/Grafana；用户侧导出恢复仅单词CSV。本阶段只文档化，并要求子Agent独立审查。

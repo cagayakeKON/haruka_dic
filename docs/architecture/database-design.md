@@ -2,6 +2,8 @@
 
 版本：DBDESIGN3 / v0.3，2026-09-25。所属阶段：阶段1中的数据库设计文档小阶段；设计覆盖已确认首版功能，工程按阶段1～5相关功能切片逐步落地。本轮基线提交：`7fed5fc`；B0实际结构仍以`0001_b0_identity`及生成字典为准。**本次交付表结构与 Redis 字段设计，不创建业务表、不执行迁移、不修改运行实例。**
 
+DESIGN23扩充全应用NLP和OCR/ruby存储：原材料NLP的3张设计表调整为text_analysis_versions/units/sentences，token改存有界单元JSONB；总计仍142。现有Explanation/Card保存AI成品，OCR阶段成品使用FileObject/JobStage；新增R19热点标注副本。详见[统一文本分析](text-analysis.md)及[提取契约](../contracts/source-extraction.md)，本轮只改文档。
+
 ## 1. 阅读入口与设计状态
 
 | 分册 | 内容 |
@@ -12,7 +14,7 @@
 | [账号、设置与权限表](database-identity.md) | B0 12 表核对及增量；资料、会话、凭据、目录、RBAC 与技术限额 |
 | [材料、阅读与考试表](database-materials.md) | 上传与对象、三类不可变内容、出处、位置、试卷、文字听力准备与播放账本 |
 | [收藏、学习与 AI 表](database-learning.md) | 单词本/CSV、题目作答、证据错题、内部查询、持久解释与音频、任务与模型用量 |
-| [Redis 键与字段](redis-design.md) | 18 类键的类型、字段、TTL 初值、容量、失效、认证和恢复处理 |
+| [Redis 键与字段](redis-design.md) | 19 类键的类型、字段、TTL 初值、容量、失效、认证和恢复处理 |
 
 **当前物理目标142张：已有B0 12张，拟新增130张（含邮件交付条件表1张）。** 对全部158个原候选审查后减少16张；未启用邮件条件时目标141张。内部alembic_version、Redis键与逻辑DTO/查询投影不计表数。各表取舍见收敛册；下一次迁移只建立当期必需结构。
 

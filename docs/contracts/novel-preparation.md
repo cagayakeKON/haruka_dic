@@ -49,7 +49,7 @@ analysis/audio各自返回`selected`、`total_sentences`、`ready_sentences`、`
 
 准备需要当前来源read与本人任务操作资格；analysis另验ai.explain及实际Agent调用权限，audio另验speech.generate/play。仅选单项时不能要求或消费另一项的生成权限。每个新供应商阶段重查当前权限、Key、技术限额、源删除代次；缺Key/失权暂停相应新工作，不借用其他用户配置；已有成品仍按现行读取权限处理。取消/暂停采用本人job.cancel，继续/重试沿本人job.retry控制范围并在接口明确分派，不建立无权限检查的通用执行入口。
 
-复用PG持久Job/Outbox及已有任务checkpoint编排章节批次，解析复用Explanation/Card/SourceResultBinding，音频复用AudioAsset/Segment/Manifest；NLP复用material_analysis_versions/material_sentences/material_tokens。章节准备是任务和结果的聚合投影，不新增chapter_cache、chapter_audio或每个checkbox一张物理表；最终实现按现有数据库规范校验并发与引用。Redis只加速已有任务/结果投影，清空Redis后从PG/MinIO恢复，不把Redis计数或短TTL当作准备事实。
+复用PG持久Job/Outbox及已有任务checkpoint编排章节批次，解析复用Explanation/Card/SourceResultBinding，音频复用AudioAsset/Segment/Manifest；NLP复用text_analysis_versions/text_analysis_units/text_analysis_sentences及unit内token数组，见[统一文本分析](../architecture/text-analysis.md)。章节准备是任务和结果的聚合投影，不新增chapter_cache、chapter_audio或每个checkbox一张物理表；最终实现按现有数据库规范校验并发与引用。Redis只加速已有任务/结果投影，清空Redis后从PG/MinIO恢复，不把Redis计数或短TTL当作准备事实。
 
 所选章节的解析和普通音频在当前设备按账号/实例分区提前下载，遵守容量、完整校验及离线权限租期；跨设备登录先查服务端成品，再下载缺失副本，不因新设备重新生成。退出/切实例/账号立即停止旧设备下载与播放、隔离迟到响应；章节准备不能成为考试听力下载或隐藏答案旁路。客户端清理只删副本，不删有有效引用的服务端成品。更广泛的下载中心、固定保留和全库离线包仍是后续范围。
 

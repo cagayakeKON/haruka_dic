@@ -6,6 +6,8 @@
 
 DESIGN20小说基础NLP必须覆盖所有已发布正文句子，按章报告覆盖/失败：Sentence与Token保留源范围、词形/词性/活用及可得读音，注音附在范围上并区分原书/派生/不确定来源，不写入canonical_text。AI详解与TTS仍是独立成品，按[章节多选准备](novel-preparation.md)处理；语言标注完成不代表这些成品已就绪。
 
+DESIGN23将[格式提取与原书ruby](source-extraction.md)和[全应用NLP](../architecture/text-analysis.md)接入现有流程：EPUB直接解析，扫描/图像PDF和图片走本人视觉模型；可靠PDF文本层仅在正文/注音对应通过检查时可直接提取。源ruby存ContentBlock.presentation_payload，与NLP补充读音分开；所有已提交学习字段共享标注协议，源类型/版本及领域结构仍独立。
+
 ## 1. 分层原则
 
 上传、源提取、领域解析和消费投影是四个不同结果，不能用一个大JSON或一个成功状态代替：
@@ -51,8 +53,8 @@ DESIGN20小说基础NLP必须覆盖所有已发布正文句子，按章报告覆
 | NovelManifest | material_revision、schema_version、chapter_order、quality_summary、published_at | 小说当前可读编排；不包含课本角色或考试状态 |
 | NovelChapter | manifest、title/source_title、ordinal、source_refs | 原目录优先；无目录可建明确标记的“未分章正文”，不捏造章名 |
 | NovelChapterBlock | chapter、ordinal、source_block/range、display_role | paragraph/dialogue/quote/footnote/illustration等；保持连续阅读顺序 |
-| LinguisticAnalysisVersion | material_revision、language、segmenter/tokenizer/dictionary版本、状态 | 原文不变时可独立升级，不替换内容版本 |
-| Sentence/Token | analysis_version、source_range、order、语言属性 | 只在合法正文范围派生；表格/图注/脚注不因分句器误拼正文 |
+| TextAnalysisVersion | 已注册source/version、pipeline、各语言引擎/词典版本与覆盖状态 | 小说分支绑定MaterialRevision；共用全应用NLP，不替换正文版本 |
+| TextAnalysisUnit/Sentence及token值对象 | 不可变字段/块快照、有序spans、分词/ruby数组 | 句子独立ID可跨有证据连续的unit；表格/图注/脚注不误拼正文；物理粒度见[统一NLP](../architecture/text-analysis.md) |
 | SpeechSegmentBinding | sentence/range、playback_manifest/segment | 朗读派生引用，不将音频URL写回正文 |
 
 小说修正章序、规范文本或块归属时创建新的MaterialRevision/NovelManifest；仅重做分句、分词或词形时创建新的分析版本。阅读位置、收藏和解释保留原版本出处及必要快照，不按文本相同自动迁移。

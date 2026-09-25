@@ -2,6 +2,8 @@
 
 状态：2026-09-23，已确认的展示方案，待实现。本文统一维护内容角色、作答交互、试卷听力呈现、结构关系、原文对照和降级规则；底层对象以[解析数据结构](material-structures.md)为准，业务流程分别由 [课本](../modules/textbooks.md)、[公共作答](../modules/vocabulary-practice.md) 和 [考试](../modules/exams.md) 维护。
 
+DESIGN23源ruby、AI生成字段及全局选句分别遵循[提取契约](source-extraction.md)、[统一NLP](../architecture/text-analysis.md)和[出处](content-locator.md)。显示使用基础文字加独立注音，不把ruby或Markdown样式字符并入查询偏移；原书读音优先，未知/待校对不造确定读法。
+
 ## 1. 范围与分层
 
 教材采用 **8 类内容展示**，试卷采用 **5 类作答交互 + 1 类题组容器**。这是组件和结构的分类，不是要求用户切换八种阅读模式，也不代表建立十四个独立页面。教材、考试分别编排页面、维护 controller 和业务状态，只复用无业务副作用的基础控件。

@@ -6,6 +6,8 @@
 
 DESIGN20解析模式的ruby/rt是展示层注音，复制原文、查询quote、scalar偏移和TTS输入均以基文本为准，不能从包含注音的DOM textContent直接构造来源。点句必须回到已发布Sentence的完整源范围；章准备绑定源/标注版本，校正注音不能静默改写旧句子/音频的含义，见[章节准备](novel-preparation.md)。
 
+DESIGN23的[统一NLP](../architecture/text-analysis.md)使用TextAnalysisSentence有序unit spans和注册业务字段映射；原书ruby按[提取契约](source-extraction.md)单独保存。非材料字段项ID在发布时由应用分配并冻结；版本变化重取相应标注，不能按相同字符位置跨版本绑定。unit快照不授予额外读取权，完整来源与现行权限仍逐次验证。
+
 ## 1. 不可变内容与选区
 
 推荐 `source_locator` 使用 `locator_schema_version=1`，并以`target_kind`作为可辨识联合类型。所有分支共用以下信封字段；字段是业务存储与接口契约，不得作为日志自由属性上传。

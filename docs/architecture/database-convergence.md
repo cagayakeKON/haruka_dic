@@ -2,6 +2,8 @@
 
 收敛决策：DBDESIGN2，2026-09-25，基线提交 `af87a41`；物理目标名于DBDESIGN3按 `7fed5fc` 更新，原候选列保留历史名称。这是阶段1内的文档小阶段，按用户明确原则收敛DBDESIGN1的全部物理候选。字段以[账号](database-identity.md)、[材料](database-materials.md)、[学习](database-learning.md)分册为准，本页只维护逐表取舍、逻辑映射和实施成本，不复制字段字典。
 
+DESIGN23将上述3项NLP目标由材料专用改成全应用版本/句子/有界单元，逐词行改为unit标注数组；3表替换3表，不增加142总数。此新决定覆盖本页原逐词持久行取舍，字段与性能待验证边界见[统一NLP](text-analysis.md)。
+
 ## 1. 结论与计数口径
 
 **158张候选 → 142张物理目标表，减少16张。** 其中已有B0仍为12张，未实现目标130张；130中包含邮件交付条件表1张，条件未确定时确定目标是141张（12已有+129拟新增）。不计alembic_version、API对象、查询投影、Redis键或把Outbox跨分册重复计数。条件表不是本轮新增范围。
@@ -102,9 +104,9 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 45 | `source_units` | 保留；目标 `material_source_units` | 可分页加载的来源层级，稳定定位不等于显示节点 | 2 |
 | 46 | `content_blocks` | 保留；目标 `material_content_blocks` | 独立稳定正文ID与偏移，多个领域节点可引用 | 2 |
 | 47 | `import_issues` | 保留；目标 `material_import_issues` | 多位置/多阶段问题独立关闭，与源版本不同可变性 | 2 |
-| 48 | `linguistic_analysis_versions` | 保留；目标 `material_analysis_versions` | 一内容版本多算法版本，重新分词不改原文 | 2 |
-| 49 | `sentences` | 保留；目标 `material_sentences` | 一块多句，范围/回跳/音频引用需独立ID | 2 |
-| 50 | `tokens` | 保留；目标 `material_tokens` | 多token与词形/读音检索，不把全书标注塞JSON | 2 |
+| 48 | `linguistic_analysis_versions` | DESIGN23调整为 `text_analysis_versions` | 注册学习资源的源版本×pipeline，覆盖材料与AI/收藏/题目 | 2～4 |
+| 49 | `sentences` | DESIGN23调整为 `text_analysis_sentences` | 独立句ID及跨unit spans，供点句/回跳/音频引用 | 2～4 |
+| 50 | `tokens` | DESIGN23收敛为 `text_analysis_units` 中的有界token数组 | 物理表名额改为文本单元，整句读取，无当前逐词SQL需求；不存整书JSON | 2～4 |
 | 51 | `novel_manifests` | 并入/复用 `material_revisions` | 每源版本唯一头，共同父锁；移入可独立首次发布/冻结的结构组 | 2 |
 | 52 | `novel_chapters` | 保留 | 一版多章与顺序，小说独立结构 | 2 |
 | 53 | `novel_chapter_blocks` | 保留 | 章与源块/范围的多重映射，原文不复制 | 2 |

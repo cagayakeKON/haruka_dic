@@ -2,6 +2,8 @@
 
 状态：2026-09-23，设计基线，未实现。用户已确认只适配小说、课本、试卷，分别处理和使用；本文约束类型选择、分派、版本和跨类型边界。解析对象与字段关系唯一详述于[三类解析数据结构](material-structures.md)；导入公共流程见 [材料与书库](../modules/materials-reading.md)，具体体验分别见 [小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[试卷](../modules/exams.md)。文档中的“教材”与“课本”指同一类型。
 
+DESIGN23确认扫描/图像型PDF及图片的视觉OCR、EPUB直接解析及原书ruby保留，混合文件按页/区域分派，细则见[提取契约](source-extraction.md)。这是处理方式的确认；开放格式组合和实施优先级仍沿下述能力目录及OPEN-01，不宣称所有PDF/图片导入已经实现。全应用基础NLP见[标注专题](../architecture/text-analysis.md)，不改变三类材料边界。
+
 ## 1. 类型与格式
 
 `material_type` 是唯一业务类型字段，枚举为 `novel | textbook | exam`。上传意图、Material、解析 Job 的不可变输入均保存同一值；服务端选择对应处理器，Worker 提交时核对类型、版本和代次。替代旧设计中的 `import_mode/primary_type` 双字段，不维护两套可冲突的类型值。当前没有应用数据，因此这是设计修订，不是已执行数据库迁移。

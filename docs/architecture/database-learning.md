@@ -4,6 +4,8 @@
 
 权威业务依据：[收藏与公共作答](../modules/vocabulary-practice.md)、[多单词本](../modules/vocabulary-notebooks.md)、[学习证据](vocabulary-learning.md)、[AI习题与错题](../modules/ai-exercises.md)、[查询](../modules/query.md)、[Agent运行](agent-runtime.md)、[AI与朗读](../modules/ai-speech.md)、[持久结果缓存](learning-cache.md)、[任务与事务](data-jobs.md)、[模型用量](../contracts/model-usage.md)、[CSV](../contracts/vocabulary-csv.md)。表名是本次设计选择，接口中的 ExerciseVersion/Attempt/GradeRun 等逻辑名称按下文映射，不能据此静默改接口。
 
+DESIGN23解释/卡片/收藏/题目/反馈的白名单文字由[统一NLP](text-analysis.md)派生到[3张文本标注表](database-materials.md#27-全应用派生语言标注)。Explanation/Card/题目仍各自保存权威结构；稳定数组项ID随成品发布，不以UI数组下标定位。发布事务登记NLP Job/Outbox，NLP失败不删除成品或重放AiRun；正式schema中增加字段项身份不另增实体表。
+
 ## 1. 字典记法与关系规则
 
 - `B`：`id uuid NN`（服务端 uuid4，无数据库默认值）、`created_at timestamptz NN DEFAULT now()`、`updated_at timestamptz NN DEFAULT now()`。

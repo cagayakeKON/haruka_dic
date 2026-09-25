@@ -10,6 +10,8 @@ DESIGN18分词浮层、单词喇叭和连续朗读复用现有领域接口，不
 
 DESIGN18多词查询按[多范围协议](content-locator.md#12-分词气泡与多范围查询)提交有序目标与父句，独立结果卡分别可收藏，原文由服务端重取。连续播放manifest绑定当前章/起始句/结束边界与版本；只读resolve不能生成，明确生成的请求绑定该范围及本人配置，预取仅在窗口内执行且逐阶段重查权限。播放模式和片段内暂停位置不进入合成键；服务端逐句保存音频，不提供整章单一音频资产；DESIGN20增加下述章节准备编排入口。
 
+DESIGN23正文/结果详情DTO按获准可见字段返回`text_analysis`投影：source_ref/version、analysis_version_id、schema/pipeline、当前范围的coverage/state、units（稳定字段/项、快照摘要、token/ruby）及sentences有序spans；与返回文字版本完全匹配，按unit游标有界分页。标注pending/failed不让已保存AI结果丢失，长按不调用模型。复用各领域读取/准备/任务恢复入口，不开放任意source_kind/JSONPath通用查询；考试服务先裁剪可见性，缓存键只处理最终有权投影。契约见[统一NLP](../architecture/text-analysis.md)和[源提取](source-extraction.md)。
+
 ## 1. HTTP与数据格式
 
 REST前缀/api/v1；管理业务在/api/v1/admin。请求/响应JSON使用snake_case，Dart DTO做显式映射。UUID使用字符串，日期UTC ISO 8601，分数等固定精度数字用十进制字符串；未知枚举客户端显示安全“不支持”状态，不能自动映射成功。

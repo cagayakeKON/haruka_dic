@@ -2,7 +2,7 @@
 
 状态：2026-09-25，DBDESIGN3，阶段1中的数据库设计文档切片；本文新增结构均为**待实现设计**，没有建表、迁移或数据库验收。入口与公共规则见[数据库设计书](database-design.md)，已存在的 `libraries` 由[身份分册](database-identity.md)登记。本文把[源结构契约](../contracts/material-structures.md)、[材料](../modules/materials-reading.md)、[小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[考试](../modules/exams.md)及[双端原型](../../prototype/README.md)映射为物理表，不改变它们的产品边界。
 
-DESIGN20的小说逐句NLP与章节准备映射：基础标注沿用§2.7的analysis/sentence/token，读音及语言特征保留来源/不确定信息；章批次复用Job/Outbox及注册检查点，逐句成品复用学习分册的解释/音频/源绑定。[章节准备协议](../contracts/novel-preparation.md)只增加任务载荷与聚合投影，不增加整章缓存表，本轮未执行DDL。
+DESIGN20的小说逐句NLP与章节准备映射：基础标注按DESIGN23升级为§2.7的统一analysis/unit/sentence及token值对象，读音及语言特征保留来源/不确定信息；章批次复用Job/Outbox及注册检查点，逐句成品复用学习分册的解释/音频/源绑定。[章节准备协议](../contracts/novel-preparation.md)只增加任务载荷与聚合投影，不增加整章缓存表，本轮未执行DDL。
 
 ## 1. 字典约定与分层
 
@@ -12,7 +12,7 @@ DESIGN20的小说逐句NLP与章节准备映射：基础标注沿用§2.7的anal
 - `M` = L + `material_id uuid NN`；`V` = M + `material_revision_id uuid NN`。下文逐表写明列组，列组字段属于该表真实物理字段，不是 ORM 隐式关系。`NN` 为 NOT NULL，`NULL` 为允许 NULL；未写 DEFAULT 的列无服务端默认值。逗号分隔列在同一行表示各列具有所列相同类型/空值规则，语义按列名次序说明。
 - `S` 代表索引前缀 `(owner_user_id, library_id)`，`SU` 代表 `(user_id)`；所有作用域内 UQ/IX 都完整展开该前缀。UQ 为唯一约束/唯一索引，IX 为普通索引，部分谓词在括号后明确。主键和 UQ 已提供的索引不重复创建。约束命名按数据库规范自动确定性生成。
 - 类型、状态使用有界 varchar + 命名 CHECK；允许值由本分册所链接的契约单一维护，迁移展开为明确集合，不以任意文本作为合法状态。所有 ordinal 和schema版本从 1 起，计数/字节/偏移非负，generation 从 0 起；单行 CHECK 可以验证范围，不能验证关联归属。
-- `source_locator/provenance/source_refs` 是[出处协议](../contracts/content-locator.md)的有界、版本化 JSONB 值对象，包含 `locator_schema_version`，不是任意 JSON。每条引用的材料/版本已在实体列中约束；其 spans 中的块/segment ID 仍须按注册 JSON 路径完整校验和纳入 GC 关系遍历。不得把题目、权限、状态、关键去重键藏进 JSON。
+- `source_locator/provenance/source_refs` 是[出处协议](../contracts/content-locator.md)的有界、版本化 JSONB 值对象，包含 `locator_schema_version`，不是任意 JSON。材料表由实体列确定材料/版本，§2.7统一标注由分析头注册的source分支确定实际资源/版本；其 spans 中的块/segment/unit ID 仍须按注册 JSON 路径完整校验和纳入 GC 关系遍历。不得把题目、权限、状态、关键去重键藏进 JSON。
 - 其他 JSONB 由同一行 `schema_version smallint NN` 指定注册的 Pydantic 模型；必要参数不得以空对象冒充缺失。以“可选”标注的 JSONB 为 NULL，发布时依领域类型检查必需结构和大小。小型摘要必须能从明细重建，不作为发布/评分真相。
 - 所有关联均为**逻辑关联，无物理外键、无隐式级联、无 RLS**。L/M/V 表的库归属从认证 ScopeContext 和已锁父记录派生，创建后不可转移。上传 U 表按用途验证目标聚合，不能凭 `file_object_id` 获得读取授权。
 
@@ -75,7 +75,7 @@ purpose与target_kind为按上表顺序的一对一白名单，不能任意组�
 | --- | --- | --- |
 | upload_intent_id | uuid NULL | 上传来源；服务端受控派生资产可空 |
 | parent_file_object_id | uuid NULL | 派生输入，存在时必须同本人且同允许用途 |
-| purpose | varchar(40) NN | 与业务投影一致的受控用途，派生题图/音频也独立登记 |
+| purpose | varchar(40) NN | 与业务投影一致的受控用途，派生题图/音频及内部vision_recognition_result、text_analysis_input分别登记；内部OCR结果/NLP输入快照不可由客户端UploadIntent提交 |
 | bucket_name, object_key | text NN | Haruka私有bucket和独占final键，无签名URL |
 | object_version | varchar(128) NULL | 对象存储启用版本时的确切版本，不以ETag代替摘要 |
 | media_type | varchar(127) NN | 后端验证的实际Content-Type |
@@ -169,18 +169,35 @@ UQ `(S,material_id,revision_number)`；IX `(S,material_id,status,id)` 查候选/
 | --- | --- | --- |
 | `material_source_assets` | `file_object_id uuid NN` 本人验证对象；`purpose varchar(40) NN` 主文档/内嵌图/受控派生图等；`ordinal integer NN` 版本内序；`source_locator jsonb NULL` 原件位置；`pixel_width,pixel_height integer NULL` 实际图像像素；`duration_ms bigint NULL` 实际媒体时长 | UQ `(S,material_revision_id,ordinal)`；IX `(S,file_object_id,id)` GC反查；像素成对且正数，时长非负；资产purpose与对象真实格式匹配，由服务验证 |
 | `material_source_units` | `parent_source_unit_id uuid NULL` 层级；`unit_kind varchar(32) NN` spine/区段/获准页区域；`ordinal integer NN` 版本内全序；`source_asset_id uuid NN` 原件；`original_locator jsonb NN` EPUB路径/MD范围/获准页坐标；`schema_version smallint NN` 定位载荷版本 | UQ `(S,material_revision_id,ordinal)`；IX `(S,parent_source_unit_id,ordinal)`；拒绝自父，树无环/同版本由服务验证；不以页号猜测格式已开放 |
-| `material_content_blocks` | `source_unit_id uuid NN` 来源容器；`ordinal integer NN` unit内序；`block_kind varchar(32) NN` paragraph/title/list/table/caption等注册值；`canonical_text text NN` 规范文本（纯图块可为空文本）；`scalar_length integer NN` scalar长度；`content_origin varchar(32) NN` deterministic/vision/user_correction；`recognition_run_id uuid NULL` 视觉来源AiRun；`original_locator jsonb NN` 源范围；`schema_version smallint NN`；`presentation_payload jsonb NULL` 受控ruby/列表/表格样式而非脚本 | UQ `(S,source_unit_id,ordinal)`；IX `(S,material_revision_id,id)`；长度非负，vision需recognition_run_id；发布程序校验scalar_length与正文、原位范围/字素边界；非文字块不制造句子 |
+| `material_content_blocks` | `source_unit_id uuid NN` 来源容器；`ordinal integer NN` unit内序；`block_kind varchar(32) NN` paragraph/title/list/table/caption等注册值；`canonical_text text NN` 规范文本（纯图块可为空文本）；`scalar_length integer NN` scalar长度；`content_origin varchar(32) NN` deterministic/vision/user_correction；`recognition_run_id uuid NULL` 视觉来源AiRun；`original_locator jsonb NN` 源范围；`schema_version smallint NN`；`presentation_payload jsonb NULL` 受控source_ruby/列表/表格样式而非脚本；原书注音协议见[提取契约](../contracts/source-extraction.md) | UQ `(S,source_unit_id,ordinal)`；IX `(S,material_revision_id,id)`；长度非负，vision需recognition_run_id；发布程序校验scalar_length与正文、原位范围/字素边界；非文字块不制造句子 |
 | `material_import_issues` | 另含R；`stage_code,kind varchar(64) NN` 阶段/问题；`severity varchar(16) NN` warning/blocking；`status varchar(24) NN` open/resolved/accepted；`source_refs jsonb NN` 有界出处；`schema_version smallint NN`；`resolution_code varchar(64) NULL`；`resolved_by_user_id uuid NULL`；`resolved_at timestamptz NULL` | IX `(S,material_revision_id,status,severity,id)`；关闭字段成对，用户确认与确定修复须可追溯；人工确认不得把不可用必要题面直接改成ready |
 
-### 2.7 派生语言标注
+### 2.7 全应用派生语言标注
 
-下列表均为 V、scope=library_owned；按材料根检查删除代次。分析发布独立于内容版本，不重写 ContentBlock。
+DESIGN23把原材料专用3表调整为下列3表，仍在本分册计数，覆盖全部学习资源；此处不再继承V，不强制AI卡片具有material_id。均为L、scope=library_owned，按[统一文本分析](text-analysis.md)的注册SourceAdapter复核源父/版本/字段及删除代次。每表含B的PK和created_at/updated_at，无物理外键。
 
-| 表 | 列（PG类型；空值/默认；语义） | 唯一、检查与索引 |
+| 表 / 列组 | 列（PG类型；空值/默认；语义） | 唯一、检查与索引 |
 | --- | --- | --- |
-| `material_analysis_versions` | `analysis_number bigint NN`；`language varchar(35) NN`；`segmenter_version,tokenizer_version,dictionary_version varchar(80) NN`；`status varchar(24) NN` building/ready/failed/sealed；`job_id uuid NN`；`input_delete_generation bigint NN`；`published_at timestamptz NULL` | UQ `(S,material_revision_id,language,analysis_number)`；IX `(S,material_revision_id,status,published_at,id)`；序号>=1、代次非负；算法升级建新行，ready后不可改 |
-| `material_sentences` | `analysis_version_id uuid NN`；`content_block_id uuid NN`；`ordinal integer NN` 块内序；`start_scalar,end_scalar integer NN` 左闭右开范围；`language varchar(35) NN` | UQ `(S,analysis_version_id,content_block_id,ordinal)`；IX `(S,content_block_id,start_scalar,id)`；CHECK `0<=start_scalar<end_scalar`；范围/quote与当前块规范文本由服务验，不跨块拼表格 |
-| `material_tokens` | `analysis_version_id,content_block_id uuid NN`；`sentence_id uuid NULL` 无合法句子可空；`ordinal integer NN` 块内序；`start_scalar,end_scalar integer NN`；`lemma text NULL`；`reading text NULL`；`part_of_speech varchar(64) NULL`；`schema_version smallint NN`；`features jsonb NULL` 注册语言属性 | UQ `(S,analysis_version_id,content_block_id,ordinal)`；IX `(S,sentence_id,ordinal)`；CHECK合法非空范围；模型/分词器不能更改稳定源ID；新分析不重新解释旧sentence/token |
+| `text_analysis_versions` / L+R | `source_kind varchar(32) NN`；`source_resource_id uuid NN`；`source_version bigint NN`；`input_digest,pipeline_digest bytea NN`；`schema_version integer NN`；`pipeline_version varchar(80) NN`；`engine_manifest jsonb NN` 各语言分句/分词/词典版本 | UQ `(S,source_kind,source_resource_id,source_version,pipeline_digest)`；source枚举/版本映射见专题；digest32字节、版本正、manifest对象 |
+| 同表 | `input_mode varchar(24) NN` immutable_source/file_snapshot；`input_snapshot_file_object_id uuid NULL` | CHECK file_snapshot必须有引用、immutable_source必须为空；对象须同本人且为text_analysis_input用途；IX `(S,input_snapshot_file_object_id) WHERE input_snapshot_file_object_id IS NOT NULL` 支撑GC |
+| 同表 | `status varchar(16) NN DEFAULT 'queued'`；`job_id uuid NN`；`input_delete_generation bigint NN`；`unit_manifest_digest bytea NULL`；`expected_unit_count bigint NULL`；`desired_for_read,selected_for_read boolean NN DEFAULT false`；`published_at timestamptz NULL` | 状态queued/running/partial/ready/failed/sealed；manifest两列同空同有，非空时摘要32字节/数量非负，partial/ready必有manifest及published_at；selected仅partial/ready；两条部分UQ分别为 `(S,source_kind,source_resource_id,source_version) WHERE desired_for_read` / `WHERE selected_for_read`；IX `(S,job_id)`及`(S,source_kind,source_resource_id,source_version,status)` |
+| `text_analysis_units` / L | `analysis_version_id uuid NN`；`ordinal bigint NN`；`field_code varchar(128) NN`；`item_identity varchar(160) NN` 非数组固定single；`source_start_scalar,source_end_scalar integer NN`；`unit_identity_digest bytea NN`；`source_locator jsonb NN` | UQ `(S,analysis_version_id,unit_identity_digest)`及`(S,analysis_version_id,ordinal)`；字段/稳定项/技术分片范围构成identity；范围非空，禁止任意JSONPath |
+| 同表 | `text_snapshot text NN`；`text_digest,source_ruby_digest bytea NN`；`schema_version integer NN`；`semantic_role varchar(32) NN`；`state varchar(16) NN DEFAULT 'pending'`；`annotation_payload jsonb NULL`；`serialized_size_bytes bigint NN DEFAULT 0`；`stage_generation bigint NN DEFAULT 0`；`error_code varchar(96) NULL`；`published_at timestamptz NULL` | state pending/ready/failed/unsupported；ready要求payload对象、发布时间及正字节数；错误状态要求error_code；语义角色按分支注册，不作为授权；IX `(S,analysis_version_id,state,ordinal)` |
+| `text_analysis_sentences` / L | `analysis_version_id,anchor_unit_id uuid NN`；`ordinal integer NN` 锚定单元内句序；`sentence_identity_digest bytea NN`；`language varchar(35) NN`；`schema_version integer NN`；`spans jsonb NN` | UQ `(S,analysis_version_id,sentence_identity_digest)`及`(S,analysis_version_id,anchor_unit_id,ordinal)`；spans非空有序数组，含unit_id/start/end；digest32字节、ordinal/schema正；IX `(S,anchor_unit_id,ordinal)` |
+
+unit快照与源字段范围长度/内容必须完全对应；枚举清单由确定性SourceAdapter冻结，空/非学习字段不造空unit。`source_locator`保存原资源字段身份及出处，不将模型输出字段改写成原书范围。token/ruby/language_spans/coverage字段保存在unit的有界annotation_payload，细节唯一见专题；跨unit句子允许多个spans，服务校验同分析/语义流、顺序、字素及所有引用。读取某unit相关句子可从token的sentence_id集合按PK批取，非token片段用anchor与source范围查找，不默认给JSON加GIN。当前界面按句/块整体读取，无确认的逐词SQL检索需求，因此不保留物理token行。
+
+input_digest含源版本实际可学习字段及原书ruby，pipeline_digest含所有影响标注的规则/词典/schema。相同唯一身份收到不同input_digest视为源版本或协议错误，不覆盖重算；显式升级pipeline建新行。分析头source身份/输入清单不可改；任务状态/desired/selected/revision可更新，ready单元、已发布句子及其快照不可变。当前无删除代次的不可变源分支冻结0且由其实际业务根检查存在性/删除状态，不能凭0跳过校验。
+
+初始化与重投同源根锁下创建/复用分析头和Job，不在锁中运行NLP。受理前在锁外准备实际字段清单摘要，事务内核对源版本后同时建立分析头和Job；可编辑来源同时绑定已验证的实际输入快照及JobStage引用，不能在异步阶段回读当前行冒充旧revision。immutable_source只用于可完整重读的不可变版本；exam_paper_version仅接受已冻结ready卷。
+
+input_digest先冻结源字段清单；unit清单在锁外分句/分词后形成，pending单元按确定性身份有界幂等插入。unit_manifest_digest/expected_unit_count在完整核验前均NULL；完整核验、fence复核后原子首次设置，禁止先写0/假摘要或提前发布unit。只有已知无学习字段时数量才为0。实际计算在锁外，提交共锁源根→分析头→涉及unit，并验证JobStage generation/fence、已冻结源输入和当前删除代次/权限。file_snapshot旧revision可从自己的受理快照恢复历史分析，不得选为新revision当前标注；immutable_source按确切版本复核。发布组原子提交unit及完整句子，局部成功不伪装全书ready，进度由封存清单明细聚合。
+
+desired与selected分别表示最新选用意图和当前可读版本，均在同源根锁下维护。新请求清旧desired、设新desired并CAS头revision；完成回调只有仍为desired的行才可清旧selected、设新selected。旧任务不能自己重设desired，故A旧pipeline晚于B完成不覆盖B；B失败保留既有selected，重选必须显式操作。切换涉及的头按ID排序加锁，GC不得直接清除desired/selected或仍被任务引用的头；源版本退役/删除时先在源根锁内清选用意图/当前标记、封存分析并停止任务，再按实际剩余引用判断GC，不能让旧版本标记导致永久保留。旧页面仍按原analysis_id读取有权旧版。
+
+输入快照引用按本人/用途/大小及完整摘要验证；源根→分析头→FileObject共锁新增引用和GC，受理前的JobStage引用同样计入保留，业务只经已授权标注投影读取。输入仍被分析或任务引用时不按TTL删除，不开放通用快照下载。
+
+反向GC以analysis头的source_kind/resource_id/version索引查归属；sentence的spans、token.sentence_id与source_locator按注册JSON路径遍历。删除/改源/发布使用共同业务根，其他成品引用旧句/单元时纳入GC；独立收藏需留正文则建立自己的获权快照及标注，不能以标注快照恢复已失权原书。库/owner及头-单元-句子的跨表一致性由服务校验，不能依赖单行CHECK或JSON内容证明。
 
 ## 3. 小说、课本和阅读记录
 
@@ -416,7 +433,7 @@ UQ `(S,exam_session_id,idempotency_key_hash)`；IX `(S,usage_id,status,id)`；IX
 | material_imports/upload_intents → users/libraries/目标聚合/容量预留 | 授权外层→容量根（同时涉及时global→user）→library/目标根；同用户、用途、有效意图、配额与generation | 未发布可到期；user_storage_reservations幂等释放；已引用final禁止临时TTL清理 |
 | materials/material_source_assets/script_sources → file_objects | material→paper（适用）→file；本人/合法purpose/verified final，按目标动作签名 | 解除材料引用不自动删除文件；复用新材料/听力/其他业务引用均需复核 |
 | material_source_units/material_content_blocks/三类manifest → material_revisions | material根；同owner/library/material/revision/type，parent无环 | 发布后不可变；有书签/结果/冻结快照/在途任务引用就保留必要范围 |
-| material_analysis_versions/material_sentences/material_tokens → material_content_blocks | material根；同内容版本、合法scalar与原文范围 | 重新分句仅新分析，旧sentence不改义；无引用分析才可回收 |
+| text_analysis_versions/units/sentences → 注册来源版本/字段 | SourceAdapter规定的源根→分析头→单元；同scope/版本、合法scalar与完整spans | 原文/源ruby与派生标注版本分开；新分析不改旧句，GC包括成品引用和JSON路径 |
 | textbook_content_node_question_links/exam_items → exercise_questions/question_grading_bases | material→paper（适用）→公共题根；同scope/不可变版本/合法用途 | 已提交attempt/冻结场次保留题面、依据及必要题图，不靠删材料级联 |
 | listening候选/绑定 → 脚本版本/Stimulus/Item | material→paper→草稿版本；generation、expected_revision及同卷全体关系 | 旧run只历史，人工确认不被迟到覆盖；已冻结绑定不能原地换脚本/音频 |
 | synthesis_specs/binding策略 → 私有音频/manifest | material→paper→binding→音频根；本人、严格规格、验证完成 | 持久成功不得按Redis TTL删；历史场次引用保留，允许清理无引用失败产物 |

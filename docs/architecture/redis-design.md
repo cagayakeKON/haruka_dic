@@ -50,6 +50,7 @@ JSON 副本统一信封：`schema_version: integer=1`、`cached_at_ms: int64`、
 | R16 | `global-word:coalesce:<h>` | String JSON | 15s | 公共目录生成入口；同 R15，不自动接管供应商调用 |
 | R17 | `rate:<action>:<dimension>:<h>:<window>` | Hash | 固定窗口末尾 + 1s | 原子计数服务；阈值按入口策略，失败关闭受保护调用 |
 | R18 | `u:<u>:<a>:connections:<kind>` | ZSET | 2min；每个成员租期 60s | WS/SSE 网关；心跳建议 20s，原子清理过期成员/限额 |
+| R19 | `u:<u>:client:l:<l>:nlp-unit:<analysis_id>:<unit_id>:<ver>` | String JSON | 30min，完整信封≤256KiB | 标注读取服务只填充已提交ready单元；miss回PG，不重调OCR/AI |
 
 R01 的过期绝不单独决定会话有效；即使索引仍在也要检查 R02 和 PG。R04 任一存在过的刷新历史缺失时不能仍允许该会话刷新；R02 保存 `used_digest_count`，与 Hash 历史条目数量（不含两个公共字段）及版本核对失败则要求重新登录。历史摘要在会话内不独立提前淘汰；建议限制每会话最多 4096 次刷新，达到上限撤销该会话并要求重新登录，不静默删旧摘要。此上限为运行保护初值，不是用户登录次数产品限制。
 
@@ -99,6 +100,8 @@ R04 除 `schema_version/updated_at_ms` 两个公共字段外，每个 Hash field
 payload 只含 `settings_revision`、`timezone`、`ui_locale`、`display_preferences`、`reading_preferences`、`speech_preferences`、`query_context_budget_tokens`、`model_bindings`（provider/model/capability/版本及 credential_id 引用）。这是user_extensions设置字段组及模型/声音子表的白名单读取投影；key的ver和信封source_revision都取settings_revision，资料/学习组变化不复用为设置版本，preferences由对应有限列组装，不额外增加一套PG列。不存密文 Key、可恢复 Key、头像字节、人口字段或能力探测原文。合表不扩大缓存载荷，资料/学习语言不顺带放进R06；三个组的事务分别发出对应失效事件。模型调用必须从 PG 获取当前凭据状态/版本，在当前调用的内存中解密；本缓存不能证明 Key 仍有效。
 
 ## 4. 学习结果、媒体与幂等字段
+
+DESIGN23 R19是[统一NLP](text-analysis.md)中一个不可变unit及其有界句子投影的热点副本：`analysis_version_id/unit_id/source_ref/source_version/field_identity/text_digest/source_ruby_digest/pipeline_version/annotation_schema_version/annotation_payload/sentences`。`ver`取发布schema版本，analysis/unit ID固定不可变结果；采用私有信封，值内身份与键逐项复核。只存当前字段的有界快照/标注，不塞整章、整张卡片、10k上下文或音频；超信封上限跳过Redis。状态pending/failed/unsupported从PG/任务投影读取，不能缓存为ready。每次访问先验证当前源权限、字段可见性及所有跨unit句子spans；试卷不得通过该缓存返回隐藏字段或全卷隐藏标注统计。selected当前指针及清单覆盖仍读PG，不因旧热键存在自动切回旧分析。原文编辑/删除/撤权禁止旧键可见，Outbox只加速清理；本机清除或Redis过期只回源，同文本不同owner不共享R19。
 
 DESIGN22 R07查阅键纳入[ContextPlan实际语境](../contracts/query-context.md)，R08 provenance返回安全的context_summary及本人有权快照引用，R09配置摘要包含展开后的模型适配契约。R06设置投影按settings_revision更新查询预算；不存私有长篇上下文或TTS字节。R07～R11若用于不属于library的本人输入，模板中的`l:<l>`整体替换为固定`personal`分段；仍必须保留u/client，禁止空library或owner通配。持久模型下线不删除既有R08/R09，命中始终另验来源。
 

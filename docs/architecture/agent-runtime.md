@@ -6,6 +6,8 @@
 | 文档状态 | Draft v0.4，2026-09-22，加入 RBAC 执行边界，未实现 |
 | 依据 | [PRD](../product/overview.md)、[架构总览](overview.md)、[认证与隔离](authentication.md)、[管理后台与 RBAC](authorization.md) |
 
+DESIGN23输出发布在同一业务事务持久化完整Explanation/Card及[基础NLP](text-analysis.md)任务Outbox；NLP是确定性后处理，不进入LLM循环，不创建AiRun/供应商用量。失败只重试标注，不重放已完成AI；流式delta不成为正式标注来源。视觉识别成品与ruby映射按[提取契约](../contracts/source-extraction.md)发布。
+
 ## 1. 框架与职责
 
 应用内学习 Agent 使用 **Pydantic AI**。首版推荐以核心 Agent、类型化工具、依赖注入和 Pydantic 输出模型组成运行层，覆盖词句解释、语言查询、薄弱点诊断、出题、试卷结构化与主观评分。Agent是后端共享执行能力，不是用户端聊天功能；不建设独立Agent页面或“问学习Agent”入口。各业务服务提供具体动作与受限上下文，前端在对应功能内展示结果。

@@ -260,8 +260,7 @@
   margin: 0;
   line-height: 1.8;
 }
-.entry-detail blockquote,
-.answer-card blockquote {
+.entry-detail blockquote {
   background: var(--blue-soft);
   border-left: 3px solid var(--blue);
   margin: 0;
@@ -564,26 +563,6 @@
   border-radius: 18px 18px 6px 18px;
   overflow-wrap: anywhere;
 }
-.answer-card {
-  border: 1px solid var(--line);
-  background: var(--paper);
-  border-radius: 18px 18px 18px 6px;
-  padding: 18px;
-  margin-bottom: 24px;
-  overflow-wrap: anywhere;
-}
-.answer-card .collection-caption {
-  margin: 0 0 12px;
-}
-.answer-card h2 {
-  font-size: 22px;
-  margin: 0 0 12px;
-  line-height: 1.5;
-}
-.answer-card p {
-  line-height: 1.85;
-  margin: 12px 0;
-}
 .query-composer {
   position: sticky;
   bottom: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -806,9 +785,6 @@
   }
   #desktop-app .query-prompts {
     grid-template-columns: 1fr 1fr;
-  }
-  #desktop-app .answer-card {
-    padding: 24px;
   }
 }
 @media (min-width: 900px) {

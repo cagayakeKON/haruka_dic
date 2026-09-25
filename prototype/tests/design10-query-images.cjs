@@ -47,6 +47,7 @@ const fs = require('node:fs');
       const send = page.getByRole('button', { name: '发送问题' });
       const draftImages = page.locator('[data-query-images] .query-image-tile');
       await expect(send).toBeDisabled();
+      await page.locator('[data-x=queryMode][data-id=sentence]').click();
       const chooser = page.waitForEvent('filechooser');
       await page.getByRole('button', { name: '添加图片', exact: true }).click();
       await (await chooser).setFiles([file, { ...file, name: 'second.png' }]);
@@ -106,8 +107,8 @@ const fs = require('node:fs');
       await send.click();
       await expect(draftImages).toHaveCount(0);
       await expect(page.locator('.query-question img')).toHaveCount(1);
-      await expect(page.locator('.answer-card').last()).toContainText(
-        '未生成图片回答',
+      await expect(page.locator('.query-notice').last()).toContainText(
+        '图片尚未识别',
       );
       await expect(send).toBeDisabled();
       // Paste goes through the same browser event handler; never read the user's OS clipboard.
@@ -141,8 +142,8 @@ const fs = require('node:fs');
       await expect(draftImages).toHaveCount(1);
       await expect(textarea).toHaveValue('解释：そっと');
       await send.click();
-      await expect(page.locator('.answer-card').last()).toContainText(
-        '未生成图片回答',
+      await expect(page.locator('.query-notice').last()).toContainText(
+        '图片尚未识别',
       );
       await expect(page.locator('.query-question').last()).toContainText(
         '解释：そっと',
@@ -211,7 +212,7 @@ const fs = require('node:fs');
       await expect(page.locator('.query-question')).toHaveCount(0);
       await textarea.fill('そっと 是什么意思？');
       await send.click();
-      await expect(page.locator('.answer-card')).toContainText('轻轻地');
+      await expect(page.locator('.learning-card')).toContainText('轻轻地');
       expect(requests).toEqual([]);
       results.push(
         `${platform}: file/preview/remove/image-only/mixed paste/draft/error/camera-input/logout/text-only; no upload requests`,

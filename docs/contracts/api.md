@@ -57,7 +57,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST materials/{id}/reparse、materials/{id}/analysis | reparse发布新内容版本；analysis可首次视觉转写尚无发布版本的源，或仅分析已发布正文 | 按[视觉OCR](../architecture/vision-recognition.md)明确阶段/页计划；首次OCR复核原import/read/analyze，已发布后视觉补识别/重识别需reparse+analyze；expected_revision/幂等/原件资格 |
 | GET/PUT materials/{id}/progress；GET/POST/DELETE bookmarks | 小说位置/最远位置、课本单元位置、书签；不承载考试进度 | material.read与progress/bookmark动作；只接受novel/textbook |
 | GET collections/daily-words | date与IANA timezone确定本地日，服务换算UTC半开区间；返回日期/时区、同快照total与稳定分页items，按CollectionItem.created_at/id排序，仅kind=word | collection.read、当前本人作用域；跨本去重，不以成员加入或CSV来源时间替代；非法日期/时区拒绝，无模型调用 |
-| GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind仅创建时选择（word/phrase/grammar/sentence/excerpt/answer），完整内容/笔记/标签/exercise_control/出处；卡片收藏提交card_id/card_revision/notebook_ids及必要的confirmed_target_language，服务端按[查询收藏规则](../modules/query.md)校验语言确认并重取已发布卡片保存完整快照；响应可带只读mastery/learning_revision | collection对应动作；拒绝写mastery/证据计数，不存在due/调度写入；实质学习内容变更推进版本；有成员时不得改成不匹配语言 |
+| GET/POST/PATCH/DELETE collections；GET/POST/PATCH/DELETE tags | kind仅创建时选择（word/phrase/grammar/sentence/excerpt/exercise），完整内容/笔记/标签/exercise_control/出处；卡片收藏提交card_id/card_revision/notebook_ids及必要的confirmed_target_language，服务端按[查询收藏规则](../modules/query.md)校验语言确认并重取已发布卡片保存完整快照；响应可带只读mastery/learning_revision | collection对应动作；拒绝写mastery/证据计数，不存在due/调度写入；实质学习内容变更推进版本；有成员时不得改成不匹配语言 |
 | GET/POST vocabulary-notebooks；GET/PATCH/DELETE vocabulary-notebooks/{id} | 多本名称/目标语/简介、版本与去重统计；删除本保留各类型收藏和历史 | vocabulary_notebook对应动作，self/同库；读需collection.read，写按目录依赖；非空本不切换语种 |
 | GET vocabulary-notebooks/{id}/items；POST vocabulary-notebooks/membership-changes | 稳定分页/筛选；明确add/remove/move、受控条目或冻结选择快照、所涉本expected_revision | notebook.read/update和collection.read；移动同时检查来源/目标本；不授权删除词、改掌握或复制学习进度 |
 | GET vocabulary/learning-states | 本人词的只读掌握/原因/证据版本摘要；无队列、due或下次复习 | collection.read；证据/历史明细另需practice.read和实际来源read，按本筛选需notebook.read；缺实践读取权限只给摘要，不含Attempt ID/题答/分数；不发模型请求 |
@@ -76,7 +76,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/POST diagnoses；GET diagnoses/{id} | 报告列表/详情/生成，数据范围与统计窗口 | diagnosis.read/generate+来源read |
 | POST explanations/resolve；GET materials/{id}/explanations | 有界批量的带类型来源/用途只读匹配，含材料、受控资源及手工输入；本人书内已查结果分页索引不混入无材料记录 | ai.explain+实际来源read，考试按阶段限制；不生成、不写学习事实，不返回无权条目/计数 |
 | POST explanations；GET explanations/{id}；POST {id}/feedback、cards/{id}/feedback | 明确生成/再解析→已有结果或run；完整持久结果/反馈；记录实际配置与版本 | ai.explain/feedback；Agent卡片需agent.read；按[学习结果缓存](../architecture/learning-cache.md)匹配/合并，新模型调用另验Key/上限；显式再解析使用expected_lookup_revision取得新查阅代次 |
-| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；mode=query/contextual、解释语言/可选目标语、可空材料引用；查询轮次可提交文字与有序image_refs，至少一项有效；run引用与流 | agent.read/use/delete，每工具独立授权；含图轮次检查本人视觉能力及全部附件 |
+| GET/POST agent/threads；GET/DELETE {id}；POST {id}/runs | 分页历史/新轮次/删除；mode=query/contextual、解释语言/可选目标语、可空材料引用；查询轮次提交query_task及文字与有序image_refs，至少一项有效；run引用与流 | agent.read/use/delete，每工具独立授权；含图轮次检查本人视觉能力及全部附件 |
 | POST agent/threads/{id}/image-upload-intents；POST agent/threads/{id}/image-upload-intents/{intent_id}/complete | 仅query_image用途；当前会话的临时上传、真实解码/规范方向/去元数据/重编码后发布不可变图片 | agent.use、本人query会话；复用受控上传发布，不接受任意FileObject或URL |
 | GET agent/threads/{id}/images/{image_id}/content；DELETE agent/threads/{id}/images/{image_id} | 获取私有图片；删除未绑定的草稿附件，已绑定消息的附件返回冲突 | 读取需agent.read；草稿移除需agent.use及本人会话；逐次鉴权，private/no-store，正式会话删除与GC另行处理 |
 | POST speech/requests；GET speech/assets/{id}/manifest | 来源/模型/声音/格式→本人请求或已有音频；区分private/global_word，后者按标准词条/读音/profile合并 | speech.generate/play及来源read；试卷隐藏听力稿不能作为任意客户端文本提交，须走试卷专用生成入口；ExamListeningAudioBinding不从此通用manifest端点交付，有限场次只走PlayAttempt；global_word生产者Job/Key/模型用量不返回给其他等候者，缺失不自动换用户Key |
@@ -127,6 +127,6 @@ API-01：每个路由映射权限/公共例外并测越权；API-02：分页/版
 
 查询上传前读取公开能力配置中的 `query_image_policy`（允许格式、单张字节/像素上限、每轮张数/总字节和临时保留期）；具体数值由部署发布，原型限制不是正式契约默认值。上传意图请求只含受限文件描述与用途上下文，owner来自认证，会话来自路径；complete按临时对象发布协议验证实际字节后返回 `attachment_id/revision/status`，只有ready可发送。
 
-`POST agent/threads/{id}/runs` 的query输入包含可空 `text` 和有序 `image_refs: [{attachment_id, revision}]`；纯图允许，二者皆空拒绝。不得同时接受base64、外链URL或客户端指定的final对象路径；引用必须全部ready、属于当前用户/当前会话/query_image用途，已绑定其他轮次的草稿不能重复绑定。重放同幂等键先返回原轮次结果，同键文字/图片版本/顺序或模型配置不同则冲突。新提交在共同会话锁下冻结消息引用，与AiRun/必要Outbox一致提交，删除会话与迟到完成遵守代次保护。
+`POST agent/threads/{id}/runs` 的query输入必填 `query_task: word|sentence|grammar|exercise`，包含可空 `text` 和有序 `image_refs: [{attachment_id, revision}]`；纯图仅在sentence/grammar/exercise任务下允许，word附图拒绝并提示选择对应任务，二者皆空拒绝。服务端验证实际输入/结果的语言范围，任务枚举不能让非语言内容绕过范围校验；只发布WordCard/SentenceCard/GrammarCard/ExerciseCard，超范围或未识别不返回可收藏卡片。不得同时接受base64、外链URL或客户端指定的final对象路径；引用必须全部ready、属于当前用户/当前会话/query_image用途，已绑定其他轮次的草稿不能重复绑定。重放同幂等键先返回原轮次结果，同键任务/文字/图片版本/顺序或模型配置不同则冲突。新提交在共同会话锁下冻结消息引用，与AiRun/必要Outbox一致提交，删除会话与迟到完成遵守代次保护。
 
 附件不合格、超限或未就绪用具体字段/状态错误拒绝整轮；缺视觉能力或本人Key不丢图转纯文字。成功JSON、分页与错误沿用统一返回契约，图片内容为鉴权的原生二进制响应；消息投影仅返回受控附件引用与必要显示元数据，不回传存储键、EXIF或供应商签名。完整流程和验收由[查询模块](../modules/query.md)维护。

@@ -4,7 +4,7 @@
 
 ## 1. 范围、入口与权限
 
-P0覆盖词/短语/语法/句/摘录/回答卡片收藏、笔记/标签/筛选/基础搜索/重复合并、[多个单词本](vocabulary-notebooks.md)、练习结果驱动的自动掌握、单图词表识别、教材原题作答、逐题评分和证据诊断。用户端不提供词汇复习、每日队列、到期或SRS；新题生成、全部错题自动留档/收藏及针对性出题由[AI习题与错题库](ai-exercises.md)负责。匹配/排序/听写、扩展写作及人工改分/申诉裁决仍按PRD后续范围。
+P0覆盖词/短语/语法/句/摘录/习题卡片收藏、笔记/标签/筛选/基础搜索/重复合并、[多个单词本](vocabulary-notebooks.md)、练习结果驱动的自动掌握、单图词表识别、教材原题作答、逐题评分和证据诊断。用户端不提供词汇复习、每日队列、到期或SRS；新题生成、全部错题自动留档/收藏及针对性出题由[AI习题与错题库](ai-exercises.md)负责。匹配/排序/听写、扩展写作及人工改分/申诉裁决仍按PRD后续范围。
 
 新增权限草案为 `client.vocabulary.photo.import`、`client.practice.generate`、`client.practice.grade.request`、`client.practice.review.request`、`client.practice.mistake.read/favorite`、`client.diagnosis.read/generate`（斜线表示独立代码）。已有收藏 CRUD、练习 read/start/answer、Agent、解释和 TTS 权限继续独立检查；新增代码由中央目录登记，全部范围为 self。页面“能打开”不意味着有全部模型调用/写入能力。
 
@@ -16,9 +16,9 @@ P0覆盖词/短语/语法/句/摘录/回答卡片收藏、笔记/标签/筛选/�
 
 #### 创建与来源
 
-入口包括阅读选区、解释卡、Agent/[查询](query.md)卡、教材/练习解析、CSV 和拍照预览。kind为word/phrase/grammar/sentence/excerpt/answer；GrammarCard整体收藏为grammar，AnswerCard为answer，保存完整版本化载荷与合法来源，不硬转为word。前四类由后端验证业务引用，重取选区/卡片正文并保存上下文；来源协议以 [出处协议](../contracts/content-locator.md) 为准。确实由用户在对话中输入的词标记 agent 来源并保存解释快照，不能虚构材料锚点。CSV/照片无需材料也能创建。
+入口包括阅读选区、解释卡、Agent/[查询](query.md)卡、教材/练习解析、CSV 和拍照预览。kind为word/phrase/grammar/sentence/excerpt/exercise；GrammarCard整体收藏为grammar，ExerciseCard为exercise，保存完整版本化载荷与合法来源，不硬转为word。exercise只收藏已校验的语言题目/订正载荷，查询批改不自动成为有效作答或错题证据；无通用answer类型。所有有业务引用的类型均由后端验证引用，重取选区/卡片正文并保存上下文；来源协议以 [出处协议](../contracts/content-locator.md) 为准。确实由用户在对话中输入的词标记 agent 来源并保存解释快照，不能虚构材料锚点。CSV/照片无需材料也能创建。
 
-创建表单包含kind、显示文本、目标语、lemma/读音/释义（可空）、笔记、标签，各类型收藏可选择多个本人同语种词本；不提供手动掌握状态。默认kind由选区建议，用户可改；多语混排要求确认当前目标语。词典形是建议数据，用户编辑后不会被后续AI静默改回；用于搜索/匹配的规范化值与原始显示文本分开。
+手动创建表单包含kind、显示文本、目标语、lemma/读音/释义（可空）、笔记、标签；习题只从已校验的学习卡片收藏，不在手动类型选项中。各类型收藏可选择多个本人同语种词本，不提供手动掌握状态。默认kind由选区建议，用户可在手动支持的类型间修改；多语混排要求确认当前目标语。词典形是建议数据，用户编辑后不会被后续AI静默改回；用于搜索/匹配的规范化值与原始显示文本分开。
 
 点击保存带 Idempotency-Key，服务端事务保存 CollectionItem 与来源快照，成功返回稳定 ID 和 revision。保存中禁止重复创建；网络结果未知时查询/重试同一幂等键，不能先显示“已收藏”然后永久丢失。完全相同的既有来源可以提示已收藏，不把相同 lemma 的不同出处自动折叠成一条。
 

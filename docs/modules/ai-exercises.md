@@ -68,6 +68,8 @@ Pydantic AI 输出题目、选项/空位、答案/rubric、考察点、错误针
 
 用户可选择“重做原题”或“生成变式”：重做不调用生成模型，读取冻结原题版本；变式需要 AI 生成权限并明确发起供应商调用。生成结果展示所依据的错题/考察点数量和来源类别，不暴露其他用户、隐藏材料或完整 Prompt。系统不会在后台自动生成，也不会因为新错题出现就启动任务。
 
+查询得到的ExerciseCard可按收藏来源显式选择，但其粘贴作答/AI建议不是MistakeOccurrence或有效掌握证据，不混入“当前错题”。已有正式题目的引用继续逐项验证；生成和真正作答沿用本模块快照与PracticeSession流程，不因新增卡片另设评分旁路。
+
 ## 4. 前端职责
 
 Flutter 使用独立 `AiExercisesController` 管理条件、selection、生成 Job、习题集与开始动作；`MistakeLibraryController` 管理自动账本投影、筛选和收藏。二者不复用词汇复习/到期队列状态，也不把模型 Job 状态塞进单词本 controller。

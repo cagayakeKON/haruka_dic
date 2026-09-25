@@ -157,8 +157,8 @@ const fs = require('node:fs');
         .getByRole('button', { name: 'に 和 へ 有什么区别？', exact: true })
         .click();
       await page.getByRole('button', { name: '发送问题' }).click();
-      await expect(page.locator('.answer-card .collection-kind')).toHaveText(
-        '语法 · 示例',
+      await expect(page.locator('.learning-card .learning-type')).toHaveText(
+        '语法',
       );
       await expect(page.locator('.query-welcome')).toHaveCount(0);
       await expect(page.locator('#query-input')).toHaveValue('');

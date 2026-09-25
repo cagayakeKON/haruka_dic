@@ -128,7 +128,7 @@ fs.mkdirSync(output, { recursive: true });
         "に 和 へ 有什么区别？",
       );
       await page.locator("#query-input").press("Control+Enter");
-      await expect(page.locator(".answer-card")).toHaveCount(1);
+      await expect(page.locator(".learning-card")).toHaveCount(1);
       await page.locator("[data-x=saveCard]").click();
       await expect(page.getByRole("dialog")).not.toContainText(
         "English sparks",
@@ -137,14 +137,15 @@ fs.mkdirSync(output, { recursive: true });
       await expect(page.locator("[data-x=saveCard]")).toBeDisabled();
       await page.locator("#query-input").fill("天空为什么是蓝色的？");
       await page.getByRole("button", { name: "发送问题" }).click();
-      await page.locator("[data-x=saveCard]").last().click();
-      await page.locator("[data-x-form=saveCard] button[type=submit]").click();
+      await expect(page.locator(".learning-card")).toHaveCount(1);
+      await expect(page.locator(".query-notice")).toBeVisible();
+      await expect(page.locator(".query-notice [data-x=saveCard]")).toHaveCount(
+        0,
+      );
       await page.locator("[data-go=notebooks]").click();
-      await page.locator("[data-x=kind][data-id=answer]").click();
-      await expect(page.locator(".collection-row")).toHaveCount(1);
-      await page.locator("[data-x=entry]").click();
-      await expect(page.getByRole("dialog")).toContainText("蓝光比红光更容易");
-      await page.keyboard.press("Escape");
+      await expect(page.locator("[data-x=kind][data-id=answer]")).toHaveCount(
+        0,
+      );
       await page.locator("[data-x=kind][data-id=all]").click();
       checks.push(
         `${platform}: query prompts, keyboard send, language-safe full-card favorite`,

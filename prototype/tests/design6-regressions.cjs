@@ -35,8 +35,8 @@ const fs = require("node:fs");
           "翻译：夏の風がそっと頬に触れた。",
         );
         await page.locator("#query-input").press("Control+Enter");
-        await expect(page.locator(".answer-card .collection-kind")).toHaveText(
-          "句子 · 示例",
+        await expect(page.locator(".learning-card .learning-type")).toHaveText(
+          "句子",
         );
         await page.locator("[data-x=saveCard]").click();
         await page

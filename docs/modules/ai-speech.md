@@ -7,8 +7,8 @@
 | 能力 | P0 | 后续 |
 | --- | --- | --- |
 | 解释 | 词、短语、句、摘录的上下文解释；母语/目标语说明；有用/不准反馈 | 高级语种插件和更复杂检索按验证结果引入 |
-| Agent / 查询 | 独立图文聊天查询、任意主题问答（Web粘贴图片、Android相册/拍照）；本人材料/收藏/错题查询、诊断、创建练习、打开已授权来源、多轮上下文 | 周计划、专门对比/错因卡为 P1；多教材能力迁移为 P2 |
-| 卡片 | WordCard、SentenceCard、GrammarCard、AnswerCard；每轮默认最多 3 张 | 独立 PhraseCard、ContrastCard、PronunciationCard、ExerciseReviewCard 等扩展按后续版本启用 |
+| Agent / 查询 | 独立语言学习查询（单词/句段/语法/语言习题）；图片用于句段翻译、语法解析或习题批改（Web粘贴、Android相册/拍照）；本人材料/收藏/错题查询、诊断、创建练习、打开已授权来源、多轮上下文 | 周计划、专门对比/错因卡为 P1；多教材能力迁移为 P2 |
+| 卡片 | WordCard、SentenceCard、GrammarCard、ExerciseCard；每轮默认最多 3 张 | 独立 PhraseCard、ContrastCard、PronunciationCard等扩展按后续版本启用 |
 | TTS | 词/句/摘录/当前章、播放/暂停/停止、0.7–1.5 倍速、句级高亮、有限预取和缓存 | 生词减速/重复、先听后显示、收藏列表朗读为 P1 |
 
 短语在首版使用 WordCard 的 `lexical_kind=phrase` 子型，保存整体义/可拆分性等字段，不遗漏短语解释；诊断使用独立结构化报告视图，并从对话链接打开，详细协议见 [诊断与练习](vocabulary-practice.md)。意图识别表不代表全部专用卡片已纳入 P0。
@@ -106,9 +106,9 @@ Agent 页面列出本人会话，提供新建、继续、删除；从阅读“�
 | WordCard | lexical_kind、词/短语、读音、词性、本语境义、可折叠其他义、2 个短例句、可选活用；短语子型增加整体/字面义、可拆分性与常用程度 | 朗读、收藏、加入AI习题选择、查看有权来源、反馈 |
 | SentenceCard | 原句、翻译、合法意群范围（每块可点开解释）、主要语法点、可选改写 | 朗读/收藏句子、展开语法卡、句译练习、来源、反馈 |
 | GrammarCard | 母语/目标语规则名、当前句主例、带标签的 2 个对比例、考察点 | 收藏完整语法、打开例句、生成习题、朗读/另存选区、来源、反馈 |
-| AnswerCard | 问题摘要、标题、完整回答正文、可选结构化要点/示例、解释语言、可空target_language、可选且验证过的来源引用、schema/revision | 收藏完整回答、追问、查看有权来源、反馈；不默认提供单词掌握/词音 |
+| ExerciseCard | 语言题面、用户作答（缺失则明确标记）、参考答案/建议订正、逐项依据、不确定性/待补充状态、目标语、经验证的来源及schema/revision；无标准答案标AI参考，不伪造确定分数 | 收藏完整习题与订正、查看来源、补充题面；不自动写作答、成绩、掌握或错题账本，正式证据沿用Practice/Exam契约 |
 
-每张卡显示类型标签，使用原生组件；朗读、收藏、出题、来源与有用/不准反馈均按各自权限和内容范围提供。卡片“收藏”保存完整结构化载荷：WordCard按lexical_kind成为word/phrase，SentenceCard为sentence，GrammarCard为grammar，AnswerCard为answer；不把组件硬塞为word。GrammarCard也可显式另选例句/摘录收藏；整体收藏和选区收藏的来源身份分开。收藏时保留已存在材料来源，不能因为入口是 Agent 而改成无出处对话。每轮默认最多 3 张，额外解释可折叠或提出继续，不偷偷生成大量卡片。
+每张卡显示类型标签，使用原生组件；朗读、收藏、出题、来源与有用/不准反馈均按各自权限和内容范围提供。卡片“收藏”保存完整结构化载荷：WordCard按lexical_kind成为word/phrase，SentenceCard为sentence，GrammarCard为grammar，ExerciseCard为exercise；不把组件硬塞为word。GrammarCard也可显式另选例句/摘录收藏；整体收藏和选区收藏的来源身份分开。收藏时保留已存在材料来源，不能因为入口是 Agent 而改成无出处对话。每轮默认最多 3 张，额外解释可折叠或提出继续，不偷偷生成大量卡片。
 
 应用事件使用 `accepted/progress/text_delta/tool_status/card_ready/completed/failed/cancelled`，携带 run_id、单调 sequence、schema_version 与关联 ID，完整信封以 API 契约为准。最终数据库结果是权威，SSE 中间 delta 不能直接视为持久成功。断线后按 Last-Event-ID/sequence 去重；若事件保留窗口已过，查询已授权最终快照，不补跑模型来“重放”。
 
@@ -192,7 +192,7 @@ AudioAsset/Segment 的领域状态为 `queued/generating/ready/failed/cancelled/
 | P1 PronunciationCard | 读音符号、常速/慢速 TTS、对母语者的近似发音提示；跟读评分另属 P2 |
 | P1 ExerciseReviewCard | 用户答案与参考对照、错因、相关规则/词和再练入口，引用当时作答 |
 | 后续独立 PhraseCard | 整体义、字面义、可拆分性、常用程度和例句；P0 已由 WordCard phrase 子型承载 |
-| 后续 DiagnosisCard | 诊断报告的压缩呈现并可展开；P0 使用独立结构化报告，不因新增AnswerCard而把DiagnosisCard提前纳入首版 |
+| 后续 DiagnosisCard | 诊断报告的压缩呈现并可展开；P0 使用独立结构化报告，不因语言习题卡片而把DiagnosisCard提前纳入首版 |
 
 P1生词减速/重复和收藏列表朗读通过已有manifest播放队列实现，默认改变播放安排；真正改变合成参数时仍需生成权限和明确模型调用意图。OPEN-12另行设计原始考试音频上传、转写/切段与自动绑定，它不能借现有TTS媒体接口提前开放。先听后显示只控制学习布局，不声称考试保密；P2跟读评分另外需要录音/识别/评价契约，TTS能播放不意味着能评口语。
 
@@ -206,4 +206,4 @@ P1生词减速/重复和收藏列表朗读通过已有manifest播放队列实现
 
 默认 OpenRouter 统一入口或 Gemini 官方直连、具体模型/声音/格式及调用和输出上限仍见 [待决清单](../decisions/pending.md)。官方资料确认接入方向，最终能力需要工程验证。
 
-独立查询页面、任意主题输入、卡片收藏弹窗和QRY验收以[查询模块](query.md)为准；沿用同一Agent运行层和本人凭据，不新增模型执行框架。
+独立查询页面、仅语言相关的图文任务、卡片收藏弹窗和QRY验收以[查询模块](query.md)为准；沿用同一Agent运行层和本人凭据，不新增模型执行框架。

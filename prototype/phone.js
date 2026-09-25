@@ -829,6 +829,8 @@
     onboarding,
   };
   function render() {
+    const pageFocus =
+      renderedRoute === s.route ? focusSelector(document.activeElement) : '';
     const hadSearch = !!root.querySelector('.head-search');
     const previousSearch = root.querySelector('#tab-search');
     const searchHadFocus = previousSearch === document.activeElement;
@@ -987,6 +989,8 @@
     } else if (previousSheet && modalReturnFocus) {
       root.querySelector(modalReturnFocus)?.focus({ preventScroll: true });
       modalReturnFocus = '';
+    } else if (pageFocus) {
+      root.querySelector(pageFocus)?.focus({ preventScroll: true });
     }
     if (renderedRoute !== s.route || restoreHeadingFocus) {
       const heading = root.querySelector('.mobile-auth h1, .root-head h1');
@@ -1007,7 +1011,7 @@
       root
         .querySelector('[data-action="openTabSearch"]')
         ?.focus({ preventScroll: true });
-    extras.restoreMaterialFocus();
+    extras.restoreListFocus();
     history.replaceState(
       { ...history.state, harukaMaterial: s.chosenMaterial },
       '',
@@ -1016,7 +1020,7 @@
   }
   function setHashRoute() {
     const hash = decodeURIComponent(location.hash.slice(1));
-    const route = hash.split('?')[0];
+    const route = hash.split('?')[0] || 'library';
     if (!views[route]) return;
     if (route === 'examRun' && examPaused) {
       history.replaceState(

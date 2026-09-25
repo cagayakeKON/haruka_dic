@@ -30,7 +30,7 @@
 
 | 范围 | 唯一方法/规则 | 实施验收 |
 | --- | --- | --- |
-| 产品视觉、组件、动效与文案 | [产品设计语言：晴空频率](../product/design-language.md)、[手机/电脑HTML原型](../../prototype/README.md)、[Flutter适配](../engineering/flutter.md) | DESIGN-01～DESIGN-06为正式页面检查项，随各页面切片验证；HTML原型已按新视觉重建，Flutter尚未实现，不替代FLT/UIE或业务验收 |
+| 产品视觉、组件、动效与文案 | [产品设计语言：晴空频率](../product/design-language.md)、[手机/电脑HTML原型](../../prototype/README.md)、[Flutter适配](../engineering/flutter.md) | DESIGN-01～DESIGN-06为正式页面检查项，随各页面切片验证；HTML原型已按新视觉重建，DESIGN11的导航/收藏/空态局部证据见[体验优化](reviews/2026-09-25-prototype-experience.md)，Flutter尚未实现，不替代FLT/UIE或业务验收 |
 | 目录、依赖与公共服务 | [项目结构](../architecture/project-structure.md)、[架构](../architecture/overview.md) | STR/API/DAT，依赖方向与真实事务/隔离 |
 | 后端模块、统一返回/异常和多语言边界 | [后端手册](../engineering/backend.md)、[返回契约](../contracts/api-responses.md) | STR/SCF与API-07～API-10；真实路由/生成模型一致、框架异常/流式例外、语言和安全参数 |
 | 建表、时间字段与无外键隔离 | [数据库规范](../engineering/database.md) | DB-01～DB-12；结构/字典、时间写入、双账号与逻辑关联竞争、迁移证据，按已交付范围执行 |

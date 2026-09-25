@@ -37,6 +37,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   let preparingImages = false;
   let imageEpoch = 0;
   let queryPicker = null;
+  let collectionFocusFallback = "";
   const imageUrls = new Set();
   function releaseImage(url) {
     URL.revokeObjectURL(url);
@@ -313,17 +314,27 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   connect();
 
   function row(w) {
-    return `<article class="collection-row"><div class="collection-copy"><span class="collection-kind">${e(kinds[w.kind] || "单词")}</span><strong>${e(w.word)}</strong>${w.reading ? `<small>${e(w.reading)}</small>` : ""}<p>${e(w.meaning)}</p></div><div class="collection-row-meta"><span>${e(w.kind === "word" ? w.mastery || "尚无有效证据" : w.source)}</span><button class="text-btn" type="button" data-x="entry" data-id="${w.id}" aria-label="查看 ${e(w.word)}">查看 ${I("chevron")}</button></div></article>`;
+    return `<article class="collection-row"><button class="collection-row-open" type="button" data-x="entry" data-id="${w.id}" aria-label="查看 ${e(w.word)}"><span class="collection-copy"><span class="collection-kind">${e(kinds[w.kind] || "单词")}</span><strong>${e(w.word)}</strong>${w.reading ? `<small>${e(w.reading)}</small>` : ""}<span class="collection-meaning">${e(w.meaning)}</span></span><span class="collection-row-meta"><span>${e(w.kind === "word" ? w.mastery || "尚无有效证据" : w.source)}</span><span class="collection-open-label">查看 ${I("chevron")}</span></span></button></article>`;
+  }
+  function emptyCollection() {
+    if (s.collectionSearch.trim() || s.collectionKind !== "all")
+      return `<div class="empty"><strong>没有匹配的收藏</strong><p>${s.collectionSearch.trim() ? `没有找到“${e(s.collectionSearch.trim())}”相关内容。` : `当前单词本中还没有${e(kinds[s.collectionKind])}。`}</p><button class="secondary" type="button" data-x="resetCollectionFilters">清除搜索与筛选</button></div>`;
+    return `<div class="empty"><strong>${s.selectedBook === "all" ? "还没有收藏" : "这个单词本还没有收藏"}</strong><p>从阅读或查询中收藏，也可以手动添加。</p><button class="secondary" type="button" data-x="add" data-id="empty">${I("plus")}添加收藏</button>${s.selectedBook !== "all" ? '<button class="text-btn" type="button" data-x="switch" data-id="empty">切换单词本</button>' : ""}</div>`;
+  }
+  function emptyLibrary() {
+    if (s.search.trim() || s.filter !== "all")
+      return `<div class="empty"><strong>没有匹配的材料</strong><p>${s.search.trim() ? `没有找到“${e(s.search.trim())}”相关材料。` : `材料库中还没有${e(typeLabel[s.filter])}。`}</p><button class="secondary" type="button" data-x="resetMaterialFilters">清除搜索与筛选</button></div>`;
+    return `<div class="empty"><strong>材料库还是空的</strong><p>添加一份小说、课本或试卷，开始学习。</p><button class="primary" type="button" data-go="import">${I("plus")}导入材料</button></div>`;
   }
   function notebooks() {
     const list = inBook().filter(
       (w) =>
         (s.collectionKind === "all" || w.kind === s.collectionKind) &&
-        `${w.word} ${w.meaning}`
+        `${w.word} ${w.reading || ""} ${w.meaning}`
           .toLowerCase()
-          .includes(s.collectionSearch.toLowerCase()),
+          .includes(s.collectionSearch.trim().toLowerCase()),
     );
-    return `<div class="collection-page">${mobile ? "" : `<div class="collection-heading"><h1>单词本</h1><button class="secondary" type="button" data-x="add">${I("plus")}添加</button></div>`}<div class="collection-tools"><button class="book-switcher" type="button" data-x="switch">${I("layers")}<span>${e(selected()?.title || "全部收藏")}</span>${I("chevron")}</button><button class="daily-shortcut" type="button" data-go="dailyWords">${I("clock")}每日单词${I("arrow")}</button></div>${mobile ? "" : `<form class="collection-search" data-x-form="search"><label>${I("search")}<input name="search" type="search" aria-label="搜索收藏" placeholder="搜索收藏内容" value="${e(s.collectionSearch)}"></label><button class="text-btn" type="submit">搜索</button></form>`}<div class="collection-filters" aria-label="收藏类型">${[["all", "全部"], ...Object.entries(kinds)].map(([key, label]) => `<button type="button" data-x="kind" data-id="${key}" aria-pressed="${s.collectionKind === key}">${label}</button>`).join("")}</div><div class="collection-caption"><span>${list.length} 条收藏</span><div class="collection-list-actions"><button class="text-btn" type="button" data-x="practice">生成 AI 习题 ${I("spark")}</button><button class="text-btn" type="button" data-go="csv">单词 CSV ${I("download")}</button></div></div><div class="collection-list" id="collection-list">${list.map(row).join("") || '<div class="empty"><strong>没有找到收藏</strong><p>换个词，或添加一条收藏。</p></div>'}</div></div>`;
+    return `<div class="collection-page">${mobile ? "" : `<div class="collection-heading"><h1>单词本</h1><button class="secondary" type="button" data-x="add">${I("plus")}添加</button></div>`}<div class="collection-tools"><button class="book-switcher" type="button" data-x="switch">${I("layers")}<span>${e(selected()?.title || "全部收藏")}</span>${I("chevron")}</button><button class="daily-shortcut" type="button" data-go="dailyWords">${I("clock")}每日单词${I("arrow")}</button></div>${mobile ? "" : `<form class="collection-search" data-x-form="search"><label>${I("search")}<input name="search" type="search" aria-label="搜索收藏" placeholder="搜索收藏内容" value="${e(s.collectionSearch)}"></label><button class="text-btn" type="submit">搜索</button></form>`}<div class="collection-filters" aria-label="收藏类型">${[["all", "全部"], ...Object.entries(kinds)].map(([key, label]) => `<button type="button" data-x="kind" data-id="${key}" aria-pressed="${s.collectionKind === key}">${label}</button>`).join("")}</div><div class="collection-caption"><span>${list.length} 条收藏</span><div class="collection-list-actions"><button class="text-btn" type="button" data-x="practice">生成 AI 习题 ${I("spark")}</button><button class="text-btn" type="button" data-go="csv">单词 CSV ${I("download")}</button></div></div><div class="collection-list" id="collection-list">${list.map(row).join("") || emptyCollection()}</div></div>`;
   }
   function dailyWords() {
     const words = s.words.filter(
@@ -337,9 +348,9 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         (s.filter === "all" || m.type === s.filter) &&
         `${m.title} ${m.subtitle}`
           .toLowerCase()
-          .includes(s.search.toLowerCase()),
+          .includes(s.search.trim().toLowerCase()),
     );
-    return `<div class="collection-page material-library">${mobile ? "" : `<div class="collection-heading"><h1>材料库</h1><button class="primary" type="button" data-go="import">${I("plus")}导入材料</button></div>`}<div class="collection-library-tools"><div class="collection-filters" aria-label="材料类型">${[["all", "全部"], ...Object.entries(typeLabel)].map(([key, label]) => `<button type="button" data-filter="${key}" aria-pressed="${s.filter === key}">${label}</button>`).join("")}</div>${mobile ? "" : `<label class="search">${I("search")}<input type="search" data-input="search" aria-label="搜索材料" placeholder="搜索标题或语言" value="${e(s.search)}"></label>`}</div><div class="collection-caption"><span>${list.length} 份材料</span>${mobile ? '<button class="text-btn" type="button" data-x="tasks">任务进度</button>' : "<span>最近更新</span>"}</div><div class="direct-material-list" id="material-list">${list.map((m) => `<article class="direct-material"><button class="direct-material-main" type="button" data-material="${m.id}"><span class="cover ${m.tone}" aria-hidden="true">${e(m.cover)}</span><span class="direct-material-copy"><strong>${e(m.title)}</strong><small>${e(m.subtitle)}</small>${m.demoJob ? progress(m) : `<span class="collection-kind">${e(status(m))}</span>`}</span>${I("chevron")}</button><button class="material-details-button" type="button" data-x="materialActions" data-id="${m.id}" aria-label="更多：${e(m.title)}" aria-haspopup="dialog" title="更多操作">${I("more")}</button></article>`).join("") || '<div class="empty">没有找到材料</div>'}</div>${mobile ? `<div class="floating-action"><button class="primary" type="button" data-go="import">${I("plus")}导入材料</button></div>` : ""}</div>`;
+    return `<div class="collection-page material-library">${mobile ? "" : `<div class="collection-heading"><h1>材料库</h1><button class="primary" type="button" data-go="import">${I("plus")}导入材料</button></div>`}<div class="collection-library-tools"><div class="collection-filters" aria-label="材料类型">${[["all", "全部"], ...Object.entries(typeLabel)].map(([key, label]) => `<button type="button" data-filter="${key}" aria-pressed="${s.filter === key}">${label}</button>`).join("")}</div>${mobile ? "" : `<label class="search">${I("search")}<input type="search" data-input="search" aria-label="搜索材料" placeholder="搜索标题或语言" value="${e(s.search)}"></label>`}</div><div class="collection-caption"><span>${list.length} 份材料</span>${mobile ? '<button class="text-btn" type="button" data-x="tasks">任务进度</button>' : "<span>最近更新</span>"}</div><div class="direct-material-list" id="material-list">${list.map((m) => `<article class="direct-material"><button class="direct-material-main" type="button" data-material="${m.id}"><span class="cover ${m.tone}" aria-hidden="true">${e(m.cover)}</span><span class="direct-material-copy"><strong>${e(m.title)}</strong><small>${e(m.subtitle)}</small>${m.demoJob ? progress(m) : `<span class="collection-kind">${e(status(m))}</span>`}</span>${I("chevron")}</button><button class="material-details-button" type="button" data-x="materialActions" data-id="${m.id}" aria-label="更多：${e(m.title)}" aria-haspopup="dialog" title="更多操作">${I("more")}</button></article>`).join("") || emptyLibrary()}</div>${mobile && s.materials.length ? `<div class="floating-action"><button class="primary" type="button" data-go="import">${I("plus")}导入材料</button></div>` : ""}</div>`;
   }
   function tasks() {
     return `<div class="task-content"><p class="collection-caption" data-connection>${connection === "connected" ? "进度已连接" : "等待进度连接"}</p>${s.materials
@@ -544,7 +555,10 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         refreshQueryAttachments();
         root.querySelector("#query-input")?.focus({ preventScroll: true });
       }
-      if (key === "switch") show("switchBook");
+      if (key === "switch") {
+        if (value === "empty") collectionFocusFallback = "switch";
+        show("switchBook");
+      }
       if (key === "chooseBook") {
         s.selectedBook = value;
         close();
@@ -573,6 +587,24 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
       }
       if (key === "editEntry") show("editEntry");
       if (key === "organizeEntry") show("entryBooks");
+      if (key === "resetCollectionFilters" || key === "resetMaterialFilters") {
+        const collection = key === "resetCollectionFilters";
+        if (collection) {
+          s.collectionSearch = "";
+          s.collectionKind = "all";
+        } else {
+          s.search = "";
+          s.filter = "all";
+        }
+        render();
+        root
+          .querySelector(
+            collection
+              ? '[data-x="kind"][data-id="all"]'
+              : '[data-filter="all"]',
+          )
+          ?.focus({ preventScroll: true });
+      }
       if (key === "kind") {
         s.collectionKind = value;
         render();
@@ -585,7 +617,10 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         s.practicePreview = false;
         go("exerciseBuilder");
       }
-      if (key === "add") show("addEntry");
+      if (key === "add") {
+        if (value === "empty") collectionFocusFallback = "add";
+        show("addEntry");
+      }
       if (
         ["materialActions", "materialDetails", "deleteMaterial"].includes(key)
       ) {
@@ -858,7 +893,22 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     }
     return false;
   }
-  function restoreMaterialFocus() {
+  function restoreListFocus() {
+    if (s.modal) return;
+    if (collectionFocusFallback) {
+      // Successful creation or switching can remove the original empty-state CTA.
+      const target =
+        root.querySelector(
+          `[data-x="${collectionFocusFallback}"][data-id="empty"]`,
+        ) ||
+        root.querySelector(
+          collectionFocusFallback === "add"
+            ? `[data-x="entry"][data-id="${CSS.escape(s.selectedWord)}"]`
+            : ".book-switcher",
+        );
+      target?.focus({ preventScroll: true });
+      collectionFocusFallback = "";
+    }
     if (deletedFocusIndex === null || s.modal) return;
     const rows = root.querySelectorAll(".material-details-button");
     const target =
@@ -874,7 +924,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   return {
     resetQueryImages,
     guardMaterialRoute,
-    restoreMaterialFocus,
+    restoreListFocus,
     notebooks,
     dailyWords,
     query,

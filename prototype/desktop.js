@@ -947,7 +947,7 @@
       modalReturnFocus = "";
     } else if (samePage && focused)
       root.querySelector(focused)?.focus({ preventScroll: true });
-    extras.restoreMaterialFocus();
+    extras.restoreListFocus();
     renderedRoute = s.route;
     history.replaceState(navigationState(), "", pageHash());
     root.querySelectorAll(".table-wrap").forEach((table) => {

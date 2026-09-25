@@ -49,8 +49,9 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion, novel }) => {
       return clearToolbar();
     const text = plain(range.cloneContents()).trim();
     if (!text) return clearToolbar();
+    const inPanel = !!start.closest("[data-reader-panel]");
     const source =
-      s.modal === "selectionQuery"
+      s.modal === "selectionQuery" || inPanel
         ? "查询结果"
         : s.modal === "entryDetail"
           ? "收藏详情"
@@ -82,6 +83,7 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion, novel }) => {
       source,
       route: s.route,
       modal: s.modal,
+      panel: inPanel,
       epoch,
       range: range.cloneRange(),
       element: start,
@@ -258,6 +260,7 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion, novel }) => {
             route: selected.route,
             offset: selected.offset,
             modal: selected.modal,
+            panel: selected.panel,
             scopeIndex: [
               ...host().querySelectorAll("[data-study-text]"),
             ].indexOf(selected.element),
@@ -504,7 +507,16 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion, novel }) => {
       textbookItem:
         ".stack > p:not(.step-caption),.row-wrap strong,.row-wrap small,.textbook-word strong,.textbook-word small",
     };
-    const selector = s.modal ? modalSelectors[s.modal] : selectors[s.route];
+    const selector = s.modal
+      ? modalSelectors[s.modal]
+      : [
+          selectors[s.route],
+          novel.panelActive()
+            ? "[data-reader-panel] .learning-card-content"
+            : "",
+        ]
+          .filter(Boolean)
+          .join(",");
     if (!selector) return;
     host()
       .querySelectorAll(selector)

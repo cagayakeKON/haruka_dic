@@ -1,0 +1,193 @@
+/* Desktop reading workspace: columns belong to the page, never a modal overlay. */
+#desktop-app .desktop-screen[data-page="novel"] {
+  max-width: 2000px;
+  margin-inline: 0;
+  padding-inline: clamp(20px, 2.2vw, 72px);
+}
+.novel-workspace {
+  max-width: 1320px;
+  margin-inline: auto;
+}
+.novel-workspace.has-analysis {
+  max-width: none;
+}
+#desktop-app .reader-shell {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+#desktop-app .reader-main {
+  min-width: 0;
+}
+#desktop-app .reading-paper {
+  max-width: none;
+  margin: 0;
+  padding: clamp(24px, 2.5vw, 48px);
+}
+#desktop-app .reading-paper .prose {
+  max-width: 42em;
+  margin-inline: auto;
+}
+#desktop-app .reader-shell > .chapter-nav {
+  display: none;
+}
+#desktop-app .chapter-trigger {
+  display: inline-flex;
+}
+#desktop-app .chapter-nav .novel-chapter-row > .icon-btn {
+  width: 40px;
+  flex: 0 0 40px;
+  padding: 8px;
+}
+#desktop-app .chapter-nav .novel-chapter-row > button:first-child {
+  font-size: 14px;
+  color: var(--ink);
+}
+#desktop-app .chapter-nav .novel-chapter-row small {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.reader-analysis-panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.reader-analysis-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.reader-analysis-panel h2 {
+  font-size: 19px;
+  margin-top: 4px;
+}
+.reader-analysis-body {
+  padding: 24px;
+  min-width: 0;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.reader-analysis-body:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -3px;
+}
+.reader-analysis-body .selection-query-origin {
+  margin-block: 16px;
+  font-size: 13px;
+}
+.reader-analysis-body .learning-card {
+  margin-block: 16px 0;
+}
+.reader-analysis-body .learning-title {
+  font-size: 21px;
+}
+.reader-analysis-empty {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  color: var(--muted);
+  padding-block: 20px;
+}
+.reader-analysis-empty > svg {
+  width: 28px;
+  height: 28px;
+  color: var(--blue);
+}
+.reader-analysis-empty h3 {
+  color: var(--ink);
+  font-size: 18px;
+}
+#desktop-app [data-reader-panel] .selection-player,
+#desktop-app [data-reader-playback] .selection-player {
+  position: static;
+  inset: auto;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  margin-top: 20px;
+  box-shadow: none;
+}
+#desktop-app [data-reader-playback]:empty {
+  display: none;
+}
+.reader-analysis-panel.is-entering {
+  animation: reader-panel-enter 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+@keyframes reader-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (min-width: 1180px) {
+  #desktop-app .reader-shell.has-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  }
+  .reader-analysis-panel {
+    position: sticky;
+    top: 24px;
+  }
+  .reader-analysis-body {
+    overflow-y: auto;
+    max-height: calc(100dvh - 260px);
+    min-height: 280px;
+    overscroll-behavior: contain;
+  }
+}
+@media (min-width: 1600px) {
+  #desktop-app .reader-shell {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  #desktop-app .reader-shell.has-panel {
+    grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 420px);
+  }
+  #desktop-app .reader-shell > .chapter-nav {
+    display: block;
+    position: sticky;
+    top: 24px;
+  }
+  #desktop-app .chapter-trigger {
+    display: none;
+  }
+}
+@media (min-width: 2400px) {
+  #desktop-app .reader-shell {
+    gap: 32px;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+  #desktop-app .reader-shell.has-panel {
+    grid-template-columns: 240px minmax(0, 1fr) 460px;
+  }
+}
+@media (max-width: 639px) {
+  .reader-analysis-panel > header,
+  .reader-analysis-body {
+    padding: 20px;
+  }
+  .reader-analysis-body .learning-title {
+    font-size: 19px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-analysis-panel.is-entering {
+    animation: none;
+  }
+}
+body[data-reduce-motion="on"] .reader-analysis-panel.is-entering {
+  animation: none;
+}
+
+#desktop-app .reading-paper > .step-caption,
+#desktop-app .reading-paper > h2,
+#desktop-app .reading-paper > .reading-footer {
+  max-width: calc(var(--reader-size, 18px) * 42);
+  margin-inline: auto;
+}

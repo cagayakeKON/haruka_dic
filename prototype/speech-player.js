@@ -10,7 +10,12 @@ window.HarukaSpeechPlayer = ({ s, root, novel }) => {
     cursor,
     modalContext;
   const prepared = novel.audioCache;
-  const host = () => root.querySelector('[role="dialog"]') || root;
+  const host = () =>
+    root.querySelector('[role="dialog"]') ||
+    (playback?.mode === "single"
+      ? root.querySelector("[data-reader-panel-body]")
+      : root.querySelector("[data-reader-playback]")) ||
+    root;
   const contextKey = () =>
     `${s.signedIn}:${s.adminArea}:${s.serviceAddress}:${s.route}:${s.chosenMaterial}:${s.route === "novel" ? s.novelChapter : ""}`;
   const sentenceElements = () => [
@@ -212,11 +217,13 @@ window.HarukaSpeechPlayer = ({ s, root, novel }) => {
         prepared.clear();
       context = next;
     }
-    const nextModal = `${s.modal}:${s.modal === "selectionQuery" ? s.selectionMessage?.selection?.novelSentenceId || "" : ""}`;
+    const nextModal = `${s.modal}:${s.modal === "selectionQuery" || novel.panelActive() ? `${s.selectionMessage?.id || ""}:${s.selectionMessage?.selection?.novelSentenceId || ""}` : ""}`;
+    if (modalContext !== nextModal && novel.panelActive() && s.selectionMessage)
+      pause();
     if (modalContext !== nextModal && playback?.mode === "single") stop();
     modalContext = nextModal;
     if (
-      s.modal === "selectionQuery" &&
+      (s.modal === "selectionQuery" || novel.panelActive()) &&
       s.selectionMessage?.selection?.novelSentenceId
     ) {
       const selectedIndex = sentenceElements().findIndex(

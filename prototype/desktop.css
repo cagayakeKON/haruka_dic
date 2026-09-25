@@ -2002,7 +2002,7 @@ input[type="radio"] {
 }
 @media (min-width: 1500px) {
   .reader-shell {
-    grid-template-columns: 172px minmax(0, 1fr) 280px;
+    grid-template-columns: 200px minmax(0, 1fr);
   }
   .reader-shell > .chapter-nav {
     display: block;

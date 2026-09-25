@@ -182,17 +182,6 @@
   font-size: 12px;
   color: var(--muted, #58697b);
 }
-@media (min-width: 900px) {
-  #desktop-app .modal-backdrop:has(.novel-analysis-dialog) {
-    justify-content: flex-end;
-    padding: 16px;
-  }
-  #desktop-app .novel-analysis-dialog {
-    width: min(540px, 48vw);
-    margin: 0;
-    max-height: calc(100dvh - 32px);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .novel-sentence-action {
     transition: none;

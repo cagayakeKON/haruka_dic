@@ -140,6 +140,12 @@
   const pageHash = () =>
     `#${s.route}${s.route === "import" ? `?step=${s.importStep + 1}` : s.route === "exerciseBuilder" ? `?step=${builderStep + 1}` : ""}`;
   const openModal = (name) => {
+    if (name === "selectionQuery" && s.route === "novel") {
+      s.readerPanelOpen = true;
+      s.modal = "";
+      render();
+      return;
+    }
     if (!s.modal) modalReturnFocus = focusSelector(document.activeElement);
     s.modal = name;
     render();
@@ -305,9 +311,29 @@
     return novelLearning.chapterList();
   }
 
+  function readerPanel() {
+    if (!novelLearning.panelActive()) return "";
+    const result = s.selectionMessage ? extras.selectionResult() : null;
+    return `<aside class="reader-analysis-panel" data-reader-panel aria-label="阅读解析"><header><div><span class="small muted">阅读助手</span><h2>${result?.title || "句子解析"}</h2></div><div class="row-wrap">${extras.readerCanGoBack() ? `<button type="button" class="icon-btn" data-reader-back aria-label="返回上一条解析">${I("back")}</button>` : ""}<button type="button" class="icon-btn" data-reader-close aria-label="关闭解析面板">${I("close")}</button></div></header><div class="reader-analysis-body" data-reader-panel-body data-message="${e((s.selectionMessage?.id || "") + (s.selectionMessage?.selection?.novelSentenceId || ""))}" tabindex="-1">${result ? result.content : `<div class="reader-analysis-empty">${I("spark")}<h3>点一句，读懂这一句</h3><p>点击正文查看译文、意群和语法。长按可选择词汇查询。</p><button type="button" class="secondary" data-novel="prepare" data-chapter="${s.novelChapter}">${I("database")}准备本章</button><p class="small muted">已准备的解析和朗读可直接复用。</p></div>`}</div></aside>`;
+  }
+  function closeReaderPanel() {
+    const origin = s.readerSource;
+    extras.clearReaderSelection();
+    render();
+    if (origin) extras.restoreSelectionFocus(origin);
+    else
+      root
+        .querySelector('[data-mode="analysis"]')
+        ?.focus({ preventScroll: true });
+  }
+  root.addEventListener("click", (event) => {
+    if (event.target.closest("[data-reader-close]")) closeReaderPanel();
+    if (event.target.closest("[data-reader-back]"))
+      extras.returnFromSelection();
+  });
   function novel() {
     const text = novelLearning.prose();
-    return `<div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary" data-selection-action="continuous">${I("headphones")}连续朗读</button><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div>${novelLearning.controls()}<div class="reader-shell"><aside class="chapter-nav">${chapterList()}</aside><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 ${String(s.novelChapter + 1).padStart(2, "0")} 章 / 12 章</p><h2 lang="ja">${e(novelLearning.current().title)}</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>${e(novelLearning.current().title)}</span><span>${s.novelChapter + 1} / 12</span></footer></article></div>`;
+    return `<div class="novel-workspace ${novelLearning.panelActive() ? "has-analysis" : ""}"><div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary" data-selection-action="continuous">${I("headphones")}连续朗读</button><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div>${novelLearning.controls()}<div class="reader-shell ${novelLearning.panelActive() ? "has-panel" : ""}"><aside class="chapter-nav">${chapterList()}</aside><div class="reader-main"><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 ${String(s.novelChapter + 1).padStart(2, "0")} 章 / 12 章</p><h2 lang="ja">${e(novelLearning.current().title)}</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>${e(novelLearning.current().title)}</span><span>${s.novelChapter + 1} / 12</span></footer></article><div data-reader-playback></div></div>${readerPanel()}</div></div>`;
   }
 
   function textbook() {
@@ -633,6 +659,8 @@
     return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog ${s.modal === "tasks" ? "task-drawer" : s.modal === "materialActions" ? "material-menu-dialog" : ""}" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
   }
   const novelLearning = window.HarukaNovelLearning({
+    docked: true,
+    clearReader: () => extras.clearReaderSelection(),
     s,
     root,
     render,
@@ -716,6 +744,9 @@
   function render() {
     novelLearning.refresh();
     motion.beforeRender();
+    const oldPanel = root.querySelector("[data-reader-panel-body]");
+    const panelScroll = oldPanel?.scrollTop || 0;
+    const oldPanelMessage = oldPanel?.dataset.message;
     const oldDialog = root.querySelector(".dialog");
     const dialogScroll = oldDialog?.scrollTop || 0;
     const focused = focusSelector(document.activeElement);
@@ -854,6 +885,13 @@
       modalReturnFocus = "";
     } else if (samePage && focused)
       root.querySelector(focused)?.focus({ preventScroll: true });
+    const panel = root.querySelector("[data-reader-panel-body]");
+    if (panel) {
+      if (panel.dataset.message === oldPanelMessage)
+        panel.scrollTop = panelScroll;
+      if (!oldPanel)
+        panel.closest("[data-reader-panel]").classList.add("is-entering");
+    }
     extras.restoreListFocus();
     selection.refresh();
     novelLearning.afterRender();
@@ -947,6 +985,11 @@
           first?.focus();
         }
       }
+      return;
+    }
+    if (event.key === "Escape" && novelLearning.panelActive()) {
+      event.preventDefault();
+      closeReaderPanel();
       return;
     }
     if (

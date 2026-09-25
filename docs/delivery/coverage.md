@@ -10,6 +10,8 @@ DESIGN19原型修订普通划选不自动弹层及句子/dialog动效，沿用SE
 
 DESIGN20新增[章节准备契约](../contracts/novel-preparation.md)及NPREP-01～06，小说全书基础NLP、ruby解析模式、点句详解和按章多选解析/朗读。HTML局部证据见[章节准备记录](reviews/2026-09-25-novel-preparation.md)，正式阶段2/3验收仍未执行。
 
+DESIGN21修订电脑4K阅读布局与非模态解析panel，沿用NOV-003、SEL-003、TTS-008及NPREP对应交互；[局部记录](reviews/2026-09-25-desktop-reader-panel.md)只证明HTML布局、查询/收藏/播放和返回行为，不勾选正式三端、服务端或NPREP验收。
+
 ## 1. 按功能开始开发
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |

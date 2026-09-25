@@ -414,14 +414,22 @@ window.HarukaCollections = ({
     return `<div class="query-page ${empty ? "is-empty" : ""}">${mobile ? "" : `<div class="collection-heading"><h1>查询</h1><span class="collection-kind">语言学习</span></div>`}${empty ? `<p class="query-intro">理解一个词，读懂一句话。</p>${composer}${welcome}` : `${messages}${composer}`}</div>`;
   }
   function querySelection(selection, prepared) {
-    if (prepared?.replace && s.modal === "selectionQuery") {
+    if (
+      prepared?.replace &&
+      (s.modal === "selectionQuery" || novel.panelActive())
+    ) {
       const message = s.selectionMessage;
       message.selection = selection;
+      if (novel.panelActive()) s.readerSource = selection;
       message.question = selection.text;
       message.card = prepared.card ? { ...prepared.card, selection } : null;
       message.notice = "";
       render();
       return;
+    }
+    if (!mobile && s.route === "novel" && !selection.panel) {
+      selectionBackstack = [];
+      s.readerSource = selection;
     }
     if (mobile)
       history.replaceState(
@@ -434,12 +442,15 @@ window.HarukaCollections = ({
         "",
         location.href,
       );
-    else
+    else if (s.route !== "novel" || selection.panel)
       selectionBackstack.push({
         route: s.route,
         modal: s.modal,
         message: s.selectionMessage,
-        scroll: root.querySelector("[role=dialog]")?.scrollTop || 0,
+        scroll:
+          root.querySelector("[role=dialog],[data-reader-panel-body]")
+            ?.scrollTop || 0,
+        panel: novel.panelActive(),
       });
     const parts =
       selection.queryMode === "separate_words"
@@ -474,7 +485,19 @@ window.HarukaCollections = ({
     s.queryMessages.push(...messages);
     s.selectionMessage = message;
     show("selectionQuery");
-    root.querySelector("[role=dialog]").scrollTop = 0;
+    const surface = root.querySelector(
+      "[role=dialog],[data-reader-panel-body]",
+    );
+    if (surface) {
+      surface.scrollTop = 0;
+      if (novel.panelActive()) {
+        surface.focus({ preventScroll: true });
+        if (innerWidth < 1180)
+          surface
+            .closest("[data-reader-panel]")
+            .scrollIntoView({ block: "start" });
+      }
+    }
   }
   function textbookQuestion(unit = s.textbookUnit) {
     return {
@@ -564,7 +587,8 @@ window.HarukaCollections = ({
       show("selectionQuery");
       return true;
     }
-    if (s.modal !== "selectionQuery") return false;
+    if (s.modal !== "selectionQuery" && !(novel.panelActive() && !s.modal))
+      return false;
     const origin = s.selectionMessage?.selection;
     const previous = selectionBackstack.pop();
     if (!previous || previous.route !== s.route) {
@@ -574,7 +598,7 @@ window.HarukaCollections = ({
     s.selectionMessage = previous.message;
     s.modal = previous.modal;
     render();
-    const dialog = root.querySelector("[role=dialog]");
+    const dialog = root.querySelector("[role=dialog],[data-reader-panel-body]");
     if (dialog) dialog.scrollTop = previous.scroll;
     restoreSelectionFocus(origin);
     return true;
@@ -598,35 +622,39 @@ window.HarukaCollections = ({
       s.queryMessages.find((message) => message.id === messageId) || null;
     return previous?.id !== messageId ? previous?.selection : null;
   }
+  function selectionResult() {
+    const message = s.selectionMessage;
+    const title = message?.selection?.novelSentenceId ? "句子解析" : "查询结果";
+    const group = message?.relatedIds
+      ? message.relatedIds
+          .map((id) => s.queryMessages.find((item) => item.id === id))
+          .filter(Boolean)
+      : message
+        ? [message]
+        : [];
+    const content = message
+      ? `${novel.panelHeader(message)}<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.selection.sentence || message.question)}${group.length > 1 ? "<p>分别查询所选词汇</p>" : ""}</div>${group
+          .map((item) => {
+            const saved =
+              item.card && s.words.some((w) => w.cardId === item.card.id);
+            return item.card
+              ? learningCards.render(
+                  item.card,
+                  `<button type="button" class="text-btn" data-x="saveCard" data-id="${item.card.id}" ${saved ? "disabled" : ""}>${I("bookmark")}${saved ? "已收藏" : "收藏"}</button>`,
+                  false,
+                )
+              : `<p role="status">${e(item.notice)}</p>`;
+          })
+          .join("")}`
+      : "<p>选区已失效，请重新选择。</p>";
+    return { title, content };
+  }
   function dialog() {
     let title;
     let content;
     const w = s.words.find((x) => x.id === s.selectedWord);
     if (s.modal === "selectionQuery") {
-      const message = s.selectionMessage;
-      title = message?.selection?.novelSentenceId ? "句子解析" : "查询结果";
-      const group = message?.relatedIds
-        ? message.relatedIds
-            .map((id) => s.queryMessages.find((item) => item.id === id))
-            .filter(Boolean)
-        : message
-          ? [message]
-          : [];
-      content = message
-        ? `${novel.panelHeader(message)}<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.selection.sentence || message.question)}${group.length > 1 ? "<p>分别查询所选词汇</p>" : ""}</div>${group
-            .map((item) => {
-              const saved =
-                item.card && s.words.some((w) => w.cardId === item.card.id);
-              return item.card
-                ? learningCards.render(
-                    item.card,
-                    `<button type="button" class="text-btn" data-x="saveCard" data-id="${item.card.id}" ${saved ? "disabled" : ""}>${I("bookmark")}${saved ? "已收藏" : "收藏"}</button>`,
-                    false,
-                  )
-                : `<p role="status">${e(item.notice)}</p>`;
-            })
-            .join("")}`
-        : "<p>选区已失效，请重新选择。</p>";
+      ({ title, content } = selectionResult());
     } else if (s.modal === "queryImagePreview") {
       const item = [
         ...s.queryImages,
@@ -860,7 +888,7 @@ window.HarukaCollections = ({
       if (key === "saveCard") {
         if (!s.queryMessages.some((message) => message.card?.id === value))
           return;
-        s.saveCardReturn = s.modal === "selectionQuery";
+        s.saveCardReturn = s.modal === "selectionQuery" || novel.panelActive();
         s.savingCard = value;
         show("saveCard");
       }
@@ -1201,6 +1229,15 @@ window.HarukaCollections = ({
     guardMaterialRoute,
     restoreListFocus,
     querySelection,
+    selectionResult,
+    readerCanGoBack: () => selectionBackstack.length > 0,
+    clearReaderSelection: () => {
+      selectionBackstack = [];
+      s.readerPanelOpen = false;
+      s.readerSource = null;
+      s.selectionMessage = null;
+      s.novelPrepareReturn = false;
+    },
     textbookQuestion,
     questionButton,
     examReview,

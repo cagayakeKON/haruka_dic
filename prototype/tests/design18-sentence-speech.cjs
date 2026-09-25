@@ -2,7 +2,11 @@ const {
   chromium,
   expect,
 } = require('../../tools/e2e/node_modules/@playwright/test');
-const { selectText } = require('./selection-helpers.cjs');
+const {
+  selectText,
+  closeStudy,
+  studyResult,
+} = require('./selection-helpers.cjs');
 const fs = require('node:fs');
 
 (async () => {
@@ -55,22 +59,35 @@ const fs = require('node:fs');
         path: `artifacts/design18/${platform}-${width}-bubbles.png`,
       });
       await action('query').click();
-      await expect(page.locator('[role=dialog] .learning-card')).toHaveCount(2);
       await expect(
-        page.locator('[role=dialog] .learning-title').first(),
+        page.locator(':is([role=dialog],[data-reader-panel]) .learning-card'),
+      ).toHaveCount(2);
+      await expect(
+        page
+          .locator(':is([role=dialog],[data-reader-panel]) .learning-title')
+          .first(),
       ).toHaveText('夏');
       await expect(
-        page.locator('[role=dialog] .learning-title').last(),
+        page
+          .locator(':is([role=dialog],[data-reader-panel]) .learning-title')
+          .last(),
       ).toHaveText('風');
-      await page.locator('[role=dialog] [data-x=saveCard]').last().click();
+      await page
+        .locator(':is([role=dialog],[data-reader-panel]) [data-x=saveCard]')
+        .last()
+        .click();
       await page.getByRole('button', { name: '确认收藏', exact: true }).click();
       await expect(
-        page.locator('[role=dialog] [data-x=saveCard]').last(),
+        page
+          .locator(':is([role=dialog],[data-reader-panel]) [data-x=saveCard]')
+          .last(),
       ).toBeDisabled();
       await expect(
-        page.locator('[role=dialog] [data-x=saveCard]').first(),
+        page
+          .locator(':is([role=dialog],[data-reader-panel]) [data-x=saveCard]')
+          .first(),
       ).toBeEnabled();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await closeStudy(page);
       await openSentence();
       await page.locator('.selection-adjust summary').click();
       await page
@@ -81,17 +98,17 @@ const fs = require('node:fs');
         .selectOption(String(sentence.indexOf('そっと') + 3));
       await expect(page.locator('.selection-scope')).toHaveText('そっと');
       await action('query').click();
-      await expect(page.locator('[role=dialog] .learning-title')).toHaveText(
-        'そっと',
-      );
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await expect(
+        page.locator(':is([role=dialog],[data-reader-panel]) .learning-title'),
+      ).toHaveText('そっと');
+      await closeStudy(page);
       // Default query remains the full sentence, not a forced select-all gesture.
       await openSentence();
       await action('query').click();
-      await expect(page.locator('[role=dialog] .learning-title')).toHaveText(
-        sentence,
-      );
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await expect(
+        page.locator(':is([role=dialog],[data-reader-panel]) .learning-title'),
+      ).toHaveText(sentence);
+      await closeStudy(page);
 
       // Long-press context chooses the current sentence for a fresh queue.
       await action('continuous').click();
@@ -106,11 +123,14 @@ const fs = require('node:fs');
       await expect(player).toHaveAttribute('data-prepared', ready);
       await bubble('そっと').click();
       await action('query').click();
-      await expect(player).toHaveCount(0); // No playing controls behind a modal.
-      await page.locator('[role=dialog] [data-pronounce]').click();
+      if (platform === 'phone') await expect(player).toHaveCount(0);
+      else await expect(player).toContainText('已暂停'); // The non-modal reader keeps its paused controls.
+      await page
+        .locator(':is([role=dialog],[data-reader-panel]) [data-pronounce]')
+        .click();
       await expect(player).toHaveAttribute('data-mode', 'single');
       await action('stop').click();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await closeStudy(page);
       await expect(player).toHaveAttribute('data-mode', 'continuous');
       await expect(player).toContainText('已暂停');
       expect(Number(await player.getAttribute('data-elapsed'))).toBe(pausedAt);
@@ -151,10 +171,12 @@ const fs = require('node:fs');
       await expect(player).toContainText('そっと');
       await action('stop').click();
       await row.locator('.collection-row-open').click();
-      await page.locator('[role=dialog] [data-pronounce]').click();
+      await page
+        .locator(':is([role=dialog],[data-reader-panel]) [data-pronounce]')
+        .click();
       await expect(player).toContainText('そっと');
       await action('stop').click();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await closeStudy(page);
       await page.screenshot({
         path: `artifacts/design18/${platform}-${width}-words.png`,
       });
@@ -163,9 +185,12 @@ const fs = require('node:fs');
         .locator('[data-action=textbookItem],[data-modal=textbookItem]')
         .nth(1)
         .click();
-      await page.locator('[role=dialog] [data-pronounce]').first().click();
+      await page
+        .locator(':is([role=dialog],[data-reader-panel]) [data-pronounce]')
+        .first()
+        .click();
       await expect(player).toBeVisible();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await closeStudy(page);
       await expect(player).toHaveCount(0);
       await route('examPrep');
       await expect(

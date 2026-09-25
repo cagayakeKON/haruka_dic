@@ -18,6 +18,8 @@
 
 2026-09-25 DESIGN20按用户确认加入小说解析模式与[章节多选准备](../contracts/novel-preparation.md)。阶段2完成全书逐句NLP、读音/出处及ruby与点击句子；阶段3实现按章选择解析/朗读或两项、持久任务与逐句复用、本机提前下载和NPREP-01～06。只缓存已选章节，不扩大全书或考试听力离线范围；[本轮记录](reviews/2026-09-25-novel-preparation.md)仅原型及设计交付。
 
+2026-09-25 DESIGN21修复电脑4K阅读布局，将点句解析及正文查询改为可与正文同时操作的非模态panel；手机保留底部dialog。正式布局/焦点与重排状态纳入阶段2阅读器，查询/朗读衔接纳入阶段3，HTML检查见[局部记录](reviews/2026-09-25-desktop-reader-panel.md)，不代表正式能力已实现。
+
 ## 1. 当前范围与前置验证
 
 Flutter 覆盖 Windows、Web、Android；Python 后端复用 MyHome 基础设施，学习 Agent 已确定使用 Pydantic AI。v0.1 包含多用户注册登录、管理后台与完整 RBAC、个人资料与 Key 隔离、语言学习闭环、试卷导入/考试/AI 批改、Gemini/OpenRouter TTS、单词 CSV 导出/导入、按模型的Token/缓存用量统计，以及全部日志和前端埋点统一接入 MyHome 的 Alloy/Loki/Grafana。当前不建设Haruka商业化系统。

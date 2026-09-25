@@ -1,5 +1,14 @@
 /* Chapter preparation is an in-memory timing demo; no NLP, AI, audio or downloads. */
-window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
+window.HarukaNovelLearning = ({
+  s,
+  root,
+  render,
+  open,
+  close,
+  query,
+  docked = false,
+  clearReader = () => {},
+}) => {
   const { escape: e, icon: I } = window.HarukaCore;
   const chapters = window.HarukaNovelSamples;
   const labels = { analysis: 'AI 解析', audio: '朗读' };
@@ -10,6 +19,8 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
   s.novelChapter = 2;
   s.novelAnalysis = false;
   const current = () => chapters[s.novelChapter];
+  const panelActive = () =>
+    docked && s.route === 'novel' && !!s.readerPanelOpen;
   const allowed = () =>
     s.signedIn && !s.adminArea && s.materials.some((m) => m.id === 'summer');
   const key = (sentence) => `summer-v1:${sentence.id}:ja:default`;
@@ -84,7 +95,7 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
     return current()
       .paragraphs.map(
         (paragraph) =>
-          `<p>${paragraph.map((sentence) => `<span data-reading-sentence data-novel-sentence="${sentence.id}" data-canonical-text="${e(sentence.text)}" ${s.novelAnalysis ? 'role="button" tabindex="0"' : ''} ${s.novelAnalysis ? `aria-label="查看句子解析：${e(sentence.text)}"` : ''} class="${s.novelAnalysis ? 'novel-sentence-action' : ''} ${s.selectionMessage?.selection?.novelSentenceId === sentence.id && s.modal === 'selectionQuery' ? 'is-analyzing' : ''}">${s.novelAnalysis ? ruby(sentence) : e(sentence.text)}</span>`).join('')}</p>`,
+          `<p>${paragraph.map((sentence) => `<span data-reading-sentence data-novel-sentence="${sentence.id}" data-canonical-text="${e(sentence.text)}" ${s.novelAnalysis ? 'role="button" tabindex="0"' : ''} ${s.novelAnalysis ? `aria-label="查看句子解析：${e(sentence.text)}"` : ''} class="${s.novelAnalysis ? 'novel-sentence-action' : ''} ${s.selectionMessage?.selection?.novelSentenceId === sentence.id && (s.modal === 'selectionQuery' || panelActive()) ? 'is-analyzing' : ''}">${s.novelAnalysis ? ruby(sentence) : e(sentence.text)}</span>`).join('')}</p>`,
       )
       .join('');
   }
@@ -210,7 +221,7 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
         } else if (type === 'audio') audioCache.add(key(sentence));
         else r.localAnalysis.add(sentence.id);
         if (
-          s.modal === 'selectionQuery' &&
+          (s.modal === 'selectionQuery' || panelActive()) &&
           s.selectionMessage?.selection?.novelSentenceId === sentence.id
         ) {
           const ready = card(sentence, c);
@@ -237,9 +248,13 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
     audioCache.clear();
     s.novelAnalysis = false;
     s.novelChapter = 2;
+    if (docked && s.readerPanelOpen) clearReader();
   }
   function refresh() {
-    if (s.route !== 'novel') s.novelPrepareReturn = false;
+    if (s.route !== 'novel') {
+      s.novelPrepareReturn = false;
+      if (docked && s.readerPanelOpen) clearReader();
+    }
     const next = `${s.signedIn}:${s.adminArea}:${s.serviceAddress}`;
     if (owner !== undefined && owner !== next) reset();
     owner = next;
@@ -319,6 +334,10 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
         (el) => el.getBoundingClientRect().bottom > 140,
       )?.dataset.novelSentence;
       s.novelAnalysis = button.dataset.mode === 'analysis';
+      if (docked) {
+        clearReader();
+        s.readerPanelOpen = s.novelAnalysis;
+      }
       render();
       root
         .querySelector(`[data-novel-sentence="${anchor}"]`)
@@ -328,13 +347,17 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
         ?.focus({ preventScroll: true });
     }
     if (action === 'chapter') {
+      if (docked) {
+        clearReader();
+        s.readerPanelOpen = s.novelAnalysis;
+      }
       s.novelChapter = Number(button.dataset.chapter);
       if (s.modal) close();
       else render();
     }
     if (['prepare', 'prepareAudio', 'prepareAnalysis'].includes(action)) {
       s.novelPrepareReturn =
-        s.modal === 'selectionQuery' &&
+        (s.modal === 'selectionQuery' || panelActive()) &&
         !!s.selectionMessage?.selection?.novelSentenceId;
       prepareChapter = Number(button.dataset.chapter);
       if (action !== 'prepare' && !record(prepareChapter).running.size)
@@ -388,6 +411,7 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
   });
   return {
     current,
+    panelActive,
     prose,
     controls,
     chapterList,
@@ -397,7 +421,8 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
     afterRender,
     audioCache,
     cached: (selection, text) => {
-      if (selection.route !== 'novel' || selection.modal) return null;
+      if (selection.route !== 'novel' || selection.modal || selection.panel)
+        return null;
       const element =
         root.querySelectorAll('[data-study-text]')[selection.scopeIndex];
       const sentence = current().sentences.find(
@@ -417,6 +442,7 @@ window.HarukaNovelLearning = ({ s, root, render, open, close, query }) => {
     tokens: (text, element) =>
       s.route === 'novel' &&
       !s.modal &&
+      !element?.closest('[data-reader-panel]') &&
       current().sentences.find((sentence) => sentence.text === text)?.tokens,
     source: () => `夏の手紙 · 第 ${s.novelChapter + 1} 章`,
   };

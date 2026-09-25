@@ -2,7 +2,11 @@ const {
   chromium,
   expect,
 } = require('../../tools/e2e/node_modules/@playwright/test');
-const { selectText } = require('./selection-helpers.cjs');
+const {
+  selectText,
+  closeStudy,
+  studyResult,
+} = require('./selection-helpers.cjs');
 const fs = require('node:fs');
 async function longPress(page, text, touch) {
   if (touch) return selectText(page, '[data-reading-sentence]', text, true);
@@ -57,7 +61,7 @@ async function longPress(page, text, touch) {
       const progress = (kind) =>
         page.locator(`.novel-progress[data-kind="${kind}"]`);
       const close = async () => {
-        await page.getByRole('button', { name: '关闭', exact: true }).click();
+        await closeStudy(page);
         await expect(page.locator('[role=dialog]')).toHaveCount(0);
       };
       const complete = () =>
@@ -132,11 +136,12 @@ async function longPress(page, text, touch) {
       await longPress(page, 'そっと', touch);
       await expect(page.locator('.selection-preview')).toHaveText(canonical);
       await expect(page.locator('[role=dialog]')).toHaveCount(0);
+      await expect(
+        page.locator('[data-reader-panel] .learning-card'),
+      ).toHaveCount(0);
       await page.locator('[data-selection-action=dismiss]').click();
       await page.locator('[data-reading-sentence]').nth(1).click();
-      await expect(
-        page.getByRole('dialog', { name: '句子解析' }),
-      ).toBeVisible();
+      await expect(studyResult(page, '句子解析')).toBeVisible();
       await expect(page.locator('.learning-title')).toHaveText(canonical);
       await expect(action('prepareAudio')).toBeVisible();
       await action('next').click();
@@ -145,9 +150,7 @@ async function longPress(page, text, touch) {
       );
       await page.locator('[data-x=saveCard]').click();
       await page.getByRole('button', { name: '确认收藏', exact: true }).click();
-      await expect(
-        page.getByRole('dialog', { name: '句子解析' }),
-      ).toBeVisible();
+      await expect(studyResult(page, '句子解析')).toBeVisible();
       await expect(page.locator('[data-x=saveCard]')).toBeDisabled();
       await close();
       await expect(page.locator('[data-novel-sentence]').nth(2)).toBeFocused();
@@ -215,9 +218,7 @@ async function longPress(page, text, touch) {
         .click();
       await expect(page.locator('[data-reading-sentence]')).toHaveCount(2);
       await page.locator('[data-reading-sentence]').first().click();
-      await expect(
-        page.getByRole('dialog', { name: '句子解析' }),
-      ).toContainText('尚未准备');
+      await expect(studyResult(page, '句子解析')).toContainText('尚未准备');
       await expect(page.locator('[data-x=saveCard]')).toHaveCount(0);
       await expect(
         page.getByRole('button', { name: '朗读原句', exact: true }),

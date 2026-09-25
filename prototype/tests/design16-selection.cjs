@@ -2,7 +2,11 @@ const {
   chromium,
   expect,
 } = require("../../tools/e2e/node_modules/@playwright/test");
-const { selectText } = require("./selection-helpers.cjs");
+const {
+  selectText,
+  closeStudy,
+  studyResult,
+} = require("./selection-helpers.cjs");
 const fs = require("node:fs");
 
 (async () => {
@@ -56,14 +60,16 @@ const fs = require("node:fs");
         fullPage: true,
       });
       await action("query").click();
-      await expect(page.locator("[role=dialog] .learning-card")).toContainText(
-        "轻轻地；悄悄地",
-      );
+      await expect(
+        page.locator(":is([role=dialog],[data-reader-panel]) .learning-card"),
+      ).toContainText("轻轻地；悄悄地");
       await page.locator("[data-x=saveCard]").click();
       await page.locator("[name=books]").first().check();
       await page.getByRole("button", { name: "确认收藏", exact: true }).click();
       await expect(
-        page.locator("[role=dialog] [data-x=saveCard]"),
+        page.locator(
+          ":is([role=dialog],[data-reader-panel]) [data-x=saveCard]",
+        ),
       ).toBeDisabled();
       await page.screenshot({
         path: `artifacts/design16/${platform}-${width}-saved.png`,
@@ -71,7 +77,7 @@ const fs = require("node:fs");
       });
       await selectText(
         page,
-        "[role=dialog] .learning-explanation",
+        ":is([role=dialog],[data-reader-panel]) .learning-explanation",
         "用于动作轻柔，或不希望打扰别人的场景。",
         touch,
       );
@@ -91,14 +97,21 @@ const fs = require("node:fs");
       });
       await action("stop").click();
       // A nested query uses the actual selected phrase and retains its result source.
-      await selectText(page, "[role=dialog] .learning-title", "そっと", touch);
+      await selectText(
+        page,
+        ":is([role=dialog],[data-reader-panel]) .learning-title",
+        "そっと",
+        touch,
+      );
       await action("query").click();
       await expect(page.locator(".selection-query-origin")).toContainText(
         "查询结果",
       );
-      await page.getByRole("button", { name: "关闭", exact: true }).click();
-      await expect(page.locator("[role=dialog] .learning-card")).toBeVisible();
-      await page.getByRole("button", { name: "关闭", exact: true }).click();
+      await closeStudy(page);
+      await expect(
+        page.locator(":is([role=dialog],[data-reader-panel]) .learning-card"),
+      ).toBeVisible();
+      await closeStudy(page);
       await route("notebooks");
       await expect(
         page.locator(".collection-row").filter({ hasText: "そっと" }),
@@ -106,8 +119,10 @@ const fs = require("node:fs");
       await selectText(page, ".collection-word-line", "そっと", touch);
       await expect(page.locator("[role=dialog]")).toHaveCount(0);
       await action("query").click();
-      await expect(page.locator("[role=dialog] .learning-card")).toBeVisible();
-      await page.getByRole("button", { name: "关闭", exact: true }).click();
+      await expect(
+        page.locator(":is([role=dialog],[data-reader-panel]) .learning-card"),
+      ).toBeVisible();
+      await closeStudy(page);
       await route("practice");
       await selectText(
         page,
@@ -135,10 +150,12 @@ const fs = require("node:fs");
       await expect(page.locator("[role=dialog]")).toContainText(
         "没有内置查询示例",
       );
-      await expect(page.locator("[role=dialog] [data-x=saveCard]")).toHaveCount(
-        0,
-      );
-      await page.getByRole("button", { name: "关闭", exact: true }).click();
+      await expect(
+        page.locator(
+          ":is([role=dialog],[data-reader-panel]) [data-x=saveCard]",
+        ),
+      ).toHaveCount(0);
+      await closeStudy(page);
       await route("textbook");
       await page
         .locator("[data-action=textbookItem],[data-modal=textbookItem]")

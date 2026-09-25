@@ -2,7 +2,11 @@ const {
   chromium,
   expect,
 } = require('../../tools/e2e/node_modules/@playwright/test');
-const { selectText } = require('./selection-helpers.cjs');
+const {
+  selectText,
+  closeStudy,
+  studyResult,
+} = require('./selection-helpers.cjs');
 const fs = require('node:fs');
 
 async function observeMotion(page) {
@@ -13,7 +17,7 @@ async function observeMotion(page) {
         const el = animation.effect?.target;
         if (
           !el?.matches(
-            '.sheet,.dialog,.text-selection-toolbar,.word-bubble,.prototype-motion-exit',
+            '.sheet,.dialog,.reader-analysis-panel,.text-selection-toolbar,.word-bubble,.prototype-motion-exit',
           )
         )
           continue;
@@ -124,14 +128,13 @@ async function longPress(page, touch) {
         .filter({ hasText: /^そっと$/ })
         .click();
       await action('query').click();
-      await expect(
-        page.getByRole('dialog', { name: '查询结果' }),
-      ).toBeVisible();
+      await expect(studyResult(page, '查询结果')).toBeVisible();
       expect(
         (await records()).some(
           (record) =>
-            record.target === (platform === 'phone' ? 'sheet' : 'dialog') &&
-            record.duration === 240,
+            record.target.startsWith(
+              platform === 'phone' ? 'sheet' : 'reader-analysis-panel',
+            ) && record.duration === (platform === 'phone' ? 240 : 220),
         ),
       ).toBe(true);
       await page.screenshot({
@@ -139,11 +142,9 @@ async function longPress(page, touch) {
         animations: 'disabled',
       });
       await page.locator('[data-x=saveCard]').click();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
-      await expect(
-        page.getByRole('dialog', { name: '查询结果' }),
-      ).toBeVisible();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await closeStudy(page);
+      await expect(studyResult(page, '查询结果')).toBeVisible();
+      await closeStudy(page);
       await expect(page.locator('[role=dialog]')).toHaveCount(0);
       await expect(page.locator('.prototype-motion-exit')).toHaveCount(0);
       expect(
@@ -159,7 +160,7 @@ async function longPress(page, touch) {
       await page.locator('[data-setting=readingFont]').selectOption('sans');
       await page.waitForTimeout(80);
       expect((await records()).length).toBe(before); // Same dialog re-render is not a new entrance.
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await closeStudy(page);
       await expect(page.locator('.prototype-motion-exit')).toHaveCount(0);
       // Explicit keyboard activation remains available; selecting alone still does nothing.
       await selectText(page, '[data-reading-sentence]', 'そっと', false, false);
@@ -179,7 +180,7 @@ async function longPress(page, touch) {
         .filter({ hasText: /^そっと$/ })
         .click();
       await action('query').click();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await closeStudy(page);
       await expect(page.locator('[role=dialog]')).toHaveCount(0);
       expect(await records()).toEqual([]);
       // The application's own preference has the same effect without OS assistance.
@@ -196,10 +197,8 @@ async function longPress(page, touch) {
       ).toBeVisible();
       await longPress(page, touch);
       await action('query').click();
-      await expect(
-        page.getByRole('dialog', { name: '查询结果' }),
-      ).toBeVisible();
-      await page.getByRole('button', { name: '关闭', exact: true }).click();
+      await expect(studyResult(page, '查询结果')).toBeVisible();
+      await closeStudy(page);
       await expect(page.locator('[role=dialog]')).toHaveCount(0);
       expect(await records()).toEqual([]);
       expect(

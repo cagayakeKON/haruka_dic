@@ -46,4 +46,19 @@ async function selectText(page, selector, text, touch = false, open = true) {
     if (open) await page.keyboard.press("Alt+Enter");
   }
 }
-module.exports = { selectText };
+// Leave the current study result: nested desktop results have an explicit Back button.
+async function closeStudy(page) {
+  const dialog = page.locator("[role=dialog]");
+  if (await dialog.count())
+    return page.getByRole("button", { name: "关闭", exact: true }).click();
+  const back = page.locator("[data-reader-back]");
+  return (
+    (await back.count()) ? back : page.locator("[data-reader-close]")
+  ).click();
+}
+function studyResult(page, title = "查询结果") {
+  return page.locator(
+    `[role=dialog][aria-label="${title}"],[data-reader-panel]`,
+  );
+}
+module.exports = { selectText, closeStudy, studyResult };

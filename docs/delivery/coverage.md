@@ -8,6 +8,8 @@ DESIGN18补充单词喇叭、句子分词气泡与小说连续朗读；新增SEL
 
 DESIGN19原型修订普通划选不自动弹层及句子/dialog动效，沿用SEL-001/003与DESIGN-04/05；[局部记录](reviews/2026-09-25-long-press-motion.md)不代表正式三端验收。
 
+DESIGN20新增[章节准备契约](../contracts/novel-preparation.md)及NPREP-01～06，小说全书基础NLP、ruby解析模式、点句详解和按章多选解析/朗读。HTML局部证据见[章节准备记录](reviews/2026-09-25-novel-preparation.md)，正式阶段2/3验收仍未执行。
+
 ## 1. 按功能开始开发
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |

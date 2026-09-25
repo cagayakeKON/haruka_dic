@@ -1,12 +1,13 @@
 /* Shared text selection interaction. Local UI demonstration; no model or audio. */
-window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
+window.HarukaTextSelection = ({ s, root, onQuery, motion, novel }) => {
   const { escape: e, icon: I } = window.HarukaCore;
   let snapshot,
     toolbar,
     timer,
     pointer,
     suppressClick = false;
-  const speech = window.HarukaSpeechPlayer({ s, root });
+  const speech = window.HarukaSpeechPlayer({ s, root, novel });
+  const { plain, walker: textWalker } = window.HarukaStudyText;
   let selectedTokens = new Set(),
     adjustedRange,
     selectionMode = false;
@@ -46,7 +47,7 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
       start.closest("[inert]")
     )
       return clearToolbar();
-    const text = selection.toString().trim();
+    const text = plain(range.cloneContents()).trim();
     if (!text) return clearToolbar();
     const source =
       s.modal === "selectionQuery"
@@ -54,7 +55,7 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
         : s.modal === "entryDetail"
           ? "收藏详情"
           : {
-              novel: "夏の手紙 · 第 03 章",
+              novel: novel.source(),
               textbook: "课本 · 当前单元",
               query: "查询结果",
               examResult: "试卷 · 已交卷复盘",
@@ -68,7 +69,7 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
     if (
       snapshot?.element === start &&
       snapshot.text === text &&
-      snapshot.offset === prefix.toString().length
+      snapshot.offset === plain(prefix.cloneContents()).length
     )
       return;
     selectionMode = true;
@@ -84,8 +85,8 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
       epoch,
       range: range.cloneRange(),
       element: start,
-      offset: prefix.toString().length,
-      tokens: [
+      offset: plain(prefix.cloneContents()).length,
+      tokens: novel.tokens(text, start) || [
         ...new Intl.Segmenter(undefined, { granularity: "word" }).segment(text),
       ],
     };
@@ -340,8 +341,8 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
         const before = caret.cloneRange();
         before.selectNodeContents(block);
         before.setEnd(caret.startContainer, caret.startOffset);
-        const offset = before.toString().length,
-          value = block.textContent;
+        const offset = plain(before.cloneContents()).length,
+          value = plain(block);
         const sentences = [
           ...new Intl.Segmenter(undefined, { granularity: "sentence" }).segment(
             value,
@@ -353,7 +354,7 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
               offset >= part.index && offset < part.index + part.segment.length,
           ) || sentences.at(-1);
         if (!sentence) return;
-        const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+        const walker = textWalker(block);
         const range = document.createRange();
         let count = 0,
           started = false,
@@ -481,7 +482,8 @@ window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
     speech.refresh();
     if (!allowed()) return;
     const selectors = {
-      novel: ".prose,.reading-prose",
+      novel:
+        ".prose [data-reading-sentence],.reading-prose [data-reading-sentence]",
       sampleReader: ".sample-reader p",
       query: ".learning-card-content,.query-question p",
       notebooks: ".collection-copy",

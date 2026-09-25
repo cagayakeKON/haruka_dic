@@ -2,6 +2,8 @@
 
 状态：2026-09-25，DBDESIGN3，阶段1中的数据库设计文档切片；本文新增结构均为**待实现设计**，没有建表、迁移或数据库验收。入口与公共规则见[数据库设计书](database-design.md)，已存在的 `libraries` 由[身份分册](database-identity.md)登记。本文把[源结构契约](../contracts/material-structures.md)、[材料](../modules/materials-reading.md)、[小说](../modules/novels.md)、[课本](../modules/textbooks.md)、[考试](../modules/exams.md)及[双端原型](../../prototype/README.md)映射为物理表，不改变它们的产品边界。
 
+DESIGN20的小说逐句NLP与章节准备映射：基础标注沿用§2.7的analysis/sentence/token，读音及语言特征保留来源/不确定信息；章批次复用Job/Outbox及注册检查点，逐句成品复用学习分册的解释/音频/源绑定。[章节准备协议](../contracts/novel-preparation.md)只增加任务载荷与聚合投影，不增加整章缓存表，本轮未执行DDL。
+
 ## 1. 字典约定与分层
 
 表名表达材料域、直接父对象或关联端点；全部表的归属、关系基数和唯一约束摘要见[关系清单](database-relations.md#22-材料阅读与考试46张)。本轮只改物理目标表名，`source_asset_id`、`content_block_id`、`exam_answer_id`等列名与接口逻辑ID保持既有含义。

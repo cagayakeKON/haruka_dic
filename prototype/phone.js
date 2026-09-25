@@ -183,6 +183,9 @@
   const openModal = (name) => {
     const selectionStep =
       name === 'selectionQuery' ||
+      (name === 'chapterPrepare' &&
+        s.modal === 'selectionQuery' &&
+        s.selectionMessage?.selection?.novelSentenceId) ||
       (name === 'saveCard' && s.modal === 'selectionQuery');
     const nested = !!s.modal && !selectionStep;
     if (selectionStep)
@@ -356,8 +359,8 @@
       s.readingFont === 'serif'
         ? "'Yu Mincho','Noto Serif JP',serif"
         : "'Segoe UI','Microsoft YaHei',sans-serif";
-    const text = data.novel.paragraphs.map((p) => `<p>${e(p)}</p>`).join('');
-    return `<p class="selection-hint">长按一句，点选词汇后查询。</p><div class="mobile-reader-meta">第 03 章 / 12 章</div><h1 class="mobile-reader-title" lang="ja">窓の向こう</h1><article class="reader mobile-reader" style="--reader-paper:${readerPaper};--reader-ink:${readerInk};--reader-font:${readerFont}"><div class="reading-prose" lang="ja" style="--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}">${text}</div><div class="reader-bottom"><span>窓の向こう</span><span>03 / 12</span></div></article><div class="reader-dock" aria-label="阅读操作"><button type="button" data-selection-action="continuous">${I('headphones')}<span>连续朗读</span></button><button type="button" data-modal="chapters">${I('library')}<span>目录</span></button><button type="button" data-modal="readerSettings">${I('settings')}<span>排版</span></button><button type="button" data-action="bookmark">${I('bookmark')}<span>书签</span></button></div>`;
+    const text = novelLearning.prose();
+    return `${novelLearning.controls()}<div class="mobile-reader-meta">第 ${String(s.novelChapter + 1).padStart(2, '0')} 章 / 12 章</div><h1 class="mobile-reader-title" lang="ja">${e(novelLearning.current().title)}</h1><article class="reader mobile-reader" style="--reader-paper:${readerPaper};--reader-ink:${readerInk};--reader-font:${readerFont}"><div class="reading-prose" lang="ja" style="--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}">${text}</div><div class="reader-bottom"><span>${e(novelLearning.current().title)}</span><span>${s.novelChapter + 1} / 12</span></div></article><div class="reader-dock" aria-label="阅读操作"><button type="button" data-selection-action="continuous">${I('headphones')}<span>连续朗读</span></button><button type="button" data-modal="chapters">${I('library')}<span>目录</span></button><button type="button" data-modal="readerSettings">${I('settings')}<span>排版</span></button><button type="button" data-action="bookmark">${I('bookmark')}<span>书签</span></button></div>`;
   }
   function textbookUnits() {
     return `<div class="mobile-intro"><p class="step-caption">课本 · 日语</p><h1>日语的日常表达</h1></div><div class="mobile-list-heading"><h2>单元目录</h2><span>${data.textbook.units.length} 个可用单元</span></div><div class="mobile-plain-list">${data.textbook.units.map((unit, i) => `<button class="mobile-unit-row" type="button" data-textbook-unit="${unit.id}"><span class="mobile-unit-number">${String(i + 1).padStart(2, '0')}</span><span class="row-copy"><strong>${e(unit.title.replace(/^Unit \d+ · /, ''))}</strong><small>课文 · 词汇 · 语法 · 练习</small></span>${I('chevron')}</button>`).join('')}</div>`;
@@ -544,7 +547,7 @@
     if (!s.modal) return '';
     let content = '';
     let title = '';
-    const shared = extras.dialog();
+    const shared = novelLearning.dialog() || extras.dialog();
     if (shared) {
       title = shared.title;
       content = shared.content;
@@ -557,7 +560,7 @@
 
         case 'chapters':
           title = '章节目录';
-          content = `<div class="list">${data.novel.chapters.map((chapter, i) => `<button class="row" type="button" data-action="chapter" data-index="${i}"><span class="pill-count">${i + 1}</span><span class="row-copy"><strong>${e(chapter)}</strong><small>${i === 2 ? '正在阅读' : '章节示例'}</small></span>${I('chevron')}</button>`).join('')}</div>`;
+          content = novelLearning.chapterList();
           break;
         case 'readerSettings':
           title = '阅读排版';
@@ -666,9 +669,18 @@
   function states() {
     return `<h1 class="page-title">每种状态，都说清原因。</h1><p class="page-subtitle">以下是原型状态样例，不代表当前账号真的离线或失权。</p><div class="stack" style="margin-top:22px"><div class="surface stack"><strong>没有材料</strong><p>添加小说、课本或试卷后，材料会出现在本人书库。</p>${btn('添加材料', 'import', 'secondary', 'plus')}</div><div class="surface stack"><strong>暂时离线</strong><p>有效权限租期内可阅读已缓存章节与解释；新的生成、设置保存和考试场次需要联网。</p>${btn('查看本机副本', 'cache', 'secondary')}</div><div class="surface stack"><strong>没有访问权限</strong><p>这份内容现在不可读取。请返回材料库或联系有权的管理员。</p>${btn('返回材料库', 'library', 'secondary')}</div><div class="surface stack"><strong>任务未完成</strong><p>示例：模型调用遇到网络故障，结果仍未知；可去任务页查看状态后再决定下一步。</p>${btn('查看任务', 'jobs', 'secondary')}</div><div class="surface stack"><strong>正在载入</strong><p>保留当前标题和列表骨架，等候服务结果，不用动画推算完成。</p><div class="meter"><span style="width:40%"></span></div></div></div>`;
   }
+  const novelLearning = window.HarukaNovelLearning({
+    s,
+    root,
+    render,
+    open: (name) => openModal(name),
+    close: () => closeModal(),
+    query: (value, prepared) => extras.querySelection(value, prepared),
+  });
   const motion = window.HarukaMotion({ s, root });
   const selection = window.HarukaTextSelection({
     motion,
+    novel: novelLearning,
     s,
     root,
     onQuery: (value) => extras.querySelection(value),
@@ -677,6 +689,7 @@
     s,
     root,
     mobile: true,
+    novel: novelLearning,
     render: () => render(),
     open: (name) => openModal(name),
     close: () => closeModal(),
@@ -731,6 +744,7 @@
     onboarding,
   };
   function render() {
+    novelLearning.refresh();
     motion.beforeRender();
     const pageFocus =
       renderedRoute === s.route ? focusSelector(document.activeElement) : '';
@@ -918,6 +932,7 @@
         ?.focus({ preventScroll: true });
     extras.restoreListFocus();
     selection.refresh();
+    novelLearning.afterRender();
     motion.afterRender();
     history.replaceState(
       { ...history.state, harukaMaterial: s.chosenMaterial },
@@ -1275,13 +1290,6 @@
     }
 
     if (action === 'bookmark') return toast('示例书签已加入本地阅读状态。');
-    if (action === 'chapter') {
-      toast(
-        `第 ${Number(target.dataset.index) + 1} 章为目录示例；当前正文仍是第 03 章。`,
-      );
-      closeModal();
-      return;
-    }
 
     if (action === 'textbookSubmit') {
       s.textbookSubmitted = true;

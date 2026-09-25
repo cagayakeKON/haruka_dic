@@ -50,7 +50,7 @@
 | client.profile.read/update | 本人资料、学习语言档案、模型/阅读/显示等服务器设置 | update需read、字段白名单、field mask和expected_revision；不允许改角色/状态/登录邮箱/权限/配额/掌握，出生年份/性别为可选本人数据 |
 | client.profile.avatar.update | 申请/完成本人头像上传、替换或删除当前头像 | 需profile.read；仅avatar用途临时对象及本人资料revision，不能复用材料/题图FileObject或提交外链；读取当前头像仍需profile.read |
 | client.credential.read/manage/test | 掩码/配置与本人模型用量；新增轮换删除Key；供应商测试 | read的用量投影仅限本人且不返回Key/Prompt/回复；manage不返回明文；test需read、本人Key/上限并明确提示会发起一次最小供应商调用 |
-| client.job.read/cancel/retry | 本人任务状态/取消/重试 | read校验结果本身所需read；retry重查原业务所有权限/意图/上限，不能绕过unknown确认 |
+| client.job.read/cancel/retry | 本人任务状态/取消/重试；章节准备暂停沿cancel、继续沿retry | read校验结果本身所需read；retry/继续重查所选原业务所有权限/意图/上限，不能绕过unknown确认；暂停不删除已提交成品 |
 
 收藏CSV、照片导入、试卷及音频即使属于同一个页面，也按实际执行路径检查组合权限。文件签名/上传完成/后台事件没有独立“万能文件权限”：继承其引用业务动作与用途的授权要求，无法用任意FileObject ID下载所有文件。
 

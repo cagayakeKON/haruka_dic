@@ -2,6 +2,8 @@
 
 状态：设计基线 v0.1，2026-09-22，未实现。此文是跨功能的持久化/并发契约，功能细节见 [功能索引](../delivery/coverage.md)，权限见 [RBAC](authorization.md)。不是已经存在的 DDL。逻辑职责到具体表/字段的映射见2026-09-25[数据库设计书](database-design.md)，Redis字段见[缓存分册](redis-design.md)；设计完成不代表本篇业务已经实现。
 
+DESIGN20[章节准备](../contracts/novel-preparation.md)以现有持久Job/Outbox编排：冻结本人小说章/源/标注/配置及非空components集合，按句复用Explanation/Audio与GenerationSlot，分项维护实际提交进度及有界遍历检查点。关闭页面不取消服务端批次，暂停停止新调用，重试先resolve并只补缺失；本机下载状态不冒充PG成品状态。原有Job状态保持不变，章节分项状态与操作意图由注册任务载荷/检查点承载，不为多选新增物理表。
+
 ## 1. 通用数据规则
 
 - PostgreSQL 是身份撤销、权限、业务状态、任务和审计的真相；Redis 只承载可丢失的会话材料/缓存/通知/限流，Kafka 只传事件，MinIO 保存被数据库引用的私有对象。

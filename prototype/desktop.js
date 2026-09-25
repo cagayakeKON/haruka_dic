@@ -302,12 +302,12 @@
   }
 
   function chapterList() {
-    return `<h2>章节目录</h2>${data.novel.chapters.map((chapter, i) => `<button type="button" ${i === 2 ? 'aria-current="page"' : ""} data-action="chapter" data-index="${i}"><span>${String(i + 1).padStart(2, "0")}</span>${e(chapter)}</button>`).join("")}`;
+    return novelLearning.chapterList();
   }
 
   function novel() {
-    const text = data.novel.paragraphs.map((p) => `<p>${e(p)}</p>`).join("");
-    return `<div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary" data-selection-action="continuous">${I("headphones")}连续朗读</button><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div><p class="selection-hint">长按选句，点选词汇后查询。</p><div class="reader-shell"><aside class="chapter-nav">${chapterList()}</aside><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 03 章 / 12 章</p><h2 lang="ja">窓の向こう</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>窓の向こう</span><span>03 / 12</span></footer></article></div>`;
+    const text = novelLearning.prose();
+    return `<div class="reader-toolbar"><h1>夏の手紙</h1><div class="button-row"><button type="button" class="secondary" data-selection-action="continuous">${I("headphones")}连续朗读</button><button type="button" class="secondary chapter-trigger" data-modal="chapters">${I("library")}目录</button><button type="button" class="secondary" data-modal="readerSettings">${I("settings")}排版</button><button type="button" class="icon-btn" data-action="bookmark" aria-label="添加书签">${I("bookmark")}</button></div></div>${novelLearning.controls()}<div class="reader-shell"><aside class="chapter-nav">${chapterList()}</aside><article class="reading-paper" data-reader-theme="${s.readingTheme}" style="--reader-font:${s.readingFont === "serif" ? "'Yu Mincho','Noto Serif JP',serif" : "'Segoe UI','Microsoft YaHei',sans-serif"};--reader-size:${s.readingSize}px;--reader-line:${s.lineHeight}"><p class="step-caption">第 ${String(s.novelChapter + 1).padStart(2, "0")} 章 / 12 章</p><h2 lang="ja">${e(novelLearning.current().title)}</h2><div class="prose" lang="ja">${text}</div><footer class="reading-footer"><span>${e(novelLearning.current().title)}</span><span>${s.novelChapter + 1} / 12</span></footer></article></div>`;
   }
 
   function textbook() {
@@ -521,7 +521,7 @@
     if (!s.modal) return "";
     let title = "演示提示";
     let content = "";
-    const shared = extras.dialog();
+    const shared = novelLearning.dialog() || extras.dialog();
     if (shared) {
       title = shared.title;
       content = shared.content;
@@ -632,9 +632,18 @@
     }
     return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog ${s.modal === "tasks" ? "task-drawer" : s.modal === "materialActions" ? "material-menu-dialog" : ""}" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
   }
+  const novelLearning = window.HarukaNovelLearning({
+    s,
+    root,
+    render,
+    open: (name) => openModal(name),
+    close: () => closeModal(),
+    query: (value, prepared) => extras.querySelection(value, prepared),
+  });
   const motion = window.HarukaMotion({ s, root });
   const selection = window.HarukaTextSelection({
     motion,
+    novel: novelLearning,
     s,
     root,
     onQuery: (value) => extras.querySelection(value),
@@ -643,6 +652,7 @@
     s,
     root,
     mobile: false,
+    novel: novelLearning,
     render: () => render(),
     open: (name) => openModal(name),
     close: () => closeModal(),
@@ -704,6 +714,7 @@
     adminSecurity,
   };
   function render() {
+    novelLearning.refresh();
     motion.beforeRender();
     const oldDialog = root.querySelector(".dialog");
     const dialogScroll = oldDialog?.scrollTop || 0;
@@ -845,6 +856,7 @@
       root.querySelector(focused)?.focus({ preventScroll: true });
     extras.restoreListFocus();
     selection.refresh();
+    novelLearning.afterRender();
     motion.afterRender();
     renderedRoute = s.route;
     history.replaceState(navigationState(), "", pageHash());
@@ -1108,11 +1120,6 @@
     }
 
     if (action === "bookmark") return toast("示例书签已加入本地阅读状态。");
-    if (action === "chapter")
-      return toast(
-        `第 ${Number(target.dataset.index) + 1} 章为目录示例；当前正文仍是第 03 章。`,
-      );
-
     if (action === "textbookSubmit") {
       s.textbookSubmitted = true;
       render();

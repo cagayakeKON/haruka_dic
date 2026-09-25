@@ -2,6 +2,8 @@
 
 状态：2026-09-25，DBDESIGN2 收敛稿，业务键尚未实现。属于[数据库设计书](database-design.md)。现有代码仅提供[连接池与命名构造器](../../backend/app/adapters/cache.py)，不能把本册视为已上线配置。会话算法、权限及学习结果规则分别以[认证](authentication.md)、[授权](authorization.md)、[持久缓存](learning-cache.md)为准。
 
+DESIGN20[小说章节准备](../contracts/novel-preparation.md)复用已有任务进度及私有解释/音频查阅缓存。所选components与真实分项就绪由PG任务/成品派生，Redis丢失后回源恢复；本机下载数量不能当服务端任务ready，未选内容不生成缓存任务。不新增永久chapter-cache键族或用Redis锁替代逐句GenerationSlot。
+
 ## 1. 用途与命名
 
 Redis 保存可丢失副本、会话材料和短期协调状态。业务唯一性、有效指针、撤销、幂等结果、考试播放计次、任务租约和供应商调用记录保存在 PG。会话材料是例外：丢失后重新登录，不能从 PG 自动补造登录凭据。

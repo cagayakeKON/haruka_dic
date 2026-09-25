@@ -1,0 +1,203 @@
+.novel-study-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0;
+}
+.novel-mode {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--soft, #edf5fa);
+  border-radius: 14px;
+}
+.novel-mode button {
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted, #58697b);
+  cursor: pointer;
+}
+.novel-mode button[aria-pressed='true'] {
+  color: var(--blue, #2457ed);
+  background: var(--paper, #fff);
+  box-shadow: 0 2px 7px #152b4210;
+  font-weight: 700;
+}
+.novel-cache-summary {
+  font-size: 12px;
+  color: var(--muted, #58697b);
+  margin: 0 0 20px;
+}
+.novel-sentence-action {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 160ms;
+}
+.novel-sentence-action:hover,
+.novel-sentence-action.is-analyzing {
+  background: #66c8e82b;
+}
+.novel-sentence-action:focus-visible {
+  outline: 2px solid var(--blue, #2457ed);
+  outline-offset: 4px;
+}
+[data-novel-sentence] ruby {
+  ruby-align: center;
+}
+[data-novel-sentence] rt {
+  font-family: sans-serif;
+  font-size: 0.52em;
+  color: var(--muted, #58697b);
+  user-select: none;
+}
+.novel-chapter-list {
+  display: grid;
+  gap: 8px;
+}
+.novel-chapter-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--line, #dce6ed);
+  padding: 6px 0;
+}
+.novel-chapter-row > button:first-child {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 5px 8px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  padding: 10px 5px;
+  color: inherit;
+  cursor: pointer;
+}
+.novel-chapter-row strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.novel-chapter-row small {
+  grid-column: 2;
+  font-size: 11px;
+  color: var(--muted, #58697b);
+}
+.novel-chapter-row button[aria-current='page'] {
+  background: var(--soft, #edf5fa);
+  color: var(--blue, #2457ed);
+}
+.novel-chapter-row > .icon-btn {
+  flex: 0 0 40px;
+  width: 40px;
+  padding: 8px;
+}
+.novel-prepare {
+  display: grid;
+  gap: 20px;
+}
+.novel-cache-options {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.novel-cache-options legend {
+  font-weight: 700;
+  font-size: 14px;
+  padding: 0 0 10px;
+}
+.novel-cache-options label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line, #dce6ed);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.novel-cache-options label:has(input:checked) {
+  border-color: var(--blue, #2457ed);
+  background: var(--soft, #edf5fa);
+}
+.novel-cache-options input {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--blue, #2457ed);
+  flex: 0 0 19px;
+}
+.novel-cache-options strong,
+.novel-cache-options small {
+  display: block;
+}
+.novel-cache-options small {
+  font-size: 12px;
+  color: var(--muted, #58697b);
+  margin-top: 4px;
+}
+[data-novel-progress] {
+  display: grid;
+  gap: 16px;
+}
+.novel-progress > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.novel-progress progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--blue, #2457ed);
+  display: block;
+  margin: 9px 0;
+}
+.novel-progress small {
+  font-size: 11px;
+  color: var(--muted, #58697b);
+}
+.novel-analysis-actions,
+.novel-sentence-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.novel-analysis-actions > span {
+  font-size: 13px;
+  color: var(--muted, #58697b);
+}
+.novel-analysis-dialog .selection-query-origin {
+  margin-top: 16px;
+}
+.novel-demo {
+  font-size: 12px;
+  color: var(--muted, #58697b);
+}
+@media (min-width: 900px) {
+  #desktop-app .modal-backdrop:has(.novel-analysis-dialog) {
+    justify-content: flex-end;
+    padding: 16px;
+  }
+  #desktop-app .novel-analysis-dialog {
+    width: min(540px, 48vw);
+    margin: 0;
+    max-height: calc(100dvh - 32px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .novel-sentence-action {
+    transition: none;
+  }
+}
+body[data-reduce-motion='on'] .novel-sentence-action {
+  transition: none;
+}

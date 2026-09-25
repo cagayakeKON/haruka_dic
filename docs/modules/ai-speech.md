@@ -2,6 +2,8 @@
 
 状态：2026-09-25，DESIGN18已确认单词喇叭、长按句子分词浮层与小说连续朗读，保留DESIGN17交卷后学习及题目收藏边界；继续不提供专门Agent聊天界面，正式业务待实现设计。框架已经确定为 Pydantic AI；运行依赖、持久化和模型用量恢复以 [Agent 运行层](../architecture/agent-runtime.md)、[数据与任务](../architecture/data-jobs.md) 为准。本文定义用户动作、输出和播放器行为；接口和授权统一由 [API 契约](../contracts/api.md)、[权限目录](../contracts/permissions.md) 维护。
 
+DESIGN20小说解析模式显示ruby并支持点句查看已准备释义，面板喇叭朗读原句。章节入口以独立checkbox多选AI解析、朗读或两项，批次可提前覆盖所选整个章；不与播放器有限预取混淆，仍逐句保存、按需读取并复用。空集合不提交，缺失/失败句不伪造结果；完整协议见[章节准备](../contracts/novel-preparation.md)。
+
 ## 1. 范围、入口与权限
 
 | 能力 | P0 | 后续 |

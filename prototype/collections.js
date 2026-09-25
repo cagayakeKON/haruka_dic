@@ -1,5 +1,14 @@
 /* Shared, in-memory prototype interactions. No production API or model calls. */
-window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
+window.HarukaCollections = ({
+  s,
+  root,
+  mobile,
+  render,
+  open,
+  close,
+  go,
+  novel,
+}) => {
   const { escape: e, icon: I, data, typeLabel } = window.HarukaCore;
   const learningCards = window.HarukaLearningCards;
   const { kinds } = learningCards;
@@ -404,7 +413,16 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     const messages = `<div class="query-messages" aria-live="polite">${s.queryMessages.map((message) => `<div class="query-question">${message.images?.length ? `<div class="query-image-strip">${queryImageStrip(message.images)}</div>` : ""}${message.question ? `<p>${e(message.question)}</p>` : ""}</div>${message.card ? learningCards.render(message.card, `<button class="text-btn" type="button" data-x="saveCard" data-id="${message.card.id}" ${s.words.some((w) => w.cardId === message.card.id) ? "disabled" : ""}>${I("bookmark")}${s.words.some((w) => w.cardId === message.card.id) ? "已收藏" : "收藏"}</button>`) : `<div class="query-notice" role="status">${I("book")}<p>${e(message.notice)}</p></div>`}`).join("")}</div>`;
     return `<div class="query-page ${empty ? "is-empty" : ""}">${mobile ? "" : `<div class="collection-heading"><h1>查询</h1><span class="collection-kind">语言学习</span></div>`}${empty ? `<p class="query-intro">理解一个词，读懂一句话。</p>${composer}${welcome}` : `${messages}${composer}`}</div>`;
   }
-  function querySelection(selection) {
+  function querySelection(selection, prepared) {
+    if (prepared?.replace && s.modal === "selectionQuery") {
+      const message = s.selectionMessage;
+      message.selection = selection;
+      message.question = selection.text;
+      message.card = prepared.card ? { ...prepared.card, selection } : null;
+      message.notice = "";
+      render();
+      return;
+    }
     if (mobile)
       history.replaceState(
         {
@@ -428,7 +446,10 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         ? selection.ranges
         : [{ text: selection.text }];
     const messages = parts.map((part) => {
-      const result = learningCards.sample(part.text);
+      const cached = novel.cached(selection, part.text);
+      const result = prepared
+        ? prepared.card
+        : cached || learningCards.sample(part.text);
       return {
         id: id(),
         question: part.text,
@@ -437,12 +458,14 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
         card: result
           ? {
               ...result,
-              id: id(),
-              source: `${selection.source} · 选区查询`,
+              id: prepared || cached ? result.id : id(),
+              source: `${selection.source} · ${prepared ? "已准备解析示例" : "选区查询"}`,
               selection,
             }
           : null,
-        notice: `“${part.text}”没有内置查询示例。本原型未调用 AI，未生成可收藏的结果。`,
+        notice: prepared
+          ? ""
+          : `“${part.text}”没有内置查询示例。本原型未调用 AI，未生成可收藏的结果。`,
       };
     });
     const message = messages[0];
@@ -531,6 +554,11 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   }
   function returnFromSelection() {
     if (mobile) return false;
+    if (s.modal === "chapterPrepare" && s.novelPrepareReturn) {
+      s.novelPrepareReturn = false;
+      show("selectionQuery");
+      return true;
+    }
     if (s.modal === "saveCard" && s.saveCardReturn) {
       s.saveCardReturn = false;
       show("selectionQuery");
@@ -554,10 +582,13 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
   function restoreSelectionFocus(origin) {
     if (!origin || origin.route !== s.route || origin.modal !== s.modal) return;
     const container = root.querySelector("[role=dialog]") || root;
-    const element =
-      container.querySelectorAll("[data-study-text]")[origin.scopeIndex];
+    const element = origin.novelSentenceId
+      ? container.querySelector(
+          `[data-novel-sentence="${CSS.escape(origin.novelSentenceId)}"]`,
+        )
+      : container.querySelectorAll("[data-study-text]")[origin.scopeIndex];
     if (element) {
-      element.tabIndex = -1;
+      element.tabIndex = origin.novelSentenceId ? 0 : -1;
       element.focus({ preventScroll: true });
     }
   }
@@ -573,7 +604,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
     const w = s.words.find((x) => x.id === s.selectedWord);
     if (s.modal === "selectionQuery") {
       const message = s.selectionMessage;
-      title = "查询结果";
+      title = message?.selection?.novelSentenceId ? "句子解析" : "查询结果";
       const group = message?.relatedIds
         ? message.relatedIds
             .map((id) => s.queryMessages.find((item) => item.id === id))
@@ -582,7 +613,7 @@ window.HarukaCollections = ({ s, root, mobile, render, open, close, go }) => {
           ? [message]
           : [];
       content = message
-        ? `<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.selection.sentence || message.question)}${group.length > 1 ? "<p>分别查询所选词汇</p>" : ""}</div>${group
+        ? `${novel.panelHeader(message)}<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.selection.sentence || message.question)}${group.length > 1 ? "<p>分别查询所选词汇</p>" : ""}</div>${group
             .map((item) => {
               const saved =
                 item.card && s.words.some((w) => w.cardId === item.card.id);

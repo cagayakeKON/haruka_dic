@@ -1,5 +1,5 @@
 /* Local timing/cache demonstration only. No audio or supplier requests. */
-window.HarukaSpeechPlayer = ({ s, root }) => {
+window.HarukaSpeechPlayer = ({ s, root, novel }) => {
   const { escape: e, icon: I } = window.HarukaCore;
   let playback,
     suspended,
@@ -9,10 +9,10 @@ window.HarukaSpeechPlayer = ({ s, root }) => {
     context,
     cursor,
     modalContext;
-  const prepared = new Set();
+  const prepared = novel.audioCache;
   const host = () => root.querySelector('[role="dialog"]') || root;
   const contextKey = () =>
-    `${s.signedIn}:${s.adminArea}:${s.serviceAddress}:${s.route}:${s.chosenMaterial}`;
+    `${s.signedIn}:${s.adminArea}:${s.serviceAddress}:${s.route}:${s.chosenMaterial}:${s.route === "novel" ? s.novelChapter : ""}`;
   const sentenceElements = () => [
     ...root.querySelectorAll("[data-reading-sentence]"),
   ];
@@ -127,7 +127,8 @@ window.HarukaSpeechPlayer = ({ s, root }) => {
       items: [
         item(
           text,
-          `${context}:${language === "日语" ? "ja" : language}:${text.trim()}`,
+          novel.audioKey(text) ||
+            `${context}:${language === "日语" ? "ja" : language}:${text.trim()}`,
         ),
       ],
       index: 0,
@@ -164,7 +165,11 @@ window.HarukaSpeechPlayer = ({ s, root }) => {
     playback = {
       mode: "continuous",
       items: elements.map((el, i) =>
-        item(el.textContent, `${context}:ja:${el.textContent.trim()}`),
+        item(
+          window.HarukaStudyText.plain(el),
+          novel.audioKey(window.HarukaStudyText.plain(el)) ||
+            `${context}:ja:${window.HarukaStudyText.plain(el).trim()}`,
+        ),
       ),
       index,
       startIndex: index,
@@ -207,8 +212,20 @@ window.HarukaSpeechPlayer = ({ s, root }) => {
         prepared.clear();
       context = next;
     }
-    if (modalContext !== s.modal && playback?.mode === "single") stop();
-    modalContext = s.modal;
+    const nextModal = `${s.modal}:${s.modal === "selectionQuery" ? s.selectionMessage?.selection?.novelSentenceId || "" : ""}`;
+    if (modalContext !== nextModal && playback?.mode === "single") stop();
+    modalContext = nextModal;
+    if (
+      s.modal === "selectionQuery" &&
+      s.selectionMessage?.selection?.novelSentenceId
+    ) {
+      const selectedIndex = sentenceElements().findIndex(
+        (el) =>
+          el.dataset.novelSentence ===
+          s.selectionMessage.selection.novelSentenceId,
+      );
+      if (selectedIndex >= 0) cursor = selectedIndex;
+    }
     if (["novel", "sampleReader"].includes(s.route)) {
       root
         .querySelectorAll(".prose p,.reading-prose p,[data-novel-prose] p")

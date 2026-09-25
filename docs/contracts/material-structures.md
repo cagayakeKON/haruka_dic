@@ -4,6 +4,8 @@
 
 本协议中的Manifest、AudioBinding、PlaybackPolicy是逻辑输出对象，不要求各建一表。物理映射以[材料字典](../architecture/database-materials.md)为准：小说/课本头在各自material_revisions，AudioBinding状态在synthesis spec，播放规则在冻结listening binding；三类专用schema/处理/页面与隐藏字段裁剪保持独立。
 
+DESIGN20小说基础NLP必须覆盖所有已发布正文句子，按章报告覆盖/失败：Sentence与Token保留源范围、词形/词性/活用及可得读音，注音附在范围上并区分原书/派生/不确定来源，不写入canonical_text。AI详解与TTS仍是独立成品，按[章节多选准备](novel-preparation.md)处理；语言标注完成不代表这些成品已就绪。
+
 ## 1. 分层原则
 
 上传、源提取、领域解析和消费投影是四个不同结果，不能用一个大JSON或一个成功状态代替：

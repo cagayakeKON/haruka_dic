@@ -6,7 +6,7 @@
 
 DESIGN18分词浮层、单词喇叭和连续朗读复用现有领域接口，不新增通用执行接口。朗读仍走speech/resolve与明确的speech/requests；材料/解释查询按实际来源走explanations或agent轮次，收藏仍提交完整card_id/card_revision与归本选择。非材料可见文字按[出处协议](content-locator.md#11-非材料学习文字的选区)传受控资源/版本/字段范围，服务端重取并授权；不可提交隐藏答案、试卷稿件或客户端正文冒充已发布源。
 
-DESIGN18多词查询按[多范围协议](content-locator.md#12-分词气泡与多范围查询)提交有序目标与父句，独立结果卡分别可收藏，原文由服务端重取。连续播放manifest绑定当前章/起始句/结束边界与版本；只读resolve不能生成，明确生成的请求绑定该范围及本人配置，预取仅在窗口内执行且逐阶段重查权限。播放模式和片段内暂停位置不进入合成键；服务端逐句保存音频，不增加整章缓存接口。
+DESIGN18多词查询按[多范围协议](content-locator.md#12-分词气泡与多范围查询)提交有序目标与父句，独立结果卡分别可收藏，原文由服务端重取。连续播放manifest绑定当前章/起始句/结束边界与版本；只读resolve不能生成，明确生成的请求绑定该范围及本人配置，预取仅在窗口内执行且逐阶段重查权限。播放模式和片段内暂停位置不进入合成键；服务端逐句保存音频，不提供整章单一音频资产；DESIGN20增加下述章节准备编排入口。
 
 ## 1. HTTP与数据格式
 
@@ -58,6 +58,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |
 | GET materials、materials/{id}、materials/{id}/revisions；PATCH/DELETE materials/{id} | 三类筛选、共用元数据/状态与版本摘要；改标题/删除，不返回正文/答案、不允许PATCH类型 | material.list/read/update/delete；类型分派以三类材料契约为准 |
 | GET novels/{material_id}/revisions/{revision_id}/manifest、chapters/{node_id} | NovelManifest、小说章节原文与语言标注引用 | material.read、type=novel、同库/版本/节点校验 |
+| GET/POST novels/{material_id}/revisions/{revision_id}/chapters/{node_id}/preparations；GET novel-preparations/{job_id} | 只读聚合状态/显式创建章准备Job；载荷、非空components多选及分项进度见[章节准备](novel-preparation.md)，POST返回已有/新批次，GET不生成 | job.read与来源read；POST仅检查所选analysis/audio的AI/TTS生成权限及本人配置，空集合拒绝；禁止跨类型/用户/版本 |
+| POST novel-preparations/{job_id}/pause、resume、retry | 本人章批次暂停、继续、只补缺失；expected_revision防陈旧控制，任务状态仍由持久Job/检查点维护 | pause沿job.cancel、resume/retry沿job.retry并重查所选业务生成权限；不能借操作增加未确认章/内容 |
 | GET textbooks/{material_id}/revisions/{revision_id}/manifest、lessons/{node_id} | TextbookManifest、单元内容/词表和已授权练习引用；不夹带题目答案/评分依据 | material.read、type=textbook；练习详情/作答仍另验practice动作 |
 | POST sources/resolve | 授权解析出处，返回三类之一及专用目标引用 | 当前源业务read与同库/版本检查；考试按考试投影规则，不由自报locator获得权限 |
 | POST materials/{id}/reparse、materials/{id}/analysis | reparse发布新内容版本；analysis可首次视觉转写尚无发布版本的源，或仅分析已发布正文 | 按[视觉OCR](../architecture/vision-recognition.md)明确阶段/页计划；首次OCR复核原import/read/analyze，已发布后视觉补识别/重识别需reparse+analyze；expected_revision/幂等/原件资格 |

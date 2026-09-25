@@ -18,19 +18,19 @@ Haruka P0 使用用户自行配置的供应商 API Key。产品不提供套餐�
 
 ## 2. 统计对象
 
-每次 `ExternalCallAttempt` 最多对应一条不可变语义的 `ModelCallUsage`。允许在供应商响应到达后幂等补全同一条记录，但不能把多个 attempt 合并成一条。推荐字段如下：
+每次 `ExternalCallAttempt` 最多对应一份不可变语义的 `ModelCallUsage`。物理上用量字段直接存external_call_attempts行，ModelCallUsage是DTO/值对象，不另建一对一表。允许在供应商响应到达后幂等补全同一行，但不能把多个attempt合并成一条。下表为逻辑字段，物理映射见[调用字典](../architecture/database-learning.md#74-调用用量字段位于-external_call_attempts)：
 
 | 字段 | 含义与约束 |
 | --- | --- |
-| id | 应用生成的稳定标识 |
+| id | 逻辑用量标识与attempt.id相同，不另分配UUID |
 | owner_user_id | 调用及用量所属用户；从认证/任务上下文写入，不接受客户端或模型提供 |
 | operation_id / request_id | 端到端关联标识，不作为 Loki 高基数标签 |
-| external_call_attempt_id | 非空且唯一；所有真实供应商调用（包括Key测试与TTS）必须先建立attempt；无物理外键，按作用域服务校验 |
+| external_call_attempt_id | 逻辑字段映射本行id，PK保证每attempt一份；所有真实调用（包括Key测试与TTS）必须先建立attempt，不复制同值关联列 |
 | job_id / ai_run_id | 可空的业务关联；按作用域服务校验，不能代替attempt唯一性 |
 | provider / model_id / model_revision | 实际供应商、模型及可得的版本信息 |
 | capability | `text`、`vision`、`tts` 或后续登记的明确能力 |
 | operation_kind | 解释、OCR、习题生成、评分、TTS 等受控枚举 |
-| call_status | `succeeded`、`failed` 或 `unknown`；与业务结果状态分开 |
+| call_status | 映射attempt.status，调用中started，结束后succeeded/failed或unknown；与业务结果状态分开 |
 | usage_status | `complete`、`partial` 或 `unavailable` |
 | input_tokens | 供应商报告的输入 Token；未知为 `null` |
 | output_tokens | 供应商报告的输出 Token；未知为 `null` |
@@ -62,7 +62,7 @@ Haruka P0 使用用户自行配置的供应商 API Key。产品不提供套餐�
 
 ## 4. 写入、重试与聚合
 
-1. 发起外部请求前先持久化 `ExternalCallAttempt`；得到供应商响应后，用 attempt 唯一键幂等写入或补全用量。
+1. 发起外部请求前先持久化 `ExternalCallAttempt`；得到供应商响应后，按attempt.id和owner幂等补全本行用量；重复回调写已报告绝对值，不累加，迟到NULL不清已有可信值，变化同事务推进aggregation_revision/updated_at及Outbox。
 2. 网络断开、进程崩溃或供应商结果不明时，`call_status=unknown`。没有可信用量就写 `usage_status=unavailable`，不能推算为零。
 3. 有界重试产生新的 attempt。作业、运行和用户维度的统计从 attempt 聚合，不能同时累加 attempt 与 AiRun 汇总而重复计算。
 4. AiRun/Job 可保存派生汇总和统计版本用于查询加速；源记录变化后按版本重算，源 attempt 始终是权威事实。
@@ -73,7 +73,7 @@ Haruka P0 使用用户自行配置的供应商 API Key。产品不提供套餐�
 
 用户可以在设置中的“模型用量”查看本人数据，至少支持按时间范围、供应商、模型、能力和操作类型分组，并展示调用次数、成功/失败/未知次数及各 Token 分项。该投影沿用 `client.credential.read`，只返回当前用户的聚合和其有权读取的运行明细，不返回 Key、Prompt、回复或其他用户标识。
 
-聚合必须从 `ExternalCallAttempt` 出发并以LEFT JOIN关联用量，不能从`ModelCallUsage`出发漏掉无用量响应的真实调用。每个数值指标返回同一结构：`known_sum`、`known_attempt_count`、`unknown_attempt_count`和`completeness=complete/partial/unavailable`。没有任何已知值时`known_sum=null`；已知值确实为零时才返回0。混合组例如一次`input_tokens=100`、另一次未知，应展示“已知100，另1次未知”，不能只展示100或把未知补零。调用总数和成功/失败/unknown次数始终从attempt状态统计。
+聚合直接从 `ExternalCallAttempt` 的全部匹配行读取同一行用量字段，不需要LEFT JOIN，也不能以usage_status/非空用量筛掉真实调用。started计入调用总数并单列进行中数量；成功/失败/unknown分别计数。每个数值指标返回同一结构：`known_sum`、`known_attempt_count`、`unknown_attempt_count`和`completeness=complete/partial/unavailable`。没有任何已知值时`known_sum=null`；已知值确实为零时才返回0。混合组例如一次`input_tokens=100`、另一次未知，应展示“已知100，另1次未知”，不能只展示100或把未知补零。调用总数、进行中和成功/失败/unknown次数始终从attempt状态统计。
 
 迟到用量补全后，聚合按源attempt更新时间或单调`aggregation_revision`失效并重算；缓存的时间桶不能继续返回旧的unknown计数。分页明细与聚合使用同一截止时间/快照，避免用户翻页时把迟到补全重复计入两个时间桶。
 

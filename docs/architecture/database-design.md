@@ -1,16 +1,19 @@
 # Haruka 数据库设计书
 
-版本：DBDESIGN1 / v0.1，2026-09-25。所属阶段：阶段1中的数据库设计文档小阶段；设计覆盖已确认首版功能，工程按阶段1～4逐步落地。基线提交：`259ee0c`。**本次交付表结构与 Redis 字段设计，不创建业务表、不执行迁移、不修改运行实例。**
+版本：DBDESIGN2 / v0.2，2026-09-25。所属阶段：阶段1中的数据库设计文档小阶段；设计覆盖已确认首版功能，工程按阶段1～5相关功能切片逐步落地。本轮基线提交：`af87a41`；B0实际结构仍以`0001_b0_identity`及生成字典为准。**本次交付表结构与 Redis 字段设计，不创建业务表、不执行迁移、不修改运行实例。**
 
 ## 1. 阅读入口与设计状态
 
 | 分册 | 内容 |
 | --- | --- |
 | 本册 | 依据、公共字段、业务关系、查询/事务边界、分期迁移与待决门槛 |
+| [全表必要性与复杂度收敛](database-convergence.md) | 158个原候选逐项审查，目标142表；合并映射、保留理由与分期成本 |
 | [账号、设置与权限表](database-identity.md) | B0 12 表核对及增量；资料、会话、凭据、目录、RBAC 与技术限额 |
 | [材料、阅读与考试表](database-materials.md) | 上传与对象、三类不可变内容、出处、位置、试卷、文字听力准备与播放账本 |
 | [收藏、学习与 AI 表](database-learning.md) | 单词本/CSV、题目作答、证据错题、内部查询、持久解释与音频、任务与模型用量 |
 | [Redis 键与字段](redis-design.md) | 18 类键的类型、字段、TTL 初值、容量、失效、认证和恢复处理 |
+
+**当前物理目标142张：已有B0 12张，拟新增130张（含邮件交付条件表1张）。** 对全部158个原候选审查后减少16张；未启用邮件条件时目标141张。内部alembic_version、Redis键与逻辑DTO/查询投影不计表数。各表取舍见收敛册；下一次迁移只建立当期必需结构。
 
 设计状态严格区分：
 
@@ -87,7 +90,7 @@ P0 不使用数据库外键、级联关系写入或 RLS；PK、UNIQUE、NOT NULL
 ~~~mermaid
 flowchart LR
     U[User] --> L[Library]
-    U --> A[AuthSession / Profile / Settings / Credential]
+    U --> A[AuthSession / UserExtension / Credential]
     U --> R[UserRole / Role / Permission]
     L --> M[Material / Immutable Revision]
     M --> N[Novel Chapters / Blocks]
@@ -110,8 +113,7 @@ flowchart LR
     F[Explicit feature action] --> I[Idempotency / PG transaction]
     I --> J[Job / Stage / Outbox]
     J --> K[Kafka / Worker]
-    K --> RUN[AiRun / ExternalCallAttempt]
-    RUN --> USAGE[ModelCallUsage]
+    K --> RUN[AiRun / ExternalCallAttempt含用量组]
     RUN --> RES[Explanation / Card / Audio Asset]
     RES --> BIND[Source Binding / Lookup effective pointer]
     RES --> OBJ[Verified immutable object]
@@ -147,13 +149,13 @@ flowchart LR
 
 | 交付单元 | 必要结构及验证重点 |
 | --- | --- |
-| 阶段1 B1 | 既有 users/RBAC 增量、会话/资料/设置、可信 scope、最小收藏关联；注册单例/撤销版本/隔离与 Redis 会话故障验证 |
-| 阶段1 B2 | 本人凭据、Job/Stage/Outbox/Inbox、AiRun/attempt/usage、最小题目作答链路；Fake供应商、重投/unknown/撤权与事务验证 |
+| 阶段1 B1 | 既有 users/RBAC 增量、会话/user_extensions三个字段组、可信 scope、最小收藏关联；注册单例/撤销版本/隔离与 Redis 会话故障验证 |
+| 阶段1 B2 | 本人凭据、Job/Stage/Outbox/Inbox、AiRun/含用量字段的attempt、最小题目作答链路；Fake供应商、重投/unknown/撤权与事务验证 |
 | 阶段1其余账号/管理 | 完整继承/deny/授予边界、目录/技术限额、审计；按各功能切片落地，不把 B1 最小链路当完整 RBAC |
 | 阶段2 | 上传/配额、三类内容版本与结构、出处/阅读、试卷准备/听力文字稿候选与确认；OPEN-01/03 及来源/版本/删除竞争 |
-| 阶段3 | 完整收藏/词本/CSV、解释索引/绑定/lookup、私有及公共词音持久资产；OPEN-04、双账号缓存隔离、无隐式新调用 |
+| 阶段3 | 完整收藏/词本、解释查询投影/绑定/lookup、私有及公共词音持久资产；OPEN-04、双账号缓存隔离、无隐式新调用 |
 | 阶段4 | 查询附件/四类卡片、AI选源/公共评分/学习证据/错题/诊断、考试场次/冻结答卷/播放账本；OPEN-05/10/11、重评与跨端并发 |
-| 阶段5～6 | 已交付结构的边界、性能/索引、恢复和发布验收；不在本书预建商业化、组织租户或新产品 |
+| 阶段5～6 | 阶段5按CSV切片建立导入批次/明细；已交付结构的边界、性能/索引、恢复和发布验收；不在本书预建商业化、组织租户或新产品 |
 
 迁移采用 expand → 回填 → 核对 → 收紧顺序。B0 旧用户新增 password_version/security_epoch 等需在迁移说明中明确中性起点及现有会话处理；不把默认 1 当成密码或授权历史。旧角色数据范围、菜单权限关系转换必须保留人工授权/deny/保护边界，不能种子重跑覆盖。
 
@@ -165,4 +167,4 @@ flowchart LR
 
 暂不新增：SRS/FSRS/复习队列/每日新词额度、通用聊天/通用回答卡片、第四类材料、套餐/余额/金额结算、用户整库备份、私有材料跨用户共享或管理旁路。
 
-本次检查范围仅是文档链接/围栏/路径、B0 已有字段与生成字典一致性、跨分册引用、产品/契约/阶段一致性及独立设计 review；具体结果见[本次交付记录](../delivery/reviews/2026-09-25-database-design.md)。没有运行建库迁移、真实 PostgreSQL/Redis 业务测试、性能 EXPLAIN 或应用测试，因此不勾选 DB/DAT/LC 等工程验收。
+本次检查范围仅是文档链接/围栏/路径、B0 已有字段与生成字典一致性、跨分册引用、产品/契约/阶段一致性及独立设计 review；DBDESIGN1原交付见[初版记录](../delivery/reviews/2026-09-25-database-design.md)，本轮收敛结果见[DBDESIGN2记录](../delivery/reviews/2026-09-25-database-convergence.md)。没有运行建库迁移、真实 PostgreSQL/Redis 业务测试、性能 EXPLAIN 或应用测试，因此不勾选 DB/DAT/LC 等工程验收。

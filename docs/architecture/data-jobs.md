@@ -16,7 +16,7 @@
 
 | 聚合 | 关键字段/关系 | 必须保证 |
 | --- | --- | --- |
-| User/Library/UserProfile/StudyProfile/Settings | User的email_normalized/status/password_version/安全epoch/authz_version；Library.owner；本人资料、语言档案和设置各自revision | 邮箱唯一、每用户一个Library及每类单例聚合；注册同事务初始化；任何密码哈希替换推进password_version；登录身份与可选资料/学习偏好分离，普通用户无跨用户资料读取 |
+| User/Library/UserExtension | User的email_normalized/status/password_version/安全epoch/authz_version；Library.owner；本人资料、语言档案和设置各自revision | 邮箱唯一、每用户一个Library及一个扩展行、三个字段组版本；注册同事务初始化；任何密码哈希替换推进password_version；登录身份与可选资料/学习偏好分离，普通用户无跨用户资料读取 |
 | AuthSession/AuthChallenge | user、audience、绝对期限、epoch、撤销/消费状态、purpose、摘要 | 会话/挑战不得跨用户/受众/用途；PG 撤销先于任何缓存失效通知 |
 | Role/权限关系/Revision | 见 RBAC | 继承 DAG、合法范围、唯一绑定、版本、授予边界、最后管理员约束 |
 | Material/Revision/SourceAsset/SourceUnit/ContentBlock | 固定material_type、当前版本指针、状态、delete_generation、不可变源资产/结构/规范文本/定位 | revision不可变；同库引用；节点不能跨版本拼接；AI不覆盖原文/类型，共用来源层不直接构成万能阅读器，完整契约见[解析数据结构](../contracts/material-structures.md) |
@@ -41,17 +41,17 @@
 | GlobalWordAudio/GlobalWordGenerationSlot | system_catalog标准词条/读音/profile、全局合成键、对象版本及内部生成租约/代次 | 仅[标准收藏词音](learning-cache.md#51-收藏库标准单词发音的全局缓存)跨用户去重；发布/消费走专用目录服务，个人引用/Job/凭据/模型用量仍隔离，不给私有AudioAsset增加owner空值旁路 |
 | ProviderCredential | owner、provider、密文、credential_version、encryption_key_version、row revision | 用户换Key/撤销更新credential_version，主密钥重加密只更新encryption_key_version，二者不混用；DTO只返回掩码，模型能力选择由上方Settings引用 |
 | Job/JobStage/ExternalCall | actor/owner/audience、权限引用、输入版本、阶段、租约、调用上限 | 状态CAS、阶段幂等、调用结果不确定单独记录 |
-| ModelCallUsage | ExternalCall attempt、provider/model/capability、调用与用量状态、Token/缓存及供应商可得的音频/图像/字符指标 | 每个attempt幂等写入；未知为null而非0；数据库记录为权威，完整口径见[模型用量统计](../contracts/model-usage.md) |
+| ModelCallUsage | ExternalCall attempt、provider/model/capability、调用与用量状态、Token/缓存及供应商可得的音频/图像/字符指标 | 同一attempt行幂等补全用量字段；未知为null而非0；数据库记录为权威，完整口径见[模型用量统计](../contracts/model-usage.md) |
 | Outbox/Inbox/IdempotencyRecord | event_id、schema、资源引用、请求摘要、游标/结果引用 | 已提交事实可重投；重复消费不重复业务；不放秘密/正文 |
 | AdminAuditEvent | actor、target、动作、版本/安全差异、结果 | 与成功变更同事务；应用不可更新/删除；留存独立于Loki |
 
-状态细分见各功能；表名是逻辑职责。“必须保证”同时包含服务层逻辑关联校验与数据库行内/唯一约束，并不表示由外键或跨表 CHECK 执行。迁移可以把小型值对象合表，但不能省略相应校验；完整建表、ScopeContext、逻辑引用、锁顺序和字典登记以 [数据库规范](../engineering/database.md) 为准。
+状态细分见各功能；上表对象名是逻辑职责，不逐一对应物理表。DBDESIGN2的[逐项映射](database-convergence.md)合并一对一头/状态：AvatarAsset在FileObject，AiExercisePlan在ExerciseSet，ModelCallUsage在ExternalCallAttempt；MaterialLearningIndex为绑定/当前lookup查询投影，MistakeFavorite为occurrence的独立可变字段组。“必须保证”同时包含服务层逻辑关联校验与数据库行内/唯一约束，并不表示由外键或跨表 CHECK 执行。迁移可以把小型值对象合表，但不能省略相应校验；完整建表、ScopeContext、逻辑引用、锁顺序和字典登记以 [数据库规范](../engineering/database.md) 为准。
 
 ### 公共逻辑关系与来源
 
 以下保留产品逻辑模型中的跨功能关系，不复制模块 DTO，也不把字段示意当最终 DDL：
 
-- User拥有私有Library并承载不可由资料接口修改的登录/状态字段；UserProfile保存显示名、头像引用及可选出生年份/性别，StudyProfile保存母语/解释语言、target_languages及各语言水平/目标，Settings保存模型、时区、显示/阅读等偏好，三者各自revision。界面locale、母语与target_languages分开；可选人口字段默认不进入AI。LearnerProfile按学习者与目标语派生词汇、语法和技能统计，并保留更新时间/事实版本；修改语言偏好不改写原Attempt或删除历史。设置字段和诊断口径分别见[设置](../modules/settings.md)、[收藏与练习](../modules/vocabulary-practice.md)。
+- User拥有私有Library并承载不可由资料接口修改的登录/状态字段；UserProfile保存显示名、头像引用及可选出生年份/性别，StudyProfile保存母语/解释语言、target_languages及各语言水平/目标，Settings保存模型、时区、显示/阅读等偏好，三者作为API投影映射同一user_extensions行的profile_revision/study_revision/settings_revision，语言与模型/声音选择仍为一对多子表。界面locale、母语与target_languages分开；可选人口字段默认不进入AI。LearnerProfile按学习者与目标语派生词汇、语法和技能统计，并保留更新时间/事实版本；修改语言偏好不改写原Attempt或删除历史。设置字段和诊断口径分别见[设置](../modules/settings.md)、[收藏与练习](../modules/vocabulary-practice.md)。
 - Material的来源格式、唯一业务类型material_type、语言与导入报告分开。MaterialRevision保留不可变SourceAsset/SourceUnit/ContentBlock，各类型独立编排NovelManifest、TextbookManifest或ExamPaperVersion；具体对象关系唯一维护在[解析数据结构](../contracts/material-structures.md)，类型固定和重新处理边界见[三类材料](../contracts/material-types.md)。语言分析版本中的Sentence/Token引用原文span；重新解析失败不切当前版本，收藏重绑失败保留快照。
 - ExamPaperVersion通过ExamStimulusItemBinding关联共享阅读/图片/表格/听力材料。文字听力稿和试卷正文提取分别建立ScriptSource，AI候选、人工确认、TTS AudioBinding和播放策略分层；隐藏稿件、答案和rubric不进入题面投影。场次冻结paper/script/audio/policy版本，后续修订不改变旧场次；P0不建立原始音频上传/转写关系。
 - Selection/Bookmark 关联学习者、句子/内容版本与选区范围，读取和保存仍受本人归属约束。Selection 是逻辑选区职责，不因此要求为每次临时划选创建数据库记录；持久书签/收藏按相应业务流程保存。
@@ -64,9 +64,9 @@
 
 | 事务 | 在同一提交内完成 | 事务外执行 |
 | --- | --- | --- |
-| 注册 | User/Library/UserProfile/StudyProfile/Settings/默认角色/必要通知Outbox | 发邮件、创建登录会话 |
-| 资料/学习档案/设置更新 | 本人范围、字段白名单/field mask、expected_revision、单聚合更新与Outbox | 头像文件处理、客户端缓存刷新；一个聚合成功不与另一个页面保存伪装成全局原子 |
-| 头像发布/替换 | 完成验证后的AvatarAsset、UserProfile expected_revision、当前指针与Outbox | staging清理、旧无引用资产GC、客户端私有缓存刷新；解码/重编码在短事务外完成 |
+| 注册 | User/Library/UserExtension/默认角色/必要通知Outbox | 发邮件、创建登录会话 |
+| 资料/学习档案/设置更新 | 本人范围、字段白名单/field mask、expected_revision映射字段组版本、仅更新对应列及Outbox | 头像文件处理、客户端缓存刷新；一个聚合成功不与另一个页面保存伪装成全局原子 |
+| 头像发布/替换 | 完成验证后的avatar用途FileObject专用投影、UserExtension.profile_revision、当前指针与Outbox | staging清理、旧无引用资产GC、客户端私有缓存刷新；解码/重编码在短事务外完成 |
 | 撤销/改密/禁用 | 改密锁内复核password_version/security_epoch/当前会话；哈希替换、版本/epoch、持久会话撤销或状态/权限版本、审计、Outbox | 密码验证与新哈希计算、Redis删除、客户端通知；提交确认丢失不自动重放 |
 | 角色/菜单/策略管理 | 范围检查、预期revision、修改、版本、审计、Outbox | 快照预热/通知/Loki投递 |
 | 上传完成/导入 | UploadIntent状态、FileObject验证引用、Material/Job/Outbox | 文件内容解析、AI、对象读取 |
@@ -76,7 +76,7 @@
 | 听力音频发布 | generation/spec、当前人工Binding/Policy、验证后的私有AudioAsset/Manifest、AudioBinding状态、Outbox | 客户端预载/通知；模型调用、转码/解码在短事务外完成 |
 | 听力播放领取/计次 | 当前场次/编辑端/截止/权限、冻结policy和资产、每场次×Stimulus usage锁、幂等PlayAttempt；新领取先reserved并设短租期，媒体端首字节前CAS为active、计入consumed并写resume期限 | Manifest/签名签发和媒体传输；持久更新交付游标，终段交付为completed，期限/回执不确定为closed_unknown；从未领取的过期reservation或可证明零字节的故障才void释放。只有active在期限内可按策略续播，终态/显式重播必须新领次数；接管失效旧edit_epoch |
 | 收藏/CSV批次 | 权限/归属/版本/幂等、业务记录、批次游标 | 下一批处理、日志转发 |
-| AI习题确认 | 本人选择快照/所选来源和错题投影版本/权限、幂等、不可变AiExercisePlan、Job/Outbox | 模型生成；Worker不重跑动态筛选或补入未选来源，开始习题另建会话 |
+| AI习题确认 | 本人选择快照/所选来源和错题投影版本/权限、幂等、ExerciseSet内不可变AiExercisePlan字段组、持久引用冻结候选、Job/Outbox | 模型生成；Worker不重跑动态筛选或补入未选来源，开始习题另建会话 |
 | 考试保存/交卷 | 场次锁、权限/截止/edit_epoch、最终答案、锁卷、唯一评分请求/Outbox | AI批改与客户端推送 |
 | 评分发布 | run/代次验证、有效成绩指针、学习贡献替换、可靠错误的MistakeOccurrence幂等写入、汇总状态、Outbox | 错题/掌握投影重算、诊断/通知，不重复累计 |
 | 删除材料 | tombstone/generation、拒绝新引用、取消意图/Outbox | MinIO延迟回收、缓存清理 |

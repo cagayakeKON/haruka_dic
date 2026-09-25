@@ -52,7 +52,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | DEC-18 | 收藏标准单词独立发音采用global_word实例级目录，跨用户复用同词/读音/profile音频 | [全局词音](../architecture/learning-cache.md#51-收藏库标准单词发音的全局缓存)及LC-09/10；不共享私人输入/Job/Key，词表与声音范围待阶段3实测锁定，未实现 |
 | DEC-19 | 已被DEC-20取代：原方案为多单词本+effective掌握+py-fsrs间隔 | 仅供历史追踪；未实现，不得恢复其复习/SRS部分 |
 | DEC-20 | 多单词本只负责组织和选源；effective习题结果驱动只读掌握，不做时间调度。独立AI习题经预览确认后使用本人Key生成；所有可靠错题自动留档，收藏与当前错误状态独立 | [AI习题](../modules/ai-exercises.md)AIX、[单词本](../modules/vocabulary-notebooks.md)VNB及[学习证据](../architecture/vocabulary-learning.md)VL验收；OPEN-11只锁定结果阈值，阶段3组织、4闭环、5CSV，均未实现 |
-| DEC-21 | 账号基础资料采用UserProfile/StudyProfile/Settings分离：最小注册，可跳过引导；可选birth_year代替整数年龄，人口字段默认不进AI；头像专用安全发布，语言档案与UI语言/权限分离 | [账号](../modules/accounts.md)ACC-11/12与[设置](../modules/settings.md)PROFILE验收；阶段1实现，精确生日/未成年人、公开资料、邮箱变更/销号另立范围，均未实现 |
+| DEC-21 | 账号身份保留users；资料/单例学习偏好/通用设置合入user_extensions，UserProfile/StudyProfile/Settings保持API投影及字段组版本，语言/模型/Key/会话与容量独立：最小注册，可跳过引导；可选birth_year代替整数年龄，人口字段默认不进AI；头像专用安全发布，语言档案与UI语言/权限分离 | [账号](../modules/accounts.md)ACC-11/12与[设置](../modules/settings.md)PROFILE验收；阶段1实现，精确生日/未成年人、公开资料、邮箱变更/销号另立范围，均未实现 |
 | DEC-22 | 材料解析采用公共SourceUnit/ContentBlock来源层+NovelManifest/TextbookManifest/ExamPaperVersion三套领域结构；P0考试听力只处理文字稿/正文候选，经AI标记匹配和人工确认后生成私有TTS | [解析数据结构](../contracts/material-structures.md)MSTR、[考试](../modules/exams.md)与PRES验收；原始音频上传/自动绑定按OPEN-12进入P1前置设计，全部未实现 |
 | DEC-23 | 当前不建设Haruka商业化系统；个人Key调用只记录按attempt的模型用量，不维护金额。应用缓存命中与供应商Prompt缓存Token分开 | [模型用量统计](../contracts/model-usage.md)USAGE-01～USAGE-09；阶段1建立持久化/聚合基础，实际模型阶段补供应商适配，均未实现 |
 | DEC-24 | 产品设计语言采用「晴空频率」；整体风格已获认可，色彩/形状/文字/状态/动效/文案集中维护，场景只调整视觉强度 | [产品设计语言](../product/design-language.md)DESIGN-01～06随正式页面切片验证；深色派生色、字体资源及尺寸/动效为实现初值，HTML原型已重建但Flutter未迁移，不回写B0验收 |

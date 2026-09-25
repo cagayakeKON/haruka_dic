@@ -1,6 +1,6 @@
 # 数据库设计书：账号、权限与个人设置
 
-状态：设计基线 v0.1，2026-09-25。属于阶段1后续表设计文档切片；仅第1节记录已落地的 B0 物理结构，其余为拟实施设计，不代表登录、完整 RBAC 或设置已经实现。总规则、公共列组与分册入口见 [数据库设计书](database-design.md)。
+状态：DBDESIGN2 收敛基线 v0.2，2026-09-25。属于阶段1后续表设计文档切片；仅第1节记录已落地的 B0 物理结构，其余为拟实施设计，不代表登录、完整 RBAC 或设置已经实现。总规则、公共列组与分册入口见 [数据库设计书](database-design.md)。
 
 本分册依据 [认证](authentication.md)、[授权](authorization.md)、[账号](../modules/accounts.md)、[设置](../modules/settings.md)、[管理](../modules/admin.md)、[权限目录](../contracts/permissions.md) 和 [API](../contracts/api.md)。原型账号、语言、阅读、声音和显示页用于核对字段用途；原型内的固定年份、模型名、声音名与本机表单值不是数据库默认值。
 
@@ -293,53 +293,38 @@ scope_kind='identity'；归属：无私有归属列；生命周期：可变；B0
 
 ## 3. 个人资料与设置（拟新增）
 
-本节表均为 `scope_kind=user_owned`，权威归属 `user_id → users.id`，只由当前本人资料/设置服务读写；管理DTO仅可另行投影明确允许的账号显示名。注册事务创建三个空单例：user_profiles、study_profiles、settings；下属选择行按实际设置创建，不预置假语言/模型/Key。本节可变聚合带R，子行修改推进其聚合根revision。所有表包含公共U，未单独列出的默认值均为“—”。
+本节表均为 `scope_kind=user_owned`，权威归属 `user_id → users.id`。注册事务只创建一个 `user_extensions` 空扩展行；资料、单例学习偏好和通用设置按字段组合并，API/权限/DTO仍分别处理。语言、模型、声音等真正的一对多选择保持子表，按实际选择创建，不预置假语言/模型/Key。所有表包含公共U，未单独列出的默认值均为“—”。
 
-### user_profiles
+### user_extensions
 
-列组：U + R。
+列组：U；唯一 `(user_id)`。身份密码/安全epoch/授权字段只在 users，本表不保存秘密、会话或高频容量计数。这里不叠加一个要求所有表单共同比较的R，分别采用三个字段组版本：
+
+| 列 | PostgreSQL类型/NULL/默认 | 语义 |
+| --- | --- | --- |
+| profile_revision | bigint NN DEFAULT 1 | 资料及头像指针CAS，>=1 |
+| study_revision | bigint NN DEFAULT 1 | 解释语/当前语与学习语言子行CAS，>=1 |
+| settings_revision | bigint NN DEFAULT 1 | 通用设置及模型/声音绑定CAS，>=1 |
+
+资料组：
 
 | 列 | PostgreSQL类型/NULL/默认 | 语义 |
 | --- | --- | --- |
 | display_name | varchar(100) NULL | 本人称呼；非唯一，不从邮箱前缀回填 |
-| avatar_asset_id | uuid NULL | 当前本人头像 → avatar_assets.id；没有头像为空 |
+| avatar_asset_id | uuid NULL | 当前本人头像 → file_objects.id，必须purpose=avatar；没有头像为空 |
 | avatar_revision | bigint NN DEFAULT 0 | 头像指针代次；替换/删除均递增 |
 | birth_year | smallint NULL | 可选出生年份；不是年龄或身份依据 |
 | gender_code | varchar(24) NULL | 设置模块受控代码，可清除 |
 | gender_self_description | varchar(200) NULL | 仅self_described允许填写；不进入AI |
 | use_optional_demographics_for_ai | boolean NN DEFAULT false | 允许明确功能使用最小派生人口资料 |
 
-唯一：`(user_id)`；CHECK avatar_revision>=0、birth_year IS NULL OR birth_year>=1900、gender_code允许值、非self_described时说明为空。年份上界随服务端日期校验，不把2026硬编码入CHECK。头像读取按user_id唯一查根，再校验本人资产；拟加 `(user_id,avatar_asset_id)` 部分索引 WHERE avatar_asset_id IS NOT NULL 支持同账号引用检查。替换/删除与头像GC共锁本profile行；旧资产无引用后清理。资料完整度/年龄段/整数年龄不存列，按授权字段派生。
-
-### study_profiles
-
-列组：U + R；唯一 `(user_id)`。
+学习偏好单例组：
 
 | 列 | PostgreSQL类型/NULL/默认 | 语义 |
 | --- | --- | --- |
 | explanation_language | varchar(35) NULL | 解释语言，逻辑关联language_capabilities.language_tag |
 | active_target_language | varchar(35) NULL | 当前目标语，必须存在本人target语言子行 |
 
-允许空学习档案。语言数组采用下面的有序关系行，读取时组装API数组；不把母语、解释语和目标语合并成一个locale。语言移除只改偏好，不级联删除材料/作答；同事务锁study_profiles后修改子行和active_target_language。
-
-### study_profile_languages
-
-列组：U；父为study_profiles，修改由父revision保护。
-
-| 列 | PostgreSQL类型/NULL/默认 | 语义 |
-| --- | --- | --- |
-| study_profile_id | uuid NN | 本人学习档案根 |
-| language_kind | varchar(8) NN | native/target，分别表示母语与目标语 |
-| language_tag | varchar(35) NN | 规范BCP-47 → language_capabilities.language_tag |
-| sort_order | integer NN | 有序多选的位置 |
-| self_assessed_level | varchar(16) NULL | target时设置模块允许的水平；未填用unknown，native为空 |
-| learning_goals | varchar(24)[] NN DEFAULT '{}' | 有限受控目标代码数组；空数组是明确无选择 |
-
-唯一 `(user_id,study_profile_id,language_kind,language_tag)` 与 `(user_id,study_profile_id,language_kind,sort_order)`；CHECK种类、sort_order>=0、native时level为空且goals空、level允许值、goals为模块允许集合子集。服务校验数组去重/上限、目标语能力、母语/目标语各自支持状态。父锁内显式删除偏好行；不是学习事实清理入口。
-
-### settings
-
-列组：U + R；唯一 `(user_id)`。
+通用设置组：
 
 | 列 | PostgreSQL类型/NULL/默认 | 语义 |
 | --- | --- | --- |
@@ -358,49 +343,56 @@ scope_kind='identity'；归属：无私有归属列；生命周期：可变；B0
 | exercise_defaults | jsonb NULL | 仅题型、方向、建议题数；无词本ID、掌握阈值、答案/AI输出 |
 | default_notebook_id | uuid NULL | 本人词本 → vocabulary_notebooks.id；只是下次选择预填 |
 
-CHECK各枚举、正数字号/行高、有限playback_speed、JSON为对象/版本正值；具体字号/行距上限在适配验收时锁定，不照搬HTML范围。timezone服务端验证IANA目录，不接受客户端作为服务端时限。词本引用锁本settings与词本根、验证同用户/库；删词本显式解除默认，不能留下失效预填。服务地址、Token、缓存容量/路径、设备account_generation不进此表。
+CHECK包括：三个组版本>=1、avatar_revision>=0、birth_year为空或>=1900、gender枚举及非self_described时说明为空；设置枚举、正数字号/行高、0.70–1.50倍速、exercise_defaults对象与正schema版本。年份上界/IANA时区/语言能力/数组上限由服务校验。母语、解释语、学习语和ui_locale保持不同含义；资料完整度/年龄段按许可字段派生，不额外存列。字段组仍是明确类型列，不把整份扩展行改为任意JSON。
 
-### settings_model_bindings
+`avatar_asset_id` 直接逻辑引用本人 `file_objects.id`，只能指向purpose=avatar且完成受控重编码的对象；API的AvatarAsset是该对象的专用投影。替换/删除/头像GC共锁本扩展行，推进profile_revision及avatar_revision，失败保留旧指针。按user_id唯一查根已经支持本人引用核查，不重复创建(user_id,avatar_asset_id)索引。尺寸/校验版本由文件分册唯一维护。文件下载仍逐次鉴权private/no-store。
 
-列组：U；父settings，随父R原子更新。
+学习语言以子行表达。语言删除锁本扩展行后修改子行、active_target_language并只推进study_revision；不删除学习事实。模型/声音绑定修改只推进settings_revision。default_notebook_id引用本人词本，删除词本与解除默认必须共用“扩展行→词本”顺序，且推进settings_revision；服务地址、Token、设备缓存和account_generation不进本表。
+
+每个PATCH把expected_revision映射到相应组列，UPDATE只写该组白名单列并推进该组版本及updated_at，禁止整行ORM覆盖。资料和主题并发更新会短暂争用同一PG行锁，但不同组不发生无意义的版本冲突；同组旧版本仍409。涉及多个组的单次操作必须显式声明并在同一事务比较全部相关组版本；普通独立页面不能互相回滚。读取一个组只选择该组允许列，物理合表不扩大DTO或管理权限。子行与组版本、Outbox同事务提交。
+
+### study_profile_languages
+
+列组：U；以 user_id 逻辑关联 user_extensions.user_id；修改由父行 study_revision 保护。
 
 | 列 | PostgreSQL类型/NULL/默认 | 语义 |
 | --- | --- | --- |
-| settings_id | uuid NN | 本人settings根 |
+| language_kind | varchar(8) NN | native/target，分别表示母语与目标语 |
+| language_tag | varchar(35) NN | 规范BCP-47 → language_capabilities.language_tag |
+| sort_order | integer NN | 有序多选的位置 |
+| self_assessed_level | varchar(16) NULL | target时设置模块允许的水平；未填用unknown，native为空 |
+| learning_goals | varchar(24)[] NN DEFAULT '{}' | 有限受控目标代码数组；空数组是明确无选择 |
+
+唯一 `(user_id,language_kind,language_tag)` 与 `(user_id,language_kind,sort_order)`；CHECK种类、sort_order>=0、native时level为空且goals空、level允许值、goals为模块允许集合子集。服务校验数组去重/上限、目标语能力、母语/目标语各自支持状态。父锁内显式删除偏好行；不是学习事实清理入口。
+
+### settings_model_bindings
+
+列组：U；以user_id关联user_extensions.user_id，随父settings_revision原子更新。
+
+| 列 | PostgreSQL类型/NULL/默认 | 语义 |
+| --- | --- | --- |
 | capability | varchar(12) NN | text/vision/tts |
 | credential_id | uuid NN | 本人ProviderCredential，不复制密文 |
 | model_catalog_entry_id | uuid NN | 允许目录中的模型 |
 | parameters_schema_version | integer NN DEFAULT 1 | 模型参数白名单版本 |
 | parameters | jsonb NN DEFAULT '{}' | 有界采样/合成参数；空对象表示使用目录默认 |
 
-唯一 `(user_id,settings_id,capability)`；反向索引 `(user_id,credential_id)` 支持删除Key影响预览/解绑。服务验证凭据和模型provider匹配、能力启用；模型停用不删历史run，仅阻止新调用。更新共锁settings与凭据根；凭据撤销在同一受控路径解绑。活动run冻结model/settings版本，不追着表内指针变化。
+唯一 `(user_id,capability)`；反向索引 `(user_id,credential_id)` 支持删除Key影响预览/解绑。服务验证凭据和模型provider匹配、能力启用；模型停用不删历史run，仅阻止新调用。选择/解绑以及会影响绑定的凭据撤销都按user_extensions→provider_credentials稳定ID顺序取锁；不能撤销先锁凭据再补锁扩展行。仅轮换/重加密且不改绑定的路径可只锁凭据，不能随后反向取得扩展行锁。活动run冻结model/settings版本，不追着表内指针变化。
 
 ### settings_voice_bindings
 
-列组：U；父settings。
+列组：U；以user_id关联user_extensions.user_id，随父settings_revision原子更新。
 
 | 列 | PostgreSQL类型/NULL/默认 | 语义 |
 | --- | --- | --- |
-| settings_id | uuid NN | 本人设置根 |
 | language_tag | varchar(35) NN | 所选语言 |
 | speech_purpose | varchar(16) NN | general/word，普通朗读与收藏词发音各自默认 |
 | voice_catalog_entry_id | uuid NULL | 个性声音 → voice_catalog_entries.id |
 | global_voice_profile_id | uuid NULL | 标准词音 → global_voice_profiles.id，仅word用途可设 |
 
-唯一 `(user_id,settings_id,language_tag,speech_purpose)`；CHECK两种声音引用恰有一个非空，global profile仅word允许。服务验证个性声音对应tts绑定的模型、语种一致；标准词音引用[学习分册](database-learning.md)global_voice_profiles的当前已发布修订，新请求冻结其不可变版本，用户不能修改公共profile。标准profile与本人Key/provider不兼容时明确报配置问题。合成键包含实际profile/参数指纹，不能把voice ID单独当完整合成键；旧声音不再可用时保留已生成资产并提示重新选择，不静默换供应商/声音。
+唯一 `(user_id,language_tag,speech_purpose)`；CHECK两种声音引用恰有一个非空，global profile仅word允许。服务验证个性声音对应tts绑定的模型、语种一致；标准词音引用[学习分册](database-learning.md)global_voice_profiles的当前已发布修订，新请求冻结其不可变版本，用户不能修改公共profile。标准profile与本人Key/provider不兼容时明确报配置问题。合成键包含实际profile/参数指纹，不能把voice ID单独当完整合成键；旧声音不再可用时保留已生成资产并提示重新选择，不静默换供应商/声音。
 
-### avatar_assets
-
-列组：U；本表为不可变输出记录，scope不扩大为资料库内容。
-
-| 列 | PostgreSQL类型/NULL/默认 | 语义 |
-| --- | --- | --- |
-| upload_intent_id | uuid NN | 本人avatar用途 → upload_intents.id |
-| file_object_id | uuid NN | 本人重编码后不可变final → file_objects.id |
-| transform_version | varchar(32) NN | 受限解码、去元数据与重编码规则版本 |
-| width_px / height_px | integer NN / integer NN | 最终图像宽高 |
-
-唯一 `(user_id,upload_intent_id)`、`(user_id,file_object_id)`；CHECK正尺寸且正方形。媒体MIME/字节数/摘要/对象路径由file_objects唯一维护；原staging不登记为头像资产。[文件与上传](database-materials.md)完成avatar目的校验后才可入表。发布与指针替换在profile锁内原子提交，失败保留旧头像；只允许经每次鉴权的private/no-store本人头像读取，受控GC在无当前指针/保留引用后显式清理。
+AvatarAsset不再单独建表；专用投影及不可变文件字段见[文件对象](database-materials.md#22-file_objects--服务端发布的不可变对象)。不同历史头像仍是一对多的file_objects，合并不只保留当前图，也不开放任意文件作为头像。
 
 ## 4. 凭据与认证安全（拟新增）
 
@@ -421,22 +413,7 @@ CHECK各枚举、正数字号/行高、有限playback_speed、JSON为对象/版�
 
 CHECK版本正值、provider/state枚举、密文与主密钥版本成对、active有密文且无revoked_at、revoked有revoked_at。索引 `(user_id,state,created_at,id)` 本人列表；不对密文/掩码建唯一键，不假设每供应商仅一把Key。轮换/重加密共锁本行且比较R及credential_version；运维重加密只改密文/keyring版本与R，不能推进用户credential_version。撤销保留引用壳和审计，清密文/解绑选择，历史结果/调用事实保留。
 
-### credential_capability_checks
-
-列组：U；scope_kind=user_owned，追加保存一次显式测试的安全摘要，不维护第二份Token账本。
-
-| 列 | PostgreSQL类型/NULL/默认 | 语义 |
-| --- | --- | --- |
-| credential_id | uuid NN | 本人凭据根，历史保留引用 |
-| credential_version | bigint NN | 测试时Key版本 |
-| model_catalog_entry_id | uuid NN | 受测模型 |
-| capability | varchar(12) NN | text/vision/tts，本次只测一种 |
-| ai_run_id | uuid NN | 本人受控测试运行 → ai_runs.id，用量由attempt事实取得 |
-| tested_at | timestamptz NN | 测试结束时间 |
-| outcome | varchar(16) NN | succeeded/failed/unknown |
-| error_code | varchar(64) NULL | 安全失败类别；不存供应商转储 |
-
-唯一 `(user_id,ai_run_id)`；索引 `(user_id,credential_id,credential_version,capability,tested_at,id)` 查询当前版本最近结果。B0/刚保存而无检查记录显示untested；旧版本成功不继承到新Key；一个能力失败不能否定其他能力。创建锁凭据检查版本，迟到结果可留历史但不能成为当前版本验证结论。
+显式Key能力测试复用[ai_runs](database-learning.md#72-ai_runs)的credential_test运行及安全结果字段，不再复制一张一对一测试摘要表。一次测试只选text/vision/tts中的一种；查询按本人credential_id/credential_version/精确provider与model_id/model_revision/capability取最近已结束的测试run，无记录为untested。迟到旧版本结论只作历史，不能认证新Key；用量仍以真实attempt为准，失败不将其他能力一并标无效。
 
 ### auth_sessions
 
@@ -647,7 +624,7 @@ CHECK分支完整：role类必须target_role_id有值且权限两列空；permis
 ## 7. 实施顺序与验收落点
 
 1. 先实施users的密码/全局安全版本、AuthSession及所选身份流程；用A/B、client/admin、Web/native验证持久撤销和Redis材料丢失。既有B0账号回填不能伪造验证邮箱/登录记录。
-2. 注册事务增加资料/学习/设置空单例，后续实现本人资料与头像；每类聚合独立revision，头像用途/文件引用与GC在同一profile父锁协议下验收。账号已有但三单例缺失的迁移必须可重复且不覆盖人工资料。
+2. 注册事务增加一个user_extensions空行，后续实现本人资料与头像；三个字段组独立revision，头像用途/文件引用与GC共用扩展行锁。B0旧用户扩展行缺失的回填必须可重复且不覆盖已有资料；不创建旧三单例再迁移合并。
 3. 完整RBAC增加继承、授予边界、菜单多权限和实际范围列；旧单权限菜单/授权项确定性迁移。所有授权变更仍使用同一global父行，审核最后管理员和显式deny导致的间接扩权。
 4. 模型目录、个人Key、设置绑定和用量查询按对应功能切片落地；目录启用不代表已验证供应商能力，真实测试遵循已有授权。主密钥重加密与用户轮换并发必须验证。
 5. 上传/生成正式接入前，完成容量根与预留结算的PG原子路径。目录共享字节只算一次；各用户attempt用量分别记录。后台技术上限修改不自动删除学习成果。

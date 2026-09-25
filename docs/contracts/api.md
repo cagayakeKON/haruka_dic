@@ -26,6 +26,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 
 自动网络重试仅对安全读取、同一幂等键且已定义协议的写入及同次native刷新执行有界退避。超时不能推断写入未提交，先按操作/资源ID查询；流式中断不能自动重新发起模型调用。用户主动新操作必须新key，SDK/Worker重试总上限见 [数据与任务](../architecture/data-jobs.md)。
 
+个人资料、学习档案和设置仍为三个独立接口；expected_revision分别对应user_extensions的profile_revision/study_revision/settings_revision，只写各自字段组。物理合表不合并权限、DTO或整行暴露，详见[账号表](../architecture/database-identity.md#user_extensions)。
+
 ## 3. 接口分组与功能合同
 
 表中方法/路径为待落地草案；`{id}`均验证归属和用途。明确的action子资源用于提交/重试等状态转移，不用任意`action`字符串做万能执行器。权限代码按 [中央目录](permissions.md) 展开。
@@ -67,7 +69,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST photo-word-imports/{id}/confirm | 明确新增/补空合并/排除行后确认 | photo.import；新增再验collection.create；读取/合并既有记录另验collection.read/update，缺任一所选动作权限整次确认拒绝 |
 | PATCH/DELETE photo-word-imports/{id} | 修正/丢弃尚未确认的候选预览 | 本人photo.import；已确认的Collection独立编辑，不回滚已提交记录 |
 | POST ai-exercise-selections；GET ai-exercise-selections/{id} | 按[AI习题](../modules/ai-exercises.md)接收单词本/收藏/教材/错题/诊断及时间/掌握/错误条件，以及题型/方向/题量/同源多题/难度/模型配置等生成设置；返回本人selection/revision/expiry、冻结设置摘要、计数和分页预览 | practice.read+每类实际来源read；按本需notebook.read，错题需mistake.read；不要求Key/generate，不调用模型或写学习事实；无due/复习条件 |
-| POST ai-exercise-generations；GET ai-exercise-generations/{id} | 只提交selection_id+expected_revision和幂等键，返回复制冻结候选/设置的不可变AiExercisePlan/Job；读取生成状态及有权习题集 | practice.generate/read+当前来源权限、本人Key/上限；确认与每个供应商调用阶段重验，拒绝覆盖生成设置或自报候选/mastery/错误状态，摘要冲突要求重新预览 |
+| POST ai-exercise-generations；GET ai-exercise-generations/{id} | 只提交selection_id+expected_revision和幂等键，返回冻结设置及持久引用冻结候选的不可变AiExercisePlan/Job（逻辑plan_id映射exercise_sets.id）；读取生成状态及有权习题集 | practice.generate/read+当前来源权限、本人Key/上限；确认与每个供应商调用阶段重验，拒绝覆盖生成设置或自报候选/mastery/错误状态，摘要冲突要求重新预览 |
 | POST practice-sessions；GET practice-sessions/{id} | 用已有教材题/AI习题集开始并恢复冻结会话；不建立review-plan或时间调度 | practice.start/read及当前题目/来源权限；开始已有练习不会隐式生成题目或调用模型评分 |
 | GET mistakes；GET mistakes/{id}；POST/DELETE mistakes/{id}/favorite | 本人全部可靠错题历史、当前状态/筛选/详情；收藏/取消收藏独立于错误状态 | mistake.read/favorite及题面/成绩实际权限；列表按投影裁剪，收藏不改评分/掌握，交换他人或无权来源ID拒绝 |
 | POST practice-sessions/{id}/answers、finish；GET attempts/{id} | 答案版本/提交；结束/成绩读取；response_kind区分answer/dont_know/skip | practice.answer/read；answer/dont_know按冻结规则形成Attempt，skip仅记录跳过，不以空答案造零分；服务端判状态 |

@@ -22,7 +22,7 @@
 | 编写代码与测试 | [代码规范](engineering/coding.md)、[Lint](engineering/lint.md) | [测试策略](engineering/testing/strategy.md)、[前端E2E](engineering/testing/frontend-e2e.md)、[测试数据](engineering/testing/data.md) |
 | 开发Flutter页面或移动端适配 | [Flutter开发与适配规范](engineering/flutter.md) | [项目结构](architecture/project-structure.md)、[前端测试与适配矩阵](engineering/testing/frontend-e2e.md) |
 | 开发后端模块或统一接口返回 | [后端开发手册](engineering/backend.md)、[统一返回/异常/多语言](contracts/api-responses.md) | [API总则](contracts/api.md)、[项目结构](architecture/project-structure.md)、[后端测试写法](engineering/testing/strategy.md) |
-| 设计表、隔离查询或修改数据库 | [数据库设计书](architecture/database-design.md)、[数据库规范](engineering/database.md) | [Redis字段](architecture/redis-design.md)、[数据与任务](architecture/data-jobs.md)、[认证隔离](architecture/authentication.md)、[迁移操作](operations/deployment-recovery.md) |
+| 设计表、隔离查询或修改数据库 | [数据库设计书](architecture/database-design.md)、[全表收敛清单](architecture/database-convergence.md)、[数据库规范](engineering/database.md) | [Redis字段](architecture/redis-design.md)、[数据与任务](architecture/data-jobs.md)、[认证隔离](architecture/authentication.md)、[迁移操作](operations/deployment-recovery.md) |
 | 接入或部署 | [MyHome复用](operations/myhome-integration.md)、[配置](operations/configuration.md) | [部署与恢复](operations/deployment-recovery.md)、[观测](operations/observability.md) |
 | 确认做到哪、能否交付 | [路线图](delivery/roadmap.md) | [交付验收](delivery/acceptance.md)、[审查记录](delivery/reviews/reorganization.md) |
 
@@ -75,6 +75,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [电脑端排版与交互重构](delivery/reviews/2026-09-24-desktop-refinement.md)：电脑端 DESIGN5 的移动优先布局、手机视觉对齐、键盘与历史导航、文案清理及局部验证。
 - [手机登录、注册与找回优化](delivery/reviews/2026-09-24-mobile-auth.md)：DESIGN7 紧凑表单、密码显隐、字段错误和受理页的局部验证。
 - [AI功能入口与共享Agent](delivery/reviews/2026-09-25-ai-without-chat.md)：DESIGN15 移除独立聊天，保留具体AI功能和后端复用。
+- [物理结构与复杂度收敛](delivery/reviews/2026-09-25-database-convergence.md)：DBDESIGN2逐表审查158个候选，收敛为142个物理目标，仍仅文档。
 - [数据库与Redis设计](delivery/reviews/2026-09-25-database-design.md)：DBDESIGN1 对照当前原型/契约记录B0基线与业务表/缓存字段方案；尚未执行业务建表或迁移。
 - [自动判断查询任务](delivery/reviews/2026-09-25-auto-query.md)：DESIGN14 移除类型选择，直接输入与纯图发送，AI推断及幂等契约。
 - [语言查询与学习卡片](delivery/reviews/2026-09-25-language-query-cards.md)：DESIGN13 语言任务边界、四类学习卡片、移除通用回答和紧凑词本列表。

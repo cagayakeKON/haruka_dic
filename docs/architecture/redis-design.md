@@ -1,6 +1,6 @@
 # Redis 缓存与临时状态设计
 
-状态：2026-09-25，DBDESIGN1 设计稿，业务键尚未实现。属于[数据库设计书](database-design.md)。现有代码仅提供[连接池与命名构造器](../../backend/app/adapters/cache.py)，不能把本册视为已上线配置。会话算法、权限及学习结果规则分别以[认证](authentication.md)、[授权](authorization.md)、[持久缓存](learning-cache.md)为准。
+状态：2026-09-25，DBDESIGN2 收敛稿，业务键尚未实现。属于[数据库设计书](database-design.md)。现有代码仅提供[连接池与命名构造器](../../backend/app/adapters/cache.py)，不能把本册视为已上线配置。会话算法、权限及学习结果规则分别以[认证](authentication.md)、[授权](authorization.md)、[持久缓存](learning-cache.md)为准。
 
 ## 1. 用途与命名
 
@@ -51,7 +51,7 @@ JSON 副本统一信封：`schema_version: integer=1`、`cached_at_ms: int64`、
 
 R01 的过期绝不单独决定会话有效；即使索引仍在也要检查 R02 和 PG。R04 任一存在过的刷新历史缺失时不能仍允许该会话刷新；R02 保存 `used_digest_count`，与 Hash 历史条目数量（不含两个公共字段）及版本核对失败则要求重新登录。历史摘要在会话内不独立提前淘汰；建议限制每会话最多 4096 次刷新，达到上限撤销该会话并要求重新登录，不静默删旧摘要。此上限为运行保护初值，不是用户登录次数产品限制。
 
-不缓存任意书库组合筛选列表、不预建每日单词 Redis 表、不在 Redis 存音频字节或完整材料。书内已查列表直接对持久 `material_learning_indexes` 有界分页；列表缓存只有未来测量证明必要才增加。
+不缓存任意书库组合筛选列表、不预建每日单词 Redis 表、不在 Redis 存音频字节或完整材料。书内已查列表按本人scope对source_result_bindings与当前learning_lookup_states的匹配投影有界分页；列表缓存只有未来测量证明必要才增加。
 
 ## 3. 认证与访问字段
 
@@ -94,7 +94,7 @@ R04 除 `schema_version/updated_at_ms` 两个公共字段外，每个 Hash field
 
 ### R06 本人设置投影
 
-payload 只含 `settings_revision`、`timezone`、`ui_locale`、`display_preferences`、`reading_preferences`、`speech_preferences`、`model_bindings`（provider/model/capability/版本及 credential_id 引用）。这是settings及其已验证子表的白名单读取投影，preferences由对应有限列组装，不额外增加一套PG列。不存密文 Key、可恢复 Key、头像字节、人口字段或能力探测原文。模型调用必须从 PG 获取当前凭据状态/版本，在当前调用的内存中解密；本缓存不能证明 Key 仍有效。
+payload 只含 `settings_revision`、`timezone`、`ui_locale`、`display_preferences`、`reading_preferences`、`speech_preferences`、`model_bindings`（provider/model/capability/版本及 credential_id 引用）。这是user_extensions设置字段组及模型/声音子表的白名单读取投影；key的ver和信封source_revision都取settings_revision，资料/学习组变化不复用为设置版本，preferences由对应有限列组装，不额外增加一套PG列。不存密文 Key、可恢复 Key、头像字节、人口字段或能力探测原文。合表不扩大缓存载荷，资料/学习语言不顺带放进R06；三个组的事务分别发出对应失效事件。模型调用必须从 PG 获取当前凭据状态/版本，在当前调用的内存中解密；本缓存不能证明 Key 仍有效。
 
 ## 4. 学习结果、媒体与幂等字段
 

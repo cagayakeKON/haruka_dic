@@ -13,7 +13,7 @@
 | 登录身份摘要 | 账号流程的本人身份基础读取 | 当前登录邮箱、验证/账号状态和创建时间只读展示；不依赖profile.read，首版不能从资料PATCH修改邮箱 |
 | 个人资料 | client.profile.read/update | 本人UserProfile，显示名、可选出生年份/性别及隐私开关；不能修改邮箱、角色、状态或登录资格 |
 | 头像 | client.profile.read + client.profile.avatar.update | 专用临时上传、解码/重编码后发布的本人AvatarAsset；不接受外链URL或复用任意文件ID |
-| 学习档案/基础偏好 | client.profile.read/update | StudyProfile/Settings独立revision；母语、解释语言、目标语、当前目标语、水平/目标、时区与显示/无障碍默认值 |
+| 学习档案/基础偏好 | client.profile.read/update | user_extensions中的学习/设置字段组独立revision；母语、解释语言、目标语、当前目标语、水平/目标、时区与显示/无障碍默认值 |
 | 改密、本人会话、退出 | 账号流程的本人安全操作 | 不依赖学习菜单；具体重验/撤销规则不在本文复制 |
 | Key 掩码/状态 | client.credential.read | 当前用户的 ProviderCredential 安全 DTO；永不返回明文 |
 | 新增/轮换/删除 Key | client.credential.manage，必要的近期重验 | 后端加密，明文只在受控输入和本次服务调用内使用 |
@@ -63,7 +63,7 @@ Web 推荐固定同源部署，显示当前服务地址和连接状态；不在�
 
 ### 2.3 个人资料、学习档案与首次引导
 
-注册只建立空的UserProfile/StudyProfile/Settings；首次登录引导与设置页写入同一组API和revision。引导可跳过，不以页面埋点或本机布尔值标记完成；服务端根据当前字段计算 `profile_completeness`，并只在需要相关字段的功能入口提示补全。资料保存不要求模型Key，也不能隐式创建材料、习题或模型调用任务。
+注册只建立一个空UserExtension；UserProfile/StudyProfile/Settings仍是独立API投影，物理字段同在user_extensions，分别用profile_revision/study_revision/settings_revision；首次登录引导与设置页写入同一组API和revision。引导可跳过，不以页面埋点或本机布尔值标记完成；服务端根据当前字段计算 `profile_completeness`，并只在需要相关字段的功能入口提示补全。资料保存不要求模型Key，也不能隐式创建材料、习题或模型调用任务。
 
 #### 字段与用途
 
@@ -83,7 +83,7 @@ P0界面语言仍为 `zh-Hans`，它与母语、解释语言、目标学习语�
 
 #### 更新与隐私边界
 
-资料和学习档案按各自 `expected_revision`、字段白名单和field mask更新，未知/只读字段拒绝。一个页面保存失败不回滚另一个已成功提交的独立聚合；同聚合多端冲突返回当前revision和允许披露的字段类别，客户端保留草稿并让用户重新应用，不做last-write-wins。可选字段均支持显式清除；清除出生年份/性别会停止后续可选个性化，不重写已经完成的历史AI结果。
+资料、学习档案、通用设置按各自 `expected_revision` 映射同一扩展行的字段组版本，使用字段白名单和field mask更新，未知/只读字段拒绝。只写目标组列并递增该组版本，不整行保存旧DTO；同组旧版本冲突，不同组短暂串行但不相互制造版本冲突。一个页面保存失败不回滚另一个已成功提交的独立聚合；同聚合多端冲突返回当前revision和允许披露的字段类别，客户端保留草稿并让用户重新应用，不做last-write-wins。可选字段均支持显式清除；清除出生年份/性别会停止后续可选个性化，不重写已经完成的历史AI结果。
 
 个人资料默认只有本人 `client.profile.read` 可读。管理端 `admin.user.read` 继续只读账号运维所需的邮箱、显示名、状态和安全元数据，不默认返回头像原图、出生年份、性别、自定义说明、母语/目标语、学习水平或偏好；需要此类跨用户能力必须新增明确产品范围和权限。普通用户不能通过头像ID、资料revision、日志或缓存探测他人资料。
 
@@ -93,7 +93,7 @@ P0接受JPEG/PNG/WebP静态图片，初始硬上限建议5MiB、4096×4096，最
 
 Windows/Web使用系统文件选择器，Android使用系统图片选择器；P0不为头像申请相机权限，未来增加现场拍照需单独验证权限与临时文件清理。三端裁剪只是预览建议，不能替代服务端重新处理；选择或裁剪失败保留旧头像并允许重试。
 
-流程为申请本人avatar用途的临时UploadIntent → 直传staging对象 → 完成接口验证摘要/大小/解码 → 发布不可变AvatarAsset → 在资料revision事务中替换当前指针。重复完成/重试只发布一次；过大、格式不支持、解码失败和revision冲突使用稳定错误码分别反馈，任何失败都不改变旧头像，孤立临时对象按期限回收。删除头像只提交资料指针变更，旧资产在没有活动资料/审计保留引用后受控GC。
+流程为申请本人avatar用途的临时UploadIntent → 直传staging对象 → 完成接口验证摘要/大小/解码 → 发布不可变AvatarAsset（purpose=avatar的FileObject专用投影）→ 在profile_revision事务中替换当前指针。重复完成/重试只发布一次；过大、格式不支持、解码失败和revision冲突使用稳定错误码分别反馈，任何失败都不改变旧头像，孤立临时对象按期限回收。删除头像只提交资料指针变更，旧资产在没有活动资料/审计保留引用后受控GC。
 
 头像读取每次经过当前会话和profile.read校验，P0响应固定使用 `Cache-Control: private, no-store`，不发送可被共享/浏览器HTTP缓存复用的长期URL或仅按数字revision生成的跨账号ETag。Windows/Android在成功鉴权取得字节后可维护应用管理的副本，Web首版只用当前AccountScope内存副本；两者都按instance/user/avatar_asset摘要或avatar_revision分区并在退出、换账号、撤权或revision变化时失效。同一路径 `/users/me/avatar` 从A切到B必须重新请求并显示B或空头像，不能命中A的浏览器缓存；缓存优化若以后改用条件请求，必须另立owner绑定验证器、重新鉴权和撤权语义。
 
@@ -172,7 +172,7 @@ P0 支持已读章节/已查词句解释/已生成音频的基础缓存以及“
 
 ## 4. 后端职责
 
-负责UserProfile/StudyProfile/Settings白名单、字段级校验与版本冲突，头像临时上传/安全重编码/不可变发布与GC，语言能力目录，以及本人凭据的加密持久化、安全 DTO、显式单项能力测试和本人模型用量投影。provider/model/声音只从允许目录选择；不能因为能保存字符串就声称该组合已验证或将服务地址当供应商代理。
+负责user_extensions三个API字段组的白名单、字段级校验与版本冲突，头像临时上传/安全重编码/不可变发布与GC，语言能力目录，以及本人凭据的加密持久化、安全 DTO、显式单项能力测试和本人模型用量投影。provider/model/声音只从允许目录选择；不能因为能保存字符串就声称该组合已验证或将服务地址当供应商代理。
 
 出生年份/性别属于可选个人数据，查询、备份、调试与管理DTO默认不扩大可见性；服务端计算年龄段时使用受控当前日期，不把客户端自报整数年龄当事实。只有 `use_optional_demographics_for_ai=true`、当前功能登记允许且用户仍有相应模型动作权限时，运行依赖才可取得最小派生值；日志、任务消息和AiRun不得保存这些原始字段。语言/目标等必要学习上下文仍按具体功能和来源权限注入，与该可选开关分开。
 
@@ -189,7 +189,7 @@ P0 支持已读章节/已查词句解释/已生成音频的基础缓存以及“
 | 操作 | 数据/事件 |
 | --- | --- |
 | 无凭据连接探测 | instance/兼容信息；connection.probed，仅状态与延迟，不含完整自定义地址 |
-| 个人资料、语言与偏好 | UserProfile/StudyProfile/Settings revision；profile.updated、study_profile.updated、settings.updated，仅字段类别/数量，不含显示名、出生年份、性别说明或语言列表正文 |
+| 个人资料、语言与偏好 | UserExtension的profile_revision/study_revision/settings_revision；profile.updated、study_profile.updated、settings.updated，仅字段类别/数量，不含显示名、出生年份、性别说明或语言列表正文 |
 | 头像 | UploadIntent/AvatarAsset/profile revision；profile.avatar.updated/deleted，仅大小区间、格式、结果和受控资产引用，不含文件名/路径/图像内容 |
 | 凭据保存/轮换/删除 | 安全掩码与版本结果；credential.created/rotated/deleted |
 | 显式能力测试 | AiRun/ExternalCall 安全结果；credential.test.completed/failed，注明测试用途 |

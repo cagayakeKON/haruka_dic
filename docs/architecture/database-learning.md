@@ -1,6 +1,6 @@
 # 数据库设计书：收藏、学习、AI 与持久结果
 
-状态：2026-09-25，DBDESIGN1 设计稿；除 7.5 引用既有 B0 Outbox 基线外，**新增表与扩展列均待实现**。本次只给出 PostgreSQL 物理设计建议，不创建 ORM、迁移或真实业务数据。总则、已实现结构和 Redis 字典见[设计书主册](database-design.md)；材料、文件与考试场次见[材料分册](database-materials.md)。本分册承接现行产品/原型，不能把原型中的内存 `mastery`、`correct`、图片 URL 或示例 ID 直接作为数据库事实。
+状态：2026-09-25，DBDESIGN2 收敛稿；除 7.5 引用既有 B0 Outbox 基线外，**新增表与扩展列均待实现**。本次只给出 PostgreSQL 物理设计建议，不创建 ORM、迁移或真实业务数据。总则、已实现结构和 Redis 字典见[设计书主册](database-design.md)；材料、文件与考试场次见[材料分册](database-materials.md)。本分册承接现行产品/原型，不能把原型中的内存 `mastery`、`correct`、图片 URL 或示例 ID 直接作为数据库事实。
 
 权威业务依据：[收藏与公共作答](../modules/vocabulary-practice.md)、[多单词本](../modules/vocabulary-notebooks.md)、[学习证据](vocabulary-learning.md)、[AI习题与错题](../modules/ai-exercises.md)、[查询](../modules/query.md)、[Agent运行](agent-runtime.md)、[AI与朗读](../modules/ai-speech.md)、[持久结果缓存](learning-cache.md)、[任务与事务](data-jobs.md)、[模型用量](../contracts/model-usage.md)、[CSV](../contracts/vocabulary-csv.md)。表名是本次设计选择，接口中的 ExerciseVersion/Attempt/GradeRun 等逻辑名称按下文映射，不能据此静默改接口。
 
@@ -52,11 +52,13 @@
 | vocabulary_notebooks / L+R | `name text NN`、`name_normalized text NN`、`target_language varchar(35) NN`、`description text NULL` | UK `(scope,target_language,name_normalized)`；IX `(scope,updated_at,id)`；删本显式删关系后删本，不碰收藏/证据 |
 | notebook_items / L+R | `notebook_id uuid NN`、`collection_item_id uuid NN` | UK `(scope,notebook_id,collection_item_id)`；IX `(scope,notebook_id,created_at,id)` 支撑入本时间，IX `(scope,collection_item_id,notebook_id)` 支撑删词检查 |
 
-入本、移动、改词语言、改空本语言及删本均锁涉及的 notebook 和 collection 父行，采用统一顺序。修改本语言仅空本允许；移动是目标关系新增与指定来源关系移除的同一事务。系统“全部收藏/未分组”是查询视图，不创建伪 notebook。计数按条目 ID 去重，不存可由客户端改写的 count。
+入本、移动、改词语言、改空本语言及删本均锁涉及的 notebook 和 collection 父行，采用统一顺序；涉及默认词本的选择/解除/删本，先锁user_extensions，再锁notebook→collection，与设置入口一致。修改本语言仅空本允许；移动是目标关系新增与指定来源关系移除的同一事务。系统“全部收藏/未分组”是查询视图，不创建伪 notebook。计数按条目 ID 去重，不存可由客户端改写的 count。
 
-### 2.3 `collection_merges` — 同库合并映射
+### 2.3 收藏合并字段（位于 collection_items）
 
-公共列 L。`source_item_id uuid NN`、`target_item_id uuid NN`、`source_learning_revision bigint NN`、`target_learning_revision bigint NN`、`equivalence_rule_version varchar(64) NN`、`merged_at timestamptz NN`。UK `(scope,source_item_id)`，IX `(scope,target_item_id)`，CHECK 两个 ID 不相等。锁源/目标条目验证学习内容等价后保留旧 ID 映射；学习证据按原业务键去重重放，不能把更高掌握状态直接抄到目标。原记录保留为 tombstone，防映射循环由服务检查。
+每个源条目至多有一次合并去向，原条目已经必须保留tombstone，因此不另建collection_merges。collection_items增加：`merged_into_item_id uuid NULL`、`merged_source_learning_revision,merged_target_learning_revision bigint NULL`、`merge_equivalence_rule_version varchar(64) NULL`、`merged_at timestamptz NULL`；五列全空或全有，CHECK目标不等于本行id，有合并字段必须deleted_at非空。IX `(scope,merged_into_item_id) WHERE merged_into_item_id IS NOT NULL` 支撑反查。创建后合并映射不可改，不清理仍被引用的源壳。
+
+锁源/目标条目验证同库、等价及无循环，成员迁移、tombstone与映射同事务。学习证据按原业务键去重重放，不能取更高掌握值直接覆盖。目标再合并时逐级解析保留链，不重写旧事实；公共时间不替代merged_at。
 
 ### 2.4 `collection_selection_snapshots`、`collection_selection_members` — 全筛选批量操作
 
@@ -132,22 +134,25 @@ UK `(scope,exercise_root_id,question_version)`，IX `(scope,target_language,publ
 
 UK 候选 `(scope,selection_id,ordinal)` 和 `(scope,selection_id,candidate_key)`；IX 快照 `(scope,expires_at,id)`；IX 候选 `(scope,source_kind,source_resource_id)`。计数非负且 selected<=candidate；窗口全空或两端齐全且 start<end，expires>as_of。预览不需 Key、不创建 Job/证据；任何影响范围/设置的更改重建快照。无结果/不足不扩源。过期且未被计划引用的快照可回收。
 
-### 3.4 `ai_exercise_plans`、`ai_exercise_plan_sources`、`exercise_sets`、`exercise_set_items`
+### 3.4 `exercise_sets`、`exercise_set_items` — 确认计划与生成结果
+
+计划与产出集原为一对一、同scope、同Job生命周期，合为exercise_sets；逻辑AiExercisePlan是该行确认后不可变字段组，plan_id映射本行id，集状态为另一组。确认时即创建generating集，尚无题目不冒充ready。保留独立选择快照与一对多候选，计划不重复复制一套来源行。
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 唯一/索引/生命周期 |
 | --- | --- | --- |
-| ai_exercise_plans / L | `selection_id uuid NN`、`selection_revision bigint NN`、`selection_digest bytea NN`、`schema_version integer NN`、`generation_settings jsonb NN`、`model_config_snapshot jsonb NN`、`confirmed_at timestamptz NN`、`job_id uuid NN`、`target_language varchar(35) NN` | UK `(scope,job_id)`；IX `(scope,created_at,id)`；确认锁快照/全部来源后冻结；允许显式再次生成产生不同计划，幂等由请求键处理 |
-| ai_exercise_plan_sources / L+S | `plan_id uuid NN`、`ordinal integer NN`、`candidate_key bytea NN`、`dependency_versions jsonb NN` | UK `(scope,plan_id,ordinal)` 和 `(scope,plan_id,candidate_key)`；计划保存独立来源快照，不能依赖快过期预览存活 |
-| exercise_sets / L+R | `plan_id uuid NULL`、`title text NN`、`target_language varchar(35) NN`、`state varchar(24) NN`、`requested_count integer NN`、`published_count integer NN DEFAULT 0`、`generation_report jsonb NN`、`schema_version integer NN` | UK `(scope,plan_id) WHERE plan_id IS NOT NULL`；IX `(scope,state,created_at,id)`；generating/ready/partial/failed；生成完成不代表学习完成 |
-| exercise_set_items / L | `exercise_set_id uuid NN`、`exercise_question_id uuid NN`、`grading_basis_id uuid NULL`、`ordinal integer NN`、`max_score numeric(10,2) NN` | UK `(scope,exercise_set_id,ordinal)`；IX `(scope,exercise_question_id)`；max_score>0且有限；固定题序/当时可得依据，不随后续筛选改变；缺依据只允许保存作答待评 |
+| exercise_sets / L+R | `title text NN`、`target_language varchar(35) NN`、`state varchar(24) NN`、`requested_count integer NN`、`published_count integer NN DEFAULT 0`、`generation_report jsonb NN`、`schema_version integer NN` | IX `(scope,state,created_at,id)`；generating/ready/partial/failed；完成生成不代表完成学习 |
+| 同表：冻结计划组 | `selection_id uuid NULL`、`selection_revision bigint NULL`、`selection_digest bytea NULL`、`generation_settings jsonb NULL`、`model_config_snapshot jsonb NULL`、`confirmed_at timestamptz NULL`、`job_id uuid NULL` | AI生成要求本组全有，非AI集全空；UK `(scope,job_id) WHERE job_id IS NOT NULL`；Job/集/Outbox同事务；计划组创建后不可改，状态R不改变计划含义 |
+| exercise_set_items / L | `exercise_set_id uuid NN`、`exercise_question_id uuid NN`、`grading_basis_id uuid NULL`、`ordinal integer NN`、`max_score numeric(10,2) NN` | UK `(scope,exercise_set_id,ordinal)`；IX `(scope,exercise_question_id)`；max_score>0且有限；固定题序/当时可得依据，缺依据只允许保存作答待评 |
 
-Worker 仅消费计划冻结来源，逐调用阶段重验权限/来源与配置能力，不补入未选数据。发布集/题目/依据/目标同一阶段事务；失败候选不伪装有效题。删除来源不自动删除已开始会话的必要题面，读取快照仍受其业务权限限制。
+确认锁selection及全部选中来源并复核摘要，复制有限设置到计划组，来源直接引用该selection中selected=true的不可变候选。候选/快照内容创建后不可改，改条件创建新selection；到期只阻止新确认，任何已确认集/计划（含失败、重试和历史）引用期间都不得TTL删除其快照与候选。清理须先锁selection再复核反向引用，IX `(scope,selection_id) WHERE selection_id IS NOT NULL` 支撑检查。故不另建ai_exercise_plan_sources，也不把选源塞入集的大JSON。
+
+允许用户显式再次生成创建不同集/Job，并可引用同一未过期selection；幂等请求仍只建一次。Worker读取固定candidate_key/版本/来源快照，不重跑动态筛选，逐调用阶段重验当前权限和删除状态；快照保留不授予访问已删原文。发布题目/依据/目标/集状态同一阶段事务，失败候选不伪装有效题。已开始会话保留必要题面。
 
 ### 3.5 `practice_sessions`、`practice_session_items`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 约束/职责 |
 | --- | --- | --- |
-| practice_sessions / L+R | `exercise_set_id uuid NULL`、`target_language varchar(35) NN`、`state varchar(24) NN`、`started_at,completed_at,abandoned_at timestamptz NULL`、`source_plan_id uuid NULL` | ready/in_progress/completed/abandoned；IX `(scope,state,created_at,id)`；开始已有教材题可不来自AI集；会话完成与评分完成分开 |
+| practice_sessions / L+R | `exercise_set_id uuid NULL`、`target_language varchar(35) NN`、`state varchar(24) NN`、`started_at,completed_at,abandoned_at timestamptz NULL` | ready/in_progress/completed/abandoned；IX `(scope,state,created_at,id)`；开始已有教材题可不来自AI集；会话完成与评分完成分开 |
 | practice_session_items / L+R | `practice_session_id uuid NN`、`exercise_question_id uuid NN`、`grading_basis_id uuid NULL`、`ordinal integer NN`、`max_score numeric(10,2) NN`、`submitted_attempt_id uuid NULL`、`state varchar(16) NN DEFAULT 'unanswered'` | UK `(scope,practice_session_id,ordinal)`；state unanswered/submitted/skipped；IX `(scope,exercise_question_id)`；max_score>0且有限；NULL为尚无可用依据，不阻断仅保存答案 |
 
 锁会话和 session_item 后首次提交仅接受一次；跨端恢复读服务端已提交位置。重做建新会话/新 Attempt，历史答案不修改。未提交草稿只在当前账号页面，数据库不承诺普通练习离线合并。题目、依据、考试 `exam_items` 均引用本分册不可变版本。
@@ -200,9 +205,11 @@ run CHECK：aggregate 只绑定一种父；考试有 media fault revision，普�
 
 发布先锁普通 Attempt 或 ExamSession，再锁 run；校验 generation/active 指针/fence、所有必需评分项和考试媒体故障 revision。切 effective、替换贡献、插入可靠错误 occurrence、Outbox 在同一事务。重评失败保留旧 effective；旧 run 迟到仅历史。考试所有叶子均完成且无 needs_review 才整场发布，单题结果不能先进入掌握/错题。
 
-### 3.9 `grading_review_requests`
+### 3.9 评分争议字段（位于 grading_results）
 
-公共列 L + R。`grading_result_id uuid NN`、`question_attempt_id uuid NN`、`status varchar(16) NN DEFAULT 'open'`、`reason text NULL`。UK `(scope,grading_result_id)`，IX `(scope,status,created_at,id)`。P0 仅本人“我认为答对”反馈及争议计数，状态只开放 open，保留 R 供未来经审批协议迁移；不提供人工改分/裁决，不取消 effective，不写新证据。理由不进入日志。
+P0每个评分结果只有一次“我认为答对”反馈，没有独立复核处理流程。grading_results增加 `review_requested_at timestamptz NULL`、`review_reason text NULL`；CHECK未反馈时reason为空。IX `(scope,review_requested_at,id) WHERE review_requested_at IS NOT NULL` 支撑本人反馈查询/争议计数。逻辑review_request_id映射grading_results.id，状态由非空时间派生open，不预建status/revision供未知未来工作流。
+
+反馈共锁所属Attempt/ExamSession→Run→Result，只能对已发布且本人可读的结果首次写入，并维护updated_at；重试返回原反馈，同一结果不能覆盖原因。评分字段和effective保持原义，争议不改成绩/证据，也不触发模型调用。需要多次申诉或独立处理历史时另行立项迁移，当前不建grading_review_requests。
 
 ## 4. 学习证据、错题与诊断
 
@@ -222,18 +229,20 @@ projection 消费锁目标词/学习状态，复核当前 effective run、贡献
 
 UK `(scope,collection_item_id,learning_revision)`；IX `(scope,mastery_state,last_effective_attempt_at,collection_item_id)`，IX `(scope,effective_error_count,collection_item_id)` 支撑筛选/常错排序。mastery 为 new/learning/mastered/needs_practice；assessment 为 ready/pending/rebuilding/needs_content。状态只由服务端按[策略 v2](vocabulary-learning.md)投影；首次满足三组独立窗口后的保持、负证据与重评重放遵循专题。旧 learning_revision 状态保留作历史，不直接赋给新内容。策略参数不作为用户设置，也没有 due/SRS/每日额度字段。
 
-### 4.3 `mistake_occurrences`、`mistake_projections`、`mistake_favorites`
+### 4.3 `mistake_occurrences`、`mistake_projections`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 含义 |
 | --- | --- | --- |
 | mistake_occurrences / L+S | `question_attempt_id,grading_result_id,grade_run_id,exercise_question_id,exercise_root_id uuid NN`、`exam_session_id uuid NULL`、`scoring_item_key varchar(128) NN`、`knowledge_key varchar(128) NN`、`target_language varchar(35) NN`、`question_type varchar(32) NN` | 每个已经 effective 的可靠错误叶子/考察点；快照不能越权恢复原材料 |
 | 同表 | `verdict varchar(16) NN`、`occurred_at timestamptz NN`、`accepted_sequence bigint NN`、`snapshot_schema_version integer NN`、`question_snapshot,answer_snapshot,feedback_snapshot jsonb NN` | verdict partial/incorrect；不可变历史，包括后来被重评纠正的旧错误 |
 | mistake_projections / L+R | `exercise_root_id uuid NN`、`scoring_item_key,knowledge_key varchar(128) NN`、`target_language varchar(35) NN`、`state varchar(24) NN`、`latest_occurrence_id uuid NULL`、`latest_contribution_id uuid NULL`、`occurrence_count bigint NN DEFAULT 0`、`fact_revision bigint NN`、`last_occurred_at timestamptz NULL`、`reason_code varchar(96) NN` | 按根题/考察点的当前投影；unresolved/improved/invalidated/pending_rebuild |
-| mistake_favorites / L+R | `mistake_occurrence_id uuid NN`、`notes text NULL` | 本人独立收藏关系；取消收藏只删此关系 |
+| occurrence同表：本人收藏组 | `favorited_at,favorite_updated_at timestamptz NULL`、`favorite_notes text NULL`、`favorite_revision bigint NN DEFAULT 1` | 两时间同空同有，未收藏时notes为空；revision>=1；独立于不可变错误事实和projection状态 |
 
-occurrence UK `(scope,grading_result_id,knowledge_key)`，IX `(scope,target_language,occurred_at,id)`、`(scope,exercise_root_id,knowledge_key,occurred_at,id)`；projection UK `(scope,exercise_root_id,scoring_item_key,knowledge_key)`，IX `(scope,target_language,state,last_occurred_at,id)`；favorite UK `(scope,mistake_occurrence_id)`，IX `(scope,created_at,id)`。若一评分叶子有多个确定考察点，分别记录并在题目维度去重计数；模型不能用任意重复标签放大权重。
+occurrence UK `(scope,grading_result_id,knowledge_key)`，IX `(scope,target_language,occurred_at,id)`、`(scope,exercise_root_id,knowledge_key,occurred_at,id)`；projection UK `(scope,exercise_root_id,scoring_item_key,knowledge_key)`，IX `(scope,target_language,state,last_occurred_at,id)`；本人收藏IX `(scope,favorited_at,id) WHERE favorited_at IS NOT NULL`。若一评分叶子有多个确定考察点，分别记录并在题目维度去重计数；模型不能用任意重复标签放大权重。
 
-只在 effective 发布事务插入 occurrence；重评替换贡献后重算 projection，保留旧 occurrence/favorite。invalidated 历史默认不作当前薄弱点，用户显式选择其收藏时也不能把旧错误答案当真值。删原题/材料保留最小复盘快照，回跳另验当前来源权限；公开读取不会返回他人答案或私人笔记。
+一条occurrence本就属于一个用户、至多有一个本人收藏，不另建mistake_favorites。逻辑收藏id映射occurrence.id；收藏API的创建/更新时间来自favorited_at/favorite_updated_at，不能用错误发生时间。收藏/改笔记/取消在occurrence锁内比较favorite_revision，仅更新收藏列及公共updated_at；取消清两时间/笔记并递增版本，再收藏保留同一ID但产生新的收藏时间。重评只更新projection，不覆盖收藏组，允许收藏improved/invalidated历史。错误快照字段创建后仍不可改。
+
+只在 effective 发布事务插入 occurrence；重评替换贡献后重算 projection，保留旧 occurrence及其收藏组。invalidated 历史默认不作当前薄弱点，用户显式选择其收藏时也不能把旧错误答案当真值。删原题/材料保留最小复盘快照，回跳另验当前来源权限；公开读取不会返回他人答案或私人笔记。
 
 ### 4.4 `learner_profiles`、`diagnosis_reports`、`diagnosis_evidence_refs`
 
@@ -274,15 +283,15 @@ UK `(scope,ai_run_id,ordinal,card_revision)`；IX `(scope,agent_message_id,ordin
 
 ## 6. 解释、私有 TTS 与全局标准词音
 
-### 6.1 `explanations`、`source_result_bindings`、`material_learning_indexes`
+### 6.1 `explanations`、`source_result_bindings`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 含义 |
 | --- | --- | --- |
 | explanations / L | `ai_run_id uuid NN`、`task_kind varchar(32) NN`、`source_language,explanation_language varchar(35) NN`、`detail_level varchar(24) NN`、`schema_version integer NN`、`result_payload jsonb NN`、`context_snapshot jsonb NN`、`serialized_size_bytes bigint NN`、`context_digest,strict_key_digest bytea NN`、`generation_config jsonb NN`、`quality varchar(24) NN`、`published_at timestamptz NN` | 不可变完整解释与真实生成配置/Prompt/上下文协议版本；task 词/短语/句/摘录等受控枚举；生成例与原文明确分开 |
 | source_result_bindings / L+S | `lookup_state_id uuid NN`、`result_kind varchar(16) NN`、`result_id uuid NN`、`result_version bigint NN`、`binding_digest bytea NN`、`dependency_versions jsonb NN`、`released_at timestamptz NULL` | kind explanation/card/audio；持久授权来源引用，不是浏览埋点 |
-| material_learning_indexes / L | `material_id,material_revision_id,source_result_binding_id,lookup_state_id uuid NN`、`entry_kind varchar(24) NN`、`language varchar(35) NN`、`surface_text text NN`、`lemma text NULL`、`chapter_or_lesson_id uuid NULL`、`source_locator jsonb NN`、`locator_schema_version integer NN` | 书内已查位置与词形索引；只针对有合法材料身份的结果 |
+| binding同表：材料查阅索引列 | `material_id,material_revision_id uuid NULL`、`entry_kind varchar(24) NULL`、`language varchar(35) NULL`、`surface_text text NULL`、`lemma text NULL`、`chapter_or_lesson_id uuid NULL` | 仅合法材料来源必填前五列，其他来源全空；locator复用S.source_locator及其内嵌locator_schema_version，不用S.source_schema_version冒充定位协议版本；父材料/版本/章节与S出处逐项校验 |
 
-explanation UK `(scope,ai_run_id)`，IX `(scope,strict_key_digest,created_at,id)`；binding UK `(scope,binding_digest)`，IX `(scope,result_kind,result_id)` 与 `(scope,source_kind,source_resource_id)`；index UK `(scope,source_result_binding_id)`，IX `(scope,material_id,material_revision_id,entry_kind,created_at,id)` 与 `(scope,material_id,chapter_or_lesson_id,created_at,id)`。同 lemma 不同语境不共享解释；成功发布事务同时写历史 binding，只有当前代次写当前 index。原书删除只解除书属引用，独立收藏/合法历史仍保留。
+explanation UK `(scope,ai_run_id)`，IX `(scope,strict_key_digest,created_at,id)`；binding UK `(scope,binding_digest)`，IX `(scope,result_kind,result_id)` 与 `(scope,source_kind,source_resource_id)`；binding增加IX `(scope,material_id,material_revision_id,entry_kind,created_at,id)` 与 `(scope,material_id,chapter_or_lesson_id,created_at,id)`，均WHERE material_id IS NOT NULL AND released_at IS NULL。同 lemma 不同语境不共享解释；成功发布事务写历史binding，只有当前代次可切lookup有效指针。MaterialLearningIndex改为作用域查询投影：从未released且有材料列的binding连接learning_lookup_states，仅选result_kind/id/version与当前effective一致的绑定；lookup端也核对scope，旧成功结果仍保留绑定但不进入当前索引。不建material_learning_indexes实体表或独立投影Worker。原书删除只解除书属引用，独立收藏/合法历史仍保留。
 
 ### 6.2 `learning_lookup_states`、`generation_slots`
 
@@ -334,12 +343,14 @@ UK audio `(strict_key_digest,generation)`；UK lookup `(word_entry_id,profile_id
 
 全局占用新生成前验证实际发起人的本人Key/权限/容量，Job/AiRun/attempt/用量仍为其私有记录。等待者只能拿本人等待引用，不能读取/取消生产Job；取消、失败、撤权、unknown后不自动换用等待者Key。ready目录引用独立于贡献者/收藏，删任何私人条目不删除公共成品。元数据API不返回生产者、首次用户生成时间或引用人数。
 
-### 6.6 `collection_word_audio_refs`、`speech_requests`
+### 6.6 收藏词音字段与 `speech_requests`
 
 | 表 / 公共列 | 专有列（类型 / 空值 / 默认） | 约束/职责 |
 | --- | --- | --- |
-| collection_word_audio_refs / L+R | `collection_item_id uuid NN`、`learning_revision bigint NN`、`word_entry_id,profile_id,profile_version_id uuid NN`、`global_audio_id uuid NULL`、`selection_generation bigint NN DEFAULT 1` | UK `(scope,collection_item_id)`；IX `(global_audio_id) WHERE global_audio_id IS NOT NULL` 供受控目录GC；改读音推进本人代次，过期结果不应用 |
+| collection_items同表：标准词音组 | `word_audio_learning_revision bigint NULL`、`word_audio_entry_id,word_audio_profile_id,word_audio_profile_version_id uuid NULL`、`word_audio_id uuid NULL`、`word_audio_selection_generation bigint NN DEFAULT 0` | 前四列全空或全有，非word必须全空且audio为空；audio非空需有完整选择；generation>=0；IX `(word_audio_id) WHERE word_audio_id IS NOT NULL` 供固定目录GC |
 | speech_requests / L+R | `asset_kind varchar(16) NN`、`source_kind varchar(24) NN`、`source_resource_id uuid NN`、`source_version bigint NN`、`request_generation bigint NN`、`state varchar(24) NN`、`audio_asset_id,global_word_lookup_id,global_audio_id,job_id uuid NULL`、`requested_at timestamptz NN` | private/global_word；waiting/ready/missing/failed/cancelled；UK `(scope,source_kind,source_resource_id,request_generation)`；IX `(scope,state,created_at,id)` |
+
+收藏标准词音原是每条collection唯一附属，不另建collection_word_audio_refs。根条目锁内验证本人word/learning_revision及公共词条/profile，改读音/选择推进word_audio_selection_generation；实质词内容变化清旧绑定并推进代次。异步完成按冻结learning_revision与selection_generation更新audio指针，只更新本字段组及updated_at，不能覆盖笔记/归本/内容。用户修改词音选择使用条目R，异步发布不推进供表单使用的R；返回DTO的词音代次单独标识。条目删除解除当前选用，历史请求仍保留原引用；共享成品不随删词删除。
 
 speech 请求形状 CHECK：private 禁用全局列；global_word 禁用 private audio 列；等待他人生产时 job_id 为空，只有本人实际发起的job可关联。客户端读媒体必须同时验证本人来源版本/选用关系和实际资产一致，知道公共 audio id 不授予任意播放权。新个人引用只由已有授权写动作保存，只读 resolve 不写学习事实。
 
@@ -368,6 +379,8 @@ Job IX `(owner,state,created_at,id)`、`(state,not_before,id) WHERE state IN ('q
 ### 7.2 `ai_runs`
 
 公共列 UO + R。`library_id,job_id,agent_thread_id uuid NULL`、`operation_id,request_id uuid NN`、`operation_kind varchar(64) NN`、`state varchar(24) NN`、`provider varchar(32) NN`、`model_id varchar(256) NN`、`model_revision varchar(128) NULL`、`credential_id uuid NN`、`credential_version bigint NN`、`sdk_version,prompt_version,context_version varchar(64) NN`、`output_schema_version integer NN`、`input_digest bytea NN`、`input_refs jsonb NN`、`generation_config jsonb NN`、`generation bigint NN DEFAULT 1`、`model_call_limit,tool_call_limit integer NN`、`model_call_count,tool_call_count integer NN DEFAULT 0`、`started_at,finished_at timestamptz NULL`、`result_schema_version integer NN`、`result_refs jsonb NULL`、`error_code varchar(96) NULL`、`aggregation_revision bigint NN DEFAULT 0`。
+
+另增 `capability varchar(12) NN`（text/vision/tts），与本run冻结模型能力一致。credential_test专用安全结果使用已有state/finished_at/error_code；finished_at映射tested_at，取消/中断不投影成成功。新增部分IX `(owner,credential_id,credential_version,model_id,capability,finished_at DESC,id) WHERE operation_kind='credential_test' AND finished_at IS NOT NULL`；测试查询还必须精确匹配provider/model_id/model_revision（NULL明确表示未知修订），模型切换不沿用另一模型测试成功；模型准确标识复用这几列，不复制catalog显示名。保存/轮换Key不会创建test run；当前版本无已结束测试显示untested。旧凭据版本迟到结果保留历史但不覆盖新版本结论，不另建credential_capability_checks。
 
 state accepted/running/succeeded/failed/cancelled/interrupted/unknown_outcome；IX `(owner,operation_kind,created_at,id)`、`(owner,job_id)`、`(owner,agent_thread_id,state)`。非空 credential 引用只记录身份/版本，无密文/Key；每个新模型阶段重取当前本人凭据/能力/权限，不复用失效解密缓存。无Job短请求仅限不产生需容量预留的持久学习成品，例如显式Key能力测试；查询卡片/解释/音频/出题/诊断即使快速返回，也在本设计中由内部Job承载成品预留/发布，不新增用户任务入口。SDK/HTTP/Worker共享计数上限。派生 Token 汇总可由查询计算，不另建与attempt同时相加的权威总计。
 
@@ -399,30 +412,25 @@ state accepted/running/succeeded/failed/cancelled/interrupted/unknown_outcome；
 
 UK `(owner,ai_run_id,attempt_no) WHERE ai_run_id IS NOT NULL`；无run调用 UK `(owner,operation_id,attempt_no) WHERE ai_run_id IS NULL`。IX `(owner,started_at,id)`、`(owner,provider,model_id,capability,started_at,id)`；实例管理按时间有界读取聚合，不新增私人明细旁路。started 后崩溃/超时结果不明转 unknown，不自动当未执行；显式新调用产生新attempt，旧迟到仅补自己，不覆盖新业务指针。
 
-### 7.4 `model_call_usages`
+### 7.4 调用用量字段（位于 external_call_attempts）
 
-公共列 UO + R；逐 attempt 唯一，字段口径遵循[模型用量契约](../contracts/model-usage.md)。
+ModelCallUsage是每attempt至多一份的逻辑值对象，和attempt同scope/保留期，迟到用量原本也必须锁attempt。直接并入external_call_attempts，不另建model_call_usages、重复owner/provider/model/状态/关联列，也不对同一结果做两表写入。
 
-| 列 | PG类型 / NULL / 默认 | 含义 |
+| 同表新增列 | PG类型 / NULL / 默认 | 含义 |
 | --- | --- | --- |
-| external_call_attempt_id | uuid NN | UK `(external_call_attempt_id)`，引用的owner必须一致 |
-| operation_id,request_id | uuid NN | 端到端关联 |
-| job_id,ai_run_id | uuid NULL | 可选运行关联 |
-| provider,capability | varchar(32) NN | 实际供应商与能力 |
-| model_id | varchar(256) NN | 实际模型 |
-| model_revision | varchar(128) NULL | 供应商可得修订 |
-| operation_kind | varchar(64) NN | 与attempt一致的操作分类 |
-| call_status | varchar(16) NN | succeeded/failed/unknown；运行中先无本行 |
-| usage_status | varchar(16) NN | complete/partial/unavailable |
+| usage_status | varchar(16) NN DEFAULT 'unavailable' | complete/partial/unavailable，与调用status分别判断 |
+| usage_received_at | timestamptz NULL | 最近可信用量补全时间；无响应仍NULL |
 | input_tokens,output_tokens,total_tokens | bigint NULL | 供应商输入/输出/总量，未知NULL |
-| cache_read_tokens,cache_write_tokens,reasoning_tokens | bigint NULL | Prompt缓存与推理分项，不再加到已含其量的total |
+| cache_read_tokens,cache_write_tokens,reasoning_tokens | bigint NULL | Prompt缓存与推理分项，不能重复加入total |
 | input_audio_tokens,output_audio_tokens | bigint NULL | 音频Token分项 |
 | input_images,input_characters | bigint NULL | 可确定/供应商报告的图片及字符数 |
-| output_audio_seconds | numeric(16,3) NULL | 音频时长，有限且非负 |
-| provider_usage_schema | varchar(64) NN | 适配版本，解释历史口径 |
-| safe_usage_details | jsonb NN DEFAULT '{}'::jsonb | 白名单数字/布尔/枚举，不存任意响应 |
+| output_audio_seconds | numeric(16,3) NULL | 时长，有限且非负 |
+| provider_usage_schema | varchar(64) NULL | 尚无用量时为空，出现任何可信指标必须有适配版本 |
+| safe_usage_details | jsonb NN DEFAULT '{}'::jsonb | 只允许白名单数字/布尔/枚举，无响应正文 |
 
-所有计数 CHECK >=0 或NULL；不要求 total 等于分项以免改写供应商事实。IX `(owner,created_at,id)`、`(owner,provider,model_id,capability,created_at,id)`；聚合必须从 attempts LEFT JOIN usage，以 attempt.started_at划桶，返回每指标 known_sum/known_count/unknown_count。未知全无时 sum=NULL；迟到补齐锁attempt+usage、推进aggregation_revision/Outbox，不能只按最初usage.created_at缓存结果。应用结果命中**不创建attempt或零Token usage**。
+计数CHECK非负或NULL；不要求total等于分项。逻辑usage id/external_call_attempt_id均映射本行id，call_status映射本行status；运行中的started行也计入attempt总数，按已有统计合同单列状态，不用缺用量过滤它。聚合直接从全部匹配attempt读取，以started_at划桶并复用7.3索引，返回每指标known_sum/known_count/unknown_count；全未知sum=NULL。供应商完全不返回用量、失败/unknown均不丢行。
+
+补齐同一个attempt时锁本行、按适配器的稳定响应/单调补全规则去重；写入已报告绝对值，不重复累加或用迟到NULL清已有可信值。任何状态/指标变化在同事务推进aggregation_revision及updated_at/Outbox，幂等无变化不推进。供应商结果不明与业务发布状态保持分离，晚到用量不改变新run/effective结果。应用缓存命中不创建attempt或零Token用量。字段和统计语义唯一维护在[模型用量契约](../contracts/model-usage.md)。
 
 ### 7.5 `outbox_events`、`inbox_events`
 
@@ -453,14 +461,14 @@ UK `(owner,source_event_id,notification_kind)`，IX `(owner,created_at,id)`、`(
 
 | 聚合/保护行 | 新增与删除共用锁 | 保留/清理规则 |
 | --- | --- | --- |
-| CollectionItem、Notebook | notebook按ID→collection按ID；同一流程统一顺序 | 删本仅解关系；删词tombstone/代次，题目/作答/错题必要快照继续保留 |
+| CollectionItem、Notebook | 触及默认词本先user_extensions；再notebook按ID→collection按ID，同一流程统一顺序 | 删本仅解关系；删词tombstone/代次，题目/作答/错题必要快照继续保留 |
 | ExerciseQuestion、依据、来源材料 | 来源材料根→题目根/版本→业务集/会话（实施时统一登记且所有入口一致） | 改题建新版本；已冻结/已作答引用不可丢；OPEN-10未完成前不能宣布用户删题能力ready |
 | 作答/曝光/评分 | 接受计数器→会话/题项或ExamSession→Attempt→Run；普通只评分可直接锁Attempt | 不可变答案；effective切换替换贡献；媒体故障revision与整卷边界见材料分册 |
 | 学习/错题投影 | CollectionItem→LearningState；根题/投影按稳定ID | 原始事实保留；状态可重算，乱序消费复核事实版本；无独立复习/每日队列表 |
 | AgentThread | thread→附件/轮次 | 删除推进代次；绑定有效图片无普通TTL；独立收藏/解释不随thread删除 |
 | 私有解释/音频 | 合法来源根→LookupState→GenerationSlot→Run/Asset | 完整成功结果和有效引用持久保留；本机/Redis淘汰仅丢副本 |
 | global_word | 词条/profile→lookup→slot | 公共成品独立于贡献者；生产者关联只在内部slot；目录维护不发起个人Key调用 |
-| Job/Outbox/attempt | Job→Stage/Run→Attempt/Usage | 重复投递按业务唯一/fence拒绝，未知外部结果不自动重试；用量补齐不能改当前业务成绩 |
+| Job/Outbox/attempt | Job→Stage/Run→Attempt（含用量组） | 重复投递按业务唯一/fence拒绝，未知外部结果不自动重试；用量补齐不能改当前业务成绩 |
 
 表级 schema/索引是实施输入，实际 Alembic 迁移需逐切片交付并验证：无FK/隐式级联、UTC更新时间、所有者不可变、单行CHECK与逻辑引用、A/B隔离、父删/新增引用竞争、双端辅助接受顺序、整卷发布/重评重放、Redis丢失不触发重复模型调用、global_word生产者与等待者隔离、unknown/NULL用量及容量/GC。索引列顺序和文本检索性能须以目标PG和合成样本EXPLAIN确认，本设计不宣称已测试。
 

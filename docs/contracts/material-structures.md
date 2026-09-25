@@ -2,6 +2,8 @@
 
 状态：2026-09-23，设计基线，未实现。本文是上传完成后三类材料“保存什么、如何关联、怎样版本化”的唯一详细契约；类型选择与处理边界见[三类材料](material-types.md)，展示分类见[教材与试卷展示](learning-presentation.md)，用户流程分别见[小说](../modules/novels.md)、[课本](../modules/textbooks.md)和[试卷](../modules/exams.md)。
 
+本协议中的Manifest、AudioBinding、PlaybackPolicy是逻辑输出对象，不要求各建一表。物理映射以[材料字典](../architecture/database-materials.md)为准：小说/课本头在各自material_revisions，AudioBinding状态在synthesis spec，播放规则在冻结listening binding；三类专用schema/处理/页面与隐藏字段裁剪保持独立。
+
 ## 1. 分层原则
 
 上传、源提取、领域解析和消费投影是四个不同结果，不能用一个大JSON或一个成功状态代替：

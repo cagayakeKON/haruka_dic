@@ -31,7 +31,7 @@ Redis允许按内存策略淘汰键，因此必须是持久数据的副本，不
 
 | 逻辑记录 | 必要信息与用途 |
 | --- | --- |
-| MaterialLearningIndex | owner/library/material、词句类别、语言、表层词/可选lemma、源位置与已有结果引用；支持按书/章/Lesson分页查询 |
+| MaterialLearningIndex（source_result_bindings与当前lookup的查询投影，不另建物理表） | owner/library/material、词句类别、语言、表层词/可选lemma、源位置与已有结果引用；支持按书/章/Lesson分页查询 |
 | SourceResultBinding | 带类型的来源身份、不可变版本/locator或手工输入摘要、结果ID及派生依赖；提交时把解释关联到持久来源，不由只读resolve补写学习记录 |
 | Explanation/Card | 不可变完整输出、说明语言/详细程度/任务种类、实际上下文摘要与必要快照、模型/参数/提示/协议版本、来源和质量标记 |
 | LearningLookupState | owner、查阅键、revision/lookup_generation、当前选择的严格生成键/active_run_id、effective_result_id；跨模型/Prompt配置维持本次查阅的权威结果指针 |

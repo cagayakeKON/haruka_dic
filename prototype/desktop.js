@@ -632,7 +632,9 @@
     }
     return `<div class="modal-backdrop" data-action="closeModal"><section class="dialog ${s.modal === "tasks" ? "task-drawer" : s.modal === "materialActions" ? "material-menu-dialog" : ""}" role="dialog" aria-modal="true" tabindex="-1" aria-label="${e(title)}" data-stop="true"><div class="dialog-head"><h2>${e(title)}</h2><button type="button" class="icon-btn" data-action="closeModal" aria-label="关闭">${I("close")}</button></div>${content}</section></div>`;
   }
+  const motion = window.HarukaMotion({ s, root });
   const selection = window.HarukaTextSelection({
+    motion,
     s,
     root,
     onQuery: (value) => extras.querySelection(value),
@@ -702,6 +704,7 @@
     adminSecurity,
   };
   function render() {
+    motion.beforeRender();
     const oldDialog = root.querySelector(".dialog");
     const dialogScroll = oldDialog?.scrollTop || 0;
     const focused = focusSelector(document.activeElement);
@@ -842,6 +845,7 @@
       root.querySelector(focused)?.focus({ preventScroll: true });
     extras.restoreListFocus();
     selection.refresh();
+    motion.afterRender();
     renderedRoute = s.route;
     history.replaceState(navigationState(), "", pageHash());
     root.querySelectorAll(".table-wrap").forEach((table) => {

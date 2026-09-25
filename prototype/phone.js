@@ -666,7 +666,9 @@
   function states() {
     return `<h1 class="page-title">每种状态，都说清原因。</h1><p class="page-subtitle">以下是原型状态样例，不代表当前账号真的离线或失权。</p><div class="stack" style="margin-top:22px"><div class="surface stack"><strong>没有材料</strong><p>添加小说、课本或试卷后，材料会出现在本人书库。</p>${btn('添加材料', 'import', 'secondary', 'plus')}</div><div class="surface stack"><strong>暂时离线</strong><p>有效权限租期内可阅读已缓存章节与解释；新的生成、设置保存和考试场次需要联网。</p>${btn('查看本机副本', 'cache', 'secondary')}</div><div class="surface stack"><strong>没有访问权限</strong><p>这份内容现在不可读取。请返回材料库或联系有权的管理员。</p>${btn('返回材料库', 'library', 'secondary')}</div><div class="surface stack"><strong>任务未完成</strong><p>示例：模型调用遇到网络故障，结果仍未知；可去任务页查看状态后再决定下一步。</p>${btn('查看任务', 'jobs', 'secondary')}</div><div class="surface stack"><strong>正在载入</strong><p>保留当前标题和列表骨架，等候服务结果，不用动画推算完成。</p><div class="meter"><span style="width:40%"></span></div></div></div>`;
   }
+  const motion = window.HarukaMotion({ s, root });
   const selection = window.HarukaTextSelection({
+    motion,
     s,
     root,
     onQuery: (value) => extras.querySelection(value),
@@ -729,6 +731,7 @@
     onboarding,
   };
   function render() {
+    motion.beforeRender();
     const pageFocus =
       renderedRoute === s.route ? focusSelector(document.activeElement) : '';
     const hadSearch = !!root.querySelector('.head-search');
@@ -915,6 +918,7 @@
         ?.focus({ preventScroll: true });
     extras.restoreListFocus();
     selection.refresh();
+    motion.afterRender();
     history.replaceState(
       { ...history.state, harukaMaterial: s.chosenMaterial },
       '',

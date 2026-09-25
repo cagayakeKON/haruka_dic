@@ -6,6 +6,8 @@ DESIGN17[题目直接收藏与交卷后学习](reviews/2026-09-25-question-colle
 
 DESIGN18补充单词喇叭、句子分词气泡与小说连续朗读；新增SEL-004、TTS-008、NOV-005、LC-11，HTML局部证据见[原型记录](reviews/2026-09-25-sentence-speech.md)，正式服务端/音频/三端验收仍未执行。
 
+DESIGN19原型修订普通划选不自动弹层及句子/dialog动效，沿用SEL-001/003与DESIGN-04/05；[局部记录](reviews/2026-09-25-long-press-motion.md)不代表正式三端验收。
+
 ## 1. 按功能开始开发
 
 | 功能入口 | 公共契约与设计 | 沿用的验收族/证据 |

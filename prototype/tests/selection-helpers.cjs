@@ -1,5 +1,5 @@
 // Drive the browser's real text selection, without changing application state.
-async function selectText(page, selector, text, touch = false) {
+async function selectText(page, selector, text, touch = false, open = true) {
   const target = page.locator(selector).filter({ hasText: text }).first();
   await target.scrollIntoViewIfNeeded();
   await target.evaluate((el) => el.scrollIntoView({ block: "center" }));
@@ -43,6 +43,7 @@ async function selectText(page, selector, text, touch = false) {
     await page.mouse.down();
     await page.mouse.move(points.endX, points.endY, { steps: 12 });
     await page.mouse.up();
+    if (open) await page.keyboard.press("Alt+Enter");
   }
 }
 module.exports = { selectText };

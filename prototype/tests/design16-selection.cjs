@@ -177,7 +177,7 @@ const fs = require("node:fs");
         "轻轻地",
       );
       await selectText(page, ".learning-title", "そっと");
-      await page.keyboard.press("Tab");
+      // The explicit Alt+Enter action in selectText focuses the sentence control.
       await expect(action("read")).toBeFocused();
       await page.keyboard.press("Enter");
       await expect(page.locator(".selection-player")).toBeVisible();

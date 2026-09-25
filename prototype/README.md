@@ -1,6 +1,6 @@
 # Haruka「晴空频率」交互原型
 
-状态：2026-09-25，阶段1中的独立原型小阶段 DESIGN2；手机端在 DESIGN3 调整任务流，DESIGN4 进一步重构移动排版、底部动作和产品文案；电脑端在 DESIGN5 对齐手机视觉；DESIGN6 同步两端收藏列表/弹窗、每日单词、查询卡片、材料直达，并去除电脑消息/任务重复入口；DESIGN7 优化手机登录、注册、找回的紧凑布局、字段反馈和受理页；DESIGN8 将手机材料搜索并入header、恢复右下角导入，并将两端详情收为小型更多入口；DESIGN9 统一手机tab标题与按需展开的搜索，并将两端更多改为查看详情/删除菜单；DESIGN10 增加查询图片选择、粘贴、预览/移除、图文发送与手机拍照入口；DESIGN11 修复默认入口返回、空结果恢复与手机筛选焦点，优化收藏整行点击和紧凑排版；DESIGN12 调整查询输入优先级、来源就地展开和习题设置/范围的一次确认；DESIGN13限定语言查询、移除通用回答、重做学习卡片和紧凑词本列表；DESIGN14移除查询类型选项，改为直接输入并自动判断；DESIGN15移除独立Agent聊天及询问入口；DESIGN18加入单词发音、句子分词浮层与连续朗读。用于核对产品设计语言、页面信息架构和关键交互，不是 Flutter/Python 正式应用、B1/B2 实现或业务验收证据。视觉基线见[产品设计语言](../docs/product/design-language.md)，行为边界以[产品总览](../docs/product/overview.md)和各模块规格为准。
+状态：2026-09-25，阶段1中的独立原型小阶段 DESIGN2；手机端在 DESIGN3 调整任务流，DESIGN4 进一步重构移动排版、底部动作和产品文案；电脑端在 DESIGN5 对齐手机视觉；DESIGN6 同步两端收藏列表/弹窗、每日单词、查询卡片、材料直达，并去除电脑消息/任务重复入口；DESIGN7 优化手机登录、注册、找回的紧凑布局、字段反馈和受理页；DESIGN8 将手机材料搜索并入header、恢复右下角导入，并将两端详情收为小型更多入口；DESIGN9 统一手机tab标题与按需展开的搜索，并将两端更多改为查看详情/删除菜单；DESIGN10 增加查询图片选择、粘贴、预览/移除、图文发送与手机拍照入口；DESIGN11 修复默认入口返回、空结果恢复与手机筛选焦点，优化收藏整行点击和紧凑排版；DESIGN12 调整查询输入优先级、来源就地展开和习题设置/范围的一次确认；DESIGN13限定语言查询、移除通用回答、重做学习卡片和紧凑词本列表；DESIGN14移除查询类型选项，改为直接输入并自动判断；DESIGN15移除独立Agent聊天及询问入口；DESIGN18加入单词发音、句子分词浮层与连续朗读；DESIGN19取消普通划选自动弹层并补充长按/dialog动效。用于核对产品设计语言、页面信息架构和关键交互，不是 Flutter/Python 正式应用、B1/B2 实现或业务验收证据。视觉基线见[产品设计语言](../docs/product/design-language.md)，行为边界以[产品总览](../docs/product/overview.md)和各模块规格为准。
 
 从 [原型入口](index.html) 分别进入[手机端](phone.html)与[电脑端](desktop.html)。两个入口分别拥有页面结构、导航、排版和交互脚本；共用虚构样本、基础图标/安全转义，以及 collections.js 的本地收藏/查询/任务示例交互、exercise-builder.js/css 的来源选择与范围预览；外层导航和布局保持独立。手机端以五个主入口、底部操作和面板完成触控路径；电脑端从单列布局渐进展开侧栏、阅读解释和设置分类，沿用手机视觉与五个核心目的地，并提供独立 Web 管理端示例。静态页面可直接打开HTML；WebSocket进度需要下面的本地演示服务。普通静态服务/直接文件方式没有进度服务器时会保留等待连接，不虚构完成。
 
@@ -47,6 +47,8 @@ DESIGN16建立共用选区，DESIGN17开放交卷后的复盘选区，DESIGN18�
 定点检查：`node prototype/tests/design18-sentence-speech.cjs`和`node prototype/tests/design18-boundaries.cjs`（后者等待演示材料通过既有WebSocket进度就绪）；既有选择/返回与题目边界分别由`design16-selection.cjs`、`design16-regressions.cjs`、`design17-question-collection.cjs`覆盖。局部证据见[DESIGN18记录](../docs/delivery/reviews/2026-09-25-sentence-speech.md)，历史[DESIGN16记录](../docs/delivery/reviews/2026-09-25-unified-text-selection.md)只描述当时范围。
 
 DESIGN17：普通AI习题/教材题增加直接“收藏题目”，无需先查询或作答，沿用归本弹窗；保存题干、选项、来源及当前可见作答/参考答案，作答前快照不含隐藏答案，已有快照不会自动补入后来评分。错题历史原有收藏入口及查询习题卡片整卡收藏继续可用。试卷在本次演示交卷成功后，逐题复盘显示完整题面/选项/作答/参考答案，开放选区朗读、查询及结果收藏，并为每题提供直接收藏。正式边界为服务端submitted，不要求评分完成；HTML只有即时示例客观题评分，不代表真实等待/失败评分、权限或持久保存已实现。记录见[题目收藏与交卷后学习](../docs/delivery/reviews/2026-09-25-question-collection.md)，定点回归：`node prototype/tests/design17-question-collection.cjs`。
+
+DESIGN19按确认取消普通划选自动弹层：鼠标拖选/键盘扩选只保留原生选择，不自动暂停播放；触控或鼠标长按打开句子浮层，键盘可选区后Alt+Enter主动唤出。长按浮层轻微上浮/淡入，词气泡依次显现；查询/收藏及其他dialog有打开/关闭动效，同一弹窗内部更新不重播。系统或应用“减少动态”会关闭这些动画。关闭动效仅使用不可交互、辅助技术隐藏的短暂视觉副本，不延迟原状态和焦点恢复。记录见[DESIGN19](../docs/delivery/reviews/2026-09-25-long-press-motion.md)，定点验证`node prototype/tests/design19-motion.cjs`。选区回归助手默认通过真实Alt+Enter主动打开，传入`open=false`只做原生划选。
 
 ## 演示边界
 

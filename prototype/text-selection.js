@@ -1,5 +1,5 @@
 /* Shared text selection interaction. Local UI demonstration; no model or audio. */
-window.HarukaTextSelection = ({ s, root, onQuery }) => {
+window.HarukaTextSelection = ({ s, root, onQuery, motion }) => {
   const { escape: e, icon: I } = window.HarukaCore;
   let snapshot,
     toolbar,
@@ -8,7 +8,8 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     suppressClick = false;
   const speech = window.HarukaSpeechPlayer({ s, root });
   let selectedTokens = new Set(),
-    adjustedRange;
+    adjustedRange,
+    selectionMode = false;
   let epoch = 0,
     gestureOwner = null;
   const scopeOf = (node) =>
@@ -22,17 +23,19 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       (s.route === "examResult" && s.examFinished && !s.examRunning)) &&
     !/exam/i.test(s.modal);
   const host = () => root.querySelector('[role="dialog"]') || root;
-  const clearToolbar = () => {
+  const clearToolbar = (keepMode = false) => {
+    if (!keepMode) selectionMode = false;
     toolbar?.remove();
     toolbar = null;
     snapshot = null;
     CSS.highlights?.delete("haruka-focus");
   };
-  function capture() {
+  function capture(open = false) {
+    if (!open && !selectionMode) return;
     if (toolbar?.contains(document.activeElement)) return;
     const selection = window.getSelection();
-    if (!allowed() || !selection?.rangeCount || selection.isCollapsed)
-      return clearToolbar();
+    if (!allowed() || !selection?.rangeCount) return clearToolbar();
+    if (selection.isCollapsed) return clearToolbar(!!pointer && selectionMode);
     const range = selection.getRangeAt(0);
     const start = scopeOf(range.startContainer),
       end = scopeOf(range.endContainer);
@@ -62,6 +65,13 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     const prefix = range.cloneRange();
     prefix.selectNodeContents(start);
     prefix.setEnd(range.startContainer, range.startOffset);
+    if (
+      snapshot?.element === start &&
+      snapshot.text === text &&
+      snapshot.offset === prefix.toString().length
+    )
+      return;
+    selectionMode = true;
     speech.pause();
     speech.focus(range.startContainer);
     selectedTokens = new Set();
@@ -111,6 +121,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       CSS.highlights?.set("haruka-focus", new Highlight(range));
     host().append(toolbar);
     position();
+    if (open) motion.sentence(toolbar);
   }
   function position() {
     if (!toolbar || !snapshot?.element.isConnected) return;
@@ -267,7 +278,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     },
     true,
   );
-  document.addEventListener("selectionchange", capture);
+  document.addEventListener("selectionchange", () => capture());
   document.addEventListener("change", (event) => {
     if (
       !toolbar?.contains(event.target) ||
@@ -311,6 +322,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       clearTimeout(timer);
       if (!root.contains(event.target) || !allowed()) return;
       const scope = scopeOf(event.target);
+      if (!scope || scope !== snapshot?.element) clearToolbar();
       pointer = scope
         ? { x: event.clientX, y: event.clientY, scope, epoch }
         : null;
@@ -367,7 +379,7 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
         selection.addRange(range);
         suppressClick = true;
         gestureOwner = initial.scope.closest("button") || initial.scope;
-        capture();
+        capture(true);
       }, 500);
     },
     true,
@@ -378,8 +390,10 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
       if (
         pointer &&
         Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > 10
-      )
+      ) {
+        pointer.dragged = true;
         clearTimeout(timer);
+      }
     },
     true,
   );
@@ -387,7 +401,11 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
     "pointerup",
     () => {
       clearTimeout(timer);
-      if (pointer && !window.getSelection()?.isCollapsed) {
+      if (
+        pointer &&
+        (pointer.dragged || suppressClick) &&
+        !window.getSelection()?.isCollapsed
+      ) {
         suppressClick = true;
         gestureOwner = pointer.scope.closest("button") || pointer.scope;
         capture();
@@ -410,6 +428,17 @@ window.HarukaTextSelection = ({ s, root, onQuery }) => {
   document.addEventListener(
     "keydown",
     (event) => {
+      if (
+        event.altKey &&
+        event.key === "Enter" &&
+        allowed() &&
+        scopeOf(window.getSelection()?.anchorNode)
+      ) {
+        event.preventDefault();
+        capture(true);
+        toolbar?.querySelector("button").focus({ preventScroll: true });
+        return;
+      }
       if (
         event.key === "Tab" &&
         toolbar &&

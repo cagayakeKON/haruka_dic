@@ -406,11 +406,15 @@ window.HarukaCollections = ({
   function canSendQuery() {
     return !preparingImages && !!(s.queryDraft?.trim() || s.queryImages.length);
   }
+  function cardSaveAction(card) {
+    const saved = s.words.some((word) => word.cardId === card.id);
+    return `<button class="text-btn card-save" type="button" data-x="saveCard" data-id="${e(card.id)}" ${saved ? "disabled" : ""}>${I(saved ? "check" : "bookmark")}${saved ? "已收藏" : "收藏"}</button>`;
+  }
   function query() {
     const empty = !s.queryMessages.length;
     const composer = `<form class="query-composer" data-x-form="query" aria-busy="${preparingImages}"><div class="query-image-strip" data-query-images ${s.queryImages.length ? "" : "hidden"}>${queryImageStrip(s.queryImages, true)}</div><label class="sr-only" for="query-input">输入问题</label><textarea id="query-input" name="question" maxlength="2000" rows="2" placeholder="输入单词、句子、语法问题，或添加图片…">${e(s.queryDraft || "")}</textarea>${s.learningDemo.composerContext()}<p class="query-image-error" data-query-error role="alert" ${queryImageError ? "" : "hidden"}>${e(queryImageError)}</p><div class="query-composer-actions"><div class="query-attach-actions"><button class="query-attach-button" type="button" data-x="pickQueryImage" data-id="album" aria-label="添加图片" title="${mobile ? "从相册添加" : "选择图片"}" ${preparingImages ? "disabled" : ""}>${I("image")}<span>${mobile ? "相册" : "图片"}</span></button>${mobile ? `<button class="query-attach-button" type="button" data-x="pickQueryImage" data-id="camera" aria-label="拍照" ${preparingImages ? "disabled" : ""}>${I("camera")}<span>拍照</span></button>` : ""}</div><button class="primary" type="submit" aria-label="发送问题" ${canSendQuery() ? "" : "disabled"}>发送 ${I("arrow")}</button></div><p class="note query-composer-note" data-query-status role="status">${preparingImages ? "正在准备图片…" : s.queryImages.length ? `${s.queryImages.length} / 4 张图片 · 仅本机预览` : mobile ? "本地示例 · 不调用模型" : "可粘贴图片 · 本地示例"}</p><input type="file" data-query-file="album" accept="image/png,image/jpeg,image/webp" multiple hidden>${mobile ? '<input type="file" data-query-file="camera" accept="image/*" capture="environment" hidden>' : ""}</form>`;
     const welcome = `<div class="query-welcome"><h2>试试这样查询</h2><div class="query-prompts">${learningCards.prompts.map((prompt) => `<button class="query-prompt" type="button" data-x="prompt" data-question="${e(prompt)}" aria-label="${e(prompt)}"><span>${e(prompt)}</span></button>`).join("")}</div></div>`;
-    const messages = `<div class="query-messages" aria-live="polite">${s.queryMessages.map((message) => `<div class="query-question">${message.images?.length ? `<div class="query-image-strip">${queryImageStrip(message.images)}</div>` : ""}${message.question ? `<p>${e(message.question)}</p>` : ""}</div>${s.learningDemo.contextSummary(message)}${message.card ? learningCards.render(message.card, `<button class="text-btn" type="button" data-x="saveCard" data-id="${message.card.id}" ${s.words.some((w) => w.cardId === message.card.id) ? "disabled" : ""}>${I("bookmark")}${s.words.some((w) => w.cardId === message.card.id) ? "已收藏" : "收藏"}</button>`) : `<div class="query-notice" role="status">${I("book")}<p>${e(message.notice)}</p></div>`}`).join("")}</div>`;
+    const messages = `<div class="query-messages" aria-live="polite">${s.queryMessages.map((message) => `<div class="query-question">${message.images?.length ? `<div class="query-image-strip">${queryImageStrip(message.images)}</div>` : ""}${message.question ? `<p>${e(message.question)}</p>` : ""}</div>${s.learningDemo.contextSummary(message)}${message.card ? learningCards.render(message.card, cardSaveAction(message.card), true, message.id) : `<div class="query-notice" role="status">${I("book")}<p>${e(message.notice)}</p></div>`}`).join("")}</div>`;
     return `<div class="query-page ${empty ? "is-empty" : ""}">${mobile ? "" : `<div class="collection-heading"><h1>查询</h1><span class="collection-kind">语言学习</span></div>`}${empty ? `<p class="query-intro">理解一个词，读懂一句话。</p>${composer}${welcome}` : `${messages}${composer}`}</div>`;
   }
   function querySelection(selection, prepared) {
@@ -648,13 +652,12 @@ window.HarukaCollections = ({
     const content = message
       ? `${novel.panelHeader(message)}${s.learningDemo.contextSummary(message)}<div class="selection-query-origin"><small>${e(message.selection.source)}</small>${e(message.selection.sentence || message.question)}${group.length > 1 ? "<p>分别查询所选词汇</p>" : ""}</div>${group
           .map((item) => {
-            const saved =
-              item.card && s.words.some((w) => w.cardId === item.card.id);
             return item.card
               ? learningCards.render(
                   item.card,
-                  `<button type="button" class="text-btn" data-x="saveCard" data-id="${item.card.id}" ${saved ? "disabled" : ""}>${I("bookmark")}${saved ? "已收藏" : "收藏"}</button>`,
+                  cardSaveAction(item.card),
                   false,
+                  item.id,
                 )
               : `<p role="status">${e(item.notice)}</p>`;
           })
@@ -1089,6 +1092,7 @@ window.HarukaCollections = ({
           question,
         );
         s.queryMessages.push({
+          id: id(),
           question,
           images,
           ...saved,

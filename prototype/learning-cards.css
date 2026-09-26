@@ -38,32 +38,77 @@
   overflow-wrap: anywhere;
 }
 .learning-card {
+  position: relative;
   background: var(--paper);
   border: 1px solid var(--line);
-  border-top: 3px solid var(--blue);
-  border-radius: 20px 20px 6px 20px;
-  margin: 20px 0 28px;
-  box-shadow: 0 8px 30px #152b4205;
+  border-radius: 24px 24px 10px 24px;
+  margin: 20px 0 32px;
+  box-shadow:
+    0 2px 3px #152b4208,
+    0 12px 28px -12px #152b4226,
+    0 32px 48px -32px #2457ed24;
   overflow: hidden;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+.learning-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 28px auto;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--blue);
+  pointer-events: none;
+}
+.learning-card:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 4px;
+}
+.learning-card:focus-within {
+  border-color: var(--blue);
+}
+@media (hover: hover) and (pointer: fine) {
+  .learning-card:hover {
+    box-shadow:
+      0 2px 4px #152b420a,
+      0 16px 32px -12px #152b4233,
+      0 36px 52px -30px #2457ed24;
+  }
+}
+body[data-theme="dark"] .learning-card {
+  box-shadow:
+    0 2px 4px #0003,
+    0 16px 32px -12px #0008;
+}
+body[data-contrast="on"] .learning-card {
+  border-width: 2px;
+  box-shadow: none;
 }
 .learning-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 18px 24px 0;
+  padding: 22px 28px 16px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(115deg, var(--blue-soft), var(--paper) 70%);
 }
 .learning-type {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   color: var(--blue);
   font-size: 13px;
   font-weight: 700;
 }
 .learning-type svg {
-  width: 17px;
-  height: 17px;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 10px 10px 4px 10px;
+  background: var(--paper);
+  box-shadow: 0 2px 4px #152b420a;
 }
 .learning-language {
   color: var(--muted);
@@ -71,7 +116,7 @@
   white-space: nowrap;
 }
 .learning-card-content {
-  padding: 18px 24px 24px;
+  padding: 24px 28px 28px;
 }
 .learning-title {
   font-size: 30px;
@@ -104,8 +149,10 @@
 }
 .learning-definition {
   margin: 24px 0 16px;
-  padding-left: 14px;
+  padding: 12px 16px;
   border-left: 3px solid var(--blue);
+  border-radius: 0 12px 12px 0;
+  background: var(--blue-soft);
 }
 .learning-label {
   display: block;
@@ -167,8 +214,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 4px 12px;
-  padding: 8px 24px;
+  gap: 12px;
+  padding: 14px 28px;
   background: var(--canvas);
   border-top: 1px solid var(--line);
 }
@@ -178,7 +225,58 @@
 }
 .learning-card-footer button {
   min-height: 44px;
-  padding-inline: 8px;
+  padding-inline: 14px;
+  border-radius: 12px;
+  transition:
+    transform 140ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.learning-card-footer > div {
+  gap: 8px;
+}
+.learning-card-footer .card-save {
+  display: inline-flex;
+  justify-content: center;
+  gap: 8px;
+  min-width: 104px;
+  color: #fff;
+  background: var(--blue-fill);
+  box-shadow:
+    0 3px 0 #142a4326,
+    0 5px 12px #2457ed1f;
+}
+.learning-card-footer .card-save:disabled {
+  color: var(--blue);
+  background: var(--blue-soft);
+  box-shadow: inset 0 0 0 1px var(--line);
+  opacity: 1;
+}
+.learning-card-footer button:not(:disabled):active {
+  transform: translateY(2px) scale(0.97);
+  box-shadow: none;
+}
+.learning-card-footer button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+body[data-reduce-motion="on"]
+  .learning-card-footer
+  button:not(:disabled):active {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .learning-card-footer button:not(:disabled):active {
+    transform: none;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .learning-card-footer .card-save:not(:disabled):hover {
+    background: var(--blue-fill);
+    box-shadow:
+      0 3px 0 #142a4333,
+      0 7px 16px #2457ed40;
+  }
 }
 .learning-segments {
   display: flex;
@@ -381,15 +479,39 @@
     margin: 0;
   }
 }
+/* Phone previews stay compact even in a wide browser window. */
+#phone-app .learning-card-header {
+  padding: 18px 20px 14px;
+}
+#phone-app .learning-card > .learning-card-content {
+  padding: 20px;
+}
+#phone-app .learning-card-footer {
+  padding: 14px 20px;
+}
+#phone-app .learning-card-footer > span,
+#phone-app .learning-card-footer > div {
+  width: 100%;
+}
+#phone-app .learning-card-footer > div {
+  justify-content: flex-end;
+}
 @media (max-width: 540px) {
   .learning-card-header {
-    padding: 16px 18px 0;
+    padding: 18px 20px 14px;
   }
-  .learning-card-content {
-    padding: 16px 18px 20px;
+  .learning-card > .learning-card-content {
+    padding: 20px;
   }
   .learning-card-footer {
-    padding-inline: 18px;
+    padding: 14px 20px;
+  }
+  .learning-card-footer > span,
+  .learning-card-footer > div {
+    width: 100%;
+  }
+  .learning-card-footer > div {
+    justify-content: flex-end;
   }
   .learning-title {
     font-size: 28px;

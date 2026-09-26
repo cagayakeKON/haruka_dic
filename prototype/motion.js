@@ -8,6 +8,9 @@ window.HarukaMotion = ({ s, root }) => {
     lastRoute,
     exitStyles;
   const running = new Set();
+  const seenResults = new Set();
+  let savedCards = new Set();
+  const pendingSaves = new Set();
   function animate(element, frames, duration = 240, delay = 0) {
     if (reduced() || !element?.animate) return;
     const effect = element.animate(frames, {
@@ -135,8 +138,103 @@ window.HarukaMotion = ({ s, root }) => {
     identity = next;
     lastRoute = s.route;
     previous = null;
+    resultCards();
     if (reduced()) cancel();
   }
+  function resultCards() {
+    if (!s.signedIn) {
+      seenResults.clear();
+      savedCards.clear();
+      pendingSaves.clear();
+      return;
+    }
+    const saved = new Set(
+      s.words.filter((word) => word.cardId).map((word) => word.cardId),
+    );
+    saved.forEach((id) => {
+      if (!savedCards.has(id)) pendingSaves.add(id);
+    });
+    savedCards = saved;
+    const confirmed = new Set();
+    root.querySelectorAll(".learning-card[data-result-id]").forEach((card) => {
+      const surface = card.closest('[role="dialog"],[data-reader-panel-body]');
+      // Do not animate results hidden behind a collection/other modal.
+      if (s.modal && s.modal !== "selectionQuery") return;
+      if (s.modal && !surface) return;
+      const identity = `${surface ? "selection" : "query"}:${card.dataset.resultId}:${card.dataset.cardId}`;
+      if (!seenResults.has(identity)) {
+        seenResults.add(identity);
+        // The surrounding dialog/panel already moves; only fade its card.
+        animate(
+          card,
+          [
+            {
+              opacity: 0,
+              transform: surface ? "none" : "translateY(18px) scale(.986)",
+            },
+            {
+              opacity: 1,
+              transform: surface ? "none" : "translateY(0) scale(1)",
+            },
+          ],
+          surface ? 180 : 320,
+        );
+        if (!surface) {
+          animate(
+            card.querySelector(".learning-card-content"),
+            [
+              { opacity: 0, transform: "translateY(6px)" },
+              { opacity: 1, transform: "translateY(0)" },
+            ],
+            240,
+            60,
+          );
+          animate(
+            card.querySelector(".learning-card-footer"),
+            [{ opacity: 0 }, { opacity: 1 }],
+            200,
+            120,
+          );
+        }
+      }
+      if (pendingSaves.has(card.dataset.cardId)) {
+        const button = card.querySelector(".card-save:disabled");
+        if (button) {
+          animate(
+            button,
+            [
+              { transform: "scale(.96)" },
+              { transform: "scale(1.025)", offset: 0.55 },
+              { transform: "scale(1)" },
+            ],
+            280,
+          );
+          animate(
+            button.querySelector("svg"),
+            [
+              { opacity: 0.4, transform: "scale(.6)" },
+              { opacity: 1, transform: "scale(1.18)", offset: 0.6 },
+              { opacity: 1, transform: "scale(1)" },
+            ],
+            300,
+          );
+          confirmed.add(card.dataset.cardId);
+        }
+      }
+    });
+    confirmed.forEach((id) => pendingSaves.delete(id));
+  }
+  root.addEventListener(
+    "toggle",
+    (event) => {
+      const details = event.target;
+      if (!details.matches(".query-context-detail") || !details.open) return;
+      details.querySelectorAll(":scope > :not(summary)").forEach((part) => {
+        animate(part, [{ opacity: 0 }, { opacity: 1 }], 180);
+      });
+    },
+    true,
+  );
   function sentence(element) {
     animate(element, [
       { opacity: 0, transform: "translateY(8px) scale(.98)" },

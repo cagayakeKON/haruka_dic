@@ -10,6 +10,8 @@ DESIGN21修复电脑4K阅读区的空列与错位：目录、正文和非模态�
 
 DESIGN22在“我的 → 查询与上下文”加入查询上下文预算（默认10,000 tokens），有快捷值和自定义保存；查询页可补充上下文，结果展开显示前后文与复用状态。“朗读与声音”按模型联动声音/能力；本机缓存页区分副本与已保存成果，清理后可取回同一解释。`learning-preferences.js/css`只维护当前页面内存示例，模型能力为虚构配置、Token为字符估算，刷新全重置；没有真实TTS适配器、NLP、持久缓存或模型调用。资源版本design22；定点脚本`node prototype/tests/design22-context-cache.cjs`，证据见[本轮记录](../docs/delivery/reviews/2026-09-26-context-tts-cache.md)。
 
+DESIGN25增强查询结果卡片质感：浅色卡头、分层投影、释义重点区及独立操作底栏；新结果短暂浮入，内容/操作依次显现，收藏提交成功后原位勾选确认，取消归类无成功反馈。按每次查询结果身份记录入场，缓存复用的新查询可入场，同一结果重绘不重播；弹窗/小说右panel中的卡片只淡入，避免叠加位移。支持深色、高对比与系统/应用减少动态。双端资源版本design25，局部动效生命周期检查为 `node prototype/tests/design25-card-motion.cjs`，视觉/交互与独立review见[本轮记录](../docs/delivery/reviews/2026-09-26-query-card-motion.md)。只修改HTML演示，仍无真实模型、音频或持久收藏。
+
 ## 页面清单
 
 | 范围 | 手机端 | 电脑端 |

@@ -4,6 +4,8 @@
 
 阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。B1账号与收藏闭环（含注册、所选激活和找回）及B2持久模型任务未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
 
+FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + Dio + Drift/SQLite及平台音频存储，统一读取、更新、跨端刷新、离线与清理；[校验契约](contracts/client-cache.md)和[设计审查](delivery/reviews/2026-09-26-frontend-cache.md)记录实施边界，尚未实现。
+
 ## 1. 按任务阅读
 
 | 现在要做什么 | 先读 | 再按需查 |
@@ -18,6 +20,7 @@
 | 实现教材/试卷解析、听力与展示 | [解析展示契约](contracts/learning-presentation.md) | [解析数据结构](contracts/material-structures.md)、[课本](modules/textbooks.md)、[考试](modules/exams.md)、[AI与朗读](modules/ai-speech.md)、[出处](contracts/content-locator.md) |
 | 实现小说解析模式与按章多选准备 | [章节准备契约](contracts/novel-preparation.md) | [小说](modules/novels.md)、[结果缓存](architecture/learning-cache.md)、[本轮原型](delivery/reviews/2026-09-25-novel-preparation.md) |
 | 实现手动查询上下文/预算与TTS逐模型适配 | [查询上下文](contracts/query-context.md)、[TTS适配器](architecture/tts-adapters.md) | [系统缓存](architecture/learning-cache.md)、[设置](modules/settings.md)、[DESIGN22记录](delivery/reviews/2026-09-26-context-tts-cache.md) |
+| 实现前端数据刷新、本机存储与缓存更新 | [前端缓存机制](architecture/frontend-cache.md)、[校验协议](contracts/client-cache.md) | [设置](modules/settings.md)、[Flutter](engineering/flutter.md)、[FCACHE分期验收](architecture/frontend-cache.md#10-分期交付与验收) |
 | 实现私有解释/TTS缓存和全局单词发音 | [学习结果缓存](architecture/learning-cache.md) | [AI与朗读](modules/ai-speech.md)、[收藏](modules/vocabulary-practice.md)、[设置](modules/settings.md)、[数据与任务](architecture/data-jobs.md) |
 | 实现图文查询、Web粘贴、Android相册/拍照与卡片收藏 | [查询](modules/query.md) | [AI卡片](modules/ai-speech.md)、[API](contracts/api.md)、[单词本](modules/vocabulary-notebooks.md) |
 | 实现任务实时进度 | [WebSocket进度](contracts/job-progress.md) | [任务](architecture/data-jobs.md)、[认证](architecture/authentication.md)、[材料](modules/materials-reading.md) |

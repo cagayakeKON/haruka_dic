@@ -10,6 +10,8 @@ DESIGN20小说新增模式开关、可点句的ruby正文、章节双checkbox准
 
 DESIGN21要求电脑小说解析使用非模态布局区域：宽窗口位于正文右侧，窄窗口排到正文下方，正文和panel可同时操作。不得仅把dialog右对齐；不设置遮罩、背景inert或焦点陷阱。手机保留底部dialog；两者复用学习结果与动作，具体切句、返回、播放规则见[小说模块](../modules/novels.md#21-阅读与解析模式)。4K验证按实际逻辑视口及设备像素比记录，覆盖关闭栏位、内容行宽和重排状态；原型的3840×2160/DPR1、2560×1440/DPR1.5、1920×1080/DPR2是浏览器模拟证据，不等于Windows系统缩放、原生Flutter或Android真机验收。
 
+FCACHE1要求所有正式业务repository接入[前端缓存机制](../architecture/frontend-cache.md)的策略注册、版本/代次、写后失效与统一刷新；Riverpod只管理状态生命周期，Dio不直接提供通用私有HTTP缓存。Drift与平台BlobStore在B2及后续真实消费者切片建立，不修改B0/B1范围；[客户端校验契约](../contracts/client-cache.md)与业务DTO先冻结，页面不得自行实现离线授权或生成重试。
+
 ## 1. 共享与独立实现的边界
 
 保留一个Flutter工程和统一业务协议，允许同一功能拥有不同页面结构和交互实现；不以代码复用比例作为交付指标，也不拆出互相复制业务的Android/Web/Windows应用。

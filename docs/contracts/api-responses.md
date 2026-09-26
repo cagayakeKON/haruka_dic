@@ -195,6 +195,18 @@ retryable 表示在当前动作协议下允许自动重试，不是“HTTP 5xx �
 
 响应声明与校验行为依据 [FastAPI response_model](https://fastapi.tiangolo.com/tutorial/response-model/)。声明 ErrorResponse 的 OpenAPI metadata 本身不会安装异常处理器，两者都必须实施。
 
+### 5.1 B2起的私有请求会话绑定
+
+FCACHE1在B2a为所有私有API统一补会话栅栏，包含内存列表/资料、写命令、204/文件与流，不限于有缓存descriptor的资源；B0/B1原验收候选不追溯改变。此协议是[前端缓存更新](../architecture/frontend-cache.md)的身份保障，正式实现同时更新API兼容能力/最低客户端版本与生成契约。
+
+已绑定AccountScope的请求发送 `X-Haruka-Expected-Session`，值为me/access取得的非秘密session_ref。服务端先验证真实Cookie/Bearer对应的当前会话、实例与受众，再比较expected session；不匹配返回409 `AUTH_SCOPE_CHANGED`，缺必需绑定返回409 `AUTH_SCOPE_REQUIRED`，均在执行领域读写、创建Job、幂等重放或发放文件之前终止。header不是凭据，不能代替真实认证/CSRF/权限。401仍交认证失效流程；不会仅凭客户端header切换用户。
+
+服务端受保护响应带 `X-Haruka-Instance-ID` 和 `X-Haruka-Session-Ref`（真实认证失败可不带）；后者在该实例内唯一且不可跨用户/受众复用。ApiClient在解码/发布正文或成功通知之前，复核header与发起时scope及当前account_generation；缺失/不符立即封锁私有UI、取消旧写入队列、调用受控access重绑，绝不直接应用该响应或自动重放写操作。响应丢失导致写入结果未知仍按原账号operation/幂等对账，不能新账号重试。
+
+公共meta/注册/登录/恢复以及用于确定真实身份的me/access、认证刷新/重验采用认证专用入口，不以旧expected session阻断身份恢复；AuthController串行化身份操作，收到结果后重新取得真实access再发布新scope。除这些明确注册的bootstrap操作，普通业务不得省略会话栅栏。Web两标签A→B且广播全丢时，旧A请求携带Cookie B也会在服务端被拒绝，不能先修改B再仅在前端丢响应。B2上线后不兼容的旧客户端要求升级，不能静默放行无header的业务请求。
+
+SSE使用同一初始响应绑定；WebSocket在有权握手/订阅中提交expected session并确认实例/会话，流事件应用还检查本地代次，定期权限检查沿原协议。已验证manifest交付的对象存储短效媒体不能要求第三方返回Haruka header，改为严格匹配当前scope、asset版本/摘要及受控传输目的地；不能把这个例外用于私有JSON。日志只登记绑定检查结果，不记录原header值。
+
 ## 6. 多语言与文案归属
 
 P0 界面只支持 zh-Hans，母语/目标学习语言仍遵循 [设置模块](../modules/settings.md)；本节规定扩展机制，不新增英文或日文 UI 的交付范围。

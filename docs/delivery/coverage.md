@@ -25,6 +25,7 @@
 | 试卷 | [考试](../modules/exams.md)、[结构](../contracts/material-structures.md)、[展示](../contracts/learning-presentation.md) | 考试清单/MSTR/PRES/DAT | M4格式/校对/文字稿候选；L5私有音频/ready；E1场次/次数/锁卷，E2评分/重评/复盘/交卷门槛 |
 | 站内消息与任务进度 | [消息](../contracts/notifications.md)、[进度](../contracts/job-progress.md) | NTF-01～05/WSP-01～05 | B2c任务基础；M1持久消息/未读/已读/跳转及材料进度，后续任务类型随功能接入 |
 | 日志与业务埋点 | [观测](../operations/observability.md)、[MyHome](../operations/myhome-integration.md) | LOG及原观测清单 | B1/B2基础；各阶段覆盖正常/失败、脱敏/关联/补传/隔离，R2全部来源、正式制品与采集故障 |
+| 前端统一缓存与更新 | [机制](../architecture/frontend-cache.md)、[校验协议](../contracts/client-cache.md) | FCACHE-01～14，关联CACHE/LC/SET/FLT | B2a基础及设置，B2b/c授权/任务；M材料/消息，L收藏/解释/音频，P/E证据与可见性；R1/R2汇总全部分支 |
 
 ### 跨入口验收
 

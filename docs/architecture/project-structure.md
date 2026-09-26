@@ -76,7 +76,7 @@ haruka_dic/
 | AuthController | 恢复/登录/刷新/退出、账号代次 | 业务 feature 私有 Token 副本 |
 | AccessController | 当前受众与版本权限、导航、路由/操作守卫 | 本地角色名称推断授权 |
 | ApiClient | 关联 ID、会话传输、一次刷新协调、错误映射 | 自动重试没有幂等契约的写入 |
-| CacheCoordinator | 服务实例/账号/受众/版本、离线租约、清理 | 把缓存当服务端真相或存密码/Key |
+| CacheCoordinator | [统一缓存](frontend-cache.md)：分区/代次、注册策略、并发请求、版本校验、提交后失效、下载/离线/清理 | 把缓存当服务端真相、替业务鉴权、自动生成AI/TTS或存密码/Key |
 | Telemetry | 日志/埋点/性能/异常、脱敏、有界队列 | 记录题目/答卷/私有正文或上传递归 |
 | PlatformServices | 文件、音频、安全存储、生命周期 | 平台分支散落每个页面 |
 

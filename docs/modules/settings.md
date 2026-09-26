@@ -159,7 +159,7 @@ P0 支持已读章节/已查词句解释/已生成音频的基础缓存以及“
 
 | 缓存 | 分区/有效性 | 清理影响 |
 | --- | --- | --- |
-| 目录/章节 | instance + user + audience + material_revision + content_id；当前读权限和离线租期 | 仅删除本机副本，下次在线按权重取 |
+| 目录/章节 | instance + user + audience + material_revision + content_id；在线本次动作校验，离线检查读权限租期 | 仅删除本机副本，下次在线按权重取 |
 | 单词/句子解释与已查索引 | 同一账号/受众分区 + 源版本/选区/任务与artifact版本；来源read及ai.explain、有效离线租期 | 自动尝试保存完整已读结果；淘汰/清理只删本机副本，从服务端取回不再发起供应商调用，不把历史语境冒充当前语境 |
 | 音频 | 同上用户分区 + asset/合成键/真实格式，下载校验完成才标可离线 | 不删除服务端音频，不重复发起供应商调用；可重新下载已授权对象 |
 | 权限/配置快照 | 从 access 最小主体绑定实例/账号/audience/session_ref、user_authz_version/policy_revision 与服务端期限；profile/settings另按权限读取 | 非当前版本不可为在线授权；管理端不离线使用；缺profile权限不阻断身份初始化 |
@@ -170,7 +170,7 @@ P0 支持已读章节/已查词句解释/已生成音频的基础缓存以及“
 
 网络不可达才可在有效租期内读已有章节/词句解释/音频，并检查各自动作与来源的快照许可；一旦服务器明确返回会话撤销/权限拒绝，不能切“离线”绕过该结果。恢复网络先验证会话和权限版本，再继续读取/下载；被删除或失权内容清缓存、停止播放器。首次登录、新内容下载、修改收藏/设置、生成/评分及管理操作都要求在线。
 
-缓存索引推荐 Drift，Windows/Android 使用平台 SQLite，Web 使用经过支持验证的 WASM 存储路径。Drift 官方提供 [Web/WASM 接入方案](https://drift.simonbinder.eu/platforms/web/)，但浏览器持久化、配额和多标签行为仍需目标浏览器验证；Web 隐私模式、配额回收或用户清站点数据会丢本机缓存，不能因此丢服务器学习记录。
+FCACHE1选定Riverpod + Dio + Drift/SQLite：Windows/Android采用NativeDatabase，Web采用通过验证的安全WASM持久模式；音频由独立平台BlobStore管理。完整[缓存更新机制](../architecture/frontend-cache.md)统一进入页校验、提交后失效、跨端/多标签更新、旧响应拦截、离线租期、清理/配额与升级；[校验契约](../contracts/client-cache.md)按实际来源/动作返回版本和许可。Web不安全多标签模式或无法安全协调清理时退为内存，配额回收只丢本机副本，不丢服务器学习记录。FCACHE-01～14与本篇CACHE一起按阶段验收，不能将文档选型当已交付。
 
 本机缓存数据不等于秘密凭据仓库。刷新材料进操作系统安全存储或 HttpOnly Cookie；Key 不进 Drift。用户可以获得自己的本机数据，本项目不承诺抵御已经控制设备的攻击者；应用仍禁止跨账号复用文件/索引和日志泄漏。
 

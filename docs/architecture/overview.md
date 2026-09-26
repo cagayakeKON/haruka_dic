@@ -47,7 +47,7 @@ flowchart TD
 | 状态与路由 | Riverpod、go_router | 异步状态、访问快照、菜单/路由/操作守卫、深层跳转 |
 | HTTP | Dio | 请求、取消、统一错误和流式接收；Flutter 消费应用协议而非供应商 SDK 事件 |
 | 播放 | just_audio | 播放队列、暂停、续播、倍速；Windows 平台实现与中断行为必须专项验证 |
-| 本地数据 | Drift + SQLite；Web 使用 WASM | 授权阅读/音频缓存和有界日志队列，不作为第二套服务器事实来源 |
+| 本地数据 | 选定Drift + SQLite；Web使用安全WASM模式，音频独立BlobStore | [前端缓存机制](frontend-cache.md)定义Riverpod/Dio协调、更新与离线；学习副本和有界遥测职责分开，不作为第二套服务端事实 |
 | 前端遥测 | 统一 Telemetry、Flutter 错误钩子及网络/路由/播放器适配 | 正常行为、错误和性能统一采集，平台无法捕获的退出场景如实报告 |
 | API | Python 3.13、FastAPI、Pydantic | 参数/结果校验、服务编排、OpenAPI 与流式接口 |
 | 认证 | pwdlib/Argon2id；Web opaque Cookie；原生短 JWT + 轮换 refresh | PG 撤销/epoch 与 Redis 会话材料共同校验；算法和时限以 [认证](authentication.md) 为准 |

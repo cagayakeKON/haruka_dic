@@ -114,6 +114,8 @@ B1的正常/info埋点、注册/激活/找回/改密/会话撤销、登录/拒�
 
 B2分B2a资料设置、B2b完整治理、B2c模型任务三个小阶段，各自按路线图验收/review/commit。下表细化B2c持久任务；B2a/b另须完成PROFILE/SET/ADM/PERM。B0/B1原有范围与SCF-B1-01～08保持。
 
+FCACHE1的[前端缓存基础](../../architecture/frontend-cache.md)在B2a交付：三端能力探测、账号/存储代次、注册策略、资料设置写后刷新、跨标签/前台校验与清理升级；B2b/c接权限和任务失效。`validate`先有注册框架，实际阅读/解释/音频随M/L注册。FCACHE验收按专题分期，不追加SCF-B0/B1或要求B2提前实现学习缓存。
+
 ### 正式入口与替换边界
 
 使用既有 `POST provider-credentials/{id}/test`，显式选择文本/视觉/TTS一种已启用能力、受控固定最小样本及调用上限。保存Key不触发测试。按[设置](../../modules/settings.md)和[API](../../contracts/api.md)以正式异步Job受理并返回job/run引用；不提前建习题，不创建fake-job/run-model调试路由，不接受任意Prompt。

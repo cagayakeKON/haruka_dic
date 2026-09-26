@@ -27,6 +27,13 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 | 前端/API/Worker/数据库日志与部署 | [观测](docs/operations/observability.md)、[MyHome复用](docs/operations/myhome-integration.md)、[配置](docs/operations/configuration.md)、[部署恢复](docs/operations/deployment-recovery.md) |
 | 交付或未决方案 | [路线图](docs/delivery/roadmap.md)、[交付验收](docs/delivery/acceptance.md)、[决策待办](docs/decisions/pending.md) |
 
+## 前端原型还原（必须）
+
+- 前端以用户已确认的[手机/电脑原型](prototype/README.md)及[设计语言](docs/product/design-language.md)为界面和交互基线，整体还原度应达到80%～90%；不得只实现功能或套用相同颜色，却另做一套布局、按钮与交互。此要求适用于当前在做及后续新增、修改的前端页面。
+- **写前端代码之前，必须实际打开并查看对应原型的渲染画面，亲自操作相关按钮、导航、弹层及关键状态，再照着实现。** 手机与电脑有不同布局时分别查看；不能仅阅读HTML/CSS源码、文档、组件名称或其他Agent的文字描述代替直接看画面。原型未运行时先按其说明启动；未能查看时明确记录，不能宣称已完成原型对照。
+- 对齐页面结构、空间比例、颜色、字体层级、间距、圆角、图标、卡片质感、按钮位置/主次/状态、导航、弹层或panel、动效及操作反馈。80%～90%是整体视觉与体验目标，不是允许省略关键按钮或改变已确认操作流程的比例。平台适配、无障碍、真实权限/数据状态可以有必要差异，须说明原因；原型缺失的状态沿用已确认设计与相邻组件并记录缺口，不凭空改换风格或伪造已对齐。
+- 完成前必须打开实际前端，在对应视口和状态下与原型画面对照，并实际操作本次涉及的交互；保存不含秘密的截图/差异与检查记录。功能测试或编译通过不能替代视觉/交互审查，未实际比较不能声称达到还原目标。存在明显偏离时先修正，再交付；具体方法见[Flutter规范](docs/engineering/flutter.md#原型画面对照与还原)。
+
 ## 已确认的产品边界
 
 - Flutter：Windows、Web、Android；Python 前后端分离。

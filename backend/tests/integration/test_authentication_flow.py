@@ -579,6 +579,81 @@ async def test_committed_password_change_with_lost_response_is_not_replayed(
         )
 
 
+async def test_password_recovery_revokes_existing_admin_web_cookie(
+    identity_runtime: tuple[Runtime, MaintenanceSettings, str],
+) -> None:
+    runtime, maintenance, run_id = identity_runtime
+    assert runtime.resources is not None
+    app = create_app(runtime.settings)
+    app.state.runtime = runtime
+    email = f"admin-{run_id}@haruka.example.test"
+    old_password = "synthetic-admin-password-2026"  # noqa: S105 - isolated test identity
+    new_password = "synthetic-admin-recovered-2026"  # noqa: S105 - isolated test identity
+    headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
+    transport = httpx.ASGITransport(app=app)
+    async with (
+        httpx.AsyncClient(transport=transport, base_url=ORIGIN) as old_admin,
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as public,
+    ):
+        signed_in = await old_admin.post(
+            "/api/v1/admin/auth/login",
+            json={"email": email, "password": old_password},
+            headers=headers,
+        )
+        assert signed_in.status_code == 200
+        assert old_admin.cookies
+        assert (await old_admin.get("/api/v1/admin/me/access")).status_code == 200
+
+        requested = await public.post(
+            "/api/v1/auth/recovery/request",
+            json={"email": email},
+            headers=headers,
+        )
+        assert requested.status_code == 202
+        token = await _mail_token(maintenance, runtime, email)
+        completed = await public.post(
+            "/api/v1/auth/recovery/complete",
+            json={"token": token, "new_password": new_password},
+            headers=headers,
+        )
+        assert completed.status_code == 204
+
+        # This client still holds the original admin Cookie; the server must
+        # reject it after the recovery transaction commits.
+        assert old_admin.cookies
+        assert (await old_admin.get("/api/v1/admin/me/access")).status_code == 401
+        assert (
+            await public.post(
+                "/api/v1/admin/auth/login",
+                json={"email": email, "password": old_password},
+                headers=headers,
+            )
+        ).status_code == 401
+        new_login = await public.post(
+            "/api/v1/admin/auth/login",
+            json={"email": email, "password": new_password},
+            headers=headers,
+        )
+        assert new_login.status_code == 200
+        assert (await public.get("/api/v1/admin/me/access")).status_code == 200
+
+    async with runtime.resources.database.sessions() as session:
+        user = await session.scalar(select(User).where(User.email_normalized == email))
+        assert user is not None
+        assert user.password_version == 2 and user.security_epoch == 1
+        assert (
+            await session.scalar(
+                select(func.count())
+                .select_from(AdminAuditEvent)
+                .where(
+                    AdminAuditEvent.action == "password.recovered",
+                    AdminAuditEvent.target_user_id == user.id,
+                )
+            )
+            == 1
+        )
+
+
 @pytest.mark.parametrize("invalidator", ["expired", "wrong_purpose"])
 async def test_email_challenges_reject_reuse_expiry_and_wrong_purpose(
     identity_runtime: tuple[Runtime, MaintenanceSettings, str],

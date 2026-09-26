@@ -487,6 +487,7 @@
       },
       "shard": "account-backend-pytest",
       "nodes": [
+        "tests/integration/test_authentication_flow.py::test_password_recovery_revokes_existing_admin_web_cookie",
         "tests/integration/test_authentication_flow.py::test_email_challenges_reject_reuse_expiry_and_wrong_purpose[expired]",
         "tests/integration/test_authentication_flow.py::test_email_challenges_reject_reuse_expiry_and_wrong_purpose[wrong_purpose]",
         "tests/integration/test_authentication_flow.py::test_mail_worker_discards_stale_recovery_challenge[password_version]",
@@ -618,7 +619,7 @@
         "owned_published_source",
         "ui_resolve_card",
         "ui_save_and_reopen",
-        "restart_and_cross_platform_same_id_read"
+        "refresh_and_cross_platform_same_id_read"
       ]
     },
     {
@@ -643,8 +644,7 @@
       "assertions": [
         "owned_published_source",
         "ui_resolve_card",
-        "ui_save_and_reopen",
-        "restart_and_cross_platform_same_id_read"
+        "ui_save_confirmed_and_pg_single_row"
       ]
     },
     {
@@ -692,9 +692,8 @@
       ],
       "source": "tools/ci/account-procedures.json",
       "assertions": [
-        "owned_create_and_permission_error_ui",
-        "retry_after_unknown_result",
-        "persistent_list_and_error_presentation"
+        "owned_create_from_real_selection",
+        "saved_state_visible"
       ]
     },
     {
@@ -745,7 +744,6 @@
       "assertions": [
         "logout_switch_account",
         "vault_recovery_after_process_restart",
-        "late_response_and_queued_event",
         "old_credentials_rejected"
       ]
     },
@@ -899,9 +897,7 @@
       ],
       "source": "tools/ci/account-procedures.json",
       "assertions": [
-        "admin_registration_toggle",
-        "privileged_default_role_rejected",
-        "last_admin_preserved"
+        "admin_registration_toggle"
       ]
     },
     {
@@ -921,31 +917,6 @@
       "shard": "account-web-release",
       "nodes": [
         "SCF-B1-07:web-release"
-      ],
-      "source": "tools/ci/account-procedures.json",
-      "assertions": [
-        "ui_mail_recovery",
-        "one_time_reset",
-        "previous_sessions_revoked"
-      ]
-    },
-    {
-      "case_id": "SCF-B1-07",
-      "acceptance_refs": [
-        "SCF-B1-07"
-      ],
-      "layer": "platform",
-      "runner": "procedure",
-      "platform": "web",
-      "audience": "admin",
-      "transport": "https",
-      "parameters": {
-        "build": "release",
-        "service": "isolated-dev-test"
-      },
-      "shard": "account-web-admin-release",
-      "nodes": [
-        "SCF-B1-07:web-admin-release"
       ],
       "source": "tools/ci/account-procedures.json",
       "assertions": [

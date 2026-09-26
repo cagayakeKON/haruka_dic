@@ -347,9 +347,8 @@ DBDESIGN3约定的 `user_roles → user_role_links`、`role_permissions → role
 | timezone | varchar(64) NULL | 用户确认的IANA时区；空表示未选择，使用服务端明确公布的展示回退 |
 | theme_mode | varchar(8) NN DEFAULT 'system' | system/light/dark |
 | reduce_motion | varchar(8) NN DEFAULT 'system' | system/on |
-| high_contrast | varchar(8) NN DEFAULT 'system' | system/on |
 | reading_font_family | varchar(16) NULL | serif/sans等已发布字体类别；空为应用默认 |
-| reading_font_size | numeric(5,2) NULL | 逻辑字号，实际显示不低于系统无障碍比例 |
+| reading_font_size | numeric(5,2) NULL | 逻辑字号，由阅读偏好调整 |
 | reading_line_height | numeric(4,2) NULL | 行高倍率 |
 | reading_theme | varchar(8) NULL | light/dark/sepia |
 | playback_speed | numeric(3,2) NN DEFAULT 1.0 | 播放倍速，0.70–1.50，不改变合成键 |

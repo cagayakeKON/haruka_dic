@@ -297,7 +297,7 @@
       "source": "tools/ci/b0-procedures.json",
       "assertions": [
         "platform_build_and_actual_shell_interaction",
-        "key_locator_and_accessible_label",
+        "key_locator_and_visible_action",
         "platform_config_and_conditional_imports",
         "admin_routes_web_only",
         "installer_identity_install_uninstall_isolation"
@@ -321,10 +321,10 @@
       "source": "tools/ci/b0-procedures.json",
       "assertions": [
         "platform_build_and_actual_shell_interaction",
-        "key_locator_and_accessible_label",
+        "key_locator_and_visible_action",
         "platform_config_and_conditional_imports",
         "admin_routes_web_only",
-        "external_semantics_locator_input_and_navigation"
+        "external_test_locator_input_and_navigation"
       ]
     },
     {
@@ -345,7 +345,7 @@
       "source": "tools/ci/b0-procedures.json",
       "assertions": [
         "platform_build_and_actual_shell_interaction",
-        "key_locator_and_accessible_label",
+        "key_locator_and_visible_action",
         "platform_config_and_conditional_imports",
         "admin_routes_web_only"
       ]

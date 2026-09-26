@@ -155,7 +155,7 @@ haruka-manage提供db status、db upgrade、seed apply、admin init等明确子�
 
 合成测试材料、账号/角色、凭据引用和Fake transport由dev/test夹具或受控CLI准备，标记run_id并只写本次资源。线上HTTP路由不新增seed、debug/login或任意执行任务入口；production配置拒绝dev/test fixture加载。
 
-夹具工厂位于backend/tests/support，不进入生产wheel/镜像；场景输入、别名输出、秘密通道、全局策略隔离与清理fence按 [测试数据](testing/data.md) 实施。统一check在受控测试环境调用工厂和各runner，按run/case/variant/shard/attempt登记资源，不给UI注入数据库凭据或Token。Test ID生成、Web语义树和平台驱动原型按 [前端E2E](testing/frontend-e2e.md) 纳入B0/B1，不将Flutter Key当作DOM属性。
+夹具工厂位于backend/tests/support，不进入生产wheel/镜像；场景输入、别名输出、秘密通道、全局策略隔离与清理fence按 [测试数据](testing/data.md) 实施。统一check在受控测试环境调用工厂和各runner，按run/case/variant/shard/attempt登记资源，不给UI注入数据库凭据或Token。Test ID生成、Web外部功能定位和平台驱动原型按 [前端E2E](testing/frontend-e2e.md) 纳入B0/B1，不将Flutter Key当作DOM属性。
 
 ## 7. 参考实现和验收归属
 

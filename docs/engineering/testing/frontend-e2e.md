@@ -8,7 +8,7 @@
 
 | 范围 | 采用方案 | 主要责任 |
 | --- | --- | --- |
-| Flutter 单元/组件 | Flutter SDK 的 flutter_test | 状态、表单、权限显示、导航、错误/加载状态和无障碍语义 |
+| Flutter 单元/组件 | Flutter SDK 的 flutter_test | 状态、表单、权限显示、导航、错误/加载状态 |
 | Flutter 应用内集成 | Flutter SDK 的 integration_test | Windows/Web/Android 公共业务流程；Web 使用锁定 SDK 支持的 driver 入口 |
 | Web 浏览器 E2E | Playwright Test，TypeScript | Cookie/CSRF、刷新、深链、多标签页、多用户上下文、上传下载和管理后台浏览器行为 |
 | Android 原生补充 | Patrol | 系统权限、文件选择、应用切换/后台恢复等原生交互；能力逐项做设备原型 |
@@ -61,17 +61,17 @@ admin.roles.editor.save
 
 这是前端自有的 UI 元数据；权限、错误、埋点和业务事件仍由后端契约导出。生成流程纳入 [脚手架蓝图](../scaffold.md) 的 manifest、确定性比较和来源摘要。改名/删除必须一起更新组件、页面对象和用例；静态检查验证非法格式、重复注册、未知引用及生成漂移，运行测试验证标识实际挂载及定位唯一。静态检查不能证明运行中的控件可操作。
 
-### Flutter Key、Semantics 与无障碍
+### Flutter Key 与外部功能测试定位
 
 Flutter 内部测试使用 ValueKey 和 find.byKey；需要浏览器/原生外部定位的节点再暴露同源 Semantics.identifier。ValueKey 本身不会自动变成 DOM 的 data-testid。[ValueKey](https://api.flutter.dev/flutter/foundation/ValueKey-class.html)、[find.byKey](https://api.flutter.dev/flutter/flutter_test/CommonFinders/byKey.html)
 
-Semantics.identifier 在 Web 映射为 flt-semantics-identifier，在 Android 映射为 resource-id。它是测试定位元数据，不能替代用户可读的语义 label、role、状态或焦点顺序，也不能通过重复嵌套语义破坏读屏。[Semantics identifier](https://api.flutter.dev/flutter/semantics/SemanticsProperties/identifier.html)
+Semantics.identifier 在 Web 映射为 flt-semantics-identifier，在 Android 映射为 resource-id。它只用于自动化定位，不构成无障碍功能或验收目标。[Semantics identifier](https://api.flutter.dev/flutter/semantics/SemanticsProperties/identifier.html)
 
-Web 默认不总是启用完整语义树。实施基线是在正常 Web 应用 bootstrap 持有应用生命周期的 SemanticsHandle，显式启用并验证性能与无障碍；不是只在测试包内添加特殊权限入口。若原型表明需使用正常用户可见的无障碍启用方式，必须先更新此基线并让测试验证启用前后行为，不能让 Playwright 静默依赖不存在的 DOM。[Web 无障碍](https://docs.flutter.dev/ui/accessibility/web-accessibility)、[ensureSemantics](https://api.flutter.dev/flutter/semantics/SemanticsBinding/ensureSemantics.html)
+Web 默认不总是启用完整语义树。实施基线是在正常 Web 应用 bootstrap 持有应用生命周期的 SemanticsHandle，仅用于现有自动化定位并验证不会妨碍页面性能或操作；不是只在测试包内添加特殊权限入口。若定位方式改变，先更新此基线并验证真实节点与业务动作，不能让 Playwright 静默依赖不存在的 DOM。[ensureSemantics](https://api.flutter.dev/flutter/semantics/SemanticsBinding/ensureSemantics.html)
 
 Playwright 可把 testIdAttribute 配置为 flt-semantics-identifier；默认 getByTestId 查找的是 data-testid。匹配到语义节点不等于该节点就是可 fill 的 input：页面对象必须按原型结果定位真实可编辑/可点击语义节点，验证焦点、输入、禁用态和错误态，不用坐标兜底掩盖问题。[Playwright Test ID 定位](https://playwright.dev/docs/locators#locate-by-test-id)
 
-B0/B1 原型覆盖 TextField 输入、按钮、对话框、滚动/虚拟列表、路由切换与 Web 刷新；包含客户端和管理布局。Windows 外部驱动的语义映射另验，不能从 Web/Android 推定 Windows 可用。
+B0/B1 原型覆盖 TextField 输入、按钮、对话框、滚动/虚拟列表、路由切换与 Web 刷新；包含客户端和管理布局。Windows 使用真实可见键鼠业务流程另行举证，不能从 Web/Android 推定 Windows 已通过。
 
 ## 3. 未来测试布局
 
@@ -118,13 +118,13 @@ Playwright 是开发工具，不引入 Node 生产服务。其独立依赖锁、
 | --- | --- | --- |
 | B1 注册→激活→登录→找回/改密→会话撤销 | 用户三端从正式入口注册并完成所选激活；找回/重置后重新登录，再验证本人改密、设备撤销与client/admin旧会话失效 | 不预置待验收注册账号/激活成功/已消费挑战；所选通知或人工交付须验证实际链路，覆盖失败/过期/重发，不能把受理当送达；并发和结果未知主要由API/真实数据库低层证明 |
 | B1 登录→收藏→列表 | 使用正式注册产物或明确标记为收藏前置的独立账号登录，读取me/access，选择合法材料来源并新增收藏；重读/刷新后存在且归属正确 | A/B独立数据；独立收藏夹具不替代注册验收，无权时入口/请求均拒绝，不能所有账号都给管理员 |
-| 账号→资料/头像/语言→改密 | 用最小注册账号跳过/重进引导，保存/清除可选资料，上传并替换受控头像，选择英日目标及当前语言，再修改密码并重新登录 | widget覆盖字段/错误/无障碍；API/真实PG与对象存储证明revision、私有媒体和旧会话撤销。Web同一context执行A→B并确认`/users/me/avatar`不复用A；改密提交后丢响应由API/集成层证明结果未知且不重放。恶意图片主要在后端低层验证，E2E各平台只选一份合法图和一个失败恢复路径 |
+| 账号→资料/头像/语言→改密 | 用最小注册账号跳过/重进引导，保存/清除可选资料，上传并替换受控头像，选择英日目标及当前语言，再修改密码并重新登录 | widget覆盖字段/错误；API/真实PG与对象存储证明revision、私有媒体和旧会话撤销。Web同一context执行A→B并确认`/users/me/avatar`不复用A；改密提交后丢响应由API/集成层证明结果未知且不重放。恶意图片主要在后端低层验证，E2E各平台只选一份合法图和一个失败恢复路径 |
 | B2c 本人模型能力测试 | UI保存Key后单独选一项能力并确认，真实Job/Outbox/Worker，WebSocket状态及持久安全测试结果 | Fake仅供应商边界，保存不调用；覆盖重复确认/投递、unknown、撤权/取消/故障及A/B隔离；L2另验学习SSE，P2另验出题 |
 | AUTH Web 会话 | 正常登录、刷新、多标签同步退出/撤权及拒绝旧会话 | 同用户多标签使用同一 context；两个用户使用独立 context |
 | AUTHZ 用户/后台 | 菜单/按钮/路由可见性与 API 授权一致；直接深链和伪造资源 ID 被拒绝 | 固定行为矩阵按真实授予权限组合执行，不硬编码“角色名等于允许” |
 | 三类材料功能实施后 | 显式选择小说/课本/试卷导入，分别进入章节阅读/单元学习/考试准备；小说扩选回跳，课本词表及逐题反馈，试卷冻结后整卷交卷 | 分别建立页面对象/Test ID命名空间与就绪断言；不把同一阅读页三种标题或一种类型的通过当三类验收；按阶段只执行已交付切片 |
 | 教材/试卷展示分期实施后 | 教材按原顺序浏览八类角色→图表/译文/原文对照→回到源位置；试卷校对确认→五类控件输入→打开共享材料再返回→重排后保存与复盘 | 按[PRES契约](../../contracts/learning-presentation.md)分阶段取证；widget覆盖分类与边界，E2E选真实组合路径，核对答案/空位/焦点/服务器状态；未知结构与完整原件越权拒绝，不能用校对时能看到答案证明考试投影安全 |
-| 试卷听力分期实施后 | 选择文字稿→查看AI听力题/脚本/题目候选及证据→确认/改绑/拒绝→生成私有TTS→冻结版本→开考预检并按策略播放；另覆盖从试卷正文提取脚本 | 阶段2只验候选/校对，阶段3验TTS任务/持久资产与实际音频平台兼容，阶段5验实际场次；目标确认和audio ready必须由UI/正式任务产生。有限次数至少在同场次刷新与显式跨端接管后显示相同剩余值，丢响应用同active attempt恢复，Range/签名刷新不重复扣次；完整播放/续播期限结束后旧attempt不能从头播放，点击重播领取并消耗新attempt。并发超领/首字节与未知交付由更低层真并发验证。题面DOM/Semantics/缓存不出现隐藏稿或答案；原始音频选择在P0没有可用入口，伪音频提交由API负例证明拒绝 |
+| 试卷听力分期实施后 | 选择文字稿→查看AI听力题/脚本/题目候选及证据→确认/改绑/拒绝→生成私有TTS→冻结版本→开考预检并按策略播放；另覆盖从试卷正文提取脚本 | 阶段2只验候选/校对，阶段3验TTS任务/持久资产与实际音频平台兼容，阶段5验实际场次；目标确认和audio ready必须由UI/正式任务产生。有限次数至少在同场次刷新与显式跨端接管后显示相同剩余值，丢响应用同active attempt恢复，Range/签名刷新不重复扣次；完整播放/续播期限结束后旧attempt不能从头播放，点击重播领取并消耗新attempt。并发超领/首字节与未知交付由更低层真并发验证。题面实际渲染节点/缓存不出现隐藏稿或答案；原始音频选择在P0没有可用入口，伪音频提交由API负例证明拒绝 |
 | 文件与考试功能实施后 | CSV 实际下载/重导入与内容核对；考试答题保存、刷新恢复、交卷后锁定和评分状态 | 系统文件选择另有原生证据；试卷格式采用最终确认范围 |
 | 多本/AI习题/错题实施后 | UI创建两本→同词加入两本→选择本/时间/掌握或全部/收藏错题→预览确认→AI生成→真实作答/评分→自动错题留档/收藏→读取掌握原因→删一本后词/历史仍在；CSV v2按阶段往返 | Android独立列表/条件页、Windows/Web分栏/键盘分别取证；Test ID注册单源，不能手改状态、工厂预填目标成功或靠前端动画造错题；预览不调用模型，双端/辅助/重评/收藏竞争优先在更低有效层验证 |
 
@@ -138,9 +138,9 @@ Playwright 默认每用例独立 context；不在不同用户、用例、变体�
 | --- | --- | --- |
 | 原型还原 | 编码前直接查看并操作对应手机/电脑原型；完成后在相近逻辑视口和业务状态比较实际应用画面与相关交互 | 按[原型对照规则](../flutter.md#原型画面对照与还原)达到整体80%～90%还原目标；布局、按钮、弹层/panel、动效及操作反馈一致，必要差异有说明。安全截图和差异记录不能由仅查看源码或功能测试代替 |
 | 布局边界 | widget在集中断点的两侧及精确边界设置逻辑尺寸；含窄高、宽矮与正文局部容器 | 导航/列数可预期，无溢出或不可达操作，内容不会因全屏较宽而被过窄子列遮挡 |
-| 重排与输入 | widget改变尺寸/文字缩放/键盘insets，目标平台补实际输入法/窗口或方向切换 | 在已输入、选区或任务进行中切换；编辑值、业务ID、内容定位保留，不重复提交/模型调用/订阅 |
+| 重排与输入 | widget改变尺寸/键盘insets，目标平台补实际输入法/窗口或方向切换 | 在已输入、选区或任务进行中切换；编辑值、业务ID、内容定位保留，不重复提交/模型调用/订阅 |
 | 触控与键鼠 | compact触控路径、expanded键鼠增强；受影响功能补窄桌面键鼠与大窗口触控 | 相同业务结果，非hover可完成，键盘焦点/弹层返回正确，无隐藏旧控件歧义 |
-| 无障碍 | widget语义/触控目标检查，实际平台读屏与大字输入/错误状态 | label/role/状态正确，技术ID不被读出，关键文案可达；截图/golden只补外观，不能代替操作 |
+| 可见操作 | 真实触控与键鼠操作、错误和禁用状态 | 已承诺动作可完成，文案和状态明确；截图只补外观，不能代替操作 |
 | Android系统行为 | Patrol/实际设备证据，按当前功能选择软键盘/返回手势、文字稿文件URI、音频中断、前后台恢复 | 系统取消/拒绝可区分，恢复重验权限与任务；听力播放次数/场次不因进程恢复重置；浏览器设备模拟不替代原生行为 |
 | Web/Windows系统行为 | Web用Playwright验证窄/宽窗口、历史/刷新/输入、文字稿文件与自动播放限制；Windows按已有原生分工验证文件选择和真实音频 | 缩放/刷新不重开场次、不误报保存，平台凭据/文件/媒体路径独立有效，听力稿/播放策略不泄漏或重置 |
 | 性能与日志 | 真机profile/实际浏览器/Windows样本，按已登记设备和指标测量 | 长文档/列表/图片/流式状态无不可接受退化；重排不重复业务埋点，输出不含正文/秘密 |

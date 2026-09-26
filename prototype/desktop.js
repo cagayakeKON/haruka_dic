@@ -56,7 +56,7 @@
     settings: "我的",
     profile: "个人资料",
     languages: "语言选项",
-    appearance: "外观与无障碍",
+    appearance: "外观设置",
     readingPrefs: "阅读偏好",
     queryPreferences: "查询与上下文",
     model: "个人模型",
@@ -421,7 +421,7 @@
   const settingNav = [
     ["profile", "个人资料", "user"],
     ["languages", "语言选项", "globe"],
-    ["appearance", "外观与无障碍", "sun"],
+    ["appearance", "外观设置", "sun"],
     ["readingPrefs", "阅读偏好", "book"],
     ["queryPreferences", "查询与上下文", "message"],
     ["model", "个人模型", "spark"],
@@ -461,7 +461,7 @@
     if (route === "languages")
       return `<h2>语言选项</h2><div class="form-grid"><label class="field">界面语言<select disabled><option>简体中文 · 当前支持</option></select><small>当前仅提供简体中文界面。</small></label><div class="field">母语（可多选）${["简体中文", "英语", "日语"].map((x) => `<label class="check-row"><input type="checkbox" data-native="${x}" ${s.nativeLanguages.includes(x) ? "checked" : ""}><span>${x}</span></label>`).join("")}</div><label class="field">解释语言<select data-setting="explanationLanguage">${["简体中文", "英语", "日语"].map((x) => `<option ${s.explanationLanguage === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><div class="field">学习语言（可多选）${["日语", "英语"].map((x) => `<label class="check-row"><input type="checkbox" data-target="${x}" ${s.targetLanguages.includes(x) ? "checked" : ""}><span>${x}</span>${s.activeLanguage === x ? tag("当前") : ""}</label>`).join("")}</div><label class="field">当前学习语言<select data-setting="activeLanguage">${s.targetLanguages.map((x) => `<option ${s.activeLanguage === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><label class="field">自评水平<select data-setting="level">${["未填写", "初学", "基础", "中级", "进阶"].map((x) => `<option ${s.level === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><button class="primary" type="button" data-action="saveSettings">保存语言选项</button></div>`;
     if (route === "appearance")
-      return `<h2>外观与无障碍</h2><div class="form-grid"><label class="field">应用主题<select data-setting="theme"><option value="system" ${s.theme === "system" ? "selected" : ""}>跟随系统</option><option value="light" ${s.theme === "light" ? "selected" : ""}>浅色</option><option value="dark" ${s.theme === "dark" ? "selected" : ""}>深色</option></select></label><label class="check-row"><input type="checkbox" data-toggle="reduceMotion" ${s.reduceMotion ? "checked" : ""}><span>减少动态</span></label><label class="check-row"><input type="checkbox" data-toggle="highContrast" ${s.highContrast ? "checked" : ""}><span>高对比显示</span></label><div class="soft-panel"><div class="eyebrow"><span class="signal"></span>预览</div><h2 style="margin:13px 0 6px">夏の手紙</h2><p>朝の光が、部屋に広がった。</p></div></div>`;
+      return `<h2>外观设置</h2><div class="form-grid"><label class="field">应用主题<select data-setting="theme"><option value="system" ${s.theme === "system" ? "selected" : ""}>跟随系统</option><option value="light" ${s.theme === "light" ? "selected" : ""}>浅色</option><option value="dark" ${s.theme === "dark" ? "selected" : ""}>深色</option></select></label><label class="check-row"><input type="checkbox" data-toggle="reduceMotion" ${s.reduceMotion ? "checked" : ""}><span>减少动态</span></label><div class="soft-panel"><div class="eyebrow"><span class="signal"></span>预览</div><h2 style="margin:13px 0 6px">夏の手紙</h2><p>朝の光が、部屋に広がった。</p></div></div>`;
     if (route === "readingPrefs")
       return `<h2>阅读偏好</h2><div class="form-grid"><label class="field">字体风格<select data-setting="readingFont"><option value="serif" ${s.readingFont === "serif" ? "selected" : ""}>有书感的衬线体</option><option value="sans" ${s.readingFont === "sans" ? "selected" : ""}>清晰的无衬线体</option></select></label><label class="field">字号：${s.readingSize}px<input type="range" min="16" max="24" value="${s.readingSize}" data-range="readingSize"></label><label class="field">行距：${s.lineHeight.toFixed(1)}<input type="range" min="1.6" max="2.4" step="0.1" value="${s.lineHeight}" data-range="lineHeight"></label><label class="field">阅读主题<select data-setting="readingTheme"><option value="light" ${s.readingTheme === "light" ? "selected" : ""}>浅色</option><option value="dark" ${s.readingTheme === "dark" ? "selected" : ""}>深色</option><option value="sepia" ${s.readingTheme === "sepia" ? "selected" : ""}>暖纸色</option></select></label><div class="soft-panel" style="background:${s.readingTheme === "sepia" ? "#f7ead4" : s.readingTheme === "dark" ? "#192535" : "var(--blue-soft)"};color:${s.readingTheme === "dark" ? "#edf3ff" : "#152b42"};font-family:${s.readingFont === "serif" ? "'Yu Mincho',serif" : "'Segoe UI',sans-serif"};font-size:${s.readingSize}px;line-height:${s.lineHeight}">朝の光が、白いカーテンを通して部屋に広がった。</div><button class="primary" type="button" data-action="saveSettings">保存偏好</button></div>`;
     if (route === "model")
@@ -924,7 +924,6 @@
           ? "dark"
           : "light"
         : s.theme;
-    document.body.dataset.contrast = s.highContrast ? "on" : "off";
     document.body.dataset.reduceMotion = s.reduceMotion ? "on" : "off";
   }
   function hashRoute() {

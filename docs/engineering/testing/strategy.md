@@ -20,7 +20,7 @@ B1账号验收必须通过正式注册、所选激活与找回/重置路径，�
 
 ## 2. 测试分层
 
-前端框架、Test ID 注册表、Key/Semantics、浏览器/原生边界和 E2E 步骤由 [前端测试专题](frontend-e2e.md) 维护；素材、工厂、时钟、隔离和清理由 [测试数据专题](data.md) 维护。两篇的 UIE/TDS 验收按阶段登记为必需项，不另设覆盖率门槛。
+前端框架、Test ID 注册表、Key/外部测试定位、浏览器/原生边界和 E2E 步骤由 [前端测试专题](frontend-e2e.md) 维护；素材、工厂、时钟、隔离和清理由 [测试数据专题](data.md) 维护。两篇的 UIE/TDS 验收按阶段登记为必需项，不另设覆盖率门槛。
 
 | 层 | 未来位置/工具 | 必须覆盖 | 不负责证明 |
 | --- | --- | --- | --- |
@@ -28,7 +28,7 @@ B1账号验收必须通过正式注册、所选激活与找回/重置路径，�
 | API/协议契约 | backend/tests/contract | 输入/返回/错误模型、OpenAPI、SSE 次序与恢复、DTO 字段裁剪、客户端样本解码 | 只凭快照批准敏感字段新增 |
 | Python 集成 | backend/tests/integration | 真实 PostgreSQL 迁移/行内及唯一约束、服务层无外键逻辑关联/并发、AuthSession 撤销事实、Redis 会话材料/轮换、Outbox/Kafka 重投、MinIO 权限及对象生命周期 | 不使用 SQLite 代替 PostgreSQL 锁/精度/JSON/约束语义；不把任意 SQL 跨用户拒绝当成未启用 RLS 的数据库能力 |
 | Flutter 单元 | frontend/test，flutter_test | 控制器、账号代次、访问快照、DTO、缓存、选择偏移与播放器状态 | OS 安全存储和真实播放 |
-| Flutter 组件 | frontend/test，flutter_test | 加载/空/错误/只读/无权、导航守卫、表单、题目/成绩、无障碍语义 | 真实平台弹窗或浏览器 Cookie |
+| Flutter 组件 | frontend/test，flutter_test | 加载/空/错误/只读/无权、导航守卫、表单、题目/成绩 | 真实平台弹窗或浏览器 Cookie |
 | 三端应用内集成 | frontend/integration_test，integration_test | 注册登录、主学习闭环、考试、CSV、退出切账号 | 无法操作原生平台 UI；测试入口包不能代替最终发布包 |
 | 浏览器与原生补充 | tools/e2e 的 Playwright；frontend/patrol_test 的 Android Patrol；Windows 专项驱动或明确人工记录 | Web Cookie/多标签/刷新/管理端、系统权限/文件框/后台恢复及实际候选制品冒烟 | 不复制完整公共用例；未验证平台驱动不能声称覆盖 |
 | AI/TTS 协议测试 | backend/tests/contract，Fake 模型/HTTP/音频 | 类型、工具权限、无 Key、取消/超时、重试上限、听力题/脚本/题目候选、音频字节/格式；每attempt的input/output/cache/可选指标、partial/unavailable与聚合不重复 | 模拟输出不能证明模型讲解/批改、听力匹配或声音质量 |
@@ -142,7 +142,7 @@ def override_dependency(
 | 用例组 | 核心断言 | 最低证据 |
 | --- | --- | --- |
 | AUTH | 最小注册竞争/回滚；错误密码/限流；原生刷新轮换/重放、Web续期/多窗口；改密重验/密码策略/password_version锁内复核/全会话撤销，并发改密与恢复竞争、提交后丢响应的结果未知；启用的验证/恢复挑战按用途/到期/单次消费；两端登录资格与可跳过首次引导 | 真实DB/Redis + API + 三端/管理Web，ACC |
-| PROFILE_SETTINGS | [PROFILE/SET验收](../../modules/settings.md)：资料可选/清除、字段/revision冲突、头像解码/去元数据/原子替换/no-store及同浏览器A→B与撤权后条件、语言目录/当前语/历史保留、可选人口字段AI开关、显示无障碍、管理DTO裁剪与A/B/账号切换 | 纯校验 + 真实PG/对象存储/API + Flutter widget/三端目标流程；恶意图片用受控资产，不向真实供应商发送人口数据 |
+| PROFILE_SETTINGS | [PROFILE/SET验收](../../modules/settings.md)：资料可选/清除、字段/revision冲突、头像解码/去元数据/原子替换/no-store及同浏览器A→B与撤权后条件、语言目录/当前语/历史保留、可选人口字段AI开关、显示偏好、管理DTO裁剪与A/B/账号切换 | 纯校验 + 真实PG/对象存储/API + Flutter widget/三端目标流程；恶意图片用受控资产，不向真实供应商发送人口数据 |
 | AUTHZ | 多角色/继承/环/停用/deny；未知权限默认拒绝；写权限不扩大读/范围；直达路由和直接 API；逐字段裁剪 | 授权规则/真实投影 + UI + API 权限矩阵 |
 | REVOKE | 多实例旧缓存、通知丢失、Redis 删除失败而 PG 撤销已提交、旧表单/并发管理提交；撤权后新请求/工具/供应商调用步骤拒绝；最后管理员竞争保护 | 并发集成 + SSE/Worker/管理 Web |
 | ISOLATION | 同库同 schema 的 A/B 交换所有资源/父子 ID，批量混入他人 ID；ScopeContext及服务事务拒绝非法关联，私有文件签名/任务/统计/日志无泄漏 | 每个资源族实际 API/仓储/文件/Worker + 真实 PG；不依赖 FK/RLS |
@@ -261,6 +261,6 @@ AI 质量单独使用经人工标注的版本化样本与 rubric；首批样本�
 
 必须记录 Windows 版本/架构、浏览器与版本、Android API/设备、Flutter/Dart 与后端依赖版本，不写笼统的“三端测试通过”。首版建议覆盖一个受支持 Windows 目标、Chrome/Edge Web，以及最低支持与当前 Android API，版本范围在初始化设备清单锁定；Web 管理端有独立登录/RBAC/敏感表单用例。
 
-实际制品至少验证原生安全存储、文件选择/保存、Windows 音频后端、浏览器自动播放/Cookie/CSRF、多标签刷新、Android 生命周期/进程重建和音频中断。无障碍验证焦点、键盘导航、文字缩放、语义标签和小屏题组；不能只依赖截图差异。
+实际制品至少验证原生安全存储、文件选择/保存、Windows 音频后端、浏览器自动播放/Cookie/CSRF、多标签刷新、Android 生命周期/进程重建和音频中断。另按实际业务验证键鼠输入、真实触控和小屏题组；不能只依赖截图差异。
 
 测试报告保存用例/需求 ID、候选版本、实际命令、环境、退出码、失败/跳过理由、覆盖率与脱敏附件。具体合并与发布门禁、迁移/回滚以及交付证据保存在 [交付验收规范](../../delivery/acceptance.md)。

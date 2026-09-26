@@ -113,7 +113,7 @@ render();
 assert.equal(f.records.filter((x) => x.name === "panel").length, 2);
 render();
 assert.equal(f.records.filter((x) => x.name === "panel").length, 2);
-// Both accessibility settings suppress motion and cancel active effects.
+// Both motion preferences suppress motion and cancel active effects.
 for (const setting of ["app", "system"]) {
   const g = fixture();
   g.root.cards = [g.card("before")];

@@ -81,10 +81,6 @@ body[data-theme="dark"] .learning-card {
     0 2px 4px #0003,
     0 16px 32px -12px #0008;
 }
-body[data-contrast="on"] .learning-card {
-  border-width: 2px;
-  box-shadow: none;
-}
 .learning-card-header {
   display: flex;
   align-items: center;

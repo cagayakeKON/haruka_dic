@@ -51,13 +51,6 @@ body[data-theme='dark'] {
   --peach: #432f2a;
   color-scheme: dark;
 }
-body[data-contrast='on'] {
-  --line: #68809b;
-  --muted: #41576d;
-}
-body[data-theme='dark'][data-contrast='on'] {
-  --muted: #c6d5e5;
-}
 button,
 input,
 select,

@@ -82,7 +82,7 @@ DESIGN23将[格式提取与原书ruby](source-extraction.md)和[全应用NLP](..
 | ExamItem | section/group、business_type、interaction_type、delivery_mode、ordinal、points、source_refs | `delivery_mode=visual/listening/mixed/unknown`；作答控件与业务题型分开 |
 | ExamOption/ExamBlank | item、稳定身份、顺序/位置、题面载荷 | 选项/空位不以数组下标作为长期身份 |
 | ExamStimulusItemBinding | stimulus、item、ordinal、evidence_refs、确认状态 | 一份共享材料可对应多题；AI只能提出候选 |
-| ExamGradingBasis | item/group、答案/rubric版本、来源、确认状态 | 服务端专用投影；不进入题面、TTS或Semantics |
+| ExamGradingBasis | item/group、答案/rubric版本、来源、确认状态 | 服务端专用投影；不进入题面、TTS或客户端节点元数据 |
 | ExamPreparationIssue | version、kind、target_refs、状态、resolution | 分值/答案/结构/听力标记/脚本绑定/音频缺失等校对待办 |
 
 试卷不使用NovelChapter或TextbookLesson承载题目。题面、评分依据、听力脚本、生成音频和答卷分别投影；题面DTO不包含答案、rubric、隐藏脚本或完整原件读取能力。
@@ -121,7 +121,7 @@ AI结构化输出至少包含：
 | ExamListeningBinding | exam_version草稿、stimulus、script_version、item_ids、order、确认状态 | 全部题目同版本/同owner；用户确认后才能用于合成或ready |
 | ExamListeningSynthesisSpec | binding、provider/model/credential引用、voice映射、格式/参数、配置摘要 | 从能力目录选择；不把Key/任意SSML/Header放入脚本 |
 | ExamListeningAudioBinding | binding、synthesis_spec、AudioAsset/PlaybackManifest、状态、duration/segment映射 | ready音频通过真实格式/解码/完整性验证；绑定精确资产版本 |
-| ExamPlaybackPolicy | stimulus、play_limit_mode=`unlimited/finite`、有限时的max_plays、pause/seek/速度/字幕可见策略 | 用户校对确认并随ExamPaperVersion冻结；不由客户端开考后任改，有限次数必须由服务端账本执行 |
+| ExamPlaybackPolicy | stimulus、play_limit_mode=`unlimited/finite`、有限时的max_plays、pause/seek/速度及交卷后脚本文本可见策略 | 用户校对确认并随ExamPaperVersion冻结；不由客户端开考后任改，有限次数必须由服务端账本执行 |
 | ExamSessionListeningUsage | exam_session、stimulus、冻结上限、reserved/consumed计数、revision | 每场次×Stimulus唯一；随场次创建并持久保存，刷新、重启、布局切换或跨端接管都不能重置 |
 | ExamListeningPlayAttempt | usage、play_attempt_id、idempotency_key、edit_epoch、`reserved/active/completed/closed_unknown/void`状态、reservation/resume期限、资产/Manifest版本、持久交付游标与首字节/终段事实 | 每次播放领取的权威记录；并发请求在场次与usage锁内占位，同一幂等键只返回同一attempt；终态不可重新打开 |
 
@@ -141,7 +141,7 @@ AI结构化输出至少包含：
 
 预检、列出媒体、预载元数据不计次；`active`且未过续播期限时，同一attempt可刷新Manifest/签名、HTTP Range重连或按冻结seek策略从持久交付游标续播，不另计次。媒体服务确认终段/最终字节已经交付后写`completed`；若进程中断、回执丢失或期限届满而无法证明未交付，写`closed_unknown`。`completed/closed_unknown/void`均为不可逆终态，场次快照不得把它们返回为可续播；显式重播、终态后刷新或从头请求必须用新幂等键领取新attempt并受剩余次数限制。只有在任何字节发出前且服务端能证明未交付的故障才可`void`并释放，客户端自报失败不能返还次数，`active/completed/closed_unknown`都保留已消耗次数。媒体请求同时验证当前edit_epoch，接管使旧端授权失效；新端只可在期限内从同一active attempt的受控游标续播。冻结策略禁止seek时服务端拒绝回退范围；允许seek也只在该attempt的有界active期内生效。有限次数场次不把音频交给通用持久离线缓存，现有缓冲区在attempt终态/接管/退出时失效；首版本就不承诺完整离线考试。此机制只保证应用内计次和恢复，不承诺DRM、阻止录音或防止用户从原文件取得内容。
 
-考试中默认不返回听力脚本文本；交卷后是否显示由冻结的`transcript_visibility`控制。无障碍辅助如果展示字幕或改变播放规则，必须在开考前明确并冻结，成绩页面保留辅助标记；不能在客户端私自从缓存、alt、Semantics或日志取回隐藏脚本。
+考试中默认不返回听力脚本文本；交卷后是否显示由冻结的`transcript_visibility`控制。考试期间不增加字幕或专用朗读路径；任何已确认的播放规则均在开考前冻结。客户端不能私自从缓存、图片说明、节点元数据或日志取回隐藏脚本。
 
 ## 6. 解析、校对与发布流水线
 
@@ -177,7 +177,7 @@ AI结构化输出至少包含：
 | MSTR-06 | 用户可确认/修正/拒绝听力标记、脚本和题目绑定；人工改稿保存新ScriptVersion/Segment规范文本，Unicode替换/插入不改旧locator；并发revision和迟到run不覆盖人工确认，A/B交换脚本/候选/绑定ID被拒绝 |
 | MSTR-07 | 确认脚本经本人Key生成私有持久TTS，缓存命中不发起供应商调用；音频segment只映射确切脚本版本，改脚本/声音产生新绑定，旧场次仍播放冻结资产且无系统TTS回退 |
 | MSTR-08 | 缺脚本/未确认匹配/未生成音频/能力不支持均阻止听力试卷ready；先验证必要音频再冻结版本；开考前预检音频，作答中确认故障不把受影响空答记零 |
-| MSTR-09 | 三端不在考试中泄漏隐藏听力稿；播放次数/暂停/拖动/字幕策略随版本冻结，有限次数由持久账本在并发领取、丢响应、Range/签名刷新、刷新/跨端接管后保持一致；active续播有界且只沿持久游标，completed/closed_unknown后从头播放必须新领次数；换账号、撤权和缓存清理不串音频或脚本 |
+| MSTR-09 | 三端不在考试中泄漏隐藏听力稿；播放次数/暂停/拖动与交卷后脚本文本可见策略随版本冻结，有限次数由持久账本在并发领取、丢响应、Range/签名刷新、刷新/跨端接管后保持一致；active续播有界且只沿持久游标，completed/closed_unknown后从头播放必须新领次数；换账号、撤权和缓存清理不串音频或脚本 |
 | MSTR-10 | 原始音频上传、转写、切段及自动绑定明确不在P0，接口不能提前接受；后续实现必须另验格式、版权/隐私、对齐、TTS/原音优先级和迁移 |
 
 ## 9. 后续边界

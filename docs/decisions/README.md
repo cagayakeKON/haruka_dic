@@ -10,6 +10,8 @@ DESIGN24（2026-09-26）用户确认材料上传暂限日语/英语；日语NLP�
 
 ## 1. 已确认
 
+2026-09-26用户明确全平台均不做无障碍功能与专项验收。设置不再提供高对比专项，试卷不增加无障碍字幕/朗读策略；普通触控、键鼠、可见错误反馈及现有减少动态显示偏好仍按业务和动效要求实现。自动化所需技术Test ID只承担功能定位。早期审查记录中的无障碍待办是当时范围，不构成当前交付门槛，变更见[平台交互范围记录](../delivery/reviews/2026-09-26-platform-interaction-scope.md)。
+
 Flutter用户端Windows/Web/Android；Python前后端分离；复用MyHome基础设施；多用户注册登录；管理后台与完整RBAC；学习Agent采用Pydantic AI；Gemini/OpenRouter TTS；试卷模式/整卷考试/AI批改；全量来源日志与前端埋点汇入MyHome Alloy/Loki/Grafana；用户侧导出恢复仅单词CSV。本阶段只文档化，并要求子Agent独立审查。
 
 2026-09-22补充确认：数据库不使用物理外键；业务表统一created_at/updated_at，参考MyHome公共Mixin。字段/隔离/关联/迁移实施基线见 [数据库规范](../engineering/database.md)，替代旧方案中以数据库外键保证跨表归属的做法。

@@ -54,7 +54,7 @@ window.HarukaCore = (() => {
       learningGoals: ['阅读', '考试'], level: '中级', useDemographics: false,
       serviceAddress: 'https://haruka.example.test', serviceProbe: false,
       theme: 'light', readingTheme: 'light', readingFont: 'serif', readingSize: 18, lineHeight: 2,
-      reduceMotion: false, highContrast: false, modelProvider: 'OpenRouter', modelStatus: '未配置',
+      reduceMotion: false, modelProvider: 'OpenRouter', modelStatus: '未配置',
       speechProvider: 'Gemini TTS', speechSpeed: 1, cacheCleared: false,
       toast: '', modal: '', authMode: 'login', signedIn: true, onboardStep: 0, registrationAccepted: false,
       adminSignedIn: false, adminRoute: 'overview', adminArea: false,

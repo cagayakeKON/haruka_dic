@@ -46,7 +46,7 @@
 | UI-25 | 出题两步骤、日英语言、单本/多本/全部词/手选收藏/教材单元/当前或收藏或全部错题/诊断多来源；去重预览、语境填空/词义选择/翻译判断及1/5/10题配置、不足提示与显式允许一源多题、返回保留/条件变更重新确认 | P2基础来源 → P3错题 → P4诊断 | [AI习题](../modules/ai-exercises.md)，AIX-01～10 |
 | UI-26 | 已有练习、提交/反馈/重做/直接收藏；错题全部/当前/收藏统计、详情/收藏切换/针对性生成；诊断薄弱点/亮点/依据/原文和出题动作 | P1～P4 → E2补考试事实 | [练习](../modules/vocabulary-practice.md)、[学习证据](../architecture/vocabulary-learning.md)，PRA/AIX/VL/DIAG |
 | UI-27 | 显示名/出生年份/性别/时区、头像更换与私有读取、人口资料进AI显式选择；多母语/解释语/学习语/当前语/水平、八类目标、保存与冲突 | B2a | [设置](../modules/settings.md)，ACC-11/12/PROFILE |
-| UI-28 | 系统/明/暗主题、减少动态、高对比、阅读预览与保存；键盘/触摸/dialog焦点/退出、新卡片动效/收藏反馈不重复播放 | B2a基础；各页面 → R1 | [设计语言](../product/design-language.md)、[Flutter](../engineering/flutter.md)，DESIGN/FLT/SET |
+| UI-28 | 系统/明/暗主题、减少动态、阅读预览与保存；键盘/触摸/dialog焦点/退出、新卡片动效/收藏反馈不重复播放 | B2a基础；各页面 → R1 | [设计语言](../product/design-language.md)、[Flutter](../engineering/flutter.md)，DESIGN/FLT/SET |
 | UI-29 | 个人Key保存/单能力测试/轮换/撤销、文本/视觉/TTS各自状态；本人用量时间筛选、input/output/cache及未知分项 | B2c基础及各能力测试；M/L/P/E新调用增量 | [设置](../modules/settings.md)、[用量](../contracts/model-usage.md)，SET/USAGE/SCF-B2 |
 | UI-30 | 朗读模型及有效声音、本机播放格式、朗读风格、倍速保存；能力不支持明确提示，格式派生/倍速正确复用 | L4 | [设置](../modules/settings.md)、[适配](../architecture/tts-adapters.md)，SET/TTSA/LC |
 | UI-31 | 本机解释/音频与服务端已保存成果分开统计、清理确认/部分失败、文本和音频独立容量保存、占用保护/淘汰/按权回源 | L2文本持久缓存 → L4两类容量/统计/清理设置 → L5下载 | [设置](../modules/settings.md)、[缓存](../architecture/learning-cache.md)，CACHE/LC-01～13 |

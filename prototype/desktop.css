@@ -30,9 +30,6 @@ body[data-theme="dark"] {
   --peach: #432f2a;
   color-scheme: dark;
 }
-body[data-contrast="on"] {
-  --line: #72879d;
-}
 * {
   box-sizing: border-box;
 }

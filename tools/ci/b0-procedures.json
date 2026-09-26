@@ -103,7 +103,7 @@
     },
     {
       "node_id": "SCF-B0-06:web",
-      "purpose": "Web shell/admin boundary and external semantic node interaction",
+      "purpose": "Web shell/admin boundary and real node interaction",
       "evidence_required": [
         "actual commands and exit codes",
         "toolchain/configuration/artifact identifiers",

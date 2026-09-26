@@ -1,6 +1,6 @@
 # 文档导航
 
-阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。B1/B2未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
+阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。B1账号与收藏闭环（含注册、所选激活和找回）及B2持久模型任务未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
 
 ## 1. 按任务阅读
 
@@ -103,6 +103,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [B0最终验收](delivery/reviews/2026-09-22-b0-acceptance.md) 与 [独立证据核查](delivery/reviews/2026-09-22-b0-evidence.md)：44个必需节点、11份逐断言签收及统一入口88项检查通过；后续能力仍按所属阶段交付。
 - [B0设计对齐](delivery/reviews/2026-09-26-b0-design-alignment.md)：12张基础表的增量迁移、账号/角色/权限目录更新和Flutter基础壳视觉对齐；仅本次受影响范围验证。
 - [B0健康检查调整](delivery/reviews/2026-09-26-b0-readiness.md)：启动/迁移保留完整结构校验，运行中readiness改为连接、迁移版本和必需依赖检查。
+- [B1账号与实施覆盖复核](delivery/reviews/2026-09-26-implementation-coverage.md)：注册/激活/找回纳入B1，补齐专题分阶段验收、依赖顺序、删题门禁及试卷就绪边界；仅文档修订。
 
 ## 5. 维护规则
 

@@ -16,6 +16,8 @@
 
 工程初始化按 [脚手架验收](../../delivery/milestones/scaffold.md) 的B0/B1/B2登记阶段必需SCF场景，再随功能扩充。阶段选择来自受版本控制的交付范围，不能根据测试缺失自动减小范围；这些小阶段验证各自必要场景及检查器能力，大阶段执行完整覆盖分母/阈值门禁。Fake参考流程不替代真实AI质量或平台发布验收。
 
+B1账号验收必须通过正式注册、所选激活与找回/重置路径，不能预置active账号或已消费挑战代替目标动作；种子仍可为独立登录/收藏故障用例准备前置对象。跨阶段的NLP/QCTX/LC/USAGE等验收族按[覆盖索引](../../delivery/coverage.md)登记来源/字段/供应商分支及未完成节点，不以一条Fake路径或某个阶段的局部通过关闭整族。只修改计划时不提前增添可执行required_cases条目，正式实现时再登记真实节点与参数。
+
 ## 2. 测试分层
 
 前端框架、Test ID 注册表、Key/Semantics、浏览器/原生边界和 E2E 步骤由 [前端测试专题](frontend-e2e.md) 维护；素材、工厂、时钟、隔离和清理由 [测试数据专题](data.md) 维护。两篇的 UIE/TDS 验收按阶段登记为必需项，不另设覆盖率门槛。
@@ -157,7 +159,7 @@ def override_dependency(
 | VOCABULARY_LEARNING | [VL验收](../../architecture/vocabulary-learning.md)：跨习题集/根题结果窗口、主动回忆、辅助曝光顺序、pending/重评/作废重放与版本/删除竞争；无时间调度 | 纯规则/稳定事件重放 + 真实PG/Outbox；不以工厂预填掌握替代真实有效评分 |
 | AI_AGENT | 工具按权限提供且执行再次校验；伪造 user_id 无效；输出未完成不可保存；并发用户 Key 独立；调用上限/供应商结果未知/续聊恢复 | Fake 模型/HTTP + 持久化集成 |
 | SPEECH | 私有缓存隔离与global_word标准词音共享、多读音/声音差异、倍速不重新合成、合并/取消/过期链接、实际 PCM/封装/Content-Type、无 Key 与不支持声音；已确认试卷脚本的私有缓存/确切ScriptVersion-Segment映射/迟到代次且绝不进入global_word，有限场次拒绝通用speech manifest/media与完整离线副本旁路 | 适配器 + 真实PG/对象/Job + 三端实际播放；实际发音质量不由可解码/Fake替代 |
-| LEARNING_CACHE | 未收藏的词/句/卡片/TTS持久保存；同词异境与无材料输入不串；清本机/Redis后恢复；模型/Key变更、并发乱序、存储失败/配额/GC和离线租期；全局词音不泄漏私人关系/Job、取消不换Key、删贡献者不删成品 | [LC-01～LC-10](../../architecture/learning-cache.md)；键/版本单测、Fake调用计数与真实PG/对象/任务集成、三端副本与账号切换；只读命中不得新增模型调用 |
+| LEARNING_CACHE | 未收藏的词/句/卡片/TTS持久保存；同词异境与无材料输入不串；清本机/Redis后恢复；模型/Key变更、并发乱序、存储失败/配额/GC和离线租期；全局词音不泄漏私人关系/Job、取消不换Key、删贡献者不删成品；连续朗读、全部入口与NLP成品回源 | [LC-01～LC-13](../../architecture/learning-cache.md)；按阶段3/4入口分支验证键/版本、Fake调用计数与真实PG/对象/任务集成、三端副本与账号切换；只读命中不得新增模型调用，NLP失败仅补标注 |
 | PRACTICE | 可靠客观题不调用 AI；主观失败不计零分；评分/统计幂等；无依据诊断不虚构事实 | 规则/Fake + API 主路径 |
 | AI_EXERCISE_MISTAKE | [AIX-01～AIX-10](../../modules/ai-exercises.md)：全部可靠错题/收藏/重评投影、来源筛选、稳定预览、显式生成、针对性原题/变式、无复习调度 | 纯选择/投影规则 + 真实PG评分发布/快照/事务/Outbox + Fake模型；三端仅验实际目标流程，不用前端埋点或工厂预置错题 |
 | EXAM | 题面 DTO 无答案/rubric/隐藏听力稿；冻结版本；AI标记全部疑似听力题并生成有证据候选，人工确认优先且旧run不覆盖；人工改稿的Unicode/旧版locator；听力ready/播放策略/媒体故障；有限播放账本的双端并发、丢响应、首字节前后失败、Range/签名刷新、active游标/期限、completed/closed_unknown终态重播与接管；revision/编辑代次；截止/保存/交卷并发；缺 Key、逐题失败、重评历史/统计去重 | 类型化Fake + 真并发 DB/Worker/对象存储 + 三端 release，EXAM/MSTR |

@@ -159,8 +159,8 @@ haruka-manage提供db status、db upgrade、seed apply、admin init等明确子�
 
 ## 7. 参考实现和验收归属
 
-B1用合成材料版本/选区作为合法来源，经正式登录、me/access、选区只读查询已准备的已提交卡片、POST collections与GET collections完成本人收藏新增和列表，贯通DTO、Repository、Riverpod、服务授权、迁移和日志；无需为此先实现全部上传/阅读器，也不增加未经设计的来源类型。
+B1先完成三端正式注册、所选激活、登录、找回/重置、改密与本人会话管理；所选邮件或人工交付方式的必要持久通知/受控操作也在B1交付，不能用预置active账号替代。在此基础上用合成材料版本/选区作为合法来源，经me/access、选区只读查询已准备的已提交卡片、POST collections与GET collections完成本人收藏新增和列表，贯通DTO、Repository、Riverpod、服务授权、迁移和日志；无需为此先实现全部上传/阅读器，也不增加未经设计的来源类型。
 
 B2从B1收藏创建正式 `POST ai-exercise-selections` 预览，确认后调用 `POST ai-exercise-generations` 生成一个小规模AI习题集；Job、Outbox、Kafka、Worker、SSE和持久化均用正式机制，只在dev/test把模型调用注入Fake。验证成功、拒绝、重复投递、取消/故障和A/B隔离；Fake不能证明真实供应商能力、实际usage口径或AI质量，也不建立词汇复习或到期调度。
 
-详细SCF验收ID、平台/参数、坏样本与证据由 [脚手架验收](../delivery/milestones/scaffold.md) 维护。B0/B1/B2通过不代表完整注册恢复、后台管理、材料学习或发布验收通过；工程完成后才按实际证据更新路线图。
+详细SCF验收ID、平台/参数、坏样本与证据由[脚手架验收](../delivery/milestones/scaffold.md)维护。B1通过必须包含所选注册/激活/恢复闭环；B0/B1/B2仍不代替阶段1其余资料设置/完整后台和后续材料学习、发布验收，工程完成后才按实际证据更新路线图。

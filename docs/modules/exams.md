@@ -116,7 +116,7 @@ DESIGN24试卷及追加文字听力稿暂限日语/英语，语言门槛见[材�
 
 | 对象 | 状态示意 |
 | --- | --- |
-| 试卷版本 | preparing → needs_review / ready；结构修订生成新版本 |
+| 试卷版本 | preparing → needs_review / needs_audio / ready；所需听力绑定和冻结音频均满足后才可ready，结构修订生成新版本 |
 | 考试场次 | in_progress → submitted；用户放弃另记 abandoned |
 | 评分运行 | not_requested / queued / grading / blocked_missing_key / partial / needs_review / graded / failed |
 

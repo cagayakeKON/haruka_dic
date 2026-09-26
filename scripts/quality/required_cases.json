@@ -619,7 +619,7 @@
         "owned_published_source",
         "ui_resolve_card",
         "ui_save_and_reopen",
-        "refresh_and_cross_platform_same_id_read"
+        "refresh_same_id_read"
       ]
     },
     {

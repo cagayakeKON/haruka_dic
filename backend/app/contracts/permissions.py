@@ -183,7 +183,7 @@ ROLE_TEMPLATES = MappingProxyType(
 
 
 def permission_document() -> dict[str, object]:
-    """Export exact registered vocabulary; B0 does not expose login or private APIs."""
+    """Export exact registered vocabulary without implying implemented endpoints."""
     codes = (*CLIENT_CODES, *ADMIN_CODES)
     if len(set(codes)) != len(codes) or any(
         permission not in codes for grants in ROLE_TEMPLATES.values() for permission in grants
@@ -191,7 +191,7 @@ def permission_document() -> dict[str, object]:
         raise ValueError("permission registration is duplicated or references unknown codes")
     return {
         "schema_version": 1,
-        "catalog_version": "b0-identity-v3",
+        "catalog_version": "identity-permissions-v3",
         "implemented_business_routes": [],
         "permissions": [
             {

@@ -135,5 +135,5 @@ class KafkaConsumer:
         return await self._lane.call(receive)
 
     async def aclose(self) -> None:
-        # No automatic acknowledgment; B2 will commit only after business commit.
+        # No automatic acknowledgment; business completion controls the commit boundary.
         await self._lane.close(self._client.close)

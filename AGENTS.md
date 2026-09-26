@@ -2,7 +2,7 @@
 
 ## 项目与当前状态
 
-Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用壳、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，B1/B2未实现；候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md。现行产品设计语言为[「晴空频率」](docs/product/design-language.md)，整体方向已确认，手机/电脑HTML原型已按该语言重建，Flutter的B0基础壳已按最新设计对齐，正式业务页面仍待所属阶段实现；不设“继续阅读”，演示边界见prototype/README.md。
+Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md；[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)正在实施、联调与审查，尚未完成当前验收，B2未实现。现行产品设计语言为[「晴空频率」](docs/product/design-language.md)，整体方向已确认，手机/电脑HTML原型已按该语言重建，Flutter基础壳已按最新设计对齐，正式业务按所属阶段推进；不设“继续阅读”，演示边界见prototype/README.md。
 
 文档任务只修改文档；用户要求开始实现时，按实施计划推进必要工程工作。不把计划当成已实现，不为了运行不存在的检查擅自创建项目骨架。
 
@@ -123,7 +123,7 @@ Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库
 
 全平台不设无障碍功能或专项验收，不开发读屏适配、无障碍标签/角色、辅助技术路径、高对比专项或相关自动化测试。普通触控、键鼠、输入法、错误文字与状态反馈仍按业务交互验收；已有平台语义标识若仅承担功能测试定位，不算无障碍交付，也不得为其扩展专项工作。
 
-UI Test ID由前端注册表单一维护，Flutter Key与必要的外部定位分别验证。flutter_test/integration_test覆盖公共流程，Playwright补Web，Patrol补Android；Windows原生交互另行举证。测试数据分固定资产、声明式场景、执行实例；目标动作经真实UI/授权路径执行，不用工厂预置成功结果，不向生产包或HTTP路由加入测试旁路。
+UI Test ID由前端注册表单一维护，Flutter Key与必要的外部定位分别验证。共享业务流程以Web和Android的必要真实路径举证，不在Windows重复测试；仅当变更触及Windows独有代码或系统API时做相应的Windows定点检查。前端日志的跨端行为只需在Web验证，后端/API/数据库日志仍按其来源验证。flutter_test/integration_test覆盖公共逻辑，Playwright补Web，Patrol补Android。测试数据分固定资产、声明式场景、执行实例；目标动作经真实UI/授权路径执行，不用工厂预置成功结果，不向生产包或HTTP路由加入测试旁路。
 
 具体静态规则/命令/例外按Lint专题；所选必需用例不能以进程退出0代替真实结果，大节点另执行完整覆盖分母门禁。测试范围和review次数以本文件的分阶段规则为准，专题维护具体方法。待产品决策不等于已知缺陷可豁免。
 

@@ -88,16 +88,16 @@ class Runtime:
 
 
 async def _check_database_schema(database: Database) -> None:
-    await check_schema(database.engine)
+    await check_schema(database.engine, schema=database.schema)
 
 
 async def _check_database_revision(database: Database) -> None:
-    await check_revision(database.engine)
+    await check_revision(database.engine, schema=database.schema)
 
 
 @asynccontextmanager
 async def bootstrap(
-    settings: Settings, *, role: Literal["api", "worker", "outbox", "manage"] = "api"
+    settings: Settings, *, role: Literal["api", "worker", "outbox", "manage", "mail"] = "api"
 ) -> AsyncGenerator[Runtime]:
     """Register every close immediately and unwind when a later probe fails.
 
@@ -108,8 +108,8 @@ async def bootstrap(
     async with AsyncExitStack() as stack:
         try:
             if settings.infrastructure_enabled:
-                if role in {"worker", "outbox"} and settings.resource_profile != "jobs":
-                    raise InfrastructureUnavailable("worker and outbox require the jobs profile")
+                if role == "worker" and settings.resource_profile != "jobs":
+                    raise InfrastructureUnavailable("worker requires the jobs profile")
                 configuration = settings.core_infrastructure()
                 try:
                     database = Database(configuration)

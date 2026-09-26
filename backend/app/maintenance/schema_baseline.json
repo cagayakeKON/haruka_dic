@@ -1,11 +1,15 @@
 {
   "database_checks": {
     "admin_audit_events": {
-      "ck_admin_audit_events_action": "action::text = ANY (ARRAY['seed.applied'::character varying, 'admin.created'::character varying]::text[])",
-      "ck_admin_audit_events_authorization_revision_positive": "authorization_revision >= 1"
+      "ck_admin_audit_events_action": "action::text = ANY (ARRAY['seed.applied'::character varying, 'admin.created'::character varying, 'auth_policy.updated'::character varying, 'account.registered'::character varying, 'email.verified'::character varying, 'password.recovered'::character varying, 'password.changed'::character varying, 'session.created'::character varying, 'session.revoked'::character varying, 'refresh.replayed'::character varying, 'auth.login.denied'::character varying]::text[])",
+      "ck_admin_audit_events_audience": "audience IS NULL OR (audience::text = ANY (ARRAY['client'::character varying, 'admin'::character varying]::text[]))",
+      "ck_admin_audit_events_authorization_revision_positive": "authorization_revision >= 1",
+      "ck_admin_audit_events_payload_schema_version_positive": "payload_schema_version >= 1",
+      "ck_admin_audit_events_result": "result IS NULL OR (result::text = ANY (ARRAY['accepted'::character varying, 'committed'::character varying, 'denied'::character varying, 'failed'::character varying]::text[]))"
     },
     "auth_policies": {
       "ck_auth_policies_code": "code::text = 'registration'::text",
+      "ck_auth_policies_recovery_mode": "recovery_mode::text = ANY (ARRAY['disabled'::character varying, 'email'::character varying]::text[])",
       "ck_auth_policies_registration_mode": "registration_mode::text = ANY (ARRAY['closed'::character varying, 'approval'::character varying, 'open'::character varying]::text[])",
       "ck_auth_policies_revision_positive": "revision >= 1"
     },
@@ -13,14 +17,60 @@
       "ck_authorization_revisions_code": "code::text = 'global'::text",
       "ck_authorization_revisions_revision_positive": "revision >= 1"
     },
+    "cards": {
+      "ck_cards_learning_card_kind": "card_kind::text = 'word'::text",
+      "ck_cards_learning_payload_size": "serialized_size_bytes > 0",
+      "ck_cards_learning_target_language": "target_language::text = ANY (ARRAY['ja'::character varying, 'en'::character varying]::text[])",
+      "ck_cards_learning_versions": "card_revision >= 1 AND schema_version >= 1"
+    },
+    "collection_items": {
+      "ck_collection_items_learning_kind": "kind::text = 'word'::text",
+      "ck_collection_items_learning_target_language": "target_language::text = ANY (ARRAY['ja'::character varying, 'en'::character varying]::text[])",
+      "ck_collection_items_learning_versions": "revision >= 1 AND card_revision >= 1 AND delete_generation >= 0"
+    },
+    "idempotency_records": {
+      "ck_idempotency_records_learning_action_state": "audience::text = 'client'::text AND state::text = 'committed'::text",
+      "ck_idempotency_records_learning_committed_result": "result_kind::text = 'collection_item'::text AND result_id IS NOT NULL AND safe_response IS NOT NULL",
+      "ck_idempotency_records_learning_digest_lengths": "octet_length(key_digest) = 32 AND octet_length(request_digest) = 32",
+      "ck_idempotency_records_learning_http_status": "http_status = ANY (ARRAY[200, 201])",
+      "ck_idempotency_records_learning_result_pair": "result_kind IS NULL AND result_id IS NULL OR result_kind IS NOT NULL AND result_id IS NOT NULL",
+      "ck_idempotency_records_learning_versions": "revision >= 1 AND response_schema_version >= 1"
+    },
     "libraries": {},
+    "material_content_blocks": {
+      "ck_material_content_blocks_learning_block_kind": "block_kind::text = 'paragraph'::text",
+      "ck_material_content_blocks_learning_text_length": "ordinal >= 1 AND scalar_length > 0"
+    },
+    "material_revisions": {
+      "ck_material_revisions_learning_delete_generation": "input_delete_generation >= 0",
+      "ck_material_revisions_learning_revision_number": "revision_number >= 1",
+      "ck_material_revisions_learning_status": "status::text = ANY (ARRAY['published'::character varying, 'sealed'::character varying]::text[])",
+      "ck_material_revisions_learning_structure_status": "structure_status::text = ANY (ARRAY['readable'::character varying, 'degraded'::character varying]::text[])"
+    },
+    "material_source_units": {
+      "ck_material_source_units_learning_ordinal_positive": "ordinal >= 1",
+      "ck_material_source_units_learning_unit_kind": "unit_kind::text = 'spine'::text"
+    },
+    "materials": {
+      "ck_materials_learning_language": "language::text = ANY (ARRAY['ja'::character varying, 'en'::character varying]::text[])",
+      "ck_materials_learning_material_type": "material_type::text = 'novel'::text",
+      "ck_materials_learning_revisions": "revision >= 1 AND delete_generation >= 0",
+      "ck_materials_learning_source_status": "source_status::text = ANY (ARRAY['published'::character varying, 'sealed'::character varying]::text[])"
+    },
     "menus": {
       "ck_menus_audience": "audience::text = ANY (ARRAY['client'::character varying, 'admin'::character varying]::text[])",
       "ck_menus_revision_positive": "revision >= 1"
     },
+    "novel_chapter_blocks": {
+      "ck_novel_chapter_blocks_learning_display_role": "display_role::text = 'paragraph'::text",
+      "ck_novel_chapter_blocks_learning_span": "ordinal >= 1 AND start_scalar >= 0 AND end_scalar > start_scalar"
+    },
+    "novel_chapters": {
+      "ck_novel_chapters_learning_ordinal_positive": "ordinal >= 1"
+    },
     "outbox_events": {
       "ck_outbox_events_authorization_revision_positive": "authorization_revision >= 1",
-      "ck_outbox_events_event_type": "event_type::text = 'authorization.changed'::text",
+      "ck_outbox_events_event_type": "event_type::text = ANY (ARRAY['authorization.changed'::character varying, 'identity.security'::character varying]::text[])",
       "ck_outbox_events_status": "status::text = ANY (ARRAY['pending'::character varying, 'published'::character varying]::text[])"
     },
     "permission_catalog": {
@@ -38,6 +88,41 @@
       "ck_seed_versions_digest": "payload_sha256::text ~ '^[a-f0-9]{64}$'::text",
       "ck_seed_versions_version_positive": "version >= 1"
     },
+    "source_result_bindings": {
+      "ck_source_result_bindings_learning_binding_digest": "octet_length(binding_digest) = 32",
+      "ck_source_result_bindings_learning_result": "result_kind::text = 'card'::text AND result_version >= 1",
+      "ck_source_result_bindings_learning_source": "source_kind::text = 'material'::text AND source_schema_version >= 1",
+      "ck_source_result_bindings_learning_span": "start_scalar >= 0 AND end_scalar > start_scalar"
+    },
+    "user_auth_challenge_deliveries": {
+      "ck_user_auth_challenge_deliveries_attempt_count_nonnegative": "attempt_count >= 0",
+      "ck_user_auth_challenge_deliveries_envelope_pair": "(encrypted_payload IS NULL) = (encryption_key_version IS NULL)",
+      "ck_user_auth_challenge_deliveries_lease_generation_nonnegative": "lease_generation >= 0",
+      "ck_user_auth_challenge_deliveries_lease_state": "(status::text = 'sending'::text) = (lease_owner IS NOT NULL AND lease_until IS NOT NULL)",
+      "ck_user_auth_challenge_deliveries_payload_version_positive": "payload_schema_version >= 1",
+      "ck_user_auth_challenge_deliveries_pending_payload": "status::text <> 'pending'::text OR encrypted_payload IS NOT NULL",
+      "ck_user_auth_challenge_deliveries_status": "status::text = ANY (ARRAY['pending'::character varying, 'sending'::character varying, 'sent'::character varying, 'failed'::character varying, 'expired'::character varying]::text[])"
+    },
+    "user_auth_challenges": {
+      "ck_user_auth_challenges_audience": "audience::text = ANY (ARRAY['client'::character varying, 'admin'::character varying]::text[])",
+      "ck_user_auth_challenges_digest_length": "octet_length(token_digest) = 32",
+      "ck_user_auth_challenges_expiry": "expires_at > created_at",
+      "ck_user_auth_challenges_failed_attempts_nonnegative": "failed_attempts >= 0",
+      "ck_user_auth_challenges_purpose": "purpose::text = ANY (ARRAY['email_verify'::character varying, 'password_recovery'::character varying, 'reauth'::character varying]::text[])",
+      "ck_user_auth_challenges_terminal_exclusive": "consumed_at IS NULL OR revoked_at IS NULL",
+      "ck_user_auth_challenges_versions": "security_epoch >= 0 AND password_version >= 1"
+    },
+    "user_auth_sessions": {
+      "ck_user_auth_sessions_absolute_expiry": "absolute_expires_at > created_at",
+      "ck_user_auth_sessions_audience": "audience::text = ANY (ARRAY['client'::character varying, 'admin'::character varying]::text[])",
+      "ck_user_auth_sessions_audience_transport_platform": "audience::text = 'admin'::text AND transport::text = 'web'::text AND platform::text = 'web'::text OR audience::text = 'client'::text AND (transport::text = 'web'::text AND platform::text = 'web'::text OR transport::text = 'native'::text AND (platform::text = ANY (ARRAY['windows'::character varying, 'android'::character varying]::text[])))",
+      "ck_user_auth_sessions_epochs_nonnegative": "security_epoch >= 0 AND audience_security_epoch >= 0",
+      "ck_user_auth_sessions_platform": "platform::text = ANY (ARRAY['web'::character varying, 'windows'::character varying, 'android'::character varying]::text[])",
+      "ck_user_auth_sessions_transport": "transport::text = ANY (ARRAY['web'::character varying, 'native'::character varying]::text[])"
+    },
+    "user_extensions": {
+      "ck_user_extensions_group_revisions_positive": "profile_revision >= 1 AND study_revision >= 1 AND settings_revision >= 1"
+    },
     "user_role_links": {},
     "users": {
       "ck_users_authz_version_positive": "authz_version >= 1",
@@ -51,11 +136,15 @@
   },
   "model_checks": {
     "admin_audit_events": {
-      "ck_admin_audit_events_action": "action IN ('seed.applied', 'admin.created')",
-      "ck_admin_audit_events_authorization_revision_positive": "authorization_revision >= 1"
+      "ck_admin_audit_events_action": "action IN ('seed.applied', 'admin.created', 'auth_policy.updated', 'account.registered', 'email.verified', 'password.recovered', 'password.changed', 'session.created', 'session.revoked', 'refresh.replayed', 'auth.login.denied')",
+      "ck_admin_audit_events_audience": "audience IS NULL OR audience IN ('client', 'admin')",
+      "ck_admin_audit_events_authorization_revision_positive": "authorization_revision >= 1",
+      "ck_admin_audit_events_payload_schema_version_positive": "payload_schema_version >= 1",
+      "ck_admin_audit_events_result": "result IS NULL OR result IN ('accepted', 'committed', 'denied', 'failed')"
     },
     "auth_policies": {
       "ck_auth_policies_code": "code = 'registration'",
+      "ck_auth_policies_recovery_mode": "recovery_mode IN ('disabled', 'email')",
       "ck_auth_policies_registration_mode": "registration_mode IN ('closed', 'approval', 'open')",
       "ck_auth_policies_revision_positive": "revision >= 1"
     },
@@ -63,14 +152,60 @@
       "ck_authorization_revisions_code": "code = 'global'",
       "ck_authorization_revisions_revision_positive": "revision >= 1"
     },
+    "cards": {
+      "ck_cards_learning_card_kind": "card_kind IN ('word')",
+      "ck_cards_learning_payload_size": "serialized_size_bytes > 0",
+      "ck_cards_learning_target_language": "target_language IN ('ja', 'en')",
+      "ck_cards_learning_versions": "card_revision >= 1 AND schema_version >= 1"
+    },
+    "collection_items": {
+      "ck_collection_items_learning_kind": "kind IN ('word')",
+      "ck_collection_items_learning_target_language": "target_language IN ('ja', 'en')",
+      "ck_collection_items_learning_versions": "revision >= 1 AND card_revision >= 1 AND delete_generation >= 0"
+    },
+    "idempotency_records": {
+      "ck_idempotency_records_learning_action_state": "audience IN ('client') AND state IN ('committed')",
+      "ck_idempotency_records_learning_committed_result": "result_kind = 'collection_item' AND result_id IS NOT NULL AND safe_response IS NOT NULL",
+      "ck_idempotency_records_learning_digest_lengths": "octet_length(key_digest) = 32 AND octet_length(request_digest) = 32",
+      "ck_idempotency_records_learning_http_status": "http_status IN (200, 201)",
+      "ck_idempotency_records_learning_result_pair": "(result_kind IS NULL AND result_id IS NULL) OR (result_kind IS NOT NULL AND result_id IS NOT NULL)",
+      "ck_idempotency_records_learning_versions": "revision >= 1 AND response_schema_version >= 1"
+    },
     "libraries": {},
+    "material_content_blocks": {
+      "ck_material_content_blocks_learning_block_kind": "block_kind IN ('paragraph')",
+      "ck_material_content_blocks_learning_text_length": "ordinal >= 1 AND scalar_length > 0"
+    },
+    "material_revisions": {
+      "ck_material_revisions_learning_delete_generation": "input_delete_generation >= 0",
+      "ck_material_revisions_learning_revision_number": "revision_number >= 1",
+      "ck_material_revisions_learning_status": "status IN ('published', 'sealed')",
+      "ck_material_revisions_learning_structure_status": "structure_status IN ('readable', 'degraded')"
+    },
+    "material_source_units": {
+      "ck_material_source_units_learning_ordinal_positive": "ordinal >= 1",
+      "ck_material_source_units_learning_unit_kind": "unit_kind IN ('spine')"
+    },
+    "materials": {
+      "ck_materials_learning_language": "language IN ('ja', 'en')",
+      "ck_materials_learning_material_type": "material_type IN ('novel')",
+      "ck_materials_learning_revisions": "revision >= 1 AND delete_generation >= 0",
+      "ck_materials_learning_source_status": "source_status IN ('published', 'sealed')"
+    },
     "menus": {
       "ck_menus_audience": "audience IN ('client', 'admin')",
       "ck_menus_revision_positive": "revision >= 1"
     },
+    "novel_chapter_blocks": {
+      "ck_novel_chapter_blocks_learning_display_role": "display_role IN ('paragraph')",
+      "ck_novel_chapter_blocks_learning_span": "ordinal >= 1 AND start_scalar >= 0 AND end_scalar > start_scalar"
+    },
+    "novel_chapters": {
+      "ck_novel_chapters_learning_ordinal_positive": "ordinal >= 1"
+    },
     "outbox_events": {
       "ck_outbox_events_authorization_revision_positive": "authorization_revision >= 1",
-      "ck_outbox_events_event_type": "event_type = 'authorization.changed'",
+      "ck_outbox_events_event_type": "event_type IN ('authorization.changed', 'identity.security')",
       "ck_outbox_events_status": "status IN ('pending', 'published')"
     },
     "permission_catalog": {
@@ -88,6 +223,41 @@
       "ck_seed_versions_digest": "payload_sha256 ~ '^[a-f0-9]{64}$'",
       "ck_seed_versions_version_positive": "version >= 1"
     },
+    "source_result_bindings": {
+      "ck_source_result_bindings_learning_binding_digest": "octet_length(binding_digest) = 32",
+      "ck_source_result_bindings_learning_result": "result_kind IN ('card') AND result_version >= 1",
+      "ck_source_result_bindings_learning_source": "source_kind IN ('material') AND source_schema_version >= 1",
+      "ck_source_result_bindings_learning_span": "start_scalar >= 0 AND end_scalar > start_scalar"
+    },
+    "user_auth_challenge_deliveries": {
+      "ck_user_auth_challenge_deliveries_attempt_count_nonnegative": "attempt_count >= 0",
+      "ck_user_auth_challenge_deliveries_envelope_pair": "(encrypted_payload IS NULL) = (encryption_key_version IS NULL)",
+      "ck_user_auth_challenge_deliveries_lease_generation_nonnegative": "lease_generation >= 0",
+      "ck_user_auth_challenge_deliveries_lease_state": "(status = 'sending') = (lease_owner IS NOT NULL AND lease_until IS NOT NULL)",
+      "ck_user_auth_challenge_deliveries_payload_version_positive": "payload_schema_version >= 1",
+      "ck_user_auth_challenge_deliveries_pending_payload": "status <> 'pending' OR encrypted_payload IS NOT NULL",
+      "ck_user_auth_challenge_deliveries_status": "status IN ('pending', 'sending', 'sent', 'failed', 'expired')"
+    },
+    "user_auth_challenges": {
+      "ck_user_auth_challenges_audience": "audience IN ('client', 'admin')",
+      "ck_user_auth_challenges_digest_length": "octet_length(token_digest) = 32",
+      "ck_user_auth_challenges_expiry": "expires_at > created_at",
+      "ck_user_auth_challenges_failed_attempts_nonnegative": "failed_attempts >= 0",
+      "ck_user_auth_challenges_purpose": "purpose IN ('email_verify', 'password_recovery', 'reauth')",
+      "ck_user_auth_challenges_terminal_exclusive": "consumed_at IS NULL OR revoked_at IS NULL",
+      "ck_user_auth_challenges_versions": "security_epoch >= 0 AND password_version >= 1"
+    },
+    "user_auth_sessions": {
+      "ck_user_auth_sessions_absolute_expiry": "absolute_expires_at > created_at",
+      "ck_user_auth_sessions_audience": "audience IN ('client', 'admin')",
+      "ck_user_auth_sessions_audience_transport_platform": "(audience = 'admin' AND transport = 'web' AND platform = 'web') OR (audience = 'client' AND ((transport = 'web' AND platform = 'web') OR (transport = 'native' AND platform IN ('windows', 'android'))))",
+      "ck_user_auth_sessions_epochs_nonnegative": "security_epoch >= 0 AND audience_security_epoch >= 0",
+      "ck_user_auth_sessions_platform": "platform IN ('web', 'windows', 'android')",
+      "ck_user_auth_sessions_transport": "transport IN ('web', 'native')"
+    },
+    "user_extensions": {
+      "ck_user_extensions_group_revisions_positive": "profile_revision >= 1 AND study_revision >= 1 AND settings_revision >= 1"
+    },
     "user_role_links": {},
     "users": {
       "ck_users_authz_version_positive": "authz_version >= 1",
@@ -99,5 +269,5 @@
       "ck_users_status": "status IN ('pending', 'active', 'disabled')"
     }
   },
-  "revision": "0002_b0_identity_alignment"
+  "revision": "0004_learning_collections"
 }

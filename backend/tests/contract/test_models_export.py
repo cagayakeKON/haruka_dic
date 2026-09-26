@@ -54,9 +54,39 @@ def test_export_is_offline_deterministic_and_contains_only_real_routes(
     assert "sentinel" not in first
     payload = json.loads(first)
     schema = payload["openapi.json"]
-    assert set(schema["paths"]) == {"/health/live", "/health/ready"}
-    operations = [entry["get"]["operationId"] for entry in schema["paths"].values()]
-    assert set(operations) == {"get_liveness", "get_readiness"}
+    assert len(schema["paths"]) == 39
+    assert {
+        "/health/live",
+        "/health/ready",
+        "/api/v1/meta",
+        "/api/v1/auth/register",
+        "/api/v1/auth/email/verify",
+        "/api/v1/auth/recovery/complete",
+        "/api/v1/admin/auth-policy",
+        "/api/v1/explanations/resolve",
+        "/api/v1/collections",
+        "/api/v1/frontend-logs",
+    } <= set(schema["paths"])
+    assert all(path.startswith(("/health/", "/api/v1/")) for path in schema["paths"])
+    operations = {
+        method["operationId"]
+        for methods in schema["paths"].values()
+        for verb, method in methods.items()
+        if verb in {"get", "post", "patch", "put", "delete"}
+    }
+    assert {
+        "get_liveness",
+        "get_readiness",
+        "register_account",
+        "verify_email",
+        "complete_password_recovery",
+        "login_native_client",
+        "get_client_access",
+        "update_admin_auth_policy",
+        "resolve_explanations",
+        "create_collection",
+        "receive_client_telemetry",
+    } <= operations
     assert "SuccessResponse_HealthRead_" in schema["components"]["schemas"]
     assert "ErrorResponse" in schema["components"]["schemas"]
     assert "HTTPValidationError" not in schema["components"]["schemas"]

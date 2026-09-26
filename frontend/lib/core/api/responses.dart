@@ -1,7 +1,7 @@
 import '../../generated/api_catalog.dart';
 import 'wire.dart';
 
-/// B0/B1 reviewed handwritten transition; schema fingerprints guard drift.
+/// Reviewed handwritten transition; schema fingerprints guard drift.
 final class ResponseMeta {
   const ResponseMeta(this.requestId);
   factory ResponseMeta.fromJson(Object? value) =>
@@ -69,9 +69,15 @@ final class FieldFailure {
 }
 
 final class ApiFailure implements Exception {
-  const ApiFailure({required this.code, this.meta, this.fields = const [], this.currentRevision});
+  const ApiFailure({
+    required this.code,
+    this.meta,
+    this.fields = const [],
+    this.currentRevision,
+    this.retryAfter,
+  });
 
-  factory ApiFailure.fromJson(Object? value) {
+  factory ApiFailure.fromJson(Object? value, {Duration? retryAfter}) {
     final json = wireObject(value);
     final error = wireObject(json['error']);
     final fields = error['field_errors'] ?? const <Object?>[];
@@ -91,6 +97,7 @@ final class ApiFailure implements Exception {
     }
     return ApiFailure(
       code: ApiCatalog.errorCodes.contains(code) ? code : 'UNKNOWN_ERROR',
+      retryAfter: retryAfter,
       meta: ResponseMeta.fromJson(json['meta']),
       fields: List<FieldFailure>.unmodifiable(fields.map(FieldFailure.fromJson)),
       currentRevision: revision,
@@ -98,6 +105,7 @@ final class ApiFailure implements Exception {
   }
 
   final String code;
+  final Duration? retryAfter;
   final ResponseMeta? meta;
   final List<FieldFailure> fields;
   final int? currentRevision;
@@ -113,4 +121,21 @@ final class HealthRead {
     if (wireObject(value)['status'] != 'ok') throw const FormatException('Invalid health status');
     return const HealthRead();
   }
+}
+
+final class MetaRead {
+  const MetaRead({required this.instanceId, required this.apiVersion, required this.release});
+
+  factory MetaRead.fromJson(Object? value) {
+    final json = wireObject(value);
+    return MetaRead(
+      instanceId: wireString(json['instance_id']),
+      apiVersion: wireString(json['api_version']),
+      release: wireString(json['release']),
+    );
+  }
+
+  final String instanceId;
+  final String apiVersion;
+  final String release;
 }

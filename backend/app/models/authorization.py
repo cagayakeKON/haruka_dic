@@ -12,6 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -181,7 +182,7 @@ class Menu(IdentityMixin, TimestampMixin, Base):
         CheckConstraint("audience IN ('client', 'admin')", name="audience"),
         CheckConstraint("revision >= 1", name="revision_positive"),
         {
-            "comment": "绑定发布路由键的菜单目录；B0管理菜单不可用",
+            "comment": "绑定发布路由键的菜单目录；管理菜单按权限启用",
             "info": table_info(
                 "system_catalog",
                 relations=(relation("permission_code", "permission_catalog.code"),),
@@ -228,9 +229,10 @@ class AuthPolicy(TimestampMixin, Base):
         CheckConstraint(
             "registration_mode IN ('closed', 'approval', 'open')", name="registration_mode"
         ),
+        CheckConstraint("recovery_mode IN ('disabled', 'email')", name="recovery_mode"),
         CheckConstraint("revision >= 1", name="revision_positive"),
         {
-            "comment": "注册策略；B0默认关闭注册，不决定后续开放方式",
+            "comment": "注册策略；默认关闭注册，开放方式由受控策略决定",
             "info": {
                 **table_info(
                     "system_catalog", relations=(relation("default_role_id", "roles.id"),)
@@ -248,6 +250,20 @@ class AuthPolicy(TimestampMixin, Base):
     )
     registration_mode: Mapped[str] = mapped_column(
         String(16), nullable=False, comment="注册入口策略", info=column_info("controlled policy")
+    )
+    require_email_verification: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("true"),
+        comment="开放注册必须邮箱验证的固定条件",
+        info=column_info("controlled policy"),
+    )
+    recovery_mode: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        server_default=text("'email'"),
+        comment="已选邮件找回方式；实际可用仍取决于交付配置",
+        info=column_info("controlled policy"),
     )
     default_role_id: Mapped[UUID] = mapped_column(
         PgUUID(as_uuid=True),
@@ -324,19 +340,65 @@ class SeedVersion(TimestampMixin, Base):
 class AdminAuditEvent(IdentityMixin, TimestampMixin, Base):
     __tablename__ = "admin_audit_events"
     __table_args__ = (
-        CheckConstraint("action IN ('seed.applied', 'admin.created')", name="action"),
+        CheckConstraint(
+            "action IN ('seed.applied', 'admin.created', 'auth_policy.updated', "
+            "'account.registered', 'email.verified', 'password.recovered', "
+            "'password.changed', 'session.created', 'session.revoked', "
+            "'refresh.replayed', 'auth.login.denied')",
+            name="action",
+        ),
         CheckConstraint("authorization_revision >= 1", name="authorization_revision_positive"),
+        CheckConstraint("payload_schema_version >= 1", name="payload_schema_version_positive"),
+        CheckConstraint("audience IS NULL OR audience IN ('client', 'admin')", name="audience"),
+        CheckConstraint(
+            "result IS NULL OR result IN ('accepted', 'committed', 'denied', 'failed')",
+            name="result",
+        ),
+        Index(
+            "ix_admin_audit_events_created_at_id",
+            "created_at",
+            "id",
+            info={"purpose": "bounded audit chronology"},
+        ),
+        Index(
+            "ix_admin_audit_events_actor_user_id_created_at_id",
+            "actor_user_id",
+            "created_at",
+            "id",
+            info={"purpose": "bounded actor audit query"},
+        ),
+        Index(
+            "ix_admin_audit_events_target_type_target_id_created_at_id",
+            "target_type",
+            "target_id",
+            "created_at",
+            "id",
+            info={"purpose": "bounded target audit query"},
+        ),
+        Index(
+            "ix_admin_audit_events_action_created_at_id",
+            "action",
+            "created_at",
+            "id",
+            info={"purpose": "bounded action audit query"},
+        ),
         {
-            "comment": "受控初始化追加审计，不包含密码、邮箱或私有材料",
+            "comment": "受控维护与身份安全追加审计，不包含密码、邮箱或私有材料",
             "info": table_info(
                 "system_operation",
                 append_only=True,
-                relations=(relation("target_user_id", "users.id", nullable=True, historical=True),),
+                relations=(
+                    relation("target_user_id", "users.id", nullable=True, historical=True),
+                    relation("actor_user_id", "users.id", nullable=True, historical=True),
+                    relation(
+                        "permission_code", "permission_catalog.code", nullable=True, historical=True
+                    ),
+                ),
             ),
         },
     )
     action: Mapped[str] = mapped_column(
-        String(32),
+        String(100),
         nullable=False,
         comment="已注册的维护动作",
         info=column_info("maintenance service"),
@@ -359,17 +421,92 @@ class AdminAuditEvent(IdentityMixin, TimestampMixin, Base):
         comment="同事务提交的授权版本",
         info=column_info("authorization transaction"),
     )
+    actor_user_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="已认证动作主体；匿名/维护事件为空",
+        info=column_info("authenticated ScopeContext", "personal_reference"),
+    )
+    audience: Mapped[str | None] = mapped_column(
+        String(10),
+        nullable=True,
+        comment="动作受众",
+        info=column_info("route audience"),
+    )
+    permission_code: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="授权操作权限代码",
+        info=column_info("authorization service"),
+    )
+    target_type: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="受控目标类型",
+        info=column_info("event action registry"),
+    )
+    target_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="按target_type解释的目标UUID",
+        info={**column_info("locked action target"), "non_entity_uuid": "polymorphic_target"},
+    )
+    target_code: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="自然键目标代码",
+        info=column_info("event action registry"),
+    )
+    operation_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="请求操作关联UUID",
+        info={**column_info("request context"), "non_entity_uuid": "operation_correlation"},
+    )
+    request_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="请求关联UUID",
+        info={**column_info("request context"), "non_entity_uuid": "operation_correlation"},
+    )
+    result: Mapped[str | None] = mapped_column(
+        String(24),
+        nullable=True,
+        comment="安全结果类别",
+        info=column_info("event action registry"),
+    )
+    reason_code: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="受控安全原因代码",
+        info=column_info("event action registry"),
+    )
+    payload_schema_version: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="安全摘要协议版本",
+        info=column_info("release event schema"),
+    )
+    change_summary: Mapped[dict[str, object] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="仅白名单状态差异",
+        info=column_info("event action registry"),
+    )
 
 
 class OutboxEvent(IdentityMixin, TimestampMixin, Base):
     __tablename__ = "outbox_events"
     __table_args__ = (
         UniqueConstraint("audit_event_id"),
-        CheckConstraint("event_type = 'authorization.changed'", name="event_type"),
+        CheckConstraint(
+            "event_type IN ('authorization.changed', 'identity.security')", name="event_type"
+        ),
         CheckConstraint("status IN ('pending', 'published')", name="status"),
         CheckConstraint("authorization_revision >= 1", name="authorization_revision_positive"),
         {
-            "comment": "授权变更持久通知；B0只提交，B2实现投递",
+            "comment": "授权与身份变更的持久通知及受控投递状态",
             "info": table_info(
                 "system_operation",
                 relations=(relation("audit_event_id", "admin_audit_events.id", historical=True),),

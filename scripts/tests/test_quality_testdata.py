@@ -61,7 +61,7 @@ class TestDataChecks(unittest.TestCase):
 
     def test_recipe_schema_unknown_fields_and_secret_parameters_fail(self) -> None:
         assets = validate_assets(self.root)
-        original = read_json(self.root / "testdata/scenarios/b0-static-assets.json")
+        original = read_json(self.root / "testdata/scenarios/static-assets.json")
         for key, value in (
             ("schema_version", 2),
             ("setup_recipe", "run_sql"),
@@ -81,7 +81,7 @@ class TestDataChecks(unittest.TestCase):
 
     def test_unknown_missing_or_cross_scope_aliases_fail(self) -> None:
         assets = validate_assets(self.root)
-        original = read_json(self.root / "testdata/scenarios/b0-static-assets.json")
+        original = read_json(self.root / "testdata/scenarios/static-assets.json")
         for value in ([], ["users.admin"], ["assets.english", "assets.english"]):
             with self.subTest(value=value):
                 data = copy.deepcopy(original)
@@ -99,7 +99,7 @@ class TestDataChecks(unittest.TestCase):
         with self.assertRaises(GateError):
             inspect(self.root)
         path.unlink()
-        path = self.root / "testdata/scenarios/b0-static-assets.json"
+        path = self.root / "testdata/scenarios/static-assets.json"
         path.write_text('{"schema_version": 1, "schema_version": 1}', encoding="utf-8")
         with self.assertRaisesRegex(GateError, "duplicate"):
             inspect(self.root)

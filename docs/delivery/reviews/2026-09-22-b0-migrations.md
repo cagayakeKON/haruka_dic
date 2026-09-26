@@ -7,7 +7,7 @@
 - [独立维护配置](../../../backend/app/maintenance/settings.py) 显式读取维护配置文件，只接受 loopback 上的 `haruka_dev` / `haruka_test` 及其对应维护角色。运行角色、其他数据库、远程地址和 URL 查询参数均拒绝；声明的 `HARUKA_APP_ENV` 必须与目标一致，production/staging 不能借本地数据库绕过环境拒绝；不从工作目录发现配置。
 - [迁移入口](../../../backend/app/maintenance/migrations.py) 使用专用 NullPool engine。同一物理连接持有稳定的数据库级 session advisory lock、检查当前 revision / 实际表清单并执行 Alembic DDL。锁等待有界；断连后本次失败，重试重新连接、取锁、读取已提交状态。
 - [Alembic 环境](../../../backend/alembic/env.py) 只接受经 `Config.attributes` 传入且实际持锁的连接，并核对 PG backend PID、search path 和 `pg_locks`。不创建备用 engine；裸命令和离线执行拒绝。
-- [首 revision](../../../backend/alembic/versions/0001_b0_identity.py) 明确创建 12 张基础表，无物理外键。迁移事务不负责业务种子；从运行角色撤销审计表的 UPDATE/DELETE 及迁移版本表的 INSERT/UPDATE/DELETE。首次建库没有上一发布 revision；不提供破坏性 downgrade。
+- [首 revision](../../../backend/alembic/versions/0001_identity.py) 明确创建 12 张基础表，无物理外键。迁移事务不负责业务种子；从运行角色撤销审计表的 UPDATE/DELETE 及迁移版本表的 INSERT/UPDATE/DELETE。首次建库没有上一发布 revision；不提供破坏性 downgrade。
 - [迁移 manifest](../../../backend/alembic/manifest.json) 固定唯一 head 和全部 Python 迁移资源 SHA-256；缺资源、未知文件、摘要漂移或多 head 均失败。资源目录必须显式传入绝对路径。
 - [只读 schema 检查](../../../backend/app/maintenance/schema.py) 核对 revision、表/列/type/NULL/default/索引/唯一约束、注释、主键、零外键和 CHECK。Alembic 不直接比较 CHECK 表达式，因此 [包内基线](../../../backend/app/maintenance/schema_baseline.json) 同时绑定模型源表达式和已审查首迁移的实际 PG canonical 表达式；缺基线、模型漂移、同名 CHECK 内容变化及未验证约束均失败。检查不修复或迁移数据库。
 

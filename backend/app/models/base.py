@@ -61,9 +61,56 @@ def table_info(
         "owner_column": owner,
         "lifecycle": "append_only" if append_only else "mutable",
         "allowed_entrances": ["controlled maintenance initialization"],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "logical_relations": list(relations),
         "module": "identity_foundation",
+    }
+
+
+def business_relation(
+    column: str,
+    target: str,
+    *,
+    nullable: bool = False,
+    historical: bool = False,
+    parent_lock: str,
+    service: str,
+    tests: str,
+) -> dict[str, object]:
+    """Describe a logical reference without implying a physical foreign key."""
+    return {
+        "column": column,
+        "target": target,
+        "nullable": nullable,
+        "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+        "state_rule": "check active parent and matching owner inside the write transaction",
+        "parent_lock": parent_lock,
+        "deletion": "retain historical reference"
+        if historical
+        else "restrict or explicitly detach",
+        "service": service,
+        "tests": tests,
+    }
+
+
+def business_table_info(
+    scope: str,
+    *,
+    owner: str | None = None,
+    append_only: bool = False,
+    relations: tuple[dict[str, object], ...] = (),
+    module: str,
+    entrances: tuple[str, ...],
+    deletion: str,
+) -> dict[str, object]:
+    return {
+        "scope_kind": scope,
+        "owner_column": owner,
+        "lifecycle": "append_only" if append_only else "mutable",
+        "allowed_entrances": list(entrances),
+        "deletion_policy": deletion,
+        "logical_relations": list(relations),
+        "module": module,
     }
 
 

@@ -99,7 +99,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 建立跨平台 Telemetry 服务，向业务暴露 log、captureException、track、recordTiming 四类入口，共用字段、脱敏和上报队列。普通 print/debugPrint 不能成为业务模块唯一日志出口；框架、插件与宿主日志通过各自适配器接入。
 
-- FlutterError.onError 捕获框架回调错误，PlatformDispatcher.instance.onError 处理根 isolate 的其他未处理错误；自己创建的 isolate 还需监听并转发错误。三端 release 模式分别注入异常验证，Web 补验异步与 JS 互操作错误；必要的 Zone 捕获须保持初始化与 runApp 的 Zone 一致并去重。依据：[Flutter 错误处理](https://docs.flutter.dev/testing/errors)、[根 isolate 错误边界](https://api.flutter.dev/flutter/dart-ui/PlatformDispatcher/onError.html)。
+- FlutterError.onError 捕获框架回调错误，PlatformDispatcher.instance.onError 处理根 isolate 的其他未处理错误；自己创建的 isolate 还需监听并转发错误。前端异常采集以Web release模式验证，并覆盖异步与JS互操作错误；仅平台独有代码或系统API变化时补对应原生定点检查。必要的 Zone 捕获须保持初始化与 runApp 的 Zone 一致并去重。依据：[Flutter 错误处理](https://docs.flutter.dev/testing/errors)、[根 isolate 错误边界](https://api.flutter.dev/flutter/dart-ui/PlatformDispatcher/onError.html)。
 - Dio 拦截器记录正常/失败请求与关联 ID；go_router 观察页面切换；播放器、文件选择/保存、缓存、SSE 分别记录领域事件。
 - 页面使用路由名称/模板，网络使用方法与模板路径；不记录完整 URL 查询参数、请求/响应正文、Header 全量转储或输入框内容。
 - 异常保存经过脱敏和限长的堆栈、错误类型、release/build 与有限上下文。MyHome 接收器会抹去 stack/stack_trace，Haruka 需为安全堆栈定义专用字段，不能直接复用这一行为导致线上无法定位。
@@ -112,7 +112,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 | 场景 | 事件示例 | 允许的业务字段/统计口径 |
 | --- | --- | --- |
 | 启动/页面 | app.started、screen.viewed、app.lifecycle.changed | 平台、版本、screen_name、启动/加载耗时 |
-| 账号 | auth.register.submitted、auth.login.result、auth.password.changed、auth.logout.completed、auth.session.revoked | client/admin受众、成功/失败类别、传输方式；不含邮箱、密码、新旧密码策略细节或令牌 |
+| 账号 | auth.register.submitted、auth.login.result、auth.password.change.submitted、auth.password.changed、auth.logout.requested、auth.logout.completed、auth.session.revoked | client/admin受众、成功/失败类别、传输方式；不含邮箱、密码、新旧密码策略细节或令牌 |
 | 个人资料/设置 | profile.updated、profile.avatar.updated/deleted、study_profile.updated、settings.updated | 只记录字段类别、语言/目标数量、头像格式/大小区间、结果/冲突和耗时；不记录显示名、出生年份、性别/自定义说明、语言标签列表、文件名/路径或图像内容 |
 | RBAC / 管理 | access.snapshot.updated、authz.denied、admin.change.committed、admin.change.rejected | 权限代码、目标类型/ID、版本、影响数量、安全状态差异；成功变更以服务端审计事务为准，覆盖用户/角色/继承/菜单/策略 |
 | 材料 | material.import.requested、material.import.completed、material.import.failed | material_type枚举、格式、大小区间、阶段、耗时、错误分类；服务端确认导入结果，不能将原文件接受当作三类全部ready |
@@ -132,6 +132,8 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 前端记录用户意图与实际体验，后端记录已提交的业务结果。借助 origin、operation_id 和 event_id 区分，不能把点击成功、API 接收成功和数据库提交成功算成同一个转化。导出接口完成传输与客户端实际保存完成也分别记录。
 
+退出和改密会撤销当前会话，前端在提交前以`auth.logout.requested`/`auth.password.change.submitted`记录意图并尽力发送，不能提前声明成功或等待遥测发送成功才执行业务。对应完成事件由服务端在事务提交后输出，并以持久审计为准。前端失败事件只在原会话仍有效且作用域未变时补传；会话撤销后按下述规则清除旧队列，不改走匿名入口补传旧账号事件，提交结果未知也不记作成功。
+
 业务库继续承担已提交学习数据和业务统计的权威来源。埋点用于使用路径、成功率和性能分析；客户端事件可重试、缺失或被伪造，不能直接用作权限、模型用量记录或评分依据。PRD 的学习活跃与导入后转化指标需结合服务端记录计算。
 
 试卷过程按 [试卷模式](../modules/exams.md) 关联 exam_session_id、exam_paper_version_id、受控script/audio binding、grading_run_id 和 Job/AiRun；这些 ID 不作索引标签。文字稿上传、AI候选、人工确认、TTS生成和场次播放分别计数，不能把候选产生或客户端点击当作已确认/已播放/已ready。保存/交卷以服务端确认事件为准，超时自动交卷也必须记录；原卷题干、听力稿/片段、说话人正文、作答、参考答案、rubric、媒体URL与个人成绩明细不进入日志。批改失败/待复核及听力媒体故障单独统计，不记为答错或零分。
@@ -139,7 +141,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 ### 队列与批量上送
 
 - 三端维护有界持久队列，适配现有 Drift 缓存能力；内存入队快速返回，不让网络发送阻塞阅读或播放。启动早期/队列不可用时保留最小内存回退。
-- 推荐初始值：每批不超过 20 条且不超过 128 KiB；正常每 5 秒或满批发送，error/fatal 优先；队列每账号最多 5,000 条/10 MiB，最长 24 小时，任一上限到达触发既定淘汰与计数。这些值要在阶段 1 用三端流量、堆栈长度和服务限流共同验证。
+- 推荐初始值：每批不超过 20 条且不超过 128 KiB；正常每 5 秒或满批发送，error/fatal 优先；队列每账号最多 5,000 条/10 MiB，最长 24 小时，任一上限到达触发既定淘汰与计数。这些值在阶段1用Web前端日志流量、堆栈长度和服务限流验证；其他平台仅在独有代码或系统API变化时补对应检查。
 - event_id 在入队时生成，重试保持不变。429 按 Retry-After 延迟，网络/5xx 使用带抖动退避；400/过大/非法事件返回明确逐项拒收原因，拆批或隔离坏事件，避免阻塞整条队列。
 - 接收响应逐项标明 accepted、duplicate、rejected；客户端只移除已确认或不可重试条目。服务端以用户/匿名会话 + event_id 做有限窗口去重，窗口覆盖允许的补传周期；记录重试、拒收、队列积压及 dropped_count/reason。
 - 接收成功只表示 API 已处理并输出该记录，不代表 Loki 已持久化；去重缓存与 stdout 之间也没有分布式原子提交。用端到端探针核对可查询性，不将此链路表述成恰好一次或零丢失存储。
@@ -186,7 +188,9 @@ PostgreSQL 层采集引擎本身的 stderr；共享实例只保留一个采集�
 
 Haruka API/Worker 使用独立数据库账号，并配置稳定 application_name。引擎日志解析保留时间、数据库、应用名、PID/会话、SQLSTATE；ORM 层按需记录可验证的连接标识和时间段帮助定位。连接池复用时必须重置事务级上下文；不能声称每条 PostgreSQL 启停或后台维护日志都有用户 request_id。
 
-实施时核对 log_line_prefix、连接事件、log_lock_waits 和慢查询策略；SQLAlchemy 的全查询计时已经覆盖应用访问，不能把“容器已采集”当作“数据库自动产生了所有 SQL 日志”。设置绑定参数日志长度为 0，并核对错误详情与 SQL 字面值的脱敏；不启用会暴露秘密的全量原始语句转储。若以后改用 PostgreSQL jsonlog，必须另配文件采集，因为它依赖 logging_collector，不能假定仍从 Docker stderr 取得。依据：[PostgreSQL 18 日志配置](https://www.postgresql.org/docs/18/runtime-config-logging.html)。共享实例参数变更须评估对 MyHome 的影响；本次未修改任何配置。
+实施时核对 log_line_prefix、连接事件、log_lock_waits 和慢查询策略；SQLAlchemy 的全查询计时已经覆盖应用访问，不能把“容器已采集”当作“数据库自动产生了所有 SQL 日志”。设置绑定参数日志长度为 0，并核对错误详情与 SQL 字面值的脱敏；不启用会暴露秘密的全量原始语句转储。若以后改用 PostgreSQL jsonlog，必须另配文件采集，因为它依赖 logging_collector，不能假定仍从 Docker stderr 取得。依据：[PostgreSQL 18 日志配置](https://www.postgresql.org/docs/18/runtime-config-logging.html)。共享实例参数变更须评估对 MyHome 的影响。
+
+当前本地B1实施已调整Haruka隔离开发实例的[PostgreSQL参数](../../dev/compose.yaml)与[Alloy解析](../../dev/observability/config.alloy)，未修改MyHome或生产配置。原始PG错误即使关闭参数日志、缩减错误详细程度，仍可能回显非法输入；因此PG独立采集分支只输出受限的数据库名、application_name、backend_pid、SQLSTATE和严重程度，无法解析时输出固定事件，禁止原文直通Loki。ORM输出同名连接字段以及request/operation关联，真实PG错误和合成秘密的局部证据见[B1实施记录](../delivery/reviews/2026-09-26-b1-implementation.md)；不据此宣称全链路或全部平台观测已验收。
 
 ## 8. 脱敏、留存与 Grafana
 
@@ -216,7 +220,7 @@ Haruka 的采集规则不沿用“超过 1 小时即丢弃”的固定 Docker �
 
 日志基础在 [阶段 1](../delivery/roadmap.md) 与认证、Agent 最小流程一起建立；每个功能提交同时维护事件字典和看板口径，阶段 6 只做全面验证，不能到发布前才补埋点。
 
-- [ ] 三端实际 release 包的 debug/info/warn/error、正常业务埋点、性能与异常样本均在同一 Grafana 可查询；发布开关不遗漏 info 或业务事件。
+- [ ] Web实际release包的 debug/info/warn/error、正常业务埋点、性能与异常样本均在同一 Grafana 可查询；发布开关不遗漏 info 或业务事件。三端运行能力保留，Windows/Android不重复前端日志验收。
 - [ ] 用一次“选区解释/朗读”操作串起客户端、API、AiRun/模型/工具、Job/Worker、ORM 日志；PostgreSQL 引擎事件可按数据库/应用/连接线索定位。
 - [ ] API、Worker、Outbox、迁移/初始化、网关和每项共享基础设施有来源清单与验证样本，不因项目/服务过滤丢失；MyHome 原有查询仍可用。
 - [ ] 成功 SQL、失败 SQL、死锁/锁等待与连接故障在隔离测试环境有样本；参数、错误详情、AI 内容和假秘密不会泄露。
@@ -227,6 +231,6 @@ Haruka 的采集规则不沿用“超过 1 小时即丢弃”的固定 Docker �
 - [ ] 实测各平台 Flutter/Dart/插件/原生崩溃边界、版本堆栈还原与下次启动补报；不可捕获的终止场景记录为明确限制。
 - [ ] 日志接收端/Alloy/Loki 中断不阻塞学习功能，恢复/不可恢复区间可判断，日志上传不会递归产生日志风暴。
 - [ ] 看板不重复累加前后端结果、Agent 汇总与单次模型用量；缺失用量/丢失事件不当作零。
-- [ ] 实测三端到 Grafana 的正常到达延迟（初始目标 15 秒内）、峰值吞吐、磁盘增长与 7 天留存容量，记录最终阈值及告警验证结果。
+- [ ] 实测Web前端日志到 Grafana 的正常到达延迟（初始目标 15 秒内）、峰值吞吐、磁盘增长与 7 天留存容量，记录最终阈值及告警验证结果；服务端日志按来源独立验证。
 
-以上完整业务验收仍待实施；[基础设施切片](../delivery/reviews/2026-09-22-scaffold-infrastructure.md) 仅验证本地后端安全JSON及本项目容器日志进入隔离Alloy/Loki，Grafana预置数据源。尚无前端接收路由、业务看板或MyHome生产接入。
+以上完整业务验收尚未完成；[基础设施切片](../delivery/reviews/2026-09-22-scaffold-infrastructure.md) 仅验证本地后端安全JSON及本项目容器日志进入隔离Alloy/Loki，Grafana预置数据源。当前[B1实施](../delivery/reviews/2026-09-26-b1-implementation.md)已增加前端接收路由和局部隔离测试，前端日志按最新测试范围只在Web验证；隔离Web已有真实503接收故障后同一事件恢复并进入Loki的局部证据，完整B1日志矩阵仍待收敛；尚无业务看板或MyHome生产接入。

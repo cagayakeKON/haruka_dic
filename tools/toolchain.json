@@ -59,7 +59,7 @@
   },
   "dart_api": {
     "evaluated_generator": "openapi-generator-cli 7.25.0 dart-dio",
-    "status": "centralized_handwritten_transition_B0_B1",
+    "status": "centralized_handwritten_transition",
     "decision": "tools/codegen/dart-api/transition.json"
   },
   "linux_validation": {

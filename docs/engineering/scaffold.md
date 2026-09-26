@@ -8,7 +8,7 @@
 
 ## 1. 实施边界与文件归属
 
-脚手架分 B0 工程基础、B1 三端身份与收藏参考流程、B2配置/完整治理与模型任务（B2a/b/c），全部是路线图阶段 1 的子里程碑。文件随实际职责建立，不预建所有 feature 空目录。文档修改不会自动初始化 Git、安装工具或连接共享 MyHome。
+脚手架分 B0 工程基础、B1 三端身份与收藏参考流程、B2配置/完整治理与模型任务（B2a/b/c），全部是路线图阶段 1 的子里程碑。B1三端指产品支持；共享流程只在Web/Android重复验证，Windows独有代码或系统API变更才定点验证。文件随实际职责建立，不预建所有 feature 空目录。文档修改不会自动初始化 Git、安装工具或连接共享 MyHome。
 
 | 未来载体 | 维护内容与唯一来源 |
 | --- | --- |
@@ -159,7 +159,7 @@ haruka-manage提供db status、db upgrade、seed apply、admin init等明确子�
 
 ## 7. 参考实现和验收归属
 
-B1先完成三端正式注册、所选激活、登录、找回/重置、改密与本人会话管理；所选邮件或人工交付方式的必要持久通知/受控操作也在B1交付，不能用预置active账号替代。在此基础上用合成材料版本/选区作为合法来源，经me/access、选区只读查询已准备的已提交卡片、POST collections与GET collections完成本人收藏新增和列表，贯通DTO、Repository、Riverpod、服务授权、迁移和日志；无需为此先实现全部上传/阅读器，也不增加未经设计的来源类型。
+B1先完成Windows/Web/Android均可用的正式注册、邮箱激活、登录、邮件找回/重置、改密与本人会话管理；已选邮件链路的持久通知/投递也在B1交付，不能用预置active账号替代。共享流程以Web/Android验证，Windows仅验证独有变化。在此基础上用合成材料版本/选区作为合法来源，经me/access、选区只读查询已准备的已提交卡片、POST collections与GET collections完成本人收藏新增和列表，贯通DTO、Repository、Riverpod、服务授权、迁移和日志；无需为此先实现全部上传/阅读器，也不增加未经设计的来源类型。
 
 B2a/b完成资料设置与完整身份治理，B2c使用正式 `POST provider-credentials/{id}/test` 单能力小样本测试贯通Job、Outbox、Kafka、Worker、WebSocket与持久安全结果；dev/test只替换供应商边界。验证成功/拒绝、重复投递、unknown、撤权/取消/故障及A/B隔离，Fake不代替获授权真实能力协议证据。查询/SSE在L2，正式出题/删题在P2，不提前依赖习题领域。
 

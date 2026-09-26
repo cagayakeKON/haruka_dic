@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scenario_id": "b0_static_assets",
+  "scenario_id": "static_assets",
   "scenario_version": 1,
   "acceptance_refs": ["SCF-B0-07", "TDS-01", "TDS-02"],
   "setup_recipe": "validate_static_assets",

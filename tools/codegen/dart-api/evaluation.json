@@ -7,7 +7,7 @@
   "minimum_java": 11,
   "evaluated_java": "21.0.5",
   "status": "rejected-prototype",
-  "adopted_solution": "handwritten-dto-transition-through-B1",
+  "adopted_solution": "handwritten-dto-transition",
   "decision_deadline": "before-B2",
   "properties": {
     "pubName": "haruka",

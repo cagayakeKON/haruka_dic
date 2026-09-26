@@ -73,8 +73,6 @@ def read_registry(path: Path) -> dict[str, object]:
 def validate_ids(registry: dict[str, object]) -> dict[str, str]:
     if set(registry) != {"schema_version", "static", "templates"}:
         raise ValueError("Unexpected UI registry fields")
-    if registry["templates"] != {}:
-        raise ValueError("Dynamic templates are not implemented in this scaffold")
     values: set[str] = set()
     identifiers: dict[str, str] = {}
     for key, value in json_object(registry["static"]).items():
@@ -88,6 +86,19 @@ def validate_ids(registry: dict[str, object]) -> dict[str, str]:
             raise ValueError(f"Duplicate UI identifier: {value}")
         values.add(value)
         identifiers[key] = value
+    allowed_templates = {
+        "referenceMaterialRow": ("materialId", "client.reference.materials.row."),
+        "referenceBlock": ("blockId", "client.reference.chapter.block."),
+        "referenceCollectionRow": ("collectionId", "client.reference.collections.row."),
+        "sessionRevoke": ("sessionId", "client.account.sessions.revoke."),
+    }
+    for key, value in json_object(registry["templates"]).items():
+        expected = allowed_templates.get(key)
+        if expected is None or key in identifiers or value != f"{expected[1]}{{{expected[0]}}}":
+            raise ValueError(f"Unsupported UI identifier template: {key}")
+        if value in values:
+            raise ValueError(f"Duplicate UI identifier template: {value}")
+        values.add(value)
     return identifiers
 
 
@@ -102,6 +113,8 @@ class PublicBuildTargets:
     development_instance_id: str
     development_api_base_url: str
     development_api_base_urls: list[str]
+    test_instance_pattern: str
+    test_api_base_urls: dict[str, list[str]]
     display_names: dict[str, str]
     application_ids: dict[str, dict[str, str]]
     windows: dict[str, WindowsIdentity]
@@ -142,6 +155,11 @@ def build_targets(registry: dict[str, object]) -> PublicBuildTargets:
         development_instance_id=required_string(development["instance_id"]),
         development_api_base_url=required_string(development["api_base_url"]),
         development_api_base_urls=string_list(development["allowed_api_base_urls"]),
+        test_instance_pattern=required_string(development["test_instance_pattern"]),
+        test_api_base_urls={
+            platform: string_list(urls)
+            for platform, urls in json_object(development["test_api_base_urls"]).items()
+        },
         display_names=names,
         application_ids=application_ids,
         windows=windows,
@@ -227,10 +245,30 @@ def generate(directory: Path) -> None:
         + "\n".join(translations)
         + "\n    _ => strings.apiUnknownError,\n  };\n}\n",
     )
-    ids = validate_ids(read_registry(ROOT / "config/ui_test_ids.json"))
+    id_registry = read_registry(ROOT / "config/ui_test_ids.json")
+    ids = validate_ids(id_registry)
     declarations = "\n".join(
         f"  static const {key} = {json.dumps(value)};" for key, value in sorted(ids.items())
     )
+    templates = json_object(id_registry["templates"])
+    parameters = {
+        "referenceMaterialRow": "materialId",
+        "referenceBlock": "blockId",
+        "referenceCollectionRow": "collectionId",
+        "sessionRevoke": "sessionId",
+    }
+    for key, value in sorted(templates.items()):
+        parameter = parameters[key]
+        prefix = value.split("{")[0]
+        declarations += (
+            f"\n  static String {key}(String {parameter}) {{\n"
+            f"    if (!RegExp(r'^[0-9a-fA-F]{{8}}-(?:[0-9a-fA-F]{{4}}-){{3}}[0-9a-fA-F]{{12}}$')"
+            f".hasMatch({parameter})) {{\n"
+            f"      throw ArgumentError.value({parameter}, {json.dumps(parameter)}, 'Expected UUID');\n"
+            f"    }}\n"
+            f"    return {json.dumps(prefix)} + {parameter}.toLowerCase();\n"
+            f"  }}"
+        )
     emit(
         directory,
         OUTPUTS[0],
@@ -249,6 +287,8 @@ def generate(directory: Path) -> None:
   static const developmentInstanceId = {json.dumps(targets.development_instance_id)};
   static const developmentApiBaseUrl = {json.dumps(targets.development_api_base_url)};
   static const developmentApiBaseUrls = <String>{json.dumps(targets.development_api_base_urls)};
+  static const testInstancePattern = r{json.dumps(targets.test_instance_pattern)};
+  static const testApiBaseUrls = <String, List<String>>{json.dumps(targets.test_api_base_urls)};
   static const displayNames = <String, String>{json.dumps(targets.display_names)};
   static const applicationIds = <String, Map<String, String>>{json.dumps(targets.application_ids)};
 }}

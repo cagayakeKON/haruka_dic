@@ -159,11 +159,17 @@ def main() -> None:
         "HARUKA_PUBLIC_BASE_URL=http://localhost:8000\n",
         encoding="utf-8",
     )
-    for name in ("haruka-api", "haruka-worker", "haruka-outbox", "haruka-manage"):
+    for name in (
+        "haruka-api",
+        "haruka-worker",
+        "haruka-outbox",
+        "haruka-mail-worker",
+        "haruka-manage",
+    ):
         cli = str(binaries / (name + ".exe" if os.name == "nt" else name))
         run([cli, "--help"], outside, env)
         run([cli, "--config", str(config), "--check-config"], outside, env)
-        if name in {"haruka-worker", "haruka-outbox"}:
+        if name in {"haruka-worker", "haruka-outbox", "haruka-mail-worker"}:
             run([cli, "--config", str(config)], outside, env, expected=2)
         if name == "haruka-manage":
             run([cli, "--config", str(config), "db"], outside, env, expected=2)
@@ -174,7 +180,7 @@ def main() -> None:
                 or '"event": "process.stopped"' not in output
             ):
                 raise RuntimeError("installed process lifecycle did not run and close")
-        if infrastructure_config is not None:
+        if infrastructure_config is not None and name != "haruka-mail-worker":
             arguments = [cli, "--config", str(infrastructure_config)]
             arguments += (
                 ["check-infrastructure"] if name == "haruka-manage" else ["--check-startup"]
@@ -215,12 +221,12 @@ def main() -> None:
     if result.returncode == 0 or "hash" not in result.stderr.lower():
         raise RuntimeError("incorrect build hash did not reject the build")
     report = {
-        "scope": "B0-infrastructure-package" if infrastructure_config else "B0-foundation-package",
+        "scope": "infrastructure-package" if infrastructure_config else "foundation-package",
         "platform": sys.platform,
         "wheel": wheel.name,
         "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
         "runtime": "non-editable; runtime-only locked dependencies; isolated cwd and Python import",
-        "entries": 4,
+        "entries": 5,
         "lifespan": "started-and-stopped",
         "wrong_build_hash": "rejected",
         "infrastructure_lifespans": 4 if infrastructure_config else 0,
@@ -229,7 +235,7 @@ def main() -> None:
         "installed_database_status": maintenance_config is not None,
         "limitations": [
             "Schema readiness validated only when explicit infrastructure configuration was supplied",
-            "No worker/outbox business execution",
+            "No worker/outbox/mail business execution or SMTP delivery",
             "Results apply only to the recorded execution platform",
         ],
     }

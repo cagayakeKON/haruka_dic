@@ -10,7 +10,7 @@ DESIGN23补齐全应用NLP标注、AI成品存储、EPUB直接提取及扫描/�
 
 ## 当前状态
 
-阶段1的 **B0 可重复工程基础已验收**：包含 [Flutter三端应用壳](frontend/README.md)、[可安装Python后端](backend/README.md)、[本地基础设施](dev/README.md)、受控数据库初始化、前端契约、开发编排和质量门禁。Windows/Linux干净检出、仓库外正式入口、三端交互及完整B0证据矩阵已通过，详见 [B0验收记录](docs/delivery/reviews/2026-09-22-b0-acceptance.md)。B1注册/激活/登录/找回/本人安全与收藏闭环、B2持久模型任务闭环尚未实现，阶段1仍在进行。
+阶段1的 **B0 可重复工程基础已验收**：包含 [Flutter三端应用壳](frontend/README.md)、[可安装Python后端](backend/README.md)、[本地基础设施](dev/README.md)、受控数据库初始化、前端契约、开发编排和质量门禁。Windows/Linux干净检出、仓库外正式入口、三端交互及完整B0证据矩阵已通过，详见 [B0验收记录](docs/delivery/reviews/2026-09-22-b0-acceptance.md)。[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)正在实施、联调与审查，尚未完成所需验收；共享流程按Web/Android验证，Windows仅验独有变化。B2持久模型任务闭环尚未实现，阶段1仍在进行。
 
 2026-09-26 的 [B0设计对齐](docs/delivery/reviews/2026-09-26-b0-design-alignment.md)补充增量迁移、账号安全字段、授权范围和权限目录，并将Flutter基础壳对齐「晴空频率」。仍为12张基础表；业务页面、NLP、AI/TTS和学习缓存继续按后续切片实施。本次局部验证不替换原B0完整验收矩阵。
 

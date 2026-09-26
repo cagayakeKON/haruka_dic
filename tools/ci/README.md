@@ -1,4 +1,4 @@
-# B0 检查器与 CI
+# 检查器与 CI
 
 当前仓库未配置远端。GitHub Actions 文件是可版本控制的参考实现，尚未发生远端运行，也未设置分支保护。`quality.yml` 分 Windows/Linux 运行本次检查器单元，并通过独立锁定 test 依赖 job 验证真实 pytest 适配器；`platform-checks.yml` 只在显式选择影响范围时运行后端检查或某个平台构建，构建成功不代表平台运行或完整 B0 验收。
 
@@ -10,10 +10,10 @@ Actions 使用在官方仓库核验的完整 commit SHA、只读权限、关闭 
 
 ```text
 python -m tools.ci.quality --commit <实际40位commit> --output artifacts/quality/<唯一运行目录>
-uv run --project backend --locked python -m tools.ci.quality --scope B0-pytest-adapter --commit <实际40位commit> --output artifacts/quality/<另一唯一目录>
+uv run --project backend --locked python -m tools.ci.quality --scope pytest-adapter --commit <实际40位commit> --output artifacts/quality/<另一唯一目录>
 ```
 
-该入口运行 `required_cases.json` 的 `B0-quality` 精确节点，保存 collection/result 原始结构化记录、identity、检查器结论、素材校验和手写源清单。单独选择测试不能缩减 `B0` 的必需矩阵。B0 的 SCF-01～06 程序与平台记录仍在 [程序索引](b0-procedures.json) 登记；索引是执行计划，不能作为通过证据。
+该入口运行 `required_cases.json` 的 `foundation-quality` 精确节点，保存 collection/result 原始结构化记录、identity、检查器结论、素材校验和手写源清单。单独选择测试不能缩减 `B0` 的必需矩阵。B0 的 SCF-01～06 程序与平台记录仍在 [程序索引](foundation-procedures.json) 登记；索引是执行计划，不能作为通过证据。
 
 完整B0已取得 [本地验收记录](../../docs/delivery/reviews/2026-09-22-b0-acceptance.md)。统一入口 `scripts/dev.py check --stage B0 --identity <候选身份> --report <报告>` 消费全部collection/result报告，`--report`可重复；它调用下述既有检查器，不自动发现报告、不重新执行测试、不将当前HEAD自动视为已验收。实际26份输入、11份procedure索引和最终矩阵的路径/SHA256见 [证据摘要清单](../../docs/delivery/reviews/2026-09-22-b0-evidence-manifest.json)，原始运行文件仍按规则保存在本机ignored artifacts。
 

@@ -2,14 +2,14 @@
 
 import pytest
 from pydantic import ValidationError
+
+from app.main import create_app
+from app.schemas.responses import PageResponse, SuccessResponse
 from tests.support.api_compatibility import (
     CompatibilityRead,
     compatibility_openapi,
     compatibility_samples,
 )
-
-from app.main import create_app
-from app.schemas.responses import PageResponse, SuccessResponse
 
 pytestmark = pytest.mark.contract
 

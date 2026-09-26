@@ -1,4 +1,4 @@
-name: B0 quality gates
+name: Quality gates
 
 on:
   workflow_dispatch:
@@ -69,7 +69,7 @@ jobs:
         env:
           HARUKA_CHECKOUT_SHA: ${{ github.sha }}
         shell: bash
-        run: uv run --project backend --locked --only-group test python -m tools.ci.quality --scope B0-pytest-adapter --commit "$HARUKA_CHECKOUT_SHA" --output artifacts/pytest-adapter
+        run: uv run --project backend --locked --only-group test python -m tools.ci.quality --scope pytest-adapter --commit "$HARUKA_CHECKOUT_SHA" --output artifacts/pytest-adapter
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:

@@ -1,4 +1,4 @@
-"""Run the B0 quality-checker slice with genuine collected test evidence."""
+"""Run foundation quality checks with genuine collected test evidence."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--commit", required=True)
     parser.add_argument(
-        "--scope", choices=["B0-quality", "B0-pytest-adapter"], default="B0-quality"
+        "--scope", choices=["foundation-quality", "pytest-adapter"], default="foundation-quality"
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -59,7 +59,7 @@ def main() -> int:
         fingerprint = source_fingerprint(args.root)
         run_identity: dict[str, object] = {
             "commit": args.commit,
-            "build_id": "B0-quality-" + platform.system().lower() + "-" + fingerprint[:20],
+            "build_id": "foundation-quality-" + platform.system().lower() + "-" + fingerprint[:20],
             "configuration": "test-offline",
             "toolchain_sha256": digest(toolchain_path),
             "run_id": uuid4().hex,
@@ -89,18 +89,18 @@ def main() -> int:
                 "python": platform.python_version(),
                 "platform": platform.system(),
                 "scope": args.scope,
-                "full_b0_accepted": False,
+                "foundation_accepted": False,
                 "coverage_thresholds_executed": False,
                 "working_tree_fingerprint": fingerprint,
             },
         )
         sys.stdout.write(
-            "B0 quality slice passed.\n" if tests_passed else "B0 quality slice failed.\n"
+            "foundation quality slice passed.\n" if tests_passed else "foundation quality slice failed.\n"
         )
         return 0 if tests_passed else 1
     except (GateError, OSError, SyntaxError, UnicodeError) as error:
         # Gate errors contain fixed codes or public source paths, never source bodies.
-        sys.stderr.write("B0 quality slice rejected: " + string(str(error)) + "\n")
+        sys.stderr.write("foundation quality slice rejected: " + string(str(error)) + "\n")
         return 1
 
 

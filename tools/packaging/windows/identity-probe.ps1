@@ -16,7 +16,7 @@ if ($Action -eq 'inspect') {
 }
 if (-not $RunId) { throw 'A run-owned identifier is required for credential proof operations.' }
 # The target can only address this run's synthetic credential, never a user credential.
-$target = $identity.credential_service + '/b0-installer-proof/' + $RunId
+$target = $identity.credential_service + '/installer-proof/' + $RunId
 $marker = $identity.environment + ':synthetic-installer-proof:' + $RunId
 Add-Type -TypeDefinition @'
 using System;
@@ -73,7 +73,7 @@ public static class HarukaInstallerProofCredential {
             Marshal.Copy(bytes, 0, pointer, bytes.Length);
             var credential = new Credential {
                 Type = 1, TargetName = target, UserName = "haruka-installer-proof",
-                Comment = "Synthetic B0 installation identity test; no user credentials",
+                Comment = "Synthetic installation identity test; no user credentials",
                 CredentialBlobSize = (uint)bytes.Length, CredentialBlob = pointer, Persist = 2
             };
             if (!CredWrite(ref credential, 0)) throw new Win32Exception(Marshal.GetLastWin32Error());

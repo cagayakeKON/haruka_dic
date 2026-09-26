@@ -1,10 +1,10 @@
 # Haruka 前端
 
-阶段 1 的 B0 前端工程。单个 Flutter 工程包含 Windows、Web、Android 宿主、紧凑/宽屏应用壳、公开配置校验和中文 ARB 本地化。环境页可显式检查真实后端就绪状态；主页明确展示未开放业务。没有账号、材料数据、缓存或模型调用，不代表 B1/B2 已交付。
+单个 Flutter 工程包含 Windows、Web、Android 宿主、紧凑/宽屏布局、公开配置校验和中文 ARB 本地化。环境页可显式检查真实后端就绪状态。当前工作区还包含阶段 1 账号与参考学习切片的实现候选：真实注册、邮箱验证与找回、登录与本人安全操作、Web 管理注册策略、已发布文字选区查询与收藏，以及受限前端遥测。候选仍需按交付矩阵完成三端验收；完整材料阅读、导入、NLP、AI生成和 TTS 不因这些参考流程而视为已交付。
 
-2026-09-26 [B0设计对齐](../docs/delivery/reviews/2026-09-26-b0-design-alignment.md)更新12张基础表中的账号/角色/授权结构、发布权限目录和Flutter基础壳；只补充受影响范围的验证，B1/B2和NLP/AI/TTS/学习缓存业务仍未实现。原B0完整矩阵保留其历史候选身份。
+2026-09-26 [B0设计对齐](../docs/delivery/reviews/2026-09-26-b0-design-alignment.md)记录当时的账号/角色/授权结构、权限目录与基础壳验收；原 B0 完整矩阵保留历史候选身份，不代替当前切片的最终验收。
 
-使用 [工具链清单](../tools/toolchain.json) 的 Flutter 3.47.3（revision `e8113bf45620cbeb8aff64947ee4c93e16adb4cf`）和 Dart 3.13.3，依赖提交在 `pubspec.lock`。Dio 5.11.1 是唯一 HTTP 传输，按实例创建并关闭，页面只消费类型化结果，不自动重试。账号作用域认证、业务控制器和完整遥测随后续切片接入，当前不创建空模块。
+使用 [工具链清单](../tools/toolchain.json) 的 Flutter 3.47.3（revision `e8113bf45620cbeb8aff64947ee4c93e16adb4cf`）和 Dart 3.13.3，依赖提交在 `pubspec.lock`。Dio 5.11.1 是 HTTP 传输；页面经账号作用域控制器和仓储消费类型化结果。认证刷新、幂等收藏重试及遥测上传分别遵守各自明确的重试边界。
 
 ## 启动
 
@@ -23,18 +23,18 @@ Android 的设备 ID 以 `flutter devices` 为准。模拟器地址必须显式�
 | 参数 | dev | production |
 | --- | --- | --- |
 | `HARUKA_ENV` | 默认 `dev` | 显式 `production` |
-| `HARUKA_INSTANCE_ID` | 默认 `haruka-local-dev`，只接受该隔离实例 | 必填且不能为开发实例 |
-| `HARUKA_API_BASE_URL` | Windows/Web 默认 `http://127.0.0.1:8000`；Android 显式传入清单内的地址 | 必填 HTTPS Origin，拒绝凭据、查询参数、路径和回环地址 |
+| `HARUKA_INSTANCE_ID` | 默认 `haruka-local-dev`；隔离测试仅接受 `haruka-test-` 加 32 位小写十六进制且与服务 `/meta` 精确匹配 | 必填且不能为开发/测试实例 |
+| `HARUKA_API_BASE_URL` | Windows/Web 默认 `http://127.0.0.1:8000`；Android 显式传入清单内的地址。测试实例仅允许清单列出的同源 Web HTTPS、Windows 回环和 Android 模拟器地址 | 必填 HTTPS Origin，拒绝凭据、查询参数、路径和回环地址 |
 
 配置只包含公开身份，不接收密码、Token、供应商 Key。无效配置显示不可用页，不发起请求、不回退其他服务。Android flavor 必须与环境一致，dev 与 production 使用不同 applicationId。Windows 区分窗口标题与 AppUserModelID；两环境的文件名均为 `haruka.exe`，最终安装格式、安装目录、签名及升级隔离尚未验收。Android dev release 仅使用开发签名，production 不配置发布签名。
 
-路由 `/` 与 `/environment` 为只读壳；`/admin` 仅在 Web 编译时注册为未开放页，原生深链进入不可用页。Web 使用路径 URL，需要服务器将页面深链回退到 SPA；API 与缺失静态资源不得回退 HTML，正式代理规则由部署切片提供。Web 开发 Origin 为 `http://localhost:5173`。
+基础路由 `/` 与 `/environment` 保留只读壳。用户端现有账号、本人安全、已发布材料参考阅读与收藏路由；管理登录与注册策略仅在 Web 注册，原生管理路径不可用。Web 使用路径 URL，邮箱链接 fragment 在动作确认前清除；承载方须将页面深链回退到 SPA，而 API 与缺失静态资源不得回退 HTML。隔离集成运行以同源 HTTPS 代理承载 Web 与 API；普通开发 Origin 为 `http://localhost:5173`。
 
-布局阈值由 `lib/core/layout/adaptive_policy.dart` 单一维护：小于 600 使用底部导航、600～1023 使用窄侧栏、1024 起使用宽侧栏。窗口变化保留当前路由。支持 Tab/Enter 导航及 Alt+1/Alt+2；控件的语义名称保留中文，不用技术 ID 替代。
+应用壳布局阈值由 `lib/core/layout/adaptive_policy.dart` 单一维护：小于 600 使用底部导航、600～1023 使用窄侧栏、1024 起使用宽侧栏。账号与参考学习页面按实际窄屏/宽屏内容另行排版；窗口变化保留当前路由和账号作用域状态。Tab/Enter 与 Alt+1/Alt+2 保留既有键盘操作。
 
 ## 生成与检查
 
-UI 标识来自 [ui_test_ids.json](config/ui_test_ids.json)。Key 与 Semantics.identifier 共用生成常量，Web 正常启动持有 SemanticsHandle；测试检查标识唯一、名称与点击动作。生成脚本同时处理公开配置、Windows 宿主身份、后端错误目录/ARB 对照及 Flutter 本地化。当前集中手写 DTO 过渡和生成器失败证据见 [Dart 原型](../tools/codegen/dart-api/README.md)：只允许到 B1，正式 schema 摘要变化会要求重新审查消费者。
+UI 技术定位 ID 来自 [ui_test_ids.json](config/ui_test_ids.json)。Key 与 `Semantics.identifier` 共用生成常量，Web 为功能自动化定位持有 SemanticsHandle；测试验证真实点击、输入与页面结果，不把技术 ID 当作用户文案。生成脚本同时处理公开配置、Windows 宿主身份、后端错误目录/ARB 对照及 Flutter 本地化。当前集中手写 DTO 过渡和生成器失败证据见 [Dart 原型](../tools/codegen/dart-api/README.md)：正式 schema 摘要变化必须重新审查消费者。
 
 ```powershell
 python tool/generate.py --write
@@ -69,7 +69,7 @@ flutter test integration_test/controls_test.dart -d emulator-5554 --flavor dev -
 flutter build web --target=test_support/main.dart --output=build/web-controls --no-web-resources-cdn --dart-define=HARUKA_ENV=dev
 ```
 
-随后在 `tools/e2e/` 执行 `npm ci --ignore-scripts`、`npx --no-install playwright install chromium`、`npm run check` 和 `npm test`。浏览器版本由 Playwright 锁控制；runner 自建 5174 端口的隔离静态服务，拒绝复用已占用服务，结束后释放。页面对象读取同一 UI 注册表，先聚焦 Flutter 真实语义 input 再逐键输入，不用坐标点击；无截图、trace、HAR 或登录状态存档。
+随后在 `tools/e2e/` 执行 `npm ci --ignore-scripts`、`npx --no-install playwright install chromium`、`npm run check` 和 `npm test`。浏览器版本由 Playwright 锁控制；控件原型 runner 自建 5174 端口的隔离静态服务，拒绝复用已占用服务，结束后释放。页面对象读取同一 UI 注册表，聚焦 Flutter 实际编辑 input 后逐键输入；原型用例不依赖坐标点击，且不保存截图、trace、HAR 或登录状态。
 
 真实健康页联调使用正式 `lib/main.dart`，由根开发入口显式启动 API `127.0.0.1:18080` 和 Web `localhost:5173` 后，在 `tools/e2e/` 执行 `npx --no-install playwright test --config live.config.ts`。备用18080已登记在公开配置源，适用于默认8000被系统保留或占用的机器，不更改系统保留端口。测试点击“检查连接”，验证真实响应、CORS与DTO消费，重排后不重复请求；它不负责启动、接管或停止外部服务，每次报告写入新的 `artifacts/e2e/live-<UUID>/`。
 

@@ -51,12 +51,19 @@ final class AppConfig {
         (uri.path.isNotEmpty && uri.path != '/')) {
       throw const FormatException('Invalid instance or API origin');
     }
+    final testInstance = RegExp(BuildTargets.testInstancePattern).hasMatch(resolvedInstance);
     if (isDevelopment) {
-      if (resolvedInstance != BuildTargets.developmentInstanceId ||
-          !BuildTargets.developmentApiBaseUrls.contains(resolvedUrl)) {
+      final ordinaryDev =
+          resolvedInstance == BuildTargets.developmentInstanceId &&
+          BuildTargets.developmentApiBaseUrls.contains(resolvedUrl);
+      final isolatedTest =
+          testInstance &&
+          (BuildTargets.testApiBaseUrls[platform.name]?.contains(resolvedUrl) ?? false);
+      if (!ordinaryDev && !isolatedTest) {
         throw const FormatException('Development target is not an isolated declared instance');
       }
     } else if (resolvedInstance == BuildTargets.developmentInstanceId ||
+        testInstance ||
         uri.scheme != 'https' ||
         const {'localhost', '127.0.0.1', '::1', '10.0.2.2'}.contains(uri.host)) {
       throw const FormatException('Production requires an explicit HTTPS target');

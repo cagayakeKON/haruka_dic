@@ -8,7 +8,7 @@
 
 ## 1. 已实现的 B0 基线：12张表
 
-核对来源为 [模型字典](../../contracts/database-schema.json)、[身份模型](../../backend/app/models/identity.py)、[授权模型](../../backend/app/models/authorization.py)、[0001迁移](../../backend/alembic/versions/0001_b0_identity.py)、[0002增量迁移](../../backend/alembic/versions/0002_b0_identity_alignment.py) 和 [受控结构基线](../../backend/app/maintenance/schema_baseline.json)。数据库默认与 ORM 默认区别：下表 id 的数据库默认是“—”，UUID由服务端生成；updated_at 的 ORM onupdate=now() 不是数据库触发器。
+核对来源为 [模型字典](../../contracts/database-schema.json)、[身份模型](../../backend/app/models/identity.py)、[授权模型](../../backend/app/models/authorization.py)、[0001迁移](../../backend/alembic/versions/0001_identity.py)、[0002增量迁移](../../backend/alembic/versions/0002_identity_alignment.py) 和 [受控结构基线](../../backend/app/maintenance/schema_baseline.json)。数据库默认与 ORM 默认区别：下表 id 的数据库默认是“—”，UUID由服务端生成；updated_at 的 ORM onupdate=now() 不是数据库触发器。
 
 所有现有表入口仅为受控维护初始化；B0无公开删除。涉及关联写入时先锁 authorization_revisions 的 global 行，再锁目标父行；global 行尚不存在时使用既有维护 advisory lock。所有者不可变，普通关系有引用则限制删除，注明历史关系的审计/Outbox引用保留。下表索引仅记录当前实际存在者，未补列未来登录/分页索引。
 
@@ -300,7 +300,7 @@ DBDESIGN3约定的 `user_roles → user_role_links`、`role_permissions → role
 | roles（0002已实现） | `name varchar(100) NN`；`description text NULL` | name仅显示非唯一；按既有code回填，更新revision和updated_at。角色依赖/引用仍由授权服务限制删除 |
 | role_permission_links（0002已实现） | `data_scope varchar(24) NN` | 从permission_catalog回填并核对；CHECK self/platform_metadata，服务校验权限受众与范围。唯一键改为 `(role_id,permission_code,effect,data_scope)`；不另建可写casbin_rule |
 | menus（待实施） | `parent_menu_id uuid NULL`；`component_key varchar(64) NULL`；`title varchar(100) NN`；`icon_key varchar(64) NULL`；`sort_order integer NN DEFAULT 0`；`permission_match varchar(3) NN DEFAULT 'all'` | parent同受众且无环；sort_order>=0，match=all/any。route_key改为可空以表示分组；叶子route/component由发布注册表匹配。将既有permission_code搬入menu_permission_links后删除该列；父子索引 `(audience,parent_menu_id,sort_order,id)`。最低页面权限保持代码定义，表中条件只能追加 |
-| auth_policies（待实施） | `require_email_verification boolean NN DEFAULT false`；`recovery_mode varchar(16) NN DEFAULT 'disabled'` | 仅在[账号待决](../decisions/pending.md)交付路径锁定后启用；recovery_mode=disabled/email/manual，部署必须具备所选交付能力；不把默认false当确认无需验证邮箱 |
+| auth_policies（待实施） | `require_email_verification boolean NN DEFAULT true`；`recovery_mode varchar(16) NN DEFAULT 'email'` | [账号选择](../modules/accounts.md)已确认邮箱验证/邮件找回；registration_mode默认closed，B1策略写仅接受closed/open，不启用approval/manual分支。配置缺失时不允许开放注册或受理邮件请求；旧数据不能因字段回填而被推定已验证 |
 | admin_audit_events（待实施） | `actor_user_id uuid NULL`；`audience varchar(10) NULL`；`permission_code varchar(100) NULL`；`target_type varchar(64) NULL`；`target_id uuid NULL`；`target_code varchar(100) NULL`；`operation_id uuid NULL`；`request_id uuid NULL`；`result varchar(24) NULL`；`reason_code varchar(64) NULL`；`payload_schema_version integer NN DEFAULT 1`；`change_summary jsonb NULL` | 扩展action长度到100并按发布事件注册，旧两动作CHECK由版本化允许清单替换；旧actor保留用于维护主体。新用户管理事件必须有actor_user_id/受众/安全结果；target_id与target_code按UUID实体/自然键目录择一，不能丢失permission/auth-policy等自然键目标；旧记录允许NULL且不伪造事实。summary只放白名单权限/状态差异，非完整对象。拟加 `(created_at,id)`、`(actor_user_id,created_at,id)`、`(target_type,target_id,created_at,id)`、`(action,created_at,id)`；按管理员授权时间窗口查询 |
 | outbox_events（待实施） | B0字段保留；后续通用事件、聚合引用、重试/租约/发布时间由任务分册统一定义 | 不能把B0仅authorization.changed且audit_event_id必填的结构称为通用投递已实现；新旧事件兼容与索引见[总册](database-design.md)的任务分册入口 |
 
@@ -478,7 +478,7 @@ id映射API session_id/session_ref；不另存重复UUID列。CHECK受众/传输
 
 `challenge_id uuid NN → user_auth_challenges.id`；`encrypted_payload bytea NULL`；`encryption_key_version varchar(64) NULL`；`payload_schema_version integer NN DEFAULT 1`；`expires_at timestamptz NN`；`status varchar(16) NN`（pending/sent/failed/expired）；`attempt_count integer NN DEFAULT 0`；`next_attempt_at timestamptz NULL`；`last_error_code varchar(64) NULL`。
 
-唯一 `(user_id,challenge_id)`；CHECK密文/keyring版本成对、正schema版本、非负次数、状态允许值；pending必须有密文。服务校验不晚于挑战期限，sent仅表示交付适配器已受理，不保证收件人收到。索引 `(status,next_attempt_at,id) WHERE status='pending'` 扫待发；`(expires_at,id)` 清密文。密文只包含发送所必需的地址/链接，Kafka/Outbox仅放本记录引用；只限本用途的Worker解密，不能进入日志。锁User→Challenge→Delivery，消费或失效后不再发送；已发/过期按短期保留策略清密文，不能为了重试永久保留原Token。此表存在不代表恢复邮件能力已选定或可用。
+唯一 `(user_id,challenge_id)`；CHECK密文/keyring版本成对、正schema版本、非负次数、状态允许值；pending必须有密文。服务校验不晚于挑战期限，sent仅表示交付适配器已受理，不保证收件人收到。索引 `(status,next_attempt_at,id) WHERE status='pending'` 扫待发；`(expires_at,id)` 清密文。密文只包含发送所必需的地址/链接，Kafka/Outbox仅放本记录引用；只限本用途的Worker解密，不能进入日志。锁User→Challenge→Delivery，消费或失效后不再发送；已发/过期按短期保留策略清密文，不能为了重试永久保留原Token。邮箱验证/找回方式已确认；此表存在不代表实际邮件投递已验证。
 
 ## 5. 完整授权与导航关系（拟新增）
 
@@ -666,4 +666,4 @@ object_layout_version注册输出键规则：每次执行使用`global-word/tran
 
 实施检查落到[账号ACC](../modules/accounts.md)、[资料PROFILE/设置SET](../modules/settings.md)、[授权/RBAC](authorization.md)与[管理ADM](../modules/admin.md)：注册失败无半成品；当前密码校验与并发改密版本一致；新请求不使用旧授权；个人Key/头像/挑战不可跨用户或用途；角色/菜单/策略变更原子审计；PG/Redis失效关闭；容量并发不超领；日志无秘密/人口资料/私有正文。性能索引在目标PG与合成样本上按实际查询验证；本次文档设计没有运行这些应用测试。
 
-待锁定项：注册/验证/恢复交付方式及挑战期限、头像硬上限/重编码规格、具体模型/声音/标准profile与验证证据、技术限额数值和安全留存时间。对应待决入口仍为[OPEN清单](../decisions/pending.md)；设计表支持这些边界，不提前选择供应商默认值或开放未选能力。
+待锁定项：已选邮箱验证/找回的实际外部发信配置与挑战期限验证、头像硬上限/重编码规格、具体模型/声音/标准profile与验证证据、技术限额数值和安全留存时间。对应待决入口仍为[OPEN清单](../decisions/pending.md)；设计表支持这些边界，不提前选择供应商默认值或开放未选能力。

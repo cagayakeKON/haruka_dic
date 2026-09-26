@@ -41,6 +41,18 @@ class RegistryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_ids(self.registry)
 
+    def test_registered_resource_templates(self) -> None:
+        self.registry["templates"] = {
+            "referenceMaterialRow": "client.reference.materials.row.{materialId}",
+            "referenceBlock": "client.reference.chapter.block.{blockId}",
+            "referenceCollectionRow": "client.reference.collections.row.{collectionId}",
+            "sessionRevoke": "client.account.sessions.revoke.{sessionId}",
+        }
+        validate_ids(self.registry)
+        self.registry["templates"]["referenceBlock"] = "client.reference.chapter.block.{index}"
+        with self.assertRaises(ValueError):
+            validate_ids(self.registry)
+
     def test_missing_translation_and_unreviewed_parameters_fail(self) -> None:
         error: dict[str, object] = {"code": "BAD_REQUEST", "message_args": {}}
         catalog: dict[str, object] = {"errors": [error], "field_errors": []}

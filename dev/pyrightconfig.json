@@ -1,6 +1,8 @@
 {
-  "include": ["infra.py", "test_infra.py"],
-  "extraPaths": [".."],
+  "include": ["infra.py", "test_infra.py", "local_smtp_capture.py", "local_https_gateway.py", "local_api_fault_proxy.py", "isolated_app_run.py", "test_local_app_harness.py", "test_api_fault_proxy.py", "alloy_recovery_probe.py", "postgres_log_probe.py", "observability_proof.py", "secret_absence_proof.py", "test_secret_absence_proof.py", "telemetry_recovery_proof.py", "test_telemetry_recovery_proof.py", "mail_worker_lifecycle_probe.py", "../tools/e2e/native/android_app_flow.py"],
+  "extraPaths": ["..", "../backend"],
+  "venvPath": "../backend",
+  "venv": ".venv",
   "pythonVersion": "3.13",
   "typeCheckingMode": "strict",
   "reportUnnecessaryTypeIgnoreComment": "error",

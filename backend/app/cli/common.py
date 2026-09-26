@@ -30,7 +30,7 @@ def checked_settings(config: Path | None) -> Settings:
 
 
 def unavailable(capability: str) -> None:
-    sys.stderr.write(f"{capability} is not implemented by B0-foundation.\n")
+    sys.stderr.write(f"{capability} is not implemented by this service.\n")
     raise SystemExit(2)
 
 

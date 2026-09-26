@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/config/app_config.dart';
+import '../core/auth/auth_controller.dart';
 import '../core/layout/adaptive_policy.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
@@ -36,6 +38,53 @@ class AppShell extends StatelessWidget {
                   config.displayName,
                   style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
                 ),
+                actions: [
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final auth = ref.watch(authControllerProvider);
+                      if (!auth.isAuthenticated || auth.admin) return const SizedBox.shrink();
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (auth.access!.allows('client.material.list'))
+                            Identified(
+                              id: UiTestIds.referenceMaterialsNav,
+                              merge: true,
+                              child: IconButton(
+                                tooltip: strings.referenceMaterialsTitle,
+                                onPressed: () => context.go('/reference/materials'),
+                                icon: const Icon(Icons.auto_stories_outlined),
+                              ),
+                            ),
+                          if (auth.access!.allows('client.collection.read'))
+                            Identified(
+                              id: UiTestIds.referenceCollectionsNav,
+                              merge: true,
+                              child: IconButton(
+                                tooltip: strings.referenceCollectionsTitle,
+                                onPressed: () => context.go('/collections'),
+                                icon: const Icon(Icons.bookmark_outline),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final signedIn = ref.watch(authControllerProvider).isAuthenticated;
+                      return Identified(
+                        id: UiTestIds.accountNavigation,
+                        merge: true,
+                        child: IconButton(
+                          tooltip: signedIn ? strings.authAccount : strings.authSignIn,
+                          onPressed: () => context.go(signedIn ? '/account' : '/login'),
+                          icon: Icon(signedIn ? Icons.account_circle : Icons.login),
+                        ),
+                      );
+                    },
+                  ),
+                ],
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(1),
                   child: Container(height: 1, color: Theme.of(context).colorScheme.outline),
@@ -90,8 +139,7 @@ class AppShell extends StatelessWidget {
   }
 }
 
-/// The wider shell exposes identifiers on actual controls, including their label
-/// and tap semantics. Icon-only semantic identifiers would be lost by a rail.
+/// The wider shell keeps the registered test IDs on clickable controls.
 class WideNavigation extends StatelessWidget {
   const WideNavigation({
     required this.expanded,
@@ -126,53 +174,50 @@ class WideNavigation extends StatelessWidget {
                   child: Identified(
                     id: items[index].$1,
                     merge: true,
-                    child: Semantics(
-                      selected: selected == index,
-                      child: TextButton(
-                        autofocus: index == 0,
-                        onPressed: () => onSelected(index),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 64),
-                          foregroundColor: selected == index
-                              ? colors.primary
-                              : colors.onSurfaceVariant,
-                          backgroundColor: selected == index ? colors.primaryContainer : null,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.all(12),
-                        ),
-                        child: expanded
-                            ? Row(
-                                children: [
-                                  Icon(items[index].$3),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      items[index].$2,
-                                      style: TextStyle(
-                                        fontWeight: selected == index
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                children: [
-                                  Icon(items[index].$3),
-                                  const SizedBox(height: 4),
-                                  Text(
+                    child: TextButton(
+                      autofocus: index == 0,
+                      onPressed: () => onSelected(index),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 64),
+                        foregroundColor: selected == index
+                            ? colors.primary
+                            : colors.onSurfaceVariant,
+                        backgroundColor: selected == index ? colors.primaryContainer : null,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      child: expanded
+                          ? Row(
+                              children: [
+                                Icon(items[index].$3),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
                                     items[index].$2,
-                                    textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontWeight: selected == index
                                           ? FontWeight.w700
                                           : FontWeight.w500,
                                     ),
                                   ),
-                                ],
-                              ),
-                      ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                Icon(items[index].$3),
+                                const SizedBox(height: 4),
+                                Text(
+                                  items[index].$2,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: selected == index
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                 ),

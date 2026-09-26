@@ -1,13 +1,125 @@
 {
+  "client_event_attributes": {
+    "access.snapshot.updated": [
+      "result"
+    ],
+    "app.crash.capture": [
+      "error_category"
+    ],
+    "app.started": [
+      "duration_ms"
+    ],
+    "auth.login.result": [
+      "duration_ms",
+      "error_category",
+      "result",
+      "transport"
+    ],
+    "auth.logout.requested": [],
+    "auth.password.change.submitted": [],
+    "auth.register.submitted": [],
+    "auth.session.revoked": [
+      "result"
+    ],
+    "authz.denied": [
+      "error_category"
+    ],
+    "collection.saved": [
+      "card_type",
+      "duration_ms",
+      "result"
+    ],
+    "explanation.requested": [
+      "duration_ms",
+      "target_kind"
+    ],
+    "http.completed": [
+      "duration_ms",
+      "retry_count",
+      "status_code"
+    ],
+    "http.failed": [
+      "duration_ms",
+      "error_category",
+      "retry_count",
+      "status_code"
+    ],
+    "reading.chapter.opened": [
+      "duration_ms",
+      "material_type"
+    ],
+    "screen.viewed": [
+      "duration_ms",
+      "screen_name"
+    ],
+    "telemetry.delivery.recovered": [
+      "drop_reason",
+      "dropped_count"
+    ]
+  },
+  "client_events": [
+    "access.snapshot.updated",
+    "app.crash.capture",
+    "app.started",
+    "auth.login.result",
+    "auth.logout.requested",
+    "auth.password.change.submitted",
+    "auth.register.submitted",
+    "auth.session.revoked",
+    "authz.denied",
+    "collection.saved",
+    "explanation.requested",
+    "http.completed",
+    "http.failed",
+    "reading.chapter.opened",
+    "screen.viewed",
+    "telemetry.delivery.recovered"
+  ],
   "events": [
+    "access.snapshot.updated",
+    "app.crash.capture",
+    "app.started",
+    "auth.cache_invalidation.deferred",
+    "auth.email.verified",
+    "auth.login.action_required",
+    "auth.login.rejected",
+    "auth.login.result",
+    "auth.login.succeeded",
+    "auth.logout.requested",
+    "auth.password.change.submitted",
+    "auth.password.changed",
+    "auth.password.recovered",
+    "auth.policy.updated",
+    "auth.recovery.request.accepted",
+    "auth.register.submitted",
+    "auth.registration.accepted",
+    "auth.session.revoked",
+    "auth.verification.request.accepted",
+    "authz.denied",
+    "collection.saved",
+    "database.connection.failed",
+    "database.query.completed",
+    "database.query.failed",
+    "database.transaction.rolled_back",
+    "explanation.requested",
+    "frontend.received",
     "http.completed",
     "http.failed",
     "infrastructure.connected",
     "infrastructure.unavailable",
     "library.log",
+    "mail.delivery.key_unavailable",
+    "mail.delivery.retry_or_failed",
+    "mail.delivery.sent",
+    "mail.worker.unavailable",
+    "outbox.identity.published",
+    "outbox.worker.unavailable",
     "process.started",
     "process.stopped",
-    "process.unavailable"
+    "process.unavailable",
+    "reading.chapter.opened",
+    "screen.viewed",
+    "telemetry.delivery.recovered"
   ],
   "fields": [
     "schema_version",
@@ -19,14 +131,34 @@
     "project",
     "environment",
     "service",
+    "instance_id",
     "release",
     "origin",
     "request_id",
+    "ingest_request_id",
+    "operation_id",
+    "client_request_id",
+    "user_id",
+    "audience",
+    "route_template",
+    "client_platform",
+    "client_release",
+    "client_build",
+    "emitter_service",
+    "received_at",
+    "attributes",
+    "safe_stack_frames",
     "status_code",
     "duration_ms",
+    "sql_fingerprint",
+    "statement_kind",
+    "sqlstate",
+    "database_name",
+    "application_name",
+    "backend_pid",
     "stack_frames"
   ],
   "private_payloads": false,
   "schema_version": 1,
-  "scope": "backend-runtime"
+  "scope": "client-and-backend"
 }

@@ -38,6 +38,11 @@
         "backend-foundation"
       ]
     },
+    "backend/app/adapters/mail.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
     "backend/app/adapters/queue.py": {
       "language": "python",
       "kind": "core",
@@ -58,6 +63,20 @@
       "groups": [],
       "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
     },
+    "backend/app/api/auth_dependencies.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/authentication.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
     "backend/app/api/context.py": {
       "language": "python",
       "kind": "core",
@@ -72,6 +91,13 @@
         "backend-foundation"
       ]
     },
+    "backend/app/api/frontend_telemetry.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
     "backend/app/api/health.py": {
       "language": "python",
       "kind": "core",
@@ -79,7 +105,21 @@
         "backend-foundation"
       ]
     },
+    "backend/app/api/learning_reference.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
     "backend/app/api/responses.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/security_guards.py": {
       "language": "python",
       "kind": "core",
       "groups": [
@@ -113,14 +153,19 @@
         "backend-foundation"
       ]
     },
-    "backend/app/cli/manage.py": {
+    "backend/app/cli/lifecycle.py": {
       "language": "python",
       "kind": "core",
       "groups": [
         "backend-foundation"
       ]
     },
-    "backend/app/cli/lifecycle.py": {
+    "backend/app/cli/mail.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/cli/manage.py": {
       "language": "python",
       "kind": "core",
       "groups": [
@@ -192,12 +237,27 @@
       "groups": [],
       "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
     },
+    "backend/app/domain/correlation.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/domain/email_address.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
     "backend/app/domain/errors.py": {
       "language": "python",
       "kind": "core",
       "groups": [
         "backend-foundation"
       ]
+    },
+    "backend/app/domain/scope.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
     },
     "backend/app/main.py": {
       "language": "python",
@@ -268,11 +328,45 @@
         "backend-foundation"
       ]
     },
+    "backend/app/models/identity_security.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/learning_reference.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/repositories/identity.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/repositories/learning_reference.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
     "backend/app/schemas/__init__.py": {
       "language": "python",
       "kind": "declaration",
       "groups": [],
       "reason": "Only docstring or Dart import/export directives; the inventory checker verifies no executable declarations."
+    },
+    "backend/app/schemas/auth.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/frontend_telemetry.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
     },
     "backend/app/schemas/health.py": {
       "language": "python",
@@ -280,6 +374,11 @@
       "groups": [
         "backend-foundation"
       ]
+    },
+    "backend/app/schemas/learning_reference.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
     },
     "backend/app/schemas/responses.py": {
       "language": "python",
@@ -301,7 +400,77 @@
       "groups": [],
       "reason": "Only module docstring; verified by AST."
     },
+    "backend/app/services/auth_context.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/auth_crypto.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/auth_policy.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/frontend_telemetry.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
     "backend/app/services/initialization.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/learning_reference.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/notifications.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/outbox_delivery.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/registration.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/security_events.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/sessions.py": {
       "language": "python",
       "kind": "core",
       "groups": [
@@ -362,6 +531,27 @@
         "frontend-foundation"
       ]
     },
+    "frontend/lib/core/api/auth_models.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/api/learning_models.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/api/request_ids.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
     "frontend/lib/core/api/responses.dart": {
       "language": "flutter",
       "kind": "core",
@@ -369,7 +559,91 @@
         "frontend-foundation"
       ]
     },
+    "frontend/lib/core/api/telemetry_models.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
     "frontend/lib/core/api/wire.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/auth_controller.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/auth_repository.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/auth_sync.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/auth_sync_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/auth_sync_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/credential_vault.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/credential_vault_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/credential_vault_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/email_action_link.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/email_action_link_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/auth/email_action_link_web.dart": {
       "language": "flutter",
       "kind": "core",
       "groups": [
@@ -389,6 +663,69 @@
       "groups": [
         "frontend-foundation"
       ]
+    },
+    "frontend/lib/core/telemetry/telemetry.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/telemetry/telemetry_store.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/telemetry/telemetry_store_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/telemetry/telemetry_store_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/auth/account_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/auth/auth_forms.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/auth/auth_frame.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/auth/email_action_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/reference_controller.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/reference_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/reference_repository.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
     },
     "frontend/lib/generated/api_catalog.dart": {
       "language": "flutter",

@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "scope": "B0-identity-foundation",
+  "scope": "account-and-learning",
   "sha256": {
-    "database-schema.json": "334d49e5d37781671928e75e0f0c4b24e729c75dbd2e9df5b7a116b3a2daaad3",
+    "database-schema.json": "cc1608386fa63fa8db47f5038538b78a4de99972845e04fbd1fcb9ac2b8f8cb0",
     "errors.json": "f5af16a3b8c20b9b368a57f10b86c6a471d6784ef1410b588d28ed33fa810f2c",
-    "openapi.json": "5724eb1bc596da30fc8a6bdcc0939119d627cc76eec874bd667a1d970f1aef64",
-    "permissions.json": "c34e28e2cb38b82eb6238479b63d8680a53cb97f0c06206bde99ffba2212918c",
-    "telemetry.json": "7cb83124077d53f789374a19b07c48c2714b9486ab55c41af8c529a51d97fdbe"
+    "openapi.json": "6a5d1364f6493e769c0d600dd8b60bfde93588bb05d3459f2719dd8a7a048089",
+    "permissions.json": "2696d589228a89499eb49d580a9f3f9590fd749f4a50c0aca0bea5f562aa3162",
+    "telemetry.json": "a07be6541dcc519f11149cf2baf1b104405e1b0d7538745dd653d133b76e8b79"
   }
 }

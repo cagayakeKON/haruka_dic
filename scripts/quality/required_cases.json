@@ -98,7 +98,7 @@
       "nodes": [
         "SCF-B0-01:windows"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "clean_checkout_locked_tools",
         "bootstrap_idempotent_locks_and_user_config",
@@ -121,7 +121,7 @@
       "nodes": [
         "SCF-B0-01:linux"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "clean_checkout_locked_tools",
         "bootstrap_idempotent_locks_and_user_config",
@@ -144,7 +144,7 @@
       "nodes": [
         "SCF-B0-02:windows"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "clean_hash_locked_build_closure",
         "wheel_sdist_editable_builds",
@@ -169,7 +169,7 @@
       "nodes": [
         "SCF-B0-02:linux"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "clean_hash_locked_build_closure",
         "wheel_sdist_editable_builds",
@@ -194,7 +194,7 @@
       "nodes": [
         "SCF-B0-03:windows"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "import_help_schema_offline",
         "configuration_fails_before_accepting",
@@ -218,7 +218,7 @@
       "nodes": [
         "SCF-B0-03:linux"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "import_help_schema_offline",
         "configuration_fails_before_accepting",
@@ -242,7 +242,7 @@
       "nodes": [
         "SCF-B0-04:host"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "empty_database_to_current_revision",
         "same_physical_connection_lock_and_ddl",
@@ -269,7 +269,7 @@
       "nodes": [
         "SCF-B0-05:host"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "regenerate_twice_without_drift",
         "schema_samples_dart_decode_and_compatibility",
@@ -294,7 +294,7 @@
       "nodes": [
         "SCF-B0-06:windows"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "platform_build_and_actual_shell_interaction",
         "key_locator_and_visible_action",
@@ -318,7 +318,7 @@
       "nodes": [
         "SCF-B0-06:web"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "platform_build_and_actual_shell_interaction",
         "key_locator_and_visible_action",
@@ -342,7 +342,7 @@
       "nodes": [
         "SCF-B0-06:android"
       ],
-      "source": "tools/ci/b0-procedures.json",
+      "source": "tools/ci/foundation-procedures.json",
       "assertions": [
         "platform_build_and_actual_shell_interaction",
         "key_locator_and_visible_action",
@@ -366,10 +366,796 @@
         "scripts.tests.test_quality_pytest_adapter.PytestAdapterChecks.test_real_pytest_adapter_preserves_selection_layers_and_outcomes"
       ],
       "source": "scripts/tests/test_quality_pytest_adapter.py"
+    },
+    {
+      "case_id": "SCF-B1-01",
+      "acceptance_refs": [
+        "SCF-B1-01"
+      ],
+      "layer": "integration",
+      "runner": "pytest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "asgi-postgres-redis",
+      "parameters": {
+        "schema": "isolated-random",
+        "providers": "synthetic"
+      },
+      "shard": "account-backend-pytest",
+      "nodes": [
+        "tests/integration/test_authentication_flow.py::test_registration_session_and_native_refresh",
+        "tests/integration/test_authentication_flow.py::test_login_only_identity_survives_dependency_faults_without_profile_grant"
+      ],
+      "source": "backend/tests/integration/test_authentication_flow.py"
+    },
+    {
+      "case_id": "SCF-B1-02",
+      "acceptance_refs": [
+        "SCF-B1-02"
+      ],
+      "layer": "integration",
+      "runner": "pytest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "asgi-postgres-redis",
+      "parameters": {
+        "schema": "isolated-random",
+        "providers": "synthetic"
+      },
+      "shard": "account-backend-pytest",
+      "nodes": [
+        "tests/integration/test_learning_reference_http.py::test_http_source_resolution_collection_commit_and_lost_response_replay"
+      ],
+      "source": "backend/tests/integration/test_learning_reference_http.py"
+    },
+    {
+      "case_id": "SCF-B1-03",
+      "acceptance_refs": [
+        "SCF-B1-03"
+      ],
+      "layer": "integration",
+      "runner": "pytest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "asgi-postgres-redis",
+      "parameters": {
+        "schema": "isolated-random",
+        "providers": "synthetic"
+      },
+      "shard": "account-backend-pytest",
+      "nodes": [
+        "tests/integration/test_learning_reference.py::test_owned_source_resolve_collection_replay_and_revocation"
+      ],
+      "source": "backend/tests/integration/test_learning_reference.py"
+    },
+    {
+      "case_id": "SCF-B1-05",
+      "acceptance_refs": [
+        "SCF-B1-05"
+      ],
+      "layer": "integration",
+      "runner": "pytest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "asgi-postgres-redis",
+      "parameters": {
+        "schema": "isolated-random",
+        "providers": "synthetic"
+      },
+      "shard": "account-backend-pytest",
+      "nodes": [
+        "tests/integration/test_frontend_telemetry_auth.py::test_authenticated_receiver_binds_owner_audience_and_transport",
+        "tests/integration/test_frontend_telemetry_redis.py::test_redis_replay_is_atomic_and_identity_scoped"
+      ],
+      "source": "backend/tests/integration/test_frontend_telemetry_auth.py"
+    },
+    {
+      "case_id": "SCF-B1-06",
+      "acceptance_refs": [
+        "SCF-B1-06"
+      ],
+      "layer": "integration",
+      "runner": "pytest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "asgi-postgres-redis",
+      "parameters": {
+        "schema": "isolated-random",
+        "providers": "synthetic"
+      },
+      "shard": "account-backend-pytest",
+      "nodes": [
+        "tests/integration/test_authentication_flow.py::test_concurrent_registration_is_unique_and_invalid_role_is_atomic",
+        "tests/integration/test_authentication_flow.py::test_admin_cannot_open_registration_with_privileged_default_role[protected]",
+        "tests/integration/test_authentication_flow.py::test_admin_cannot_open_registration_with_privileged_default_role[admin_grant]"
+      ],
+      "source": "backend/tests/integration/test_authentication_flow.py"
+    },
+    {
+      "case_id": "SCF-B1-07",
+      "acceptance_refs": [
+        "SCF-B1-07"
+      ],
+      "layer": "integration",
+      "runner": "pytest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "asgi-postgres-redis",
+      "parameters": {
+        "schema": "isolated-random",
+        "providers": "synthetic"
+      },
+      "shard": "account-backend-pytest",
+      "nodes": [
+        "tests/integration/test_authentication_flow.py::test_email_challenges_reject_reuse_expiry_and_wrong_purpose[expired]",
+        "tests/integration/test_authentication_flow.py::test_email_challenges_reject_reuse_expiry_and_wrong_purpose[wrong_purpose]",
+        "tests/integration/test_authentication_flow.py::test_mail_worker_discards_stale_recovery_challenge[password_version]",
+        "tests/integration/test_authentication_flow.py::test_mail_worker_discards_stale_recovery_challenge[security_epoch]",
+        "tests/integration/test_authentication_flow.py::test_mail_worker_discards_stale_recovery_challenge[email]",
+        "tests/integration/test_authentication_flow.py::test_mail_worker_discards_stale_recovery_challenge[status]"
+      ],
+      "source": "backend/tests/integration/test_authentication_flow.py"
+    },
+    {
+      "case_id": "SCF-B1-08",
+      "acceptance_refs": [
+        "SCF-B1-08"
+      ],
+      "layer": "integration",
+      "runner": "pytest",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "asgi-postgres-redis",
+      "parameters": {
+        "schema": "isolated-random",
+        "providers": "synthetic"
+      },
+      "shard": "account-backend-pytest",
+      "nodes": [
+        "tests/integration/test_authentication_flow.py::test_password_change_and_recovery_race_has_one_committed_winner",
+        "tests/integration/test_authentication_flow.py::test_committed_password_change_with_lost_response_is_not_replayed",
+        "tests/integration/test_authentication_flow.py::test_outbox_retries_redis_failure_without_marking_published"
+      ],
+      "source": "backend/tests/integration/test_authentication_flow.py"
+    },
+    {
+      "case_id": "SCF-B1-01",
+      "acceptance_refs": [
+        "SCF-B1-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "windows",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-windows-native-vault",
+      "nodes": [
+        "SCF-B1-01:windows-native-vault"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "windows_plugin_registration",
+        "native_credential_persistence_after_restart",
+        "cross_process_refresh_lock"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-01",
+      "acceptance_refs": [
+        "SCF-B1-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-01:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "release_identity",
+        "real_registered_account_login",
+        "access_restore_logout",
+        "login_only_permission_boundary"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-01",
+      "acceptance_refs": [
+        "SCF-B1-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-android-release",
+      "nodes": [
+        "SCF-B1-01:android-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "release_identity",
+        "real_registered_account_login",
+        "access_restore_logout",
+        "login_only_permission_boundary"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-01",
+      "acceptance_refs": [
+        "SCF-B1-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "admin",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-admin-release",
+      "nodes": [
+        "SCF-B1-01:web-admin-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "release_identity",
+        "admin_login_access",
+        "admin_session_recovery_logout"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-02",
+      "acceptance_refs": [
+        "SCF-B1-02"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-02:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "owned_published_source",
+        "ui_resolve_card",
+        "ui_save_and_reopen",
+        "restart_and_cross_platform_same_id_read"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-02",
+      "acceptance_refs": [
+        "SCF-B1-02"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-android-release",
+      "nodes": [
+        "SCF-B1-02:android-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "owned_published_source",
+        "ui_resolve_card",
+        "ui_save_and_reopen",
+        "restart_and_cross_platform_same_id_read"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-03",
+      "acceptance_refs": [
+        "SCF-B1-03"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-03:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "owned_create_and_permission_error_ui",
+        "retry_after_unknown_result",
+        "persistent_list_and_error_presentation"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-03",
+      "acceptance_refs": [
+        "SCF-B1-03"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-android-release",
+      "nodes": [
+        "SCF-B1-03:android-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "owned_create_and_permission_error_ui",
+        "retry_after_unknown_result",
+        "persistent_list_and_error_presentation"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-04",
+      "acceptance_refs": [
+        "SCF-B1-04"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-04:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "logout_switch_account",
+        "multitab_session_coherence",
+        "late_response_and_queued_event",
+        "old_credentials_rejected"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-04",
+      "acceptance_refs": [
+        "SCF-B1-04"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-android-release",
+      "nodes": [
+        "SCF-B1-04:android-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "logout_switch_account",
+        "vault_recovery_after_process_restart",
+        "late_response_and_queued_event",
+        "old_credentials_rejected"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-04",
+      "acceptance_refs": [
+        "SCF-B1-04"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "admin",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-admin-release",
+      "nodes": [
+        "SCF-B1-04:web-admin-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "admin_client_cookie_coexistence",
+        "multitab_session_coherence",
+        "logout_switch_account",
+        "old_credentials_rejected"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-05",
+      "acceptance_refs": [
+        "SCF-B1-05"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-05:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "normal_and_failure_events",
+        "safe_correlation",
+        "receiver_interruption_and_recovery",
+        "secret_sentinel_absent"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-05",
+      "acceptance_refs": [
+        "SCF-B1-05"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "admin",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-admin-release",
+      "nodes": [
+        "SCF-B1-05:web-admin-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "normal_and_failure_events",
+        "safe_correlation",
+        "receiver_interruption_and_recovery",
+        "secret_sentinel_absent"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-06",
+      "acceptance_refs": [
+        "SCF-B1-06"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-06:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "closed_by_default",
+        "ui_register_verify",
+        "pending_cannot_enter",
+        "optional_profile_and_key_not_required"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-06",
+      "acceptance_refs": [
+        "SCF-B1-06"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-android-release",
+      "nodes": [
+        "SCF-B1-06:android-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "closed_by_default",
+        "ui_register_verify",
+        "pending_cannot_enter",
+        "optional_profile_and_key_not_required"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-06",
+      "acceptance_refs": [
+        "SCF-B1-06"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "admin",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-admin-release",
+      "nodes": [
+        "SCF-B1-06:web-admin-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "admin_registration_toggle",
+        "privileged_default_role_rejected",
+        "last_admin_preserved"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-07",
+      "acceptance_refs": [
+        "SCF-B1-07"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-07:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "ui_mail_recovery",
+        "one_time_reset",
+        "previous_sessions_revoked"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-07",
+      "acceptance_refs": [
+        "SCF-B1-07"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-android-release",
+      "nodes": [
+        "SCF-B1-07:android-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "ui_mail_recovery",
+        "one_time_reset",
+        "previous_sessions_revoked"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-07",
+      "acceptance_refs": [
+        "SCF-B1-07"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "admin",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-admin-release",
+      "nodes": [
+        "SCF-B1-07:web-admin-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "ui_mail_recovery",
+        "one_time_reset",
+        "previous_sessions_revoked"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-08",
+      "acceptance_refs": [
+        "SCF-B1-08"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-release",
+      "nodes": [
+        "SCF-B1-08:web-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "ui_change_password",
+        "own_device_sessions",
+        "revoke_and_relogin"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-08",
+      "acceptance_refs": [
+        "SCF-B1-08"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-android-release",
+      "nodes": [
+        "SCF-B1-08:android-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "ui_change_password",
+        "own_device_sessions",
+        "revoke_and_relogin"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-08",
+      "acceptance_refs": [
+        "SCF-B1-08"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "admin",
+      "transport": "https",
+      "parameters": {
+        "build": "release",
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-web-admin-release",
+      "nodes": [
+        "SCF-B1-08:web-admin-release"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "ui_change_password",
+        "own_device_sessions",
+        "revoke_and_relogin"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-05",
+      "acceptance_refs": [
+        "SCF-B1-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-observability-host",
+      "nodes": [
+        "SCF-B1-05:observability-host"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "alloy_loki_grafana_query",
+        "api_orm_pg_engine_worker_and_frontend_correlation",
+        "pg_query_failure_connection_timeout_and_rollback",
+        "receiver_interruption_and_recovery",
+        "secret_and_cross_account_absence"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-06",
+      "acceptance_refs": [
+        "SCF-B1-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-registration-mail-host",
+      "nodes": [
+        "SCF-B1-06:registration-mail-host"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "real_http_registration",
+        "persistent_worker_delivery",
+        "isolated_smtp_captured_link"
+      ]
+    },
+    {
+      "case_id": "SCF-B1-07",
+      "acceptance_refs": [
+        "SCF-B1-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "account-recovery-mail-host",
+      "nodes": [
+        "SCF-B1-07:recovery-mail-host"
+      ],
+      "source": "tools/ci/account-procedures.json",
+      "assertions": [
+        "real_http_recovery",
+        "smtp_failure_retry_and_restart",
+        "one_time_link_and_no_external_send"
+      ]
     }
   ],
   "scopes": {
-    "B0-quality": [
+    "foundation-quality": [
       "SCF-B0-07-cases",
       "SCF-B0-07-coverage",
       "SCF-B0-07-testdata"
@@ -386,8 +1172,18 @@
       "SCF-B0-06",
       "SCF-B0-07-pytest-adapter"
     ],
-    "B0-pytest-adapter": [
+    "pytest-adapter": [
       "SCF-B0-07-pytest-adapter"
+    ],
+    "B1": [
+      "SCF-B1-01",
+      "SCF-B1-02",
+      "SCF-B1-03",
+      "SCF-B1-04",
+      "SCF-B1-05",
+      "SCF-B1-06",
+      "SCF-B1-07",
+      "SCF-B1-08"
     ]
   }
 }

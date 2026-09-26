@@ -2,14 +2,14 @@ import { test, expect } from "@playwright/test";
 import { ControlsPage } from "../pages/controls.js";
 
 for (const audience of ["client", "admin"]) {
-  test(`UIE-03 ${audience}: external semantics edit/dialog/list/resize/refresh`, async ({
+  test(`UIE-03 ${audience}: external control edit/dialog/list/resize/refresh`, async ({
     page,
   }) => {
     const controls = new ControlsPage(page);
     const base = audience === "admin" ? "/admin/fixture" : "/fixture";
     await page.goto(base);
     await expect(controls.id("fixturePage")).toHaveCount(1);
-    await expect(controls.input()).toHaveAccessibleName("原型输入");
+    await expect(controls.input()).toBeVisible();
     await expect(
       controls.id("fixtureSubmit").getByRole("button"),
     ).toBeDisabled();

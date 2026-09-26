@@ -35,7 +35,7 @@ export class ControlsPage {
     return this.page.getByTestId(value);
   }
 
-  // Flutter's identifier wraps the editable semantic node; fill the real input.
+  // The registered test ID wraps the real editable input.
   input(): Locator {
     return this.id("fixtureInput").locator("input, textarea");
   }

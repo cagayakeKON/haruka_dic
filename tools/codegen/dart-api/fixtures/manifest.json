@@ -2,8 +2,8 @@
   "generated_by": "python -m tools.export_compatibility --output <directory>",
   "schema_version": 1,
   "sha256": {
-    "openapi.json": "34c8f290bc5d9615bb2a7855e4caf8590a1e2dc0fc6f562fe84d5952ca6ddfea",
-    "samples.json": "82400283e8d0abfe2570bd1e68ff069f6facd9d08fc899bad79c5da333b32eec"
+    "openapi.json": "587e67ca537c2293fe8b88c8c0786ba73ee94c4dc0bbf7d0641ff8b6a48cd793",
+    "samples.json": "55342d0f36c01eccd88ba6d4cd47221dc16aa85f7b3a1615a3b79f9ef58718f2"
   },
   "source": "backend/tests/support/api_compatibility.py",
   "test_only": true

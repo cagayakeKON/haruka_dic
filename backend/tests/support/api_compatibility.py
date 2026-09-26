@@ -9,6 +9,31 @@ from fastapi import FastAPI, Response
 from pydantic import AwareDatetime, Field, field_validator
 
 from app.contracts.errors import ErrorCode, FieldErrorCode
+from app.schemas.auth import (
+    AccessRead,
+    AccountRead,
+    ActivationRequired,
+    AuthzVersionRead,
+    CsrfRead,
+    MailAccepted,
+    NativeAuthenticated,
+    NativeLoginRead,
+    NavigationRead,
+    PermissionRead,
+    SessionSummary,
+    WebAuthenticated,
+    WebLoginRead,
+)
+from app.schemas.learning_reference import (
+    CollectionRead,
+    ExplanationResolveRead,
+    NovelContentLocator,
+    ResolvedCard,
+    SourceSpan,
+    WordCardPayload,
+    WordCardRead,
+    WordExample,
+)
 from app.schemas.responses import (
     ApiError,
     ApiModel,
@@ -24,6 +49,7 @@ from app.schemas.scalars import CanonicalDecimal
 
 REQUEST_ID = UUID("018f1234-1234-7123-8123-123456789abc")
 RESOURCE_ID = UUID("018f1234-5678-7123-8123-123456789abc")
+SAMPLE_NON_CREDENTIAL = "SYNTHETIC_SAMPLE_NOT_VALID"
 
 
 class TextCard(ApiModel):
@@ -105,6 +131,54 @@ def compatibility_openapi() -> dict[str, object]:
     @app.post("/samples/decimal", response_model=SuccessResponse[CompatibilityRead])
     def decimal_sample(value: CompatibilityRead) -> SuccessResponse[CompatibilityRead]:
         return SuccessResponse(data=value, meta=ResponseMeta(request_id=REQUEST_ID))
+
+    @app.get("/samples/auth/web-login", response_model=SuccessResponse[WebLoginRead])
+    def auth_web_login() -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/auth/native-login", response_model=SuccessResponse[NativeLoginRead])
+    def auth_native_login() -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/auth/access", response_model=SuccessResponse[AccessRead])
+    def auth_access() -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/auth/account", response_model=SuccessResponse[AccountRead])
+    def auth_account() -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/auth/sessions", response_model=PageResponse[SessionSummary])
+    def auth_sessions() -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/auth/csrf", response_model=SuccessResponse[CsrfRead])
+    def auth_csrf() -> Response:
+        return Response(status_code=501)
+
+    @app.post(
+        "/samples/auth/mail-accepted",
+        status_code=202,
+        response_model=SuccessResponse[MailAccepted],
+    )
+    def auth_mail_accepted() -> Response:
+        return Response(status_code=501)
+
+    @app.post("/samples/auth/verified", status_code=204)
+    def auth_verified() -> Response:
+        return Response(status_code=204)
+
+    @app.get("/samples/learning/word-card", response_model=SuccessResponse[WordCardRead])
+    def learning_word_card() -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/learning/collection", response_model=SuccessResponse[CollectionRead])
+    def learning_collection() -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/learning/resolve", response_model=SuccessResponse[ExplanationResolveRead])
+    def learning_resolve() -> Response:
+        return Response(status_code=501)
 
     return app.openapi()
 
@@ -194,4 +268,150 @@ def compatibility_samples() -> dict[str, object]:
             "binary": {"status": 200, "bytes": [104, 97, 114, 117, 107, 97]},
             "upload": {"method": "PUT", "media_type": "application/octet-stream"},
         },
+        **_auth_samples(),
+    }
+
+
+def _auth_samples() -> dict[str, object]:
+    """Cross-language authentication and learning fixtures use synthetic IDs and non-credential sentinels."""
+    at = datetime.fromisoformat("2026-09-26T01:02:03+00:00")
+    expires = datetime.fromisoformat("2026-09-27T01:02:03+00:00")
+    user = UUID("018f1234-0000-7000-8000-000000000001")
+    session = UUID("018f1234-0000-7000-8000-000000000002")
+    library = UUID("018f1234-0000-7000-8000-000000000003")
+    material = UUID("018f1234-0000-7000-8000-000000000004")
+    revision = UUID("018f1234-0000-7000-8000-000000000005")
+    chapter = UUID("018f1234-0000-7000-8000-000000000006")
+    chapter_block = UUID("018f1234-0000-7000-8000-000000000007")
+    block = UUID("018f1234-0000-7000-8000-000000000008")
+    card_id = UUID("018f1234-0000-7000-8000-000000000009")
+    locator = NovelContentLocator(
+        instance_id="haruka-test-0123456789abcdef0123456789abcdef",
+        library_id=library,
+        material_id=material,
+        material_revision_id=revision,
+        novel_chapter_id=chapter,
+        chapter_block_id=chapter_block,
+        quote="青い空",
+        prefix="",
+        suffix="が見える。",
+        source_title="合成短篇",
+        node_title="第一章",
+        spans=[SourceSpan(block_id=block, start=0, end=3)],
+    )
+    payload = WordCardPayload(
+        term="青い",
+        reading="あおい",
+        part_of_speech="形容詞",
+        context_meaning="蓝色的",
+        other_meanings=["年轻的"],
+        examples=[
+            WordExample(text="青い空です。", meaning="是蓝天。"),
+            WordExample(text="青い花が咲く。", meaning="蓝色的花开了。"),
+        ],
+    )
+    card = WordCardRead(
+        card_id=card_id,
+        card_revision=1,
+        target_language="ja",
+        explanation_language="zh-Hans",
+        payload=payload,
+        source_refs=[locator],
+        created_at=at,
+    )
+    collection = CollectionRead(
+        id=UUID("018f1234-0000-7000-8000-000000000010"),
+        revision=1,
+        card_id=card_id,
+        card_revision=1,
+        display_text="青い",
+        target_language="ja",
+        payload=payload,
+        source_refs=[locator],
+        created_at=at,
+    )
+    web = WebAuthenticated(
+        session_ref=session,
+        audience="client",
+        absolute_expires_at=expires,
+        idle_expires_at=expires,
+        server_time=at,
+    )
+    pending = ActivationRequired(
+        continuation_token=SAMPLE_NON_CREDENTIAL,
+        continuation_expires_at=expires,
+    )
+    native = NativeAuthenticated(
+        session_ref=session,
+        access_token=SAMPLE_NON_CREDENTIAL,
+        access_expires_at=expires,
+        refresh_token=SAMPLE_NON_CREDENTIAL,
+        refresh_expires_at=expires,
+        session_generation=1,
+        absolute_expires_at=expires,
+        server_time=at,
+    )
+    client_access = AccessRead(
+        user_id=user,
+        instance_id="haruka-test-0123456789abcdef0123456789abcdef",
+        audience="client",
+        session_ref=session,
+        authz_version=AuthzVersionRead(user=1, policy=3),
+        permissions=[PermissionRead(code="client.login", data_scope="self")],
+        navigation=[],
+        feature_flags=[],
+    )
+    admin_access = AccessRead(
+        user_id=user,
+        instance_id="haruka-test-0123456789abcdef0123456789abcdef",
+        audience="admin",
+        session_ref=session,
+        authz_version=AuthzVersionRead(user=2, policy=3),
+        permissions=[PermissionRead(code="admin.auth_policy.read", data_scope="platform_metadata")],
+        navigation=[NavigationRead(key="administration", route_key="/admin", title="管理")],
+        feature_flags=[],
+    )
+    meta = ResponseMeta(request_id=REQUEST_ID)
+
+    def success(value: object) -> dict[str, object]:
+        return SuccessResponse(data=value, meta=meta).model_dump(mode="json")
+
+    return {
+        "auth_web_authenticated": success(web),
+        "auth_web_action_required": success(pending),
+        "auth_native_authenticated": success(native),
+        "auth_native_action_required": success(pending),
+        "auth_client_access_login_only": success(client_access),
+        "auth_admin_access": success(admin_access),
+        "auth_account_legacy_unverified": success(
+            AccountRead(email="legacy@example.test", email_verified_at=None, created_at=at)
+        ),
+        "auth_sessions_page": PageResponse[SessionSummary](
+            data=[
+                SessionSummary(
+                    id=session,
+                    audience="client",
+                    transport="native",
+                    platform="android",
+                    device_summary="Example emulator",
+                    created_at=at,
+                    last_seen_at=at,
+                    absolute_expires_at=expires,
+                    revoked_at=None,
+                    is_current=True,
+                )
+            ],
+            meta=PageMeta(request_id=REQUEST_ID, next_cursor=None, has_more=False),
+        ).model_dump(mode="json"),
+        "auth_csrf": success(CsrfRead(session_ref=session, csrf_token=SAMPLE_NON_CREDENTIAL)),
+        "auth_mail_accepted": {
+            "status": 202,
+            "response": success(MailAccepted(next_step="check_email")),
+        },
+        "auth_verified_empty": {"status": 204, "body": ""},
+        "learning_word_card": success(card),
+        "learning_collection": success(collection),
+        "learning_resolve_found": success(
+            ExplanationResolveRead(results=[ResolvedCard(card=card)])
+        ),
     }

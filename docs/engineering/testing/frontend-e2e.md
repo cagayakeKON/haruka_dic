@@ -9,17 +9,17 @@
 | 范围 | 采用方案 | 主要责任 |
 | --- | --- | --- |
 | Flutter 单元/组件 | Flutter SDK 的 flutter_test | 状态、表单、权限显示、导航、错误/加载状态 |
-| Flutter 应用内集成 | Flutter SDK 的 integration_test | Windows/Web/Android 公共业务流程；Web 使用锁定 SDK 支持的 driver 入口 |
+| Flutter 应用内集成 | Flutter SDK 的 integration_test | 公共业务逻辑和Web/Android目标流程；Web使用锁定SDK支持的driver入口 |
 | Web 浏览器 E2E | Playwright Test，TypeScript | Cookie/CSRF、刷新、深链、多标签页、多用户上下文、上传下载和管理后台浏览器行为 |
 | Android 原生补充 | Patrol | 系统权限、文件选择、应用切换/后台恢复等原生交互；能力逐项做设备原型 |
-| Windows 原生补充 | 驱动原型通过后锁定；此前保留结构化人工验收 | 系统文件对话框、安全存储、真实播放、安装/升级等实际平台行为 |
+| Windows 原生补充 | 只在Windows独有代码或系统API变化时选用定点驱动/人工记录 | 变化所涉及的系统文件对话框、安全存储、播放或安装/升级行为 |
 | 后端规则/协议/集成 | pytest + pytest-asyncio | 真实数据库、鉴权、事务、队列及供应商适配；不由前端点击替代 |
 
 integration_test 无法操作原生平台 UI，不能用应用内测试证明系统弹窗通过；Windows 运行需要 Windows runner。[Flutter 集成测试介绍](https://docs.flutter.dev/cookbook/testing/integration/introduction)、[各平台执行方式](https://docs.flutter.dev/testing/integration-tests)
 
 Patrol 已有基于 Playwright 的 Web 支持，仍不支持 Windows；本项目选择它承担 Android 补充测试，避免再维护一套重复 Web 流程。若后续合并工具，先做同等能力/证据原型并更新决策，不把这项分工描述成 Patrol 没有 Web 能力。[Patrol 平台说明](https://patrol.leancode.co/documentation/supported-platforms)、[Patrol Web](https://patrol.leancode.co/documentation/web)
 
-一个业务 case_id 可以有多个必需平台/runner 变体，runner与测试层级是执行键的必填维度，不能用integration_test通过替代同平台所需的Playwright/Patrol或人工证据。用覆盖矩阵明确哪些行为由哪一层证明，不复制三套完整业务 E2E；声明三端支持的关键流程仍需三端运行证据。SDK、浏览器、Patrol、Node 和驱动版本在原型通过后精确锁定，CI 预装所需依赖，不能执行时隐式下载最新版。
+一个业务 case_id 可以有多个必需平台/runner 变体，runner与测试层级是执行键的必填维度，不能用integration_test通过替代同平台所需的Playwright/Patrol证据。共享业务代码的关键流程在Web和Android按最低必要范围举证，不为Windows重复整套业务E2E；仅Windows独有代码或系统API发生变化时增加相应的定点检查。前端日志只在Web验证。SDK、浏览器、Patrol、Node 和驱动版本在原型通过后精确锁定，CI 预装所需依赖，不能执行时隐式下载最新版。
 
 ## 2. Test ID 契约
 
@@ -71,7 +71,7 @@ Web 默认不总是启用完整语义树。实施基线是在正常 Web 应用 b
 
 Playwright 可把 testIdAttribute 配置为 flt-semantics-identifier；默认 getByTestId 查找的是 data-testid。匹配到语义节点不等于该节点就是可 fill 的 input：页面对象必须按原型结果定位真实可编辑/可点击语义节点，验证焦点、输入、禁用态和错误态，不用坐标兜底掩盖问题。[Playwright Test ID 定位](https://playwright.dev/docs/locators#locate-by-test-id)
 
-B0/B1 原型覆盖 TextField 输入、按钮、对话框、滚动/虚拟列表、路由切换与 Web 刷新；包含客户端和管理布局。Windows 使用真实可见键鼠业务流程另行举证，不能从 Web/Android 推定 Windows 已通过。
+B0/B1 原型覆盖 TextField 输入、按钮、对话框、滚动/虚拟列表、路由切换与 Web 刷新；包含客户端和管理布局。Windows已有可见键鼠记录仅作额外证据；后续只有Windows独有代码或系统API的改动才补对应检查，不以共享流程在Web/Android通过声称Windows专项已测。
 
 ## 3. 未来测试布局
 
@@ -116,7 +116,7 @@ Playwright 是开发工具，不引入 Node 生产服务。其独立依赖锁、
 
 | 范围 | UI 目标动作与服务端证据 | 特别约束 |
 | --- | --- | --- |
-| B1 注册→激活→登录→找回/改密→会话撤销 | 用户三端从正式入口注册并完成所选激活；找回/重置后重新登录，再验证本人改密、设备撤销与client/admin旧会话失效 | 不预置待验收注册账号/激活成功/已消费挑战；所选通知或人工交付须验证实际链路，覆盖失败/过期/重发，不能把受理当送达；并发和结果未知主要由API/真实数据库低层证明 |
+| B1 注册→激活→登录→找回/改密→会话撤销 | 用户Web和Android从正式入口注册并完成所选激活；找回/重置后重新登录，再验证本人改密、设备撤销与client/admin旧会话失效 | 不预置待验收注册账号/激活成功/已消费挑战；所选通知或人工交付须验证实际链路，覆盖失败/过期/重发，不能把受理当送达；并发和结果未知主要由API/真实数据库低层证明 |
 | B1 登录→收藏→列表 | 使用正式注册产物或明确标记为收藏前置的独立账号登录，读取me/access，选择合法材料来源并新增收藏；重读/刷新后存在且归属正确 | A/B独立数据；独立收藏夹具不替代注册验收，无权时入口/请求均拒绝，不能所有账号都给管理员 |
 | 账号→资料/头像/语言→改密 | 用最小注册账号跳过/重进引导，保存/清除可选资料，上传并替换受控头像，选择英日目标及当前语言，再修改密码并重新登录 | widget覆盖字段/错误；API/真实PG与对象存储证明revision、私有媒体和旧会话撤销。Web同一context执行A→B并确认`/users/me/avatar`不复用A；改密提交后丢响应由API/集成层证明结果未知且不重放。恶意图片主要在后端低层验证，E2E各平台只选一份合法图和一个失败恢复路径 |
 | B2c 本人模型能力测试 | UI保存Key后单独选一项能力并确认，真实Job/Outbox/Worker，WebSocket状态及持久安全测试结果 | Fake仅供应商边界，保存不调用；覆盖重复确认/投递、unknown、撤权/取消/故障及A/B隔离；L2另验学习SSE，P2另验出题 |
@@ -163,7 +163,7 @@ integration_test/Patrol 的测试入口构建与真实发布制品分别记录�
 
 ## 6. 专项验收项
 
-前端缓存补[FCACHE-01～14](../../architecture/frontend-cache.md#10-分期交付与验收)：两设备与Web双标签真实UI修改/增删后刷新、清理与迟到请求竞争、退出隔离、权限拒绝不离线回退、浏览器回收/原生存储故障、升级和缓存miss不新增供应商调用。并发/版本/迁移优先低层测试，平台存储/锁及三端显示须真实平台证据；限次考试听力与隐藏投影检查持久缓存不落盘。按当前切片选择必要路径，R节点汇总完整已交付矩阵，不因新增文档运行应用测试。
+前端缓存补[FCACHE-01～14](../../architecture/frontend-cache.md#10-分期交付与验收)：两设备与Web双标签真实UI修改/增删后刷新、清理与迟到请求竞争、退出隔离、权限拒绝不离线回退、浏览器回收/原生存储故障、升级和缓存miss不新增供应商调用。并发/版本/迁移优先低层测试；共享显示路径以Web和Android举证，Windows存储/锁等独有代码或系统API变化才补真实平台定点证据；限次考试听力与隐藏投影检查持久缓存不落盘。按当前切片选择必要路径，R节点汇总完整已交付矩阵，不因新增文档运行应用测试。
 
 以下 UIE 是实施验收标识，当前均未执行。由阶段清单显式纳入 required_cases，与 SCF/业务用例建立映射；检查设计、工具原型和运行行为分别记录，不能勾一个文档项代替运行证据。
 
@@ -172,7 +172,7 @@ integration_test/Patrol 的测试入口构建与真实发布制品分别记录�
 | UIE-01 | 注册表为唯一来源，生成可重现；非法/重复/未知 ID 和手改生成物被拒绝 |
 | UIE-02 | 关键控件/状态可由 Key 唯一定位，列表重排和本地化不破坏目标定位 |
 | UIE-03 | 正常 Web 应用中技术标识唯一挂载；真实可编辑节点的输入、可见焦点和对话框操作均通过浏览器验证 |
-| UIE-04 | 三端公共流程与平台专属操作按矩阵分别举证；Windows 未验证原生驱动时使用明确人工记录，不能虚报自动覆盖 |
+| UIE-04 | 公共流程以Web和Android举证；仅变化的Windows独有代码或系统API增加定点检查，不虚报未执行的平台覆盖 |
 | UIE-05 | 被测动作经正常 UI，真实鉴权与持久层断言成立；Fake 只替换声明的外部供应商边界 |
 | UIE-06 | 多用户 context、同用户多标签、原生设备与账号切换隔离正确，并与 TDS 场景对应 |
 | UIE-07 | 必需结果/分片齐全，首失败和复测可追溯；测试入口包与最终候选制品证据明确区分 |

@@ -68,6 +68,49 @@ void main() {
       );
       expect(production.applicationId, 'haruka.dictionary');
     });
+
+    test('run-scoped identity requires an exact suffix and platform-specific origin', () {
+      const instance = 'haruka-test-0123456789abcdef0123456789abcdef';
+      for (final target in [
+        (AppPlatform.web, 'https://localhost:18443'),
+        (AppPlatform.windows, 'http://127.0.0.1:18081'),
+        (AppPlatform.android, 'http://10.0.2.2:18081'),
+      ]) {
+        final config = AppConfig.parse(
+          platform: target.$1,
+          environment: 'dev',
+          flavor: target.$1 == AppPlatform.android ? 'dev' : null,
+          instanceId: instance,
+          apiBaseUrl: target.$2,
+        );
+        expect(config.instanceId, instance);
+      }
+      for (final invalid in [
+        ('haruka-test-0123456789abcdef0123456789abcdeg', 'https://localhost:18443'),
+        ('haruka-test-0123456789abcdef0123456789abcdef-extra', 'https://localhost:18443'),
+        ('haruka-test-0123456789abcdef0123456789abcdef', 'http://127.0.0.1:8000'),
+        ('haruka-local-dev', 'https://localhost:18443'),
+      ]) {
+        expect(
+          () => AppConfig.parse(
+            platform: AppPlatform.web,
+            environment: 'dev',
+            instanceId: invalid.$1,
+            apiBaseUrl: invalid.$2,
+          ),
+          throwsFormatException,
+        );
+      }
+      expect(
+        () => AppConfig.parse(
+          platform: AppPlatform.windows,
+          environment: 'production',
+          instanceId: instance,
+          apiBaseUrl: 'https://service.example',
+        ),
+        throwsFormatException,
+      );
+    });
   });
 
   test('SCF-FE-LAYOUT unit: layout boundary decisions use available width', () {

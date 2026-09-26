@@ -15,7 +15,7 @@ UpgradeCode 是 `UUIDv5(NAMESPACE_URL, "urn:haruka:windows-installer:" + install
 
 MSI 写入 HKCU 的 `Software\Haruka\Installations\<installer_id>`，不请求提升、不启动应用、不注册服务/快捷方式、不安装信任证书，也不关闭应用进程。只有已登记文件和空产品目录由 Windows Installer 管理；没有通用递归删除脚本。
 
-凭据证明使用 Windows Credential Manager 的 Generic 类型，target 为 `<credential_service>/b0-installer-proof/<本轮随机 ID>`，内容仅为环境名和测试标记。写入拒绝已有 target；删除前校验本轮内容。证明脚本负责清理合成凭据，MSI 不调用凭据操作。真实应用的存储、账号/服务端身份分区与卸载后凭据保留策略尚未由本原型实现。
+凭据证明使用 Windows Credential Manager 的 Generic 类型，target 为 `<credential_service>/installer-proof/<本轮随机 ID>`，内容仅为环境名和测试标记。写入拒绝已有 target；删除前校验本轮内容。证明脚本负责清理合成凭据，MSI 不调用凭据操作。真实应用的存储、账号/服务端身份分区与卸载后凭据保留策略尚未由本原型实现。
 
 ## 工具链
 

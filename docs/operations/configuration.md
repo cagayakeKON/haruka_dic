@@ -18,7 +18,7 @@
 | 加密 | CREDENTIAL_KEYRING、ACTIVE_ENCRYPTION_KEY_VERSION、挑战/回执用途隔离密钥 | 独立Secret，版本对应encryption_key_version而非用户credential_version；未知版本不当明文读取或换公共Key |
 | 队列 | KAFKA_BOOTSTRAP、topics/groups、ack/retry/lease参数 | Haruka namespace；不可达保留Outbox，不丢已受理Job |
 | 对象存储 | S3_ENDPOINT、PUBLIC_S3_ENDPOINT、bucket、应用凭据、签名TTL | 私有Haruka Bucket；地址需三端可达；不能使用MyHome root凭据 |
-| 邮件（条件） | MAIL_ENABLED、发件身份、服务认证、challenge URL允许域 | 只有完整配置/投递演练通过才启用邮件模式；缺失时不能显示“已发送” |
+| 邮件与注册 | 发件身份、SMTP认证/加密、通知加密密钥、challenge URL允许域；注册策略closed/open默认closed | 邮箱验证/邮件找回已确认；外部配置尚未准备。完整通知配置才可开启注册或受理邮件请求；本地隔离SMTP证据不代替外部投递。注册关闭不影响既有账号登录/验证/找回；缺失不能显示“已发送” |
 | 工作限额 | upload/解压/文本/图片大小、用户/全局并发、模型请求/Token、任务重试与HTTP超时 | 部署硬上限；管理界面不能调高至超过硬上限，不作为商业套餐 |
 | 观测 | project/environment/service、日志级别、接收/队列上限 | 生产启用正常埋点，脱敏；客户端无Loki写密钥 |
 | 管理策略 | 注册开放/审批/默认角色、feature flags、配额、模型目录 | PG带revision/审计，不随容器重启恢复旧环境默认值 |

@@ -51,10 +51,10 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | 资源/方法 | 关键输入/返回与业务动作 | 权限/规范 |
 | --- | --- | --- |
 | GET meta；GET model-capabilities；GET language-capabilities | 公共instance_id/兼容版本/材料类型与格式能力；已登录者模型/声音/输出格式能力；版本化UI/学习/解释语言标识 | meta不带凭据探测；两个能力目录是client登录基础只读，不含Key/用户资料/管理字段；能力支持不代表个人获权或模型质量已验证 |
-| GET auth/policy；POST auth/register/login | 安全公共策略；邮箱/密码；业务会话或受限continuation | 账号流程；注册不接受角色/状态 |
+| GET auth/policy；POST auth/register/login；POST auth/native/login | 安全公共策略；邮箱/密码；Web Cookie会话、原生token会话或受限continuation | 注册默认关闭、邮箱验证和邮件找回；不接受角色/状态。login固定Web，native/login仅Windows/Android且拒绝浏览器Origin/Fetch Metadata |
 | GET auth/csrf | 当前Web会话绑定的CSRF值 | 同源Cookie身份，不能当业务访问Token |
-| POST auth/refresh；POST auth/logout；POST auth/password/change；GET auth/sessions；POST auth/sessions/{id}/revoke；POST auth/sessions/revoke-all | 原生轮换/Web续期；本人退出、当前密码改密、会话治理 | 本人身份基础例外；同audience下验证。改密成功推进安全epoch并撤销client/admin全部会话，不接受资料字段作为恢复证据 |
-| POST auth/recovery/request/complete、auth/email/verify、auth/reauthenticate | 条件启用的一次性挑战/近期验证 | 目的/到期/单次消费；未选模式不公开能力 |
+| POST auth/refresh、auth/native/refresh；POST auth/logout；POST auth/password/change；GET auth/sessions；POST auth/sessions/{id}/revoke；POST auth/sessions/revoke-all | Web续期与原生轮换固定独立路径；本人退出、当前密码改密、会话治理；撤销/改密成功204 | 本人身份基础例外；同audience下验证。改密成功推进安全epoch并撤销client/admin全部会话，不接受资料字段作为恢复证据 |
+| POST auth/recovery/request/complete、auth/email/resend、auth/email/verify、auth/reauthenticate | 邮件一次性挑战/近期验证；请求受理202，验证/重置成功204 | 目的/到期/单次消费；注册关闭仍可验证/找回，通知配置缺失503；受理不等于送达；链接Token仅fragment，GET不消费 |
 | GET me/access、admin/me/access | 最小user_id/instance_id/audience/session_ref、account_status、authz_version、权限/范围、nav、flags | 对应login；不要求profile.read，session_ref不是认证凭据，不返回全体用户策略 |
 | GET users/me/account | 当前登录邮箱、验证/账号状态、创建时间等本人身份摘要 | 本人有效client会话的身份基础读取；不要求profile.read，不返回密码哈希/角色明细/安全epoch，也不提供邮箱PATCH |
 | GET/PATCH users/me/profile | 本人显示名、可选出生年份/性别、资料完整度；field mask + expected_revision | profile.read/update；拒绝邮箱/角色/状态/权限及整数年龄写入，可选人口字段默认不进入AI |

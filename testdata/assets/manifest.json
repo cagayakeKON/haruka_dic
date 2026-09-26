@@ -13,7 +13,7 @@
       ],
       "source": "Haruka contributors; synthetic original fixture",
       "license": "CC0-1.0",
-      "purpose": "B0 immutable text and provenance validation; no material import or locator implementation claim",
+      "purpose": "immutable text and provenance validation; no material import or locator implementation claim",
       "text_protocol": "canonical-text-v1"
     },
     {
@@ -28,7 +28,7 @@
       ],
       "source": "Haruka contributors; synthetic original fixture",
       "license": "CC0-1.0",
-      "purpose": "B0 immutable text and provenance validation; no material import or locator implementation claim",
+      "purpose": "immutable text and provenance validation; no material import or locator implementation claim",
       "text_protocol": "canonical-text-v1"
     }
   ]

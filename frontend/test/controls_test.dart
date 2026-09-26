@@ -5,7 +5,7 @@ import 'package:haruka/generated/ui_test_ids.dart';
 import '../test_support/controls_app.dart';
 
 void main() {
-  testWidgets('FLT-B0 control draft focus and identity survive adaptive reflow', (tester) async {
+  testWidgets('control draft focus and identity survive adaptive reflow', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 844);
     addTearDown(tester.view.resetDevicePixelRatio);

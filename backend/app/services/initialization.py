@@ -6,8 +6,6 @@ offers arbitrary user access. No public registration or recovery endpoint exists
 
 import asyncio
 import hashlib
-import re
-import unicodedata
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -18,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.contracts.export import canonical_json
 from app.contracts.permissions import ADMIN_CODES, CLIENT_CODES, ROLE_TEMPLATES, permission_document
+from app.domain.email_address import normalize_email as normalize_single_email
 from app.maintenance.migrations import locked_connection
 from app.maintenance.schema import check_schema_connection
 from app.maintenance.settings import MaintenanceSettings
@@ -36,7 +35,10 @@ from app.models import (
     UserRole,
 )
 
-SEED_CODE = "b0-identity-v3"
+# Existing seed ledger keys are immutable compatibility data from earlier releases.
+LEGACY_SEED_CODE = "b0-identity-v3"
+LEGACY_SEED_DIGEST = "c34e28e2cb38b82eb6238479b63d8680a53cb97f0c06206bde99ffba2212918c"
+SEED_CODE = "identity-permissions-v3"
 SEED_VERSION = 3
 
 
@@ -55,13 +57,29 @@ def _seed_digest() -> str:
     return hashlib.sha256(canonical_json(permission_document()).encode()).hexdigest()
 
 
+def _legacy_current_digest() -> str:
+    document = {**permission_document(), "catalog_version": LEGACY_SEED_CODE}
+    return hashlib.sha256(canonical_json(document).encode()).hexdigest()
+
+
 def _validate_seed(version: SeedVersion | None) -> None:
     if version is None:
         raise InitializationError(
             "apply the reviewed permission seed before administrator initialization"
         )
-    if version.version != SEED_VERSION or version.payload_sha256 != _seed_digest():
+    if version.code == LEGACY_SEED_CODE and _legacy_current_digest() != LEGACY_SEED_DIGEST:
+        raise InitializationError("current permission seed differs from the legacy release")
+    expected_digest = LEGACY_SEED_DIGEST if version.code == LEGACY_SEED_CODE else _seed_digest()
+    if version.version != SEED_VERSION or version.payload_sha256 != expected_digest:
         raise InitializationError("seed version or payload differs from the applied release")
+
+
+async def _applied_seed(session: AsyncSession) -> SeedVersion | None:
+    current = await session.get(SeedVersion, SEED_CODE)
+    legacy = await session.get(SeedVersion, LEGACY_SEED_CODE)
+    if current is not None and legacy is not None:
+        raise InitializationError("duplicate seed ledgers require reviewed repair")
+    return current or legacy
 
 
 async def _revision(session: AsyncSession) -> AuthorizationRevision:
@@ -115,7 +133,7 @@ async def apply_seed(settings: MaintenanceSettings) -> InitializationResult:
             session.begin(),
         ):
             revision = await _revision(session)
-            previous = await session.get(SeedVersion, SEED_CODE)
+            previous = await _applied_seed(session)
             if previous is not None:
                 _validate_seed(previous)
                 return InitializationResult(False, revision.revision)
@@ -186,18 +204,11 @@ async def _create_catalogs(session: AsyncSession) -> None:
 
 
 def normalize_email(email: str) -> tuple[str, str]:
-    """Preserve display spelling; canonical identity is trimmed NFKC and casefold."""
-    display = unicodedata.normalize("NFKC", email.strip())
-    if (
-        len(display) > 254
-        or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", display)
-        or any(unicodedata.category(character).startswith("C") for character in display)
-    ):
-        raise InitializationError("a valid administrator email is required")
-    normalized = display.casefold()
-    if len(normalized) > 254:
-        raise InitializationError("normalized administrator email exceeds the supported length")
-    return display, normalized
+    """Preserve display spelling; reject mailbox/header ambiguities before identity use."""
+    try:
+        return normalize_single_email(email)
+    except ValueError:
+        raise InitializationError("a valid administrator email is required") from None
 
 
 def _password_hash(password: SecretStr) -> str:
@@ -216,7 +227,7 @@ async def initialize_admin(
     """Create the first protected admin and private library, or return its exact replay.
 
     Refuse existing ordinary accounts and any second protected administrator.
-    Recovery, role editing and last-administrator removal are not B0 capabilities.
+    This entrypoint only creates the first administrator; account changes use authenticated services.
     Password hashing happens before locks; the plaintext never enters SQL/audit/logs.
     """
     display, normalized = normalize_email(email)
@@ -228,7 +239,7 @@ async def initialize_admin(
             AsyncSession(bind=connection, expire_on_commit=False) as session,
             session.begin(),
         ):
-            _validate_seed(await session.get(SeedVersion, SEED_CODE))
+            _validate_seed(await _applied_seed(session))
             revision = await _revision(session)
             role = await session.scalar(
                 select(Role).where(Role.code == "super_admin").with_for_update()

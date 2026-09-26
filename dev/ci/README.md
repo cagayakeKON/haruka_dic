@@ -1,4 +1,4 @@
-# Linux B0 本地干净环境验收
+# Linux 本地干净环境验收
 
 范围为 [SCF-B0-01/02/03 的 Linux 项](../../docs/delivery/milestones/scaffold.md)。这里运行本地 Docker Desktop Linux shell；没有远端 CI 执行记录，也不代表整个 B0 已验收。
 
@@ -7,8 +7,8 @@
 先在仓库根构建，记下真实的 image ID：
 
 ```powershell
-docker --context desktop-linux build --platform linux/amd64 --tag haruka-b0-linux:20260922 dev/ci
-docker --context desktop-linux image inspect haruka-b0-linux:20260922 --format '{{.Id}}'
+docker --context desktop-linux build --platform linux/amd64 --tag haruka-ci-linux:20260922 dev/ci
+docker --context desktop-linux image inspect haruka-ci-linux:20260922 --format '{{.Id}}'
 ```
 
 runner 本身须先经 review 并提交。随后从当前已提交 HEAD 构造 Git bundle，传入新的输出目录及上一条命令返回的完整 `sha256:` image ID；下列变量须使用实际值，不以工作区未提交文件代替提交证据：

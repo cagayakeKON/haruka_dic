@@ -149,7 +149,7 @@ def main() -> int:
     parser.add_argument(
         "--manifest", type=Path, default=Path(__file__).with_name("required_cases.json")
     )
-    parser.add_argument("--scope", default="B0-quality")
+    parser.add_argument("--scope", default="foundation-quality")
     parser.add_argument("--identity", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

@@ -31,7 +31,7 @@ class User(IdentityMixin, TimestampMixin, Base):
             "id",
             info={"purpose": "bounded administrator account listing"},
         ),
-        {"comment": "独立账号身份；B0只支持受控首管理员初始化", "info": table_info("identity")},
+        {"comment": "独立账号身份；注册与首管理员初始化分别受控", "info": table_info("identity")},
     )
     email: Mapped[str] = mapped_column(
         String(254),

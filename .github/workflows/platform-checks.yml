@@ -1,7 +1,7 @@
-name: Selected B0 platform checks
+name: Selected platform checks
 
 # Explicit selection avoids treating every small change as a full milestone run.
-# Runtime acceptance and full B0 report aggregation remain separate requirements.
+# Runtime acceptance and full milestone report aggregation remain separate requirements.
 on:
   workflow_dispatch:
     inputs:

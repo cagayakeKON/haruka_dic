@@ -14,6 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
 from app.models import Base
 
@@ -64,11 +65,31 @@ def _validate_relations(metadata: MetaData, table_name: str) -> None:
         ].type.compile(dialect=dialect):
             raise ModelContractError("logical relation column types differ")
         registered.add(column)
-    implied = {
-        column.name
-        for column in table.columns
-        if column.name.endswith("_id") or column.name == "permission_code"
-    }
+    implied: set[str] = set()
+    for column in table.columns:
+        marker = column.info.get("non_entity_uuid")
+        if marker is not None:
+            reviewed = (
+                table_name == "idempotency_records"
+                and column.name == "operation_id"
+                and marker == "operation_correlation"
+            ) or (
+                table_name == "admin_audit_events"
+                and (
+                    (
+                        column.name in {"operation_id", "request_id"}
+                        and marker == "operation_correlation"
+                    )
+                    or (column.name == "target_id" and marker == "polymorphic_target")
+                )
+            )
+            if not reviewed or not isinstance(column.type, PgUUID):
+                raise ModelContractError(
+                    "non-entity UUID exception is not a reviewed audit/correlation identity"
+                )
+            continue
+        if column.name.endswith("_id") or column.name == "permission_code":
+            implied.add(column.name)
     if not implied <= registered:
         raise ModelContractError("reference columns are missing logical relation metadata")
 
@@ -213,7 +234,7 @@ def database_document(metadata: MetaData | None = None) -> dict[str, object]:
     source = json.dumps(tables, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
         "schema_version": 1,
-        "migration_revision": "0002_b0_identity_alignment",
+        "migration_revision": "0004_learning_collections",
         "source": "backend/app/models",
         "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "excluded_internal_tables": ["alembic_version"],

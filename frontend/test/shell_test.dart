@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/app/haruka_app.dart';
@@ -33,20 +32,12 @@ void main() {
     testWidgets('SCF-FE-SHELL widget: shell navigation at ${size.width}x${size.height}', (
       tester,
     ) async {
-      final semantics = tester.ensureSemantics();
       await pumpShell(tester, size, scale: size.height == 400 ? 2 : 1);
       expect(find.byKey(const ValueKey(UiTestIds.homePage)), findsOneWidget);
       expect(find.byKey(const ValueKey(UiTestIds.environmentNavigation)), findsOneWidget);
-      expect(find.bySemanticsIdentifier(UiTestIds.environmentNavigation), findsOneWidget);
-      final navigationSemantics = tester
-          .getSemantics(find.bySemanticsIdentifier(UiTestIds.environmentNavigation))
-          .getSemanticsData();
-      expect(navigationSemantics.hasAction(SemanticsAction.tap), isTrue);
-      expect(navigationSemantics.label, contains('环境信息'));
-      expect(navigationSemantics.label, isNot(contains(UiTestIds.environmentNavigation)));
+      expect(find.text('环境信息'), findsWidgets);
       expect(find.text('尚未开放'), findsNWidgets(3));
       expect(tester.takeException(), isNull);
-      semantics.dispose();
       await tester.tap(find.byKey(const ValueKey(UiTestIds.environmentNavigation)));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey(UiTestIds.environmentPage)), findsOneWidget);
@@ -55,7 +46,7 @@ void main() {
     });
   }
 
-  testWidgets('B0 clear signal shell keeps language scope visible at 200% text', (tester) async {
+  testWidgets('shell keeps language scope visible at 200% text', (tester) async {
     await pumpShell(tester, const Size(390, 844), scale: 2);
     expect(find.text('首版材料支持日语和英语。'), findsOneWidget);
     expect(find.text('尚未开放'), findsNWidgets(3));

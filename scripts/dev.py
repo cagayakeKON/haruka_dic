@@ -869,20 +869,22 @@ def check(
     identity: Path | None = None,
     evidence_reports: Sequence[Path] = (),
 ) -> None:
-    if stage in {"B1", "B2"}:
+    if stage == "B2":
         raise DevError(
             f"{stage} has not passed its complete required evidence matrix. Use an explicit implemented local scope; a partial check does not sign off the milestone."
         )
-    if stage != "B0" and (identity is not None or evidence_reports):
-        raise DevError("--identity and --report are accepted only for check --stage B0")
-    if stage == "B0":
+    if stage not in {"B0", "B1"} and (identity is not None or evidence_reports):
+        raise DevError("--identity and --report are accepted only for milestone checks")
+    if stage in {"B0", "B1"}:
         if identity is None or not evidence_reports:
-            raise DevError("B0 requires an explicit --identity and one or more --report paths")
+            raise DevError(
+                f"{stage} requires an explicit --identity and one or more --report paths"
+            )
         candidate = identity.resolve(strict=True)
         inputs = [path.resolve(strict=True) for path in evidence_reports]
         matrix_path = ROOT / "artifacts/dev" / f"check-{report.run_id}-matrix.json"
         if matrix_path.exists():
-            raise DevError("Refusing to overwrite an existing B0 matrix report")
+            raise DevError("Refusing to overwrite an existing milestone matrix report")
         matrix_path.parent.mkdir(parents=True, exist_ok=True)
         arguments = [
             "-m",
@@ -892,7 +894,7 @@ def check(
             "--manifest",
             str(ROOT / "scripts/quality/required_cases.json"),
             "--scope",
-            "B0",
+            stage,
             "--phase",
             "result",
             "--identity",
@@ -906,14 +908,16 @@ def check(
         matrix = json_object(json.loads(matrix_path.read_text(encoding="utf-8")))
         if (
             matrix.get("passed") is not True
-            or matrix.get("scope") != "B0"
+            or matrix.get("scope") != stage
             or matrix.get("phase") != "result"
         ):
-            raise DevError("The required-case gate did not produce a passing B0 result matrix")
+            raise DevError(
+                f"The required-case gate did not produce a passing {stage} result matrix"
+            )
         report.record(
             "acceptance_scope",
             "passed",
-            scope="B0",
+            scope=stage,
             full_milestone=True,
             acceptance_target="explicit_candidate_identity",
             candidate_identity=json_object(matrix.get("identity")),
@@ -925,7 +929,7 @@ def check(
             tests_reexecuted=False,
         )
         return
-    if stage in {"tooling", "infrastructure", "B0-foundation"}:
+    if stage in {"tooling", "infrastructure", "foundation"}:
         doctor(report, "backend")
         run(
             report,
@@ -973,15 +977,15 @@ def check(
         )
         output = run(report, "python", ["-m", "unittest", "discover", "-s", "scripts/tests", "-v"])
         report.record("tooling_test_results", "passed", passed=unittest_results(output))
-    if stage in {"docs", "B0-foundation"}:
+    if stage in {"docs", "foundation"}:
         check_docs(report)
-    if stage in {"backend", "B0-foundation"}:
+    if stage in {"backend", "foundation"}:
         check_backend(report)
-    if stage in {"frontend", "B0-foundation"}:
+    if stage in {"frontend", "foundation"}:
         check_frontend(report)
     if stage == "infrastructure":
         check_infrastructure(report)
-    if stage == "B0-foundation":
+    if stage == "foundation":
         codegen(report, write=False)
     report.record(
         "acceptance_scope", "passed", scope=stage, full_milestone=False, ci_executed=False
@@ -1312,7 +1316,7 @@ def parser() -> argparse.ArgumentParser:
             "backend",
             "frontend",
             "infrastructure",
-            "B0-foundation",
+            "foundation",
             "B0",
             "B1",
             "B2",
@@ -1320,14 +1324,14 @@ def parser() -> argparse.ArgumentParser:
         required=True,
     )
     command.add_argument(
-        "--identity", type=Path, help="B0 only: explicit candidate evidence identity"
+        "--identity", type=Path, help="B0/B1: explicit candidate evidence identity"
     )
     command.add_argument(
         "--report",
         type=Path,
         action="append",
         default=[],
-        help="B0 only: repeat for every evidence report",
+        help="B0/B1: repeat for every evidence report",
     )
     command = commands.add_parser("codegen")
     mode = command.add_mutually_exclusive_group()

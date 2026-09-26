@@ -20,7 +20,7 @@ def validate_docker_context(name: str, endpoint: str) -> None:
 
 
 def capture(command: list[str]) -> str:
-    return subprocess.run(  # noqa: S603 - explicit fixed tools and argv.
+    return subprocess.run(
         command, cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf-8"
     ).stdout.strip()
 
@@ -102,7 +102,7 @@ def main() -> None:
         "--rm",
         "--init",
         "--name",
-        "haruka-b0-linux-" + uuid.uuid4().hex[:12],
+        "haruka-ci-linux-" + uuid.uuid4().hex[:12],
         "--platform",
         "linux/amd64",
         "--cap-drop",
@@ -120,14 +120,16 @@ def main() -> None:
         image,
         "/bin/bash",
         "-euc",
-        "git clone --no-checkout /input/source.bundle /work/checkout; "
-        'git -C /work/checkout checkout --detach "$1"; '
-        'exec python /work/checkout/dev/ci/linux_runner.py --commit "$1"',
+        (
+            "git clone --no-checkout /input/source.bundle /work/checkout; "
+            'git -C /work/checkout checkout --detach "$1"; '
+            'exec python /work/checkout/dev/ci/linux_runner.py --commit "$1"'
+        ),
         "haruka-linux",
         commit,
     ]
     with (output / "container.log").open("w", encoding="utf-8") as log:
-        process = subprocess.Popen(  # noqa: S603 - fixed Docker argv and static shell program.
+        process = subprocess.Popen(
             command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8"
         )
         if process.stdout is None:

@@ -1,5 +1,5 @@
 {
-  "catalog_version": "b0-identity-v3",
+  "catalog_version": "identity-permissions-v3",
   "implemented_business_routes": [],
   "menus": [
     {

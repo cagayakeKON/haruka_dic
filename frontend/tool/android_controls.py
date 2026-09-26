@@ -47,9 +47,9 @@ def verify_controls(command: Command, ids: dict[str, str], device: str, output: 
         def snapshot() -> ET.Element:
             nonlocal xml_attempted
             xml_attempted = True
-            command("shell", "uiautomator", "dump", "/sdcard/haruka-b0-controls.xml")
+            command("shell", "uiautomator", "dump", "/sdcard/haruka-controls.xml")
             # Local isolated fixture, with no external DTD or private application input.
-            return ET.fromstring(command("shell", "cat", "/sdcard/haruka-b0-controls.xml"))  # noqa: S314
+            return ET.fromstring(command("shell", "cat", "/sdcard/haruka-controls.xml"))  # noqa: S314
 
         def node(key: str) -> ET.Element:
             matches = [
@@ -132,7 +132,7 @@ def verify_controls(command: Command, ids: dict[str, str], device: str, output: 
                     cleanup["restore_ime"] = "failed"
             if xml_attempted:
                 try:
-                    command("shell", "rm", "-f", "/sdcard/haruka-b0-controls.xml")
+                    command("shell", "rm", "-f", "/sdcard/haruka-controls.xml")
                     cleanup["remove_xml"] = "passed"
                 except Exception:
                     cleanup["remove_xml"] = "failed"

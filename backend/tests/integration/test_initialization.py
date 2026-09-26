@@ -1,4 +1,4 @@
-"""B0 controlled seed/admin transactions and PostgreSQL constraints/timestamps."""
+"""Controlled seed/admin transactions and PostgreSQL constraints/timestamps."""
 
 import asyncio
 import os
@@ -93,7 +93,7 @@ async def test_seed_concurrency_upgrade_preserves_manual_grants(
             role.enabled = False
             role_id = role.id
         assert not (await apply_seed(target)).changed
-        monkeypatch.setattr(initialization, "SEED_CODE", "b0-identity-reviewed-next")
+        monkeypatch.setattr(initialization, "SEED_CODE", "identity-permissions-reviewed-next")
         monkeypatch.setattr(initialization, "SEED_VERSION", 3)
         assert (await apply_seed(target)).changed
         async with AsyncSession(engine) as session:
@@ -112,6 +112,43 @@ async def test_seed_concurrency_upgrade_preserves_manual_grants(
             assert await session.scalar(select(func.count()).select_from(User)) == 0
             assert await session.scalar(select(func.count()).select_from(AdminAuditEvent)) == 2
             assert await session.scalar(select(func.count()).select_from(OutboxEvent)) == 2
+    finally:
+        await engine.dispose()
+
+
+async def test_legacy_seed_ledger_is_reused_without_duplicate_grants(
+    target: MaintenanceSettings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert (await apply_seed(target)).changed
+    engine = create_maintenance_engine(target)
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(
+                update(SeedVersion)
+                .where(SeedVersion.code == initialization.SEED_CODE)
+                .values(
+                    code=initialization.LEGACY_SEED_CODE,
+                    payload_sha256=initialization.LEGACY_SEED_DIGEST,
+                )
+            )
+        assert not (await apply_seed(target)).changed
+        initialized = await initialize_admin(
+            target,
+            email="legacy-seed-admin@haruka.example.test",
+            password=SecretStr("synthetic-legacy-admin-2026"),
+        )
+        assert initialized.changed
+        async with engine.connect() as connection:
+            assert await connection.scalar(select(func.count()).select_from(SeedVersion)) == 1
+        released = initialization.permission_document
+        monkeypatch.setattr(
+            initialization,
+            "permission_document",
+            lambda: {**released(), "implemented_business_routes": ["tampered-route"]},
+        )
+        with pytest.raises(InitializationError, match="current permission seed differs"):
+            await apply_seed(target)
     finally:
         await engine.dispose()
 

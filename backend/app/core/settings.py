@@ -1,11 +1,16 @@
 """Explicit configuration; importing this module never reads the environment."""
 
+import binascii
+import re
+from base64 import b64decode
 from pathlib import Path
 from typing import Literal, Self, TypedDict, Unpack
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.domain.email_address import normalize_email
 
 
 class SettingsInput(TypedDict, total=False):
@@ -19,6 +24,20 @@ class SettingsInput(TypedDict, total=False):
     database_url: SecretStr
     redis_url: SecretStr
     resource_namespace: str
+    test_schema: str | None
+    auth_signing_key: SecretStr | None
+    auth_digest_key: SecretStr | None
+    mail_encryption_key: SecretStr | None
+    auth_signing_key_version: str
+    auth_digest_key_version: str
+    mail_encryption_key_version: str
+    mail_delivery_enabled: bool
+    smtp_host: str | None
+    smtp_port: int
+    smtp_from: str | None
+    smtp_starttls: bool
+    smtp_username: str | None
+    smtp_password: SecretStr | None
     kafka_bootstrap_servers: str
     s3_endpoint: str
     s3_access_key: SecretStr
@@ -37,6 +56,7 @@ class CoreInfrastructureSettings(BaseModel):
     database_url: SecretStr
     redis_url: SecretStr
     namespace: str
+    test_schema: str | None = None
 
 
 class InfrastructureSettings(CoreInfrastructureSettings):
@@ -70,6 +90,20 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     redis_url: SecretStr | None = None
     resource_namespace: str | None = None
+    test_schema: str | None = None
+    auth_signing_key: SecretStr | None = None
+    auth_digest_key: SecretStr | None = None
+    mail_encryption_key: SecretStr | None = None
+    auth_signing_key_version: str = "v1"
+    auth_digest_key_version: str = "v1"
+    mail_encryption_key_version: str = "v1"
+    mail_delivery_enabled: bool = False
+    smtp_host: str | None = None
+    smtp_port: int = Field(default=25, ge=1, le=65535)
+    smtp_from: str | None = None
+    smtp_starttls: bool = True
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
     kafka_bootstrap_servers: str | None = None
     s3_endpoint: str | None = None
     s3_access_key: SecretStr | None = None
@@ -89,6 +123,44 @@ class Settings(BaseSettings):
         prefix = "haruka-local-" if self.app_env == "dev" else "haruka-test-"
         if not self.instance_id.startswith(prefix):
             raise ValueError("instance does not match the selected isolated environment")
+        if self.test_schema is not None and (
+            self.app_env != "test"
+            or not re.fullmatch(r"haruka_migration_test_[a-f0-9]{32}", self.test_schema)
+        ):
+            raise ValueError("runtime test schema must be a random isolated test schema")
+        for version in (
+            self.auth_signing_key_version,
+            self.auth_digest_key_version,
+            self.mail_encryption_key_version,
+        ):
+            if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", version) is None:
+                raise ValueError("security key version is invalid")
+        for value, expected_length in (
+            (self.auth_signing_key, 32),
+            (self.auth_digest_key, 32),
+            (self.mail_encryption_key, 32),
+        ):
+            if value is None:
+                continue
+            try:
+                raw = b64decode(value.get_secret_value(), altchars=b"-_", validate=True)
+            except (binascii.Error, ValueError):
+                raise ValueError("security key encoding is invalid") from None
+            if len(raw) != expected_length:
+                raise ValueError("security key length is invalid")
+        if self.mail_delivery_enabled:
+            if self.smtp_host not in {"localhost", "127.0.0.1", "::1"}:
+                raise ValueError("mail transport must be explicit loopback until deployment review")
+            try:
+                valid_from = normalize_email(self.smtp_from or "")[0] == self.smtp_from
+            except ValueError:
+                valid_from = False
+            if not valid_from:
+                raise ValueError("mail sender identity is invalid")
+            if (self.smtp_username is None) != (self.smtp_password is None):
+                raise ValueError("mail authentication settings must be paired")
+            if self.mail_encryption_key is None or self.auth_digest_key is None:
+                raise ValueError("mail delivery requires challenge and payload keys")
         for address in (self.public_base_url, *self.allowed_origins):
             parsed = urlsplit(address)
             if (
@@ -173,6 +245,7 @@ class Settings(BaseSettings):
             database_url=self.database_url,
             redis_url=self.redis_url,
             namespace=self.resource_namespace,
+            test_schema=self.test_schema,
         )
 
     def infrastructure(self) -> InfrastructureSettings:
@@ -194,6 +267,7 @@ class Settings(BaseSettings):
             database_url=core.database_url,
             redis_url=core.redis_url,
             namespace=core.namespace,
+            test_schema=core.test_schema,
             kafka_bootstrap_servers=self.kafka_bootstrap_servers,
             s3_endpoint=self.s3_endpoint,
             s3_access_key=self.s3_access_key,

@@ -16,7 +16,7 @@ from scripts.quality.unittest_runner import RecordedResult, execute
 
 IDENTITY: dict[str, object] = {
     "commit": "a" * 40,
-    "build_id": "b0-local",
+    "build_id": "foundation-local",
     "configuration": "test",
     "toolchain_sha256": "b" * 64,
     "run_id": "run-a",

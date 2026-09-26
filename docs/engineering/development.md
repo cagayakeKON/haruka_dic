@@ -17,7 +17,7 @@
 
 基础设施范围检查使用 `check --stage infrastructure`：脚本和dev安全回归/静态检查、真实服务smoke及后端隔离集成。后端改动另运行直接受影响的unit/contract、Ruff/Pyright；不重复未受影响的前端三平台测试。带 `--config dev/.local/test.env` 的backend/tools/verify_distribution.py验证仓库外wheel中四个入口真实连接与关闭。基础设施实测见 [切片记录](../delivery/reviews/2026-09-22-scaffold-infrastructure.md)，完整B0结果见本页开头验收记录。
 
-## 当前可运行：B0-foundation
+## 当前可运行：工程基础
 
 前提以根 [工具清单](../../tools/toolchain.json) 为准：Python3.13.6、uv0.12.17、Flutter3.47.3及锁定revision。此次Windows机器的PATH中python为3.9，不能直接用于开发入口；以下用仓库内固定uv选择已安装的3.13.6。干净检出须先安装清单指定uv（可置于`.tools/uv/uv.exe`；Linux为`.tools/uv/uv`或PATH），不会提交或自动升级全局SDK。
 
@@ -29,11 +29,11 @@
 .tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py bootstrap --scope web
 .tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py bootstrap --scope docs
 .tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py codegen --check
-.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py check --stage B0-foundation
+.tools/uv/uv.exe run --no-project --python 3.13.6 python scripts/dev.py check --stage foundation
 .tools/uv/uv.exe run --project backend --locked haruka-api --config backend/.env.example
 ```
 
-普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号；后端范围还会写入虚拟环境字节码禁用钩子，避免在源码目录生成 `__pycache__`。`B0-foundation`和backend/frontend等scope是局部检查；`check --stage B0`要求显式`--identity`与全部`--report`，调用既有必需用例检查器核对完整候选矩阵。缺项、失败、身份不符或procedure缺独立签收均拒绝，B1/B2仍拒绝。报告保存在忽略目录artifacts/dev；详见 [报告合同](../../tools/ci/README.md)。
+普通scope的doctor核对工具/工程前提；infra scope补Docker daemon和锁定版本，真实服务由infra smoke验证。bootstrap按锁安装、保留已有配置，不迁移或生成账号；后端范围还会写入虚拟环境字节码禁用钩子，避免在源码目录生成 `__pycache__`。`foundation`和backend/frontend等scope是局部检查；`check --stage B0`要求显式`--identity`与全部`--report`，调用既有必需用例检查器核对完整候选矩阵。缺项、失败、身份不符或procedure缺独立签收均拒绝，B1/B2仍拒绝。报告保存在忽略目录artifacts/dev；详见 [报告合同](../../tools/ci/README.md)。
 
 前端独立启动与平台构建参数见 [前端入口](../../frontend/README.md)，后端能力与入口见 [后端入口](../../backend/README.md)。API仅有公开健康路由：live返回200；基础设施配置下ready重新检查数据库schema及依赖，成功200、失败503；离线壳仍返回503。没有公开登录、业务授权或模型接口。Worker/Outbox尚不处理业务；受控迁移、种子和首管理员入口已开放，首次启动API前按后端指南执行迁移。Web默认origin与后端模板统一为localhost:5173，启动前确认该端口没有被其他服务占用。
 
@@ -188,6 +188,6 @@ HTTP Cookie本地调试如需开发例外，仅限绑定回环地址的dev配置
 - [ ] 初始角色/权限/菜单、首管理员初始化和配置缺失行为均有测试；没有默认公开管理账号。
 - [ ] 所有必要命令在 Windows 与 CI 目标 shell 有运行证据，脚本不存在/目录缺失会明确失败。
 - [ ] 常规测试不调用真实模型、不连接 MyHome 生产数据；真实供应商调用有独立明确范围并记录实际用量。
-- [ ] API/Worker/Outbox、前端三端/管理端、数据库日志与 info 埋点均可关联；实际未覆盖的原生能力明确登记。
+- [ ] API/Worker/Outbox、Web前端/管理端、数据库日志与 info 埋点均可关联；前端日志只在Web验证，实际未覆盖的原生能力明确登记。
 
 以上为完整初始化清单，当前只取得基础切片证据，仍不勾选整项通过。

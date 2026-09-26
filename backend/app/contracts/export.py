@@ -10,6 +10,7 @@ from app.contracts.permissions import permission_document
 from app.core.logging import EVENTS
 from app.main import create_app
 from app.models.dictionary import database_document
+from app.schemas.frontend_telemetry import CLIENT_EVENT_ATTRIBUTES, CLIENT_EVENTS
 
 
 def canonical_json(value: object) -> str:
@@ -43,8 +44,13 @@ def documents() -> dict[str, object]:
         },
         "telemetry.json": {
             "schema_version": 1,
-            "scope": "backend-runtime",
-            "events": sorted([*EVENTS, "library.log"]),
+            "scope": "client-and-backend",
+            "events": sorted(set(EVENTS) | CLIENT_EVENTS | {"library.log"}),
+            "client_events": sorted(CLIENT_EVENTS),
+            "client_event_attributes": {
+                event: sorted(attributes)
+                for event, attributes in sorted(CLIENT_EVENT_ATTRIBUTES.items())
+            },
             "fields": [
                 "schema_version",
                 "event_id",
@@ -55,11 +61,31 @@ def documents() -> dict[str, object]:
                 "project",
                 "environment",
                 "service",
+                "instance_id",
                 "release",
                 "origin",
                 "request_id",
+                "ingest_request_id",
+                "operation_id",
+                "client_request_id",
+                "user_id",
+                "audience",
+                "route_template",
+                "client_platform",
+                "client_release",
+                "client_build",
+                "emitter_service",
+                "received_at",
+                "attributes",
+                "safe_stack_frames",
                 "status_code",
                 "duration_ms",
+                "sql_fingerprint",
+                "statement_kind",
+                "sqlstate",
+                "database_name",
+                "application_name",
+                "backend_pid",
                 "stack_frames",
             ],
             "private_payloads": False,
@@ -67,7 +93,7 @@ def documents() -> dict[str, object]:
     }
     payloads["version.json"] = {
         "schema_version": 1,
-        "scope": "B0-identity-foundation",
+        "scope": "account-and-learning",
         "sha256": {
             name: hashlib.sha256(canonical_json(value).encode()).hexdigest()
             for name, value in sorted(payloads.items())

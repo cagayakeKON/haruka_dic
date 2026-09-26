@@ -1,4 +1,4 @@
-"""Worker packaging boundary; persistent task execution arrives in B2."""
+"""Worker packaging boundary for future persistent task execution."""
 
 import asyncio
 import sys
@@ -11,7 +11,7 @@ from app.core.logging import configure_logging
 
 
 def main() -> None:
-    parser = parser_for("haruka-worker", "Haruka worker lifecycle; business execution awaits B2")
+    parser = parser_for("haruka-worker", "Haruka worker lifecycle")
     parser.add_argument("--check-startup", action="store_true")
     parser.add_argument(
         "--lifecycle-only", action="store_true", help="hold resources; no business handlers"

@@ -1,4 +1,4 @@
-"""Validate repository-owned B0 assets and nonexecuting preparation scenarios."""
+"""Validate repository-owned foundation assets and nonexecuting preparation scenarios."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ def validate_assets(root: Path) -> dict[str, dict[str, object]]:
         string(item["purpose"])
         media = string(item["media_type"])
         if media not in {"text/plain", "application/json"}:
-            raise GateError("asset_media_not_in_b0_scope")
+            raise GateError("asset_media_not_in_static_scope")
         if item["text_protocol"] != "canonical-text-v1":
             raise GateError("unsupported_text_protocol")
         content = path.read_text(encoding="utf-8")
@@ -106,19 +106,19 @@ def validate_assets(root: Path) -> dict[str, dict[str, object]]:
 def validate_scenario(
     data: dict[str, object], assets: dict[str, dict[str, object]]
 ) -> dict[str, object]:
-    """The B0 recipe reads immutable fixtures only; it cannot create business data."""
+    """The static-assets recipe reads immutable fixtures only; it cannot create business data."""
     version(data)
     fields(data, SCENARIO_FIELDS)
     safe_name(data["scenario_id"])
     if integer(data["scenario_version"], minimum=1) != 1:
         raise GateError("unsupported_scenario_version")
     if data["setup_recipe"] != "validate_static_assets" or data["actors_profile"] != "none":
-        raise GateError("recipe_or_actors_not_in_b0_scope")
+        raise GateError("recipe_or_actors_not_in_static_scope")
     if data["clock_profile"] != "none" or data["provider_profile"] != "blocked":
         raise GateError("scenario_must_not_enable_clock_or_provider")
     references = strings(data["acceptance_refs"])
     if any(not re.fullmatch(r"(?:SCF-B0-0[1-7]|TDS-0[12])", ref) for ref in references):
-        raise GateError("scenario_acceptance_not_in_b0_scope")
+        raise GateError("scenario_acceptance_not_in_static_scope")
     asset_refs = strings(data["asset_refs"])
     if set(asset_refs) - set(assets):
         raise GateError("unknown_asset_reference")
@@ -154,7 +154,7 @@ def inspect(root: Path) -> dict[str, object]:
     return {
         "schema_version": 1,
         "passed": True,
-        "scope": "B0-static-assets-only",
+        "scope": "static-assets-only",
         "asset_count": len(assets),
         "scenarios": scenarios,
     }

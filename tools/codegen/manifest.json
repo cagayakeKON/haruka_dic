@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "B0-contracts-and-identity",
+  "scope": "contracts-and-identity",
   "backend_outputs": [
     "openapi.json",
     "errors.json",

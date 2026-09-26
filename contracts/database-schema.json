@@ -2,10 +2,10 @@
   "excluded_internal_tables": [
     "alembic_version"
   ],
-  "migration_revision": "0002_b0_identity_alignment",
+  "migration_revision": "0004_learning_collections",
   "schema_version": 1,
   "source": "backend/app/models",
-  "source_sha256": "9fae6172a394aa5e14f8e834384807569e8065a8acaf3ec67a7328cf3c5aa74e",
+  "source_sha256": "c13059798e2b32b7c2f14202d832a9f7f19be618a2a45b3057e2cf3ca0ffce57",
   "tables": [
     {
       "columns": [
@@ -19,7 +19,7 @@
           "name": "action",
           "nullable": false,
           "primary_key": false,
-          "type": "VARCHAR(32)"
+          "type": "VARCHAR(100)"
         },
         {
           "comment": "固定受控维护主体",
@@ -58,6 +58,153 @@
           "type": "BIGINT"
         },
         {
+          "comment": "已认证动作主体；匿名/维护事件为空",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "actor_user_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "动作受众",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "route audience"
+          },
+          "name": "audience",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(10)"
+        },
+        {
+          "comment": "授权操作权限代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization service"
+          },
+          "name": "permission_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "受控目标类型",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "event action registry"
+          },
+          "name": "target_type",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "按target_type解释的目标UUID",
+          "default": null,
+          "metadata": {
+            "non_entity_uuid": "polymorphic_target",
+            "sensitivity": "internal",
+            "source": "locked action target"
+          },
+          "name": "target_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "自然键目标代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "event action registry"
+          },
+          "name": "target_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "请求操作关联UUID",
+          "default": null,
+          "metadata": {
+            "non_entity_uuid": "operation_correlation",
+            "sensitivity": "internal",
+            "source": "request context"
+          },
+          "name": "operation_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "请求关联UUID",
+          "default": null,
+          "metadata": {
+            "non_entity_uuid": "operation_correlation",
+            "sensitivity": "internal",
+            "source": "request context"
+          },
+          "name": "request_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "安全结果类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "event action registry"
+          },
+          "name": "result",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "受控安全原因代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "event action registry"
+          },
+          "name": "reason_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "安全摘要协议版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release event schema"
+          },
+          "name": "payload_schema_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "仅白名单状态差异",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "event action registry"
+          },
+          "name": "change_summary",
+          "nullable": true,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
           "comment": "服务端生成的稳定标识",
           "default": null,
           "metadata": {
@@ -94,17 +241,32 @@
           "type": "TIMESTAMP WITH TIME ZONE"
         }
       ],
-      "comment": "受控初始化追加审计，不包含密码、邮箱或私有材料",
+      "comment": "受控维护与身份安全追加审计，不包含密码、邮箱或私有材料",
       "constraints": [
         {
-          "definition": "action IN ('seed.applied', 'admin.created')",
+          "definition": "action IN ('seed.applied', 'admin.created', 'auth_policy.updated', 'account.registered', 'email.verified', 'password.recovered', 'password.changed', 'session.created', 'session.revoked', 'refresh.replayed', 'auth.login.denied')",
           "kind": "check",
           "name": "ck_admin_audit_events_action"
+        },
+        {
+          "definition": "audience IS NULL OR audience IN ('client', 'admin')",
+          "kind": "check",
+          "name": "ck_admin_audit_events_audience"
         },
         {
           "definition": "authorization_revision >= 1",
           "kind": "check",
           "name": "ck_admin_audit_events_authorization_revision_positive"
+        },
+        {
+          "definition": "payload_schema_version >= 1",
+          "kind": "check",
+          "name": "ck_admin_audit_events_payload_schema_version_positive"
+        },
+        {
+          "definition": "result IS NULL OR result IN ('accepted', 'committed', 'denied', 'failed')",
+          "kind": "check",
+          "name": "ck_admin_audit_events_result"
         },
         {
           "definition": [
@@ -114,12 +276,61 @@
           "name": "pk_admin_audit_events"
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "columns": [
+            "action",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded action audit query"
+          },
+          "name": "ix_admin_audit_events_action_created_at_id",
+          "unique": false
+        },
+        {
+          "columns": [
+            "actor_user_id",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded actor audit query"
+          },
+          "name": "ix_admin_audit_events_actor_user_id_created_at_id",
+          "unique": false
+        },
+        {
+          "columns": [
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded audit chronology"
+          },
+          "name": "ix_admin_audit_events_created_at_id",
+          "unique": false
+        },
+        {
+          "columns": [
+            "target_type",
+            "target_id",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded target audit query"
+          },
+          "name": "ix_admin_audit_events_target_type_target_id_created_at_id",
+          "unique": false
+        }
+      ],
       "metadata": {
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "append_only",
         "logical_relations": [
           {
@@ -131,6 +342,28 @@
             "service": "app.services.initialization",
             "state_rule": "existing active parent at write; immutable ownership",
             "target": "users.id",
+            "tests": "tests/integration/test_initialization.py"
+          },
+          {
+            "column": "actor_user_id",
+            "deletion": "retain historical reference",
+            "nullable": true,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "users.id",
+            "tests": "tests/integration/test_initialization.py"
+          },
+          {
+            "column": "permission_code",
+            "deletion": "retain historical reference",
+            "nullable": true,
+            "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
+            "scope_rule": "controlled maintenance metadata only; no private content access",
+            "service": "app.services.initialization",
+            "state_rule": "existing active parent at write; immutable ownership",
+            "target": "permission_catalog.code",
             "tests": "tests/integration/test_initialization.py"
           }
         ],
@@ -162,6 +395,30 @@
             "source": "controlled policy"
           },
           "name": "registration_mode",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "开放注册必须邮箱验证的固定条件",
+          "default": "true",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled policy"
+          },
+          "name": "require_email_verification",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "已选邮件找回方式；实际可用仍取决于交付配置",
+          "default": "'email'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled policy"
+          },
+          "name": "recovery_mode",
           "nullable": false,
           "primary_key": false,
           "type": "VARCHAR(16)"
@@ -215,12 +472,17 @@
           "type": "TIMESTAMP WITH TIME ZONE"
         }
       ],
-      "comment": "注册策略；B0默认关闭注册，不决定后续开放方式",
+      "comment": "注册策略；默认关闭注册，开放方式由受控策略决定",
       "constraints": [
         {
           "definition": "code = 'registration'",
           "kind": "check",
           "name": "ck_auth_policies_code"
+        },
+        {
+          "definition": "recovery_mode IN ('disabled', 'email')",
+          "kind": "check",
+          "name": "ck_auth_policies_recovery_mode"
         },
         {
           "definition": "registration_mode IN ('closed', 'approval', 'open')",
@@ -245,7 +507,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [
           {
@@ -343,7 +605,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [],
         "module": "identity_foundation",
@@ -352,6 +614,879 @@
         "scope_kind": "system_operation"
       },
       "name": "authorization_revisions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "完整卡片子型",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated card publication"
+          },
+          "name": "card_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "不可变卡片版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated card publication"
+          },
+          "name": "card_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "载荷结构版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "WordCard contract"
+          },
+          "name": "schema_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "来源引用结构版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source reference contract"
+          },
+          "name": "source_schema_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "完整类型化WordCard载荷",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated card publication"
+          },
+          "name": "payload",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "序列化载荷字节长度",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated card publication"
+          },
+          "name": "serialized_size_bytes",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "明确的目标语言",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "validated card publication"
+          },
+          "name": "target_language",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "解释语言",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "validated card publication"
+          },
+          "name": "explanation_language",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "有界且已验证的精确来源引用",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated card publication"
+          },
+          "name": "source_refs",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "完整结果实际提交时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated card publication"
+          },
+          "name": "published_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice完整已提交WordCard；受控合成前置，不代表真实模型调用",
+      "constraints": [
+        {
+          "definition": "card_kind IN ('word')",
+          "kind": "check",
+          "name": "ck_cards_learning_card_kind"
+        },
+        {
+          "definition": "serialized_size_bytes > 0",
+          "kind": "check",
+          "name": "ck_cards_learning_payload_size"
+        },
+        {
+          "definition": "target_language IN ('ja', 'en')",
+          "kind": "check",
+          "name": "ck_cards_learning_target_language"
+        },
+        {
+          "definition": "card_revision >= 1 AND schema_version >= 1",
+          "kind": "check",
+          "name": "ck_cards_learning_versions"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_cards"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice card fixture",
+          "future validated AI publication"
+        ],
+        "deletion_policy": "retain while referenced by collections",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "cards"
+    },
+    {
+      "columns": [
+        {
+          "comment": "current slice单词收藏类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated card"
+          },
+          "name": "kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "收藏可变版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "collection service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "原始完整卡片",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked card"
+          },
+          "name": "card_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "冻结卡片版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked card"
+          },
+          "name": "card_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "冻结显示词形",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated card"
+          },
+          "name": "display_text",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(200)"
+        },
+        {
+          "comment": "确定性规范检索词形",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "collection service"
+          },
+          "name": "normalized_text",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(200)"
+        },
+        {
+          "comment": "收藏确认目标语言",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "validated card"
+          },
+          "name": "target_language",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "完整WordCard不可变收藏快照",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated card"
+          },
+          "name": "payload",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "获权时冻结的有界精确出处",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated card"
+          },
+          "name": "source_refs",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "收藏删除墓碑时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "collection lifecycle"
+          },
+          "name": "deleted_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "迟到创建阻止代次",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "collection lifecycle"
+          },
+          "name": "delete_generation",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice本人WordCard完整快照收藏；卡片版本业务唯一包含墓碑",
+      "constraints": [
+        {
+          "definition": "kind IN ('word')",
+          "kind": "check",
+          "name": "ck_collection_items_learning_kind"
+        },
+        {
+          "definition": "target_language IN ('ja', 'en')",
+          "kind": "check",
+          "name": "ck_collection_items_learning_target_language"
+        },
+        {
+          "definition": "revision >= 1 AND card_revision >= 1 AND delete_generation >= 0",
+          "kind": "check",
+          "name": "ck_collection_items_learning_versions"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_collection_items"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "library_id",
+            "card_id",
+            "card_revision"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_collection_card"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "owner_user_id",
+            "library_id",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded own collection list"
+          },
+          "name": "ix_collection_items_learning_owner_created_id",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized POST /api/v1/collections"
+        ],
+        "deletion_policy": "tombstone; never revive by retry or different idempotency key",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "card_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "cards.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "collection_items"
+    },
+    {
+      "columns": [
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "可选本人资料库作用域",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked library"
+          },
+          "name": "library_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "固定client受众",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "route boundary"
+          },
+          "name": "audience",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "记录并发版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "idempotency transaction"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务动作固定码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "route boundary"
+          },
+          "name": "action_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(128)"
+        },
+        {
+          "comment": "客户端键的服务端HMAC摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret_hash",
+            "source": "server HMAC"
+          },
+          "name": "key_digest",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "规范请求SHA-256摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret_hash",
+            "source": "collection service"
+          },
+          "name": "request_digest",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "受理状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "collection transaction"
+          },
+          "name": "state",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "领域结果类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "collection transaction"
+          },
+          "name": "result_kind",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "领域结果引用",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "collection transaction"
+          },
+          "name": "result_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "安全响应结构版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "response contract"
+          },
+          "name": "response_schema_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "仅含结果引用的安全响应",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_metadata",
+            "source": "response contract"
+          },
+          "name": "safe_response",
+          "nullable": true,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "首次确认的HTTP状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "collection transaction"
+          },
+          "name": "http_status",
+          "nullable": true,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "重放窗口到期",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "idempotency policy"
+          },
+          "name": "expires_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "首次请求操作身份",
+          "default": null,
+          "metadata": {
+            "non_entity_uuid": "operation_correlation",
+            "sensitivity": "personal_reference",
+            "source": "request context"
+          },
+          "name": "operation_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人业务幂等受理；current slice写入收藏动作子集",
+      "constraints": [
+        {
+          "definition": "audience IN ('client') AND state IN ('committed')",
+          "kind": "check",
+          "name": "ck_idempotency_records_learning_action_state"
+        },
+        {
+          "definition": "result_kind = 'collection_item' AND result_id IS NOT NULL AND safe_response IS NOT NULL",
+          "kind": "check",
+          "name": "ck_idempotency_records_learning_committed_result"
+        },
+        {
+          "definition": "octet_length(key_digest) = 32 AND octet_length(request_digest) = 32",
+          "kind": "check",
+          "name": "ck_idempotency_records_learning_digest_lengths"
+        },
+        {
+          "definition": "http_status IN (200, 201)",
+          "kind": "check",
+          "name": "ck_idempotency_records_learning_http_status"
+        },
+        {
+          "definition": "(result_kind IS NULL AND result_id IS NULL) OR (result_kind IS NOT NULL AND result_id IS NOT NULL)",
+          "kind": "check",
+          "name": "ck_idempotency_records_learning_result_pair"
+        },
+        {
+          "definition": "revision >= 1 AND response_schema_version >= 1",
+          "kind": "check",
+          "name": "ck_idempotency_records_learning_versions"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_idempotency_records"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "audience",
+            "action_code",
+            "key_digest"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_idempotency_action_key"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "expires_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded expiry maintenance"
+          },
+          "name": "ix_idempotency_records_learning_expires",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized POST /api/v1/collections"
+        ],
+        "deletion_policy": "expire only after replay window; collection business uniqueness persists",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": true,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "result_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": true,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "collection_items.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "idempotency_records"
     },
     {
       "columns": [
@@ -426,7 +1561,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [
           {
@@ -446,6 +1581,955 @@
         "scope_kind": "library_root"
       },
       "name": "libraries"
+    },
+    {
+      "columns": [
+        {
+          "comment": "共同材料根",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "source publication"
+          },
+          "name": "material_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "共同来源版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "source publication"
+          },
+          "name": "material_revision_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "不可变来源容器",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "source publication"
+          },
+          "name": "source_unit_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "来源容器内块顺序",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source publication"
+          },
+          "name": "ordinal",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "current slice文字块类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source publication"
+          },
+          "name": "block_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "不可变规范原文；不混入注音",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "source extraction"
+          },
+          "name": "canonical_text",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TEXT"
+        },
+        {
+          "comment": "Unicode标量数",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated canonical text"
+          },
+          "name": "scalar_length",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice已发布规范文本块，标量长度由发布工厂验证",
+      "constraints": [
+        {
+          "definition": "block_kind IN ('paragraph')",
+          "kind": "check",
+          "name": "ck_material_content_blocks_learning_block_kind"
+        },
+        {
+          "definition": "ordinal >= 1 AND scalar_length > 0",
+          "kind": "check",
+          "name": "ck_material_content_blocks_learning_text_length"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_material_content_blocks"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "library_id",
+            "source_unit_id",
+            "ordinal"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_content_block_ordinal"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "owner_user_id",
+            "material_revision_id",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "resolve an exact published block in an owned source version"
+          },
+          "name": "ix_material_content_blocks_learning_revision_id",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice source fixture",
+          "future text extraction"
+        ],
+        "deletion_policy": "retain with source version while cards or collections reference it",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "materials.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_revision_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_revisions.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "source_unit_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_source_units.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "material_content_blocks"
+    },
+    {
+      "columns": [
+        {
+          "comment": "所属材料根",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked material"
+          },
+          "name": "material_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "材料内不可变版本序号",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source publication"
+          },
+          "name": "revision_number",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "来源版本发布状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source publication"
+          },
+          "name": "status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "规范文字偏移协议",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "content locator contract"
+          },
+          "name": "text_protocol_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(40)"
+        },
+        {
+          "comment": "小说结构可读状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "novel publication"
+          },
+          "name": "structure_status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "发布时材料删除代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked material"
+          },
+          "name": "input_delete_generation",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "来源与结构实际发布时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source publication"
+          },
+          "name": "published_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice不可变小说文字及已发布结构版本",
+      "constraints": [
+        {
+          "definition": "input_delete_generation >= 0",
+          "kind": "check",
+          "name": "ck_material_revisions_learning_delete_generation"
+        },
+        {
+          "definition": "revision_number >= 1",
+          "kind": "check",
+          "name": "ck_material_revisions_learning_revision_number"
+        },
+        {
+          "definition": "status IN ('published', 'sealed')",
+          "kind": "check",
+          "name": "ck_material_revisions_learning_status"
+        },
+        {
+          "definition": "structure_status IN ('readable', 'degraded')",
+          "kind": "check",
+          "name": "ck_material_revisions_learning_structure_status"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_material_revisions"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "library_id",
+            "material_id",
+            "revision_number"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_material_revision_number"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice source fixture",
+          "future source publication"
+        ],
+        "deletion_policy": "retain while referenced; material tombstone blocks new references",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "materials.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "material_revisions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "共同材料根",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "source publication"
+          },
+          "name": "material_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "共同来源版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "source publication"
+          },
+          "name": "material_revision_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "current slice固定合成来源容器类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "fixture recipe"
+          },
+          "name": "unit_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "版本内来源容器顺序",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source publication"
+          },
+          "name": "ordinal",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice受控合成小说来源容器；正式文件解析来源在后续扩展",
+      "constraints": [
+        {
+          "definition": "ordinal >= 1",
+          "kind": "check",
+          "name": "ck_material_source_units_learning_ordinal_positive"
+        },
+        {
+          "definition": "unit_kind IN ('spine')",
+          "kind": "check",
+          "name": "ck_material_source_units_learning_unit_kind"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_material_source_units"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "library_id",
+            "material_revision_id",
+            "ordinal"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_source_unit_ordinal"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice source fixture"
+        ],
+        "deletion_policy": "retain with published source version",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "materials.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_revision_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_revisions.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "material_source_units"
+    },
+    {
+      "columns": [
+        {
+          "comment": "current slice仅开放小说来源",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "material pipeline"
+          },
+          "name": "material_type",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "已发布材料显示标题",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "source fixture"
+          },
+          "name": "title",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(200)"
+        },
+        {
+          "comment": "来源目标语言",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "validated source"
+          },
+          "name": "language",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "当前已发布来源版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "source publication"
+          },
+          "name": "current_revision_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "来源发布或封存状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source publication"
+          },
+          "name": "source_status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "材料根并发版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source transaction"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "删除阻止迟到引用的代次",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source transaction"
+          },
+          "name": "delete_generation",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "材料删除墓碑时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source transaction"
+          },
+          "name": "deleted_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice已发布的本人小说来源根；受控场景准备，正式上传在后续材料切片",
+      "constraints": [
+        {
+          "definition": "language IN ('ja', 'en')",
+          "kind": "check",
+          "name": "ck_materials_learning_language"
+        },
+        {
+          "definition": "material_type IN ('novel')",
+          "kind": "check",
+          "name": "ck_materials_learning_material_type"
+        },
+        {
+          "definition": "revision >= 1 AND delete_generation >= 0",
+          "kind": "check",
+          "name": "ck_materials_learning_revisions"
+        },
+        {
+          "definition": "source_status IN ('published', 'sealed')",
+          "kind": "check",
+          "name": "ck_materials_learning_source_status"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_materials"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "owner_user_id",
+            "material_type",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded own source listing"
+          },
+          "name": "ix_materials_learning_owner_type_created_id",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice source fixture",
+          "future material import"
+        ],
+        "deletion_policy": "tombstone first; preserve referenced snapshots and source versions",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "current_revision_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": true,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_revisions.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "materials"
     },
     {
       "columns": [
@@ -558,7 +2642,7 @@
           "type": "TIMESTAMP WITH TIME ZONE"
         }
       ],
-      "comment": "绑定发布路由键的菜单目录；B0管理菜单不可用",
+      "comment": "绑定发布路由键的菜单目录；管理菜单按权限启用",
       "constraints": [
         {
           "definition": "audience IN ('client', 'admin')",
@@ -590,7 +2674,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [
           {
@@ -610,6 +2694,486 @@
         "scope_kind": "system_catalog"
       },
       "name": "menus"
+    },
+    {
+      "columns": [
+        {
+          "comment": "共同材料根",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "novel publication"
+          },
+          "name": "material_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "共同来源版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "novel publication"
+          },
+          "name": "material_revision_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "目标小说章节",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "novel publication"
+          },
+          "name": "chapter_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "原文规范块",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "novel publication"
+          },
+          "name": "content_block_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "章节内块顺序",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "novel publication"
+          },
+          "name": "ordinal",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "块内左闭选区起点",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "novel publication"
+          },
+          "name": "start_scalar",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "块内右开选区终点",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "novel publication"
+          },
+          "name": "end_scalar",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "章节显示角色",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "novel publication"
+          },
+          "name": "display_role",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice章节到规范来源块的确定范围映射",
+      "constraints": [
+        {
+          "definition": "display_role IN ('paragraph')",
+          "kind": "check",
+          "name": "ck_novel_chapter_blocks_learning_display_role"
+        },
+        {
+          "definition": "ordinal >= 1 AND start_scalar >= 0 AND end_scalar > start_scalar",
+          "kind": "check",
+          "name": "ck_novel_chapter_blocks_learning_span"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_novel_chapter_blocks"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "library_id",
+            "chapter_id",
+            "ordinal"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_novel_chapter_block_ordinal"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "owner_user_id",
+            "content_block_id",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "validate that a selected source block belongs to its chapter"
+          },
+          "name": "ix_novel_chapter_blocks_learning_content_block",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice source fixture",
+          "future novel publication"
+        ],
+        "deletion_policy": "retain with published source version",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "materials.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_revision_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_revisions.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "chapter_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "novel_chapters.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "content_block_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_content_blocks.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "novel_chapter_blocks"
+    },
+    {
+      "columns": [
+        {
+          "comment": "共同材料根",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "novel publication"
+          },
+          "name": "material_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "共同来源版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "novel publication"
+          },
+          "name": "material_revision_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "章节顺序",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "novel publication"
+          },
+          "name": "ordinal",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "已发布章节标题",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "novel publication"
+          },
+          "name": "title",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(200)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "current slice小说已发布章节身份与有序标题",
+      "constraints": [
+        {
+          "definition": "ordinal >= 1",
+          "kind": "check",
+          "name": "ck_novel_chapters_learning_ordinal_positive"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_novel_chapters"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "library_id",
+            "material_revision_id",
+            "ordinal"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_novel_chapter_ordinal"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice source fixture",
+          "future novel publication"
+        ],
+        "deletion_policy": "retain with published source version",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "materials.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_revision_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_revisions.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "novel_chapters"
     },
     {
       "columns": [
@@ -698,7 +3262,7 @@
           "type": "TIMESTAMP WITH TIME ZONE"
         }
       ],
-      "comment": "授权变更持久通知；B0只提交，B2实现投递",
+      "comment": "授权与身份变更的持久通知及受控投递状态",
       "constraints": [
         {
           "definition": "authorization_revision >= 1",
@@ -706,7 +3270,7 @@
           "name": "ck_outbox_events_authorization_revision_positive"
         },
         {
-          "definition": "event_type = 'authorization.changed'",
+          "definition": "event_type IN ('authorization.changed', 'identity.security')",
           "kind": "check",
           "name": "ck_outbox_events_event_type"
         },
@@ -735,7 +3299,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [
           {
@@ -856,7 +3420,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [],
         "module": "identity_foundation",
@@ -1000,7 +3564,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [
           {
@@ -1170,7 +3734,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [],
         "module": "identity_foundation",
@@ -1267,7 +3831,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [],
         "module": "identity_foundation",
@@ -1276,6 +3840,1528 @@
         "scope_kind": "system_operation"
       },
       "name": "seed_versions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "源材料根",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "validated locator"
+          },
+          "name": "material_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "不可变源版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "validated locator"
+          },
+          "name": "material_revision_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "源小说章节",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "validated locator"
+          },
+          "name": "novel_chapter_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "章节源映射",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "validated locator"
+          },
+          "name": "chapter_block_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "规范原文块",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "validated locator"
+          },
+          "name": "content_block_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "卡片目标左闭选区起点",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated locator"
+          },
+          "name": "start_scalar",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "卡片目标右开选区终点",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated locator"
+          },
+          "name": "end_scalar",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "原文选区快照，仅匹配精确来源",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated locator"
+          },
+          "name": "quote",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(500)"
+        },
+        {
+          "comment": "卡片目标语言",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "validated card publication"
+          },
+          "name": "target_language",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "卡片解释语言",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "validated card publication"
+          },
+          "name": "explanation_language",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "current slice固定card结果类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated result binding"
+          },
+          "name": "result_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "完整已提交卡片",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "validated card publication"
+          },
+          "name": "result_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "确切卡片版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated card publication"
+          },
+          "name": "result_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "精确来源与结果绑定摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret_hash",
+            "source": "validated result binding"
+          },
+          "name": "binding_digest",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "current slice固定材料来源",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source contract"
+          },
+          "name": "source_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "材料来源资源",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "validated source"
+          },
+          "name": "source_resource_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "来源版本号",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated source"
+          },
+          "name": "source_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "版本化精确来源定位",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated locator"
+          },
+          "name": "source_locator",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "获权来源标题快照",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated locator"
+          },
+          "name": "source_title",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(200)"
+        },
+        {
+          "comment": "获权原文选区最小快照",
+          "default": null,
+          "metadata": {
+            "sensitivity": "private_content",
+            "source": "validated locator"
+          },
+          "name": "source_snapshot",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "来源引用结构版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source reference contract"
+          },
+          "name": "source_schema_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "源关系失效时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source lifecycle"
+          },
+          "name": "released_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本人账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "authenticated ScopeContext"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本人资料库归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "locked owned library"
+          },
+          "name": "library_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        }
+      ],
+      "comment": "已提交卡片与本人精确小说选区的持久引用",
+      "constraints": [
+        {
+          "definition": "octet_length(binding_digest) = 32",
+          "kind": "check",
+          "name": "ck_source_result_bindings_learning_binding_digest"
+        },
+        {
+          "definition": "result_kind IN ('card') AND result_version >= 1",
+          "kind": "check",
+          "name": "ck_source_result_bindings_learning_result"
+        },
+        {
+          "definition": "source_kind IN ('material') AND source_schema_version >= 1",
+          "kind": "check",
+          "name": "ck_source_result_bindings_learning_source"
+        },
+        {
+          "definition": "start_scalar >= 0 AND end_scalar > start_scalar",
+          "kind": "check",
+          "name": "ck_source_result_bindings_learning_span"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_source_result_bindings"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "library_id",
+            "binding_digest"
+          ],
+          "kind": "unique",
+          "name": "uq_learning_source_result_digest"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "owner_user_id",
+            "material_revision_id",
+            "chapter_block_id",
+            "start_scalar",
+            "end_scalar",
+            "target_language",
+            "explanation_language"
+          ],
+          "metadata": {
+            "purpose": "bounded exact read-only card resolve"
+          },
+          "name": "ix_source_result_bindings_learning_exact",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "controlled current slice card fixture",
+          "future validated result publication"
+        ],
+        "deletion_policy": "release source binding on owner/source deletion; independent collection snapshot remains",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "library_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "libraries.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "materials.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "material_revision_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_revisions.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "novel_chapter_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "novel_chapters.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "chapter_block_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "novel_chapter_blocks.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "content_block_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "material_content_blocks.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "result_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "cards.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          },
+          {
+            "column": "source_resource_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock library then material root then source version/card before collection write",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.learning_reference",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "materials.id",
+            "tests": "tests/integration/test_learning_reference.py"
+          }
+        ],
+        "module": "learning_reference",
+        "owner_column": "owner_user_id",
+        "scope_kind": "library_owned"
+      },
+      "name": "source_result_bindings"
+    },
+    {
+      "columns": [
+        {
+          "comment": "交付目标账号",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "challenge service"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "待交付挑战",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "challenge service"
+          },
+          "name": "challenge_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "短期加密收件地址与链接",
+          "default": null,
+          "metadata": {
+            "sensitivity": "encrypted_secret",
+            "source": "notification service"
+          },
+          "name": "encrypted_payload",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "交付密钥版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "deployment keyring"
+          },
+          "name": "encryption_key_version",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "加密载荷协议版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification service"
+          },
+          "name": "payload_schema_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "最迟交付时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "expires_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "交付受理状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification worker"
+          },
+          "name": "status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "传输尝试次数",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification worker"
+          },
+          "name": "attempt_count",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "下次有界尝试时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification worker"
+          },
+          "name": "next_attempt_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "安全失败类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification worker"
+          },
+          "name": "last_error_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "领取代次；防止过期Worker覆盖新结果",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification worker"
+          },
+          "name": "lease_generation",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "当前领取Worker随机标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification worker"
+          },
+          "name": "lease_owner",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "领取失效时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "notification worker"
+          },
+          "name": "lease_until",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "短期加密邮件交付材料，受控Worker只按挑战用途读取",
+      "constraints": [
+        {
+          "definition": "attempt_count >= 0",
+          "kind": "check",
+          "name": "ck_user_auth_challenge_deliveries_attempt_count_nonnegative"
+        },
+        {
+          "definition": "(encrypted_payload IS NULL) = (encryption_key_version IS NULL)",
+          "kind": "check",
+          "name": "ck_user_auth_challenge_deliveries_envelope_pair"
+        },
+        {
+          "definition": "lease_generation >= 0",
+          "kind": "check",
+          "name": "ck_user_auth_challenge_deliveries_lease_generation_nonnegative"
+        },
+        {
+          "definition": "(status = 'sending') = (lease_owner IS NOT NULL AND lease_until IS NOT NULL)",
+          "kind": "check",
+          "name": "ck_user_auth_challenge_deliveries_lease_state"
+        },
+        {
+          "definition": "payload_schema_version >= 1",
+          "kind": "check",
+          "name": "ck_user_auth_challenge_deliveries_payload_version_positive"
+        },
+        {
+          "definition": "status <> 'pending' OR encrypted_payload IS NOT NULL",
+          "kind": "check",
+          "name": "ck_user_auth_challenge_deliveries_pending_payload"
+        },
+        {
+          "definition": "status IN ('pending', 'sending', 'sent', 'failed', 'expired')",
+          "kind": "check",
+          "name": "ck_user_auth_challenge_deliveries_status"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_auth_challenge_deliveries"
+        },
+        {
+          "definition": [
+            "user_id",
+            "challenge_id"
+          ],
+          "kind": "unique",
+          "name": "uq_user_auth_challenge_deliveries_user_id_challenge_id"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "expires_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "erase expired delivery ciphertext"
+          },
+          "name": "ix_auth_challenge_deliveries_expires_at_id",
+          "unique": false
+        },
+        {
+          "columns": [
+            "status",
+            "next_attempt_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "claim due email notifications"
+          },
+          "name": "ix_auth_challenge_deliveries_pending",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "challenge issue",
+          "notification worker"
+        ],
+        "deletion_policy": "erase encrypted payload after send, expiry or bounded failure",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id before writing this account-owned relation",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.notifications",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_authentication_flow.py"
+          },
+          {
+            "column": "challenge_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id then user_auth_challenges.id",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.notifications",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_auth_challenges.id",
+            "tests": "tests/integration/test_authentication_flow.py"
+          }
+        ],
+        "module": "authentication",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_auth_challenge_deliveries"
+    },
+    {
+      "columns": [
+        {
+          "comment": "目标账号",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal_reference",
+            "source": "challenge service"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "挑战用途",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "purpose",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "挑战受众",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "fixed route"
+          },
+          "name": "audience",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(10)"
+        },
+        {
+          "comment": "随机令牌HMAC-SHA256摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret_hash",
+            "source": "challenge service"
+          },
+          "name": "token_digest",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "摘要密钥版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "deployment keyring"
+          },
+          "name": "digest_key_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "签发时账号安全代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "security_epoch",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "签发时密码版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "password_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "规范化邮箱绑定摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret_hash",
+            "source": "challenge service"
+          },
+          "name": "target_email_digest",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "挑战截止时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "expires_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "单次消费时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "consumed_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "替换/撤销时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "revoked_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "已验证挑战失败次数",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "challenge service"
+          },
+          "name": "failed_attempts",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "绑定账号与用途的一次性挑战，仅保存HMAC摘要",
+      "constraints": [
+        {
+          "definition": "audience IN ('client', 'admin')",
+          "kind": "check",
+          "name": "ck_user_auth_challenges_audience"
+        },
+        {
+          "definition": "octet_length(token_digest) = 32",
+          "kind": "check",
+          "name": "ck_user_auth_challenges_digest_length"
+        },
+        {
+          "definition": "expires_at > created_at",
+          "kind": "check",
+          "name": "ck_user_auth_challenges_expiry"
+        },
+        {
+          "definition": "failed_attempts >= 0",
+          "kind": "check",
+          "name": "ck_user_auth_challenges_failed_attempts_nonnegative"
+        },
+        {
+          "definition": "purpose IN ('email_verify', 'password_recovery', 'reauth')",
+          "kind": "check",
+          "name": "ck_user_auth_challenges_purpose"
+        },
+        {
+          "definition": "consumed_at IS NULL OR revoked_at IS NULL",
+          "kind": "check",
+          "name": "ck_user_auth_challenges_terminal_exclusive"
+        },
+        {
+          "definition": "security_epoch >= 0 AND password_version >= 1",
+          "kind": "check",
+          "name": "ck_user_auth_challenges_versions"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_auth_challenges"
+        },
+        {
+          "definition": [
+            "digest_key_version",
+            "token_digest"
+          ],
+          "kind": "unique",
+          "name": "uq_user_auth_challenges_digest_key_version_token_digest"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "expires_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded challenge expiry cleanup"
+          },
+          "name": "ix_user_auth_challenges_expires_at_id",
+          "unique": false
+        },
+        {
+          "columns": [
+            "user_id",
+            "purpose",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded challenge replacement and security review"
+          },
+          "name": "ix_user_auth_challenges_user_id_purpose_created_at_id",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "email verification",
+          "password recovery",
+          "reauthentication"
+        ],
+        "deletion_policy": "expire digest after bounded security retention",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id before writing this account-owned relation",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.registration",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_authentication_flow.py"
+          }
+        ],
+        "module": "authentication",
+        "owner_column": null,
+        "scope_kind": "identity"
+      },
+      "name": "user_auth_challenges"
+    },
+    {
+      "columns": [
+        {
+          "comment": "会话所有者",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "login service"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "client或admin受众",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "fixed route"
+          },
+          "name": "audience",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(10)"
+        },
+        {
+          "comment": "web或native传输",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "fixed route"
+          },
+          "name": "transport",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(8)"
+        },
+        {
+          "comment": "经入口允许的平台类别",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "session service"
+          },
+          "name": "platform",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "不可由续期延长的绝对截止",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "session service"
+          },
+          "name": "absolute_expires_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "PG撤销提交时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "security service"
+          },
+          "name": "revoked_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "安全撤销原因代码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "security service"
+          },
+          "name": "revoke_reason_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "签发时账号全局安全代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "login service"
+          },
+          "name": "security_epoch",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "签发时受众安全代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "login service"
+          },
+          "name": "audience_security_epoch",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "最近身份重验时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "security service"
+          },
+          "name": "reauthenticated_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "受控裁剪设备摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "login service"
+          },
+          "name": "device_summary",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(200)"
+        },
+        {
+          "comment": "有节制记录的最近活动时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "session service"
+          },
+          "name": "last_seen_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "PG持久会话、绝对期限与撤销事实，Redis只保留临时凭据材料",
+      "constraints": [
+        {
+          "definition": "absolute_expires_at > created_at",
+          "kind": "check",
+          "name": "ck_user_auth_sessions_absolute_expiry"
+        },
+        {
+          "definition": "audience IN ('client', 'admin')",
+          "kind": "check",
+          "name": "ck_user_auth_sessions_audience"
+        },
+        {
+          "definition": "(audience = 'admin' AND transport = 'web' AND platform = 'web') OR (audience = 'client' AND ((transport = 'web' AND platform = 'web') OR (transport = 'native' AND platform IN ('windows', 'android'))))",
+          "kind": "check",
+          "name": "ck_user_auth_sessions_audience_transport_platform"
+        },
+        {
+          "definition": "security_epoch >= 0 AND audience_security_epoch >= 0",
+          "kind": "check",
+          "name": "ck_user_auth_sessions_epochs_nonnegative"
+        },
+        {
+          "definition": "platform IN ('web', 'windows', 'android')",
+          "kind": "check",
+          "name": "ck_user_auth_sessions_platform"
+        },
+        {
+          "definition": "transport IN ('web', 'native')",
+          "kind": "check",
+          "name": "ck_user_auth_sessions_transport"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_auth_sessions"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "absolute_expires_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded expired-session cleanup"
+          },
+          "name": "ix_user_auth_sessions_absolute_expires_at_id",
+          "unique": false
+        },
+        {
+          "columns": [
+            "user_id",
+            "audience",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "revoke all live sessions of one audience"
+          },
+          "name": "ix_user_auth_sessions_user_id_audience_active",
+          "unique": false
+        },
+        {
+          "columns": [
+            "user_id",
+            "audience",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded own-device listing"
+          },
+          "name": "ix_user_auth_sessions_user_id_audience_created_at_id",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "login",
+          "refresh",
+          "current identity",
+          "own session security"
+        ],
+        "deletion_policy": "expire and retain for bounded security history",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id before writing this account-owned relation",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.sessions",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_authentication_flow.py"
+          }
+        ],
+        "module": "authentication",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_auth_sessions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "当前账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "registration service"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "资料字段组版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "profile service"
+          },
+          "name": "profile_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "学习档案字段组版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "study service"
+          },
+          "name": "study_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "设置字段组版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "settings_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "每个账号唯一空资料/学习/设置扩展根；Identity不要求可选资料",
+      "constraints": [
+        {
+          "definition": "profile_revision >= 1 AND study_revision >= 1 AND settings_revision >= 1",
+          "kind": "check",
+          "name": "ck_user_extensions_group_revisions_positive"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_extensions"
+        },
+        {
+          "definition": [
+            "user_id"
+          ],
+          "kind": "unique",
+          "name": "uq_user_extensions_user_id"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "registration transaction",
+          "future profile service"
+        ],
+        "deletion_policy": "retain while account exists; no Identity public deletion",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id before writing this account-owned relation",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.registration",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_authentication_flow.py"
+          }
+        ],
+        "module": "account",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_extensions"
     },
     {
       "columns": [
@@ -1375,7 +5461,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [
           {
@@ -1590,7 +5676,7 @@
           "type": "TIMESTAMP WITH TIME ZONE"
         }
       ],
-      "comment": "独立账号身份；B0只支持受控首管理员初始化",
+      "comment": "独立账号身份；注册与首管理员初始化分别受控",
       "constraints": [
         {
           "definition": "authz_version >= 1",
@@ -1660,7 +5746,7 @@
         "allowed_entrances": [
           "controlled maintenance initialization"
         ],
-        "deletion_policy": "retain; no public physical deletion in B0",
+        "deletion_policy": "retain; no public physical deletion",
         "lifecycle": "mutable",
         "logical_relations": [],
         "module": "identity_foundation",

@@ -2,7 +2,7 @@
 
 import logging
 from time import monotonic
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from starlette.datastructures import MutableHeaders
 from starlette.requests import Request
@@ -10,8 +10,24 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.api.exception_handlers import handle_internal_error
 from app.api.responses import get_request_id
+from app.domain.correlation import (
+    audience_context,
+    operation_id_context,
+    request_id_context,
+    user_id_context,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _optional_uuid(value: str | None) -> UUID | None:
+    if value is None or len(value) != 36:
+        return None
+    try:
+        parsed = UUID(value)
+    except ValueError:
+        return None
+    return parsed if str(parsed) == value.lower() else None
 
 
 class RequestContextMiddleware:
@@ -23,7 +39,17 @@ class RequestContextMiddleware:
             await self.app(scope, receive, send)
             return
         request_id = uuid4()
-        scope.setdefault("state", {})["request_id"] = request_id
+        state = scope.setdefault("state", {})
+        state["request_id"] = request_id
+        request_headers = Request(scope).headers
+        operation_id = _optional_uuid(request_headers.get("x-operation-id"))
+        client_request_id = _optional_uuid(request_headers.get("x-client-request-id"))
+        state["operation_id"] = operation_id
+        state["client_request_id"] = client_request_id
+        request_token = request_id_context.set(request_id)
+        operation_token = operation_id_context.set(operation_id)
+        user_token = user_id_context.set(None)
+        audience_token = audience_context.set(None)
         status_code = 500
         beginning = monotonic()
 
@@ -39,14 +65,29 @@ class RequestContextMiddleware:
         try:
             await self.app(scope, receive, correlated_send)
         finally:
-            logger.info(
-                "http.completed",
-                extra={
-                    "request_id": request_id,
-                    "status_code": status_code,
-                    "duration_ms": (monotonic() - beginning) * 1000,
-                },
-            )
+            try:
+                route = scope.get("route")
+                route_template = getattr(route, "path", None)
+                if not isinstance(route_template, str) or len(route_template) > 200:
+                    route_template = None
+                logger.info(
+                    "http.completed",
+                    extra={
+                        "request_id": request_id,
+                        "status_code": status_code,
+                        "duration_ms": (monotonic() - beginning) * 1000,
+                        "operation_id": operation_id,
+                        "client_request_id": client_request_id,
+                        "user_id": state.get("user_id"),
+                        "audience": state.get("audience"),
+                        "route_template": route_template,
+                    },
+                )
+            finally:
+                audience_context.reset(audience_token)
+                user_id_context.reset(user_token)
+                operation_id_context.reset(operation_token)
+                request_id_context.reset(request_token)
 
 
 class ErrorBoundaryMiddleware:

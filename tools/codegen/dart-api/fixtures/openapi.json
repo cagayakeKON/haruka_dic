@@ -1,6 +1,146 @@
 {
   "components": {
     "schemas": {
+      "AccessRead": {
+        "additionalProperties": false,
+        "properties": {
+          "account_status": {
+            "const": "active",
+            "default": "active",
+            "title": "Account Status",
+            "type": "string"
+          },
+          "audience": {
+            "enum": [
+              "client",
+              "admin"
+            ],
+            "title": "Audience",
+            "type": "string"
+          },
+          "authz_version": {
+            "$ref": "#/components/schemas/AuthzVersionRead"
+          },
+          "feature_flags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Feature Flags",
+            "type": "array"
+          },
+          "instance_id": {
+            "title": "Instance Id",
+            "type": "string"
+          },
+          "navigation": {
+            "items": {
+              "$ref": "#/components/schemas/NavigationRead"
+            },
+            "title": "Navigation",
+            "type": "array"
+          },
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionRead"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "session_ref": {
+            "format": "uuid",
+            "title": "Session Ref",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "instance_id",
+          "audience",
+          "session_ref",
+          "authz_version",
+          "permissions",
+          "navigation",
+          "feature_flags"
+        ],
+        "title": "AccessRead",
+        "type": "object"
+      },
+      "AccountRead": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "email_verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Verified At"
+          },
+          "status": {
+            "const": "active",
+            "default": "active",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "email_verified_at",
+          "created_at"
+        ],
+        "title": "AccountRead",
+        "type": "object"
+      },
+      "ActivationRequired": {
+        "additionalProperties": false,
+        "properties": {
+          "action_required": {
+            "const": "verify_email",
+            "default": "verify_email",
+            "title": "Action Required",
+            "type": "string"
+          },
+          "continuation_expires_at": {
+            "format": "date-time",
+            "title": "Continuation Expires At",
+            "type": "string"
+          },
+          "continuation_token": {
+            "title": "Continuation Token",
+            "type": "string"
+          },
+          "state": {
+            "const": "action_required",
+            "default": "action_required",
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "continuation_token",
+          "continuation_expires_at"
+        ],
+        "title": "ActivationRequired",
+        "type": "object"
+      },
       "ApiError": {
         "additionalProperties": false,
         "properties": {
@@ -55,6 +195,27 @@
         "title": "ApiError",
         "type": "object"
       },
+      "AuthzVersionRead": {
+        "additionalProperties": false,
+        "properties": {
+          "policy": {
+            "minimum": 1.0,
+            "title": "Policy",
+            "type": "integer"
+          },
+          "user": {
+            "minimum": 1.0,
+            "title": "User",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user",
+          "policy"
+        ],
+        "title": "AuthzVersionRead",
+        "type": "object"
+      },
       "ChoiceCard": {
         "additionalProperties": false,
         "properties": {
@@ -76,6 +237,77 @@
           "choices"
         ],
         "title": "ChoiceCard",
+        "type": "object"
+      },
+      "CollectionRead": {
+        "additionalProperties": false,
+        "properties": {
+          "card_id": {
+            "format": "uuid",
+            "title": "Card Id",
+            "type": "string"
+          },
+          "card_revision": {
+            "minimum": 1.0,
+            "title": "Card Revision",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_text": {
+            "title": "Display Text",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "word",
+            "default": "word",
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/WordCardPayload"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/NovelContentLocator"
+            },
+            "title": "Source Refs",
+            "type": "array"
+          },
+          "target_language": {
+            "enum": [
+              "ja",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "card_id",
+          "card_revision",
+          "display_text",
+          "target_language",
+          "payload",
+          "source_refs",
+          "created_at"
+        ],
+        "title": "CollectionRead",
         "type": "object"
       },
       "CompatibilityRead-Input": {
@@ -210,6 +442,26 @@
         "title": "CompatibilityRead",
         "type": "object"
       },
+      "CsrfRead": {
+        "additionalProperties": false,
+        "properties": {
+          "csrf_token": {
+            "title": "Csrf Token",
+            "type": "string"
+          },
+          "session_ref": {
+            "format": "uuid",
+            "title": "Session Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_ref",
+          "csrf_token"
+        ],
+        "title": "CsrfRead",
+        "type": "object"
+      },
       "ErrorCode": {
         "enum": [
           "BAD_REQUEST",
@@ -258,6 +510,30 @@
           "meta"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "ExplanationResolveRead": {
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ResolvedCard"
+                },
+                {
+                  "$ref": "#/components/schemas/MissingCard"
+                }
+              ]
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "title": "ExplanationResolveRead",
         "type": "object"
       },
       "FieldError": {
@@ -345,6 +621,253 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "MailAccepted": {
+        "additionalProperties": false,
+        "properties": {
+          "next_step": {
+            "enum": [
+              "verify_email",
+              "check_email"
+            ],
+            "title": "Next Step",
+            "type": "string"
+          },
+          "state": {
+            "const": "accepted",
+            "default": "accepted",
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "next_step"
+        ],
+        "title": "MailAccepted",
+        "type": "object"
+      },
+      "MissingCard": {
+        "additionalProperties": false,
+        "properties": {
+          "card": {
+            "title": "Card",
+            "type": "null"
+          },
+          "state": {
+            "const": "missing",
+            "default": "missing",
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "title": "MissingCard",
+        "type": "object"
+      },
+      "NativeAuthenticated": {
+        "additionalProperties": false,
+        "properties": {
+          "absolute_expires_at": {
+            "format": "date-time",
+            "title": "Absolute Expires At",
+            "type": "string"
+          },
+          "access_expires_at": {
+            "format": "date-time",
+            "title": "Access Expires At",
+            "type": "string"
+          },
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "audience": {
+            "const": "client",
+            "default": "client",
+            "title": "Audience",
+            "type": "string"
+          },
+          "refresh_expires_at": {
+            "format": "date-time",
+            "title": "Refresh Expires At",
+            "type": "string"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
+          "server_time": {
+            "format": "date-time",
+            "title": "Server Time",
+            "type": "string"
+          },
+          "session_generation": {
+            "minimum": 1.0,
+            "title": "Session Generation",
+            "type": "integer"
+          },
+          "session_ref": {
+            "format": "uuid",
+            "title": "Session Ref",
+            "type": "string"
+          },
+          "state": {
+            "const": "authenticated",
+            "default": "authenticated",
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_ref",
+          "access_token",
+          "access_expires_at",
+          "refresh_token",
+          "refresh_expires_at",
+          "session_generation",
+          "absolute_expires_at",
+          "server_time"
+        ],
+        "title": "NativeAuthenticated",
+        "type": "object"
+      },
+      "NavigationRead": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "route_key": {
+            "title": "Route Key",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "route_key",
+          "title"
+        ],
+        "title": "NavigationRead",
+        "type": "object"
+      },
+      "NovelContentLocator": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter_block_id": {
+            "format": "uuid",
+            "title": "Chapter Block Id",
+            "type": "string"
+          },
+          "instance_id": {
+            "title": "Instance Id",
+            "type": "string"
+          },
+          "library_id": {
+            "format": "uuid",
+            "title": "Library Id",
+            "type": "string"
+          },
+          "locator_schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Locator Schema Version",
+            "type": "integer"
+          },
+          "material_id": {
+            "format": "uuid",
+            "title": "Material Id",
+            "type": "string"
+          },
+          "material_revision_id": {
+            "format": "uuid",
+            "title": "Material Revision Id",
+            "type": "string"
+          },
+          "node_title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Title"
+          },
+          "novel_chapter_id": {
+            "format": "uuid",
+            "title": "Novel Chapter Id",
+            "type": "string"
+          },
+          "prefix": {
+            "maxLength": 100,
+            "title": "Prefix",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
+          },
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/SourceSpan"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "title": "Spans",
+            "type": "array"
+          },
+          "suffix": {
+            "maxLength": 100,
+            "title": "Suffix",
+            "type": "string"
+          },
+          "target_kind": {
+            "const": "material_content",
+            "default": "material_content",
+            "title": "Target Kind",
+            "type": "string"
+          },
+          "text_protocol_version": {
+            "const": "canonical-text-v1",
+            "default": "canonical-text-v1",
+            "title": "Text Protocol Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance_id",
+          "library_id",
+          "material_id",
+          "material_revision_id",
+          "novel_chapter_id",
+          "chapter_block_id",
+          "quote",
+          "prefix",
+          "suffix",
+          "spans"
+        ],
+        "title": "NovelContentLocator",
+        "type": "object"
+      },
       "PageMeta": {
         "additionalProperties": false,
         "properties": {
@@ -398,6 +921,65 @@
         "title": "PageResponse[CompatibilityRead]",
         "type": "object"
       },
+      "PageResponse_SessionSummary_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SessionSummary"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "PageResponse[SessionSummary]",
+        "type": "object"
+      },
+      "PermissionRead": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "data_scope": {
+            "title": "Data Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "data_scope"
+        ],
+        "title": "PermissionRead",
+        "type": "object"
+      },
+      "ResolvedCard": {
+        "additionalProperties": false,
+        "properties": {
+          "card": {
+            "$ref": "#/components/schemas/WordCardRead"
+          },
+          "state": {
+            "const": "found",
+            "default": "found",
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "card"
+        ],
+        "title": "ResolvedCard",
+        "type": "object"
+      },
       "ResponseMeta": {
         "additionalProperties": false,
         "properties": {
@@ -434,6 +1016,246 @@
         "title": "RevisionConflictDetails",
         "type": "object"
       },
+      "SessionSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "absolute_expires_at": {
+            "format": "date-time",
+            "title": "Absolute Expires At",
+            "type": "string"
+          },
+          "audience": {
+            "enum": [
+              "client",
+              "admin"
+            ],
+            "title": "Audience",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "device_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Summary"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_current": {
+            "title": "Is Current",
+            "type": "boolean"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "platform": {
+            "enum": [
+              "web",
+              "windows",
+              "android"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "transport": {
+            "enum": [
+              "web",
+              "native"
+            ],
+            "title": "Transport",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "audience",
+          "transport",
+          "platform",
+          "device_summary",
+          "created_at",
+          "last_seen_at",
+          "absolute_expires_at",
+          "revoked_at",
+          "is_current"
+        ],
+        "title": "SessionSummary",
+        "type": "object"
+      },
+      "SourceSpan": {
+        "additionalProperties": false,
+        "properties": {
+          "block_id": {
+            "format": "uuid",
+            "title": "Block Id",
+            "type": "string"
+          },
+          "end": {
+            "exclusiveMinimum": 0.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "start": {
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "block_id",
+          "start",
+          "end"
+        ],
+        "title": "SourceSpan",
+        "type": "object"
+      },
+      "SuccessResponse_AccessRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AccessRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[AccessRead]",
+        "type": "object"
+      },
+      "SuccessResponse_AccountRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AccountRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[AccountRead]",
+        "type": "object"
+      },
+      "SuccessResponse_Annotated_Union_NativeAuthenticated__ActivationRequired___FieldInfo_annotation_NoneType__required_True__discriminator__state____": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "discriminator": {
+              "mapping": {
+                "action_required": "#/components/schemas/ActivationRequired",
+                "authenticated": "#/components/schemas/NativeAuthenticated"
+              },
+              "propertyName": "state"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NativeAuthenticated"
+              },
+              {
+                "$ref": "#/components/schemas/ActivationRequired"
+              }
+            ],
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[Annotated[Union[NativeAuthenticated, ActivationRequired], FieldInfo(annotation=NoneType, required=True, discriminator='state')]]",
+        "type": "object"
+      },
+      "SuccessResponse_Annotated_Union_WebAuthenticated__ActivationRequired___FieldInfo_annotation_NoneType__required_True__discriminator__state____": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "discriminator": {
+              "mapping": {
+                "action_required": "#/components/schemas/ActivationRequired",
+                "authenticated": "#/components/schemas/WebAuthenticated"
+              },
+              "propertyName": "state"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WebAuthenticated"
+              },
+              {
+                "$ref": "#/components/schemas/ActivationRequired"
+              }
+            ],
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[Annotated[Union[WebAuthenticated, ActivationRequired], FieldInfo(annotation=NoneType, required=True, discriminator='state')]]",
+        "type": "object"
+      },
+      "SuccessResponse_CollectionRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CollectionRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[CollectionRead]",
+        "type": "object"
+      },
       "SuccessResponse_CompatibilityRead_": {
         "additionalProperties": false,
         "properties": {
@@ -449,6 +1271,74 @@
           "meta"
         ],
         "title": "SuccessResponse[CompatibilityRead]",
+        "type": "object"
+      },
+      "SuccessResponse_CsrfRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CsrfRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[CsrfRead]",
+        "type": "object"
+      },
+      "SuccessResponse_ExplanationResolveRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExplanationResolveRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[ExplanationResolveRead]",
+        "type": "object"
+      },
+      "SuccessResponse_MailAccepted_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MailAccepted"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[MailAccepted]",
+        "type": "object"
+      },
+      "SuccessResponse_WordCardRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WordCardRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[WordCardRead]",
         "type": "object"
       },
       "TextCard": {
@@ -510,6 +1400,216 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "WebAuthenticated": {
+        "additionalProperties": false,
+        "properties": {
+          "absolute_expires_at": {
+            "format": "date-time",
+            "title": "Absolute Expires At",
+            "type": "string"
+          },
+          "audience": {
+            "enum": [
+              "client",
+              "admin"
+            ],
+            "title": "Audience",
+            "type": "string"
+          },
+          "idle_expires_at": {
+            "format": "date-time",
+            "title": "Idle Expires At",
+            "type": "string"
+          },
+          "server_time": {
+            "format": "date-time",
+            "title": "Server Time",
+            "type": "string"
+          },
+          "session_ref": {
+            "format": "uuid",
+            "title": "Session Ref",
+            "type": "string"
+          },
+          "state": {
+            "const": "authenticated",
+            "default": "authenticated",
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_ref",
+          "audience",
+          "absolute_expires_at",
+          "idle_expires_at",
+          "server_time"
+        ],
+        "title": "WebAuthenticated",
+        "type": "object"
+      },
+      "WordCardPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "context_meaning": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Context Meaning",
+            "type": "string"
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/WordExample"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Examples",
+            "type": "array"
+          },
+          "lexical_kind": {
+            "const": "word",
+            "default": "word",
+            "title": "Lexical Kind",
+            "type": "string"
+          },
+          "other_meanings": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Other Meanings",
+            "type": "array"
+          },
+          "part_of_speech": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Part Of Speech",
+            "type": "string"
+          },
+          "reading": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading"
+          },
+          "term": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Term",
+            "type": "string"
+          }
+        },
+        "required": [
+          "term",
+          "part_of_speech",
+          "context_meaning",
+          "other_meanings",
+          "examples"
+        ],
+        "title": "WordCardPayload",
+        "type": "object"
+      },
+      "WordCardRead": {
+        "additionalProperties": false,
+        "properties": {
+          "card_id": {
+            "format": "uuid",
+            "title": "Card Id",
+            "type": "string"
+          },
+          "card_revision": {
+            "minimum": 1.0,
+            "title": "Card Revision",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "explanation_language": {
+            "title": "Explanation Language",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/WordCardPayload"
+          },
+          "provenance": {
+            "const": "material",
+            "default": "material",
+            "title": "Provenance",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/NovelContentLocator"
+            },
+            "minItems": 1,
+            "title": "Source Refs",
+            "type": "array"
+          },
+          "target_language": {
+            "enum": [
+              "ja",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          },
+          "type": {
+            "const": "word",
+            "default": "word",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "card_id",
+          "card_revision",
+          "target_language",
+          "explanation_language",
+          "payload",
+          "source_refs",
+          "created_at"
+        ],
+        "title": "WordCardRead",
+        "type": "object"
+      },
+      "WordExample": {
+        "additionalProperties": false,
+        "properties": {
+          "meaning": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Meaning",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "meaning"
+        ],
+        "title": "WordExample",
+        "type": "object"
       }
     }
   },
@@ -519,6 +1619,143 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/samples/auth/access": {
+      "get": {
+        "operationId": "auth_access_samples_auth_access_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_AccessRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Access"
+      }
+    },
+    "/samples/auth/account": {
+      "get": {
+        "operationId": "auth_account_samples_auth_account_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_AccountRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Account"
+      }
+    },
+    "/samples/auth/csrf": {
+      "get": {
+        "operationId": "auth_csrf_samples_auth_csrf_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_CsrfRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Csrf"
+      }
+    },
+    "/samples/auth/mail-accepted": {
+      "post": {
+        "operationId": "auth_mail_accepted_samples_auth_mail_accepted_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_MailAccepted_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Mail Accepted"
+      }
+    },
+    "/samples/auth/native-login": {
+      "get": {
+        "operationId": "auth_native_login_samples_auth_native_login_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_Annotated_Union_NativeAuthenticated__ActivationRequired___FieldInfo_annotation_NoneType__required_True__discriminator__state____"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Native Login"
+      }
+    },
+    "/samples/auth/sessions": {
+      "get": {
+        "operationId": "auth_sessions_samples_auth_sessions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponse_SessionSummary_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Sessions"
+      }
+    },
+    "/samples/auth/verified": {
+      "post": {
+        "operationId": "auth_verified_samples_auth_verified_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Verified"
+      }
+    },
+    "/samples/auth/web-login": {
+      "get": {
+        "operationId": "auth_web_login_samples_auth_web_login_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_Annotated_Union_WebAuthenticated__ActivationRequired___FieldInfo_annotation_NoneType__required_True__discriminator__state____"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Web Login"
+      }
+    },
     "/samples/binary": {
       "get": {
         "operationId": "binary_sample_samples_binary_get",
@@ -603,6 +1840,60 @@
           }
         },
         "summary": "Error Sample"
+      }
+    },
+    "/samples/learning/collection": {
+      "get": {
+        "operationId": "learning_collection_samples_learning_collection_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_CollectionRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Learning Collection"
+      }
+    },
+    "/samples/learning/resolve": {
+      "get": {
+        "operationId": "learning_resolve_samples_learning_resolve_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ExplanationResolveRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Learning Resolve"
+      }
+    },
+    "/samples/learning/word-card": {
+      "get": {
+        "operationId": "learning_word_card_samples_learning_word_card_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_WordCardRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Learning Word Card"
       }
     },
     "/samples/page": {

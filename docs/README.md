@@ -2,7 +2,7 @@
 
 2026-09-26实施入口：[PLAN2路线图](delivery/roadmap.md)保留B0/B1并重排后续阶段；[原型功能清单](delivery/prototype-scope.md)覆盖当前手机/电脑全部产品操作，[站内消息契约](contracts/notifications.md)补齐已读与跳转，[走查及review记录](delivery/reviews/2026-09-26-prototype-implementation-plan.md)记录本轮证据。
 
-阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。B1账号与收藏闭环（含注册、所选激活和找回）及B2持久模型任务未实现；独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
+阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。[B1账号与收藏闭环](delivery/reviews/2026-09-26-b1-implementation.md)（含注册、邮箱激活和找回）正在实施、联调与审查，尚未完成所需验收；共享流程按Web/Android验证，Windows仅验独有变化。B2持久模型任务未实现。独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
 
 FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + Dio + Drift/SQLite及平台音频存储，统一读取、更新、跨端刷新、离线与清理；[校验契约](contracts/client-cache.md)和[设计审查](delivery/reviews/2026-09-26-frontend-cache.md)记录实施边界，尚未实现。
 

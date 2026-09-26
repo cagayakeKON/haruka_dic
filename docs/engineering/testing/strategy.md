@@ -29,12 +29,14 @@ B1账号验收必须通过正式注册、所选激活与找回/重置路径，�
 | Python 集成 | backend/tests/integration | 真实 PostgreSQL 迁移/行内及唯一约束、服务层无外键逻辑关联/并发、AuthSession 撤销事实、Redis 会话材料/轮换、Outbox/Kafka 重投、MinIO 权限及对象生命周期 | 不使用 SQLite 代替 PostgreSQL 锁/精度/JSON/约束语义；不把任意 SQL 跨用户拒绝当成未启用 RLS 的数据库能力 |
 | Flutter 单元 | frontend/test，flutter_test | 控制器、账号代次、访问快照、DTO、缓存、选择偏移与播放器状态 | OS 安全存储和真实播放 |
 | Flutter 组件 | frontend/test，flutter_test | 加载/空/错误/只读/无权、导航守卫、表单、题目/成绩 | 真实平台弹窗或浏览器 Cookie |
-| 三端应用内集成 | frontend/integration_test，integration_test | 注册登录、主学习闭环、考试、CSV、退出切账号 | 无法操作原生平台 UI；测试入口包不能代替最终发布包 |
-| 浏览器与原生补充 | tools/e2e 的 Playwright；frontend/patrol_test 的 Android Patrol；Windows 专项驱动或明确人工记录 | Web Cookie/多标签/刷新/管理端、系统权限/文件框/后台恢复及实际候选制品冒烟 | 不复制完整公共用例；未验证平台驱动不能声称覆盖 |
+| 应用内集成 | frontend/integration_test，integration_test | 公共逻辑及Web/Android目标流程的注册登录、学习、考试、CSV、换账号 | 无法操作原生平台 UI；测试入口包不能代替最终发布包 |
+| 浏览器与原生补充 | tools/e2e 的 Playwright；frontend/patrol_test 的 Android Patrol；按需Windows定点驱动/人工记录 | Web Cookie/多标签/刷新/管理端、Android系统行为；Windows仅覆盖变化的独有代码或系统API | 不复制完整公共用例；未验证平台驱动不能声称覆盖 |
 | AI/TTS 协议测试 | backend/tests/contract，Fake 模型/HTTP/音频 | 类型、工具权限、无 Key、取消/超时、重试上限、听力题/脚本/题目候选、音频字节/格式；每attempt的input/output/cache/可选指标、partial/unavailable与聚合不重复 | 模拟输出不能证明模型讲解/批改、听力匹配或声音质量 |
 | AI/TTS 质量评估 | 受控评估样本与独立运行记录 | 英/日解释、抽题/评分、真实声音/音频和模型能力 | 不加入常规 PR 的隐式供应商调用 |
 
 Flutter 官方区分 unit/widget/integration；integration_test 不能操作原生平台 UI，须用实际平台操作或经评估的专用驱动补齐，不把自动测试未覆盖的系统界面写成通过。Patrol 的项目分工为 Android 补充，并不表示该工具没有 Web 能力。依据：[Flutter 测试分层](https://docs.flutter.dev/testing/overview)、[集成测试](https://docs.flutter.dev/testing/integration-tests)。
+
+共享前端行为选择Web和Android的最低有效证据，不在Windows重复整套流程；只有变更触及Windows专有代码或系统API时才安排对应定点检查。前端日志的接收、队列与恢复只需在Web验证，服务端日志仍按API、ORM、PG及Worker各自来源验证。后文旧矩阵中的“三端”指产品支持范围；实施验收按本条选择必要平台，不把未运行的平台写成已测。
 
 ### 后端 route、service 与 repository 的写法
 
@@ -141,13 +143,13 @@ def override_dependency(
 
 | 用例组 | 核心断言 | 最低证据 |
 | --- | --- | --- |
-| AUTH | 最小注册竞争/回滚；错误密码/限流；原生刷新轮换/重放、Web续期/多窗口；改密重验/密码策略/password_version锁内复核/全会话撤销，并发改密与恢复竞争、提交后丢响应的结果未知；启用的验证/恢复挑战按用途/到期/单次消费；两端登录资格与可跳过首次引导 | 真实DB/Redis + API + 三端/管理Web，ACC |
+| AUTH | 最小注册竞争/回滚；错误密码/限流；原生刷新轮换/重放、Web续期/多窗口；改密重验/密码策略/password_version锁内复核/全会话撤销，并发改密与恢复竞争、提交后丢响应的结果未知；启用的验证/恢复挑战按用途/到期/单次消费；两端登录资格与可跳过首次引导 | 真实DB/Redis + API + Web/Android/管理Web，ACC |
 | PROFILE_SETTINGS | [PROFILE/SET验收](../../modules/settings.md)：资料可选/清除、字段/revision冲突、头像解码/去元数据/原子替换/no-store及同浏览器A→B与撤权后条件、语言目录/当前语/历史保留、可选人口字段AI开关、显示偏好、管理DTO裁剪与A/B/账号切换 | 纯校验 + 真实PG/对象存储/API + Flutter widget/三端目标流程；恶意图片用受控资产，不向真实供应商发送人口数据 |
 | AUTHZ | 多角色/继承/环/停用/deny；未知权限默认拒绝；写权限不扩大读/范围；直达路由和直接 API；逐字段裁剪 | 授权规则/真实投影 + UI + API 权限矩阵 |
 | REVOKE | 多实例旧缓存、通知丢失、Redis 删除失败而 PG 撤销已提交、旧表单/并发管理提交；撤权后新请求/工具/供应商调用步骤拒绝；最后管理员竞争保护 | 并发集成 + SSE/Worker/管理 Web |
 | ISOLATION | 同库同 schema 的 A/B 交换所有资源/父子 ID，批量混入他人 ID；ScopeContext及服务事务拒绝非法关联，私有文件签名/任务/统计/日志无泄漏 | 每个资源族实际 API/仓储/文件/Worker + 真实 PG；不依赖 FK/RLS |
 | DB | 无物理外键、PK/UNIQUE/NOT NULL/行内 CHECK、字段/时间语义、逻辑关联、父删除竞争、软删唯一、事务/CAS、索引/迁移/字典与数据库账号隔离 | 数据库规范的 DB 验收 + 真实迁移/元数据/服务事务；DAT-01/DAT-06及工厂 TDS 场景 |
-| ACCOUNT_SWITCH | A 退出后 B 登录，旧响应/音频/下载/日志/考试草稿不应用到 B；client/admin 快照和队列不混用 | Flutter 单元/组件 + 三端集成 |
+| ACCOUNT_SWITCH | A 退出后 B 登录，旧响应/音频/下载/日志/考试草稿不应用到 B；client/admin 快照和队列不混用 | Flutter 单元/组件 + Web/Android集成 |
 | IMPORT | 三类/格式分别验证、大小/解压限制、危险路径/外部资源、取消/重投；公共源层与三类领域结构分离、独立就绪/质量门槛、AI不改所选类型、显式另一类型重处理不改旧历史；试卷文字稿用途与原始音频拒绝 | 格式与各处理器单测 + 文件/Worker/专用API集成，TYPE/MAT/MSTR |
 | VISION_OCR | 文本层免调用、扫描/混合页范围、显式阶段/Key/上限、首次识别与重识别版本、截断/漏页/错误坐标、页面重试与unknown结果、无传统OCR回退 | 页计划/校验单测 + Fake视觉/Job/作用域集成；真实识别质量另行授权样本评估，OCR验收按获准格式分期 |
 | NOVEL | 章序/对话/脚注、句词边界与原文范围、标注失败降级、专用阅读器 | 人工标注样本 + controller/widget + 三端相关流程，NOV |
@@ -259,8 +261,8 @@ AI 质量单独使用经人工标注的版本化样本与 rubric；首批样本�
 
 ## 7. 发布平台与证据
 
-必须记录 Windows 版本/架构、浏览器与版本、Android API/设备、Flutter/Dart 与后端依赖版本，不写笼统的“三端测试通过”。首版建议覆盖一个受支持 Windows 目标、Chrome/Edge Web，以及最低支持与当前 Android API，版本范围在初始化设备清单锁定；Web 管理端有独立登录/RBAC/敏感表单用例。
+必须记录本次实际受测浏览器与版本、Android API/设备、Flutter/Dart与后端依赖版本；只有执行Windows专属检查时才记录其版本/架构，不写笼统的“三端测试通过”。首版共享流程建议覆盖Chrome/Edge Web，以及最低支持与当前Android API；Windows专属改动另选受支持目标，版本范围在初始化设备清单锁定；Web 管理端有独立登录/RBAC/敏感表单用例。
 
-实际制品至少验证原生安全存储、文件选择/保存、Windows 音频后端、浏览器自动播放/Cookie/CSRF、多标签刷新、Android 生命周期/进程重建和音频中断。另按实际业务验证键鼠输入、真实触控和小屏题组；不能只依赖截图差异。
+实际制品按本次改动验证原生安全存储、文件选择/保存、浏览器自动播放/Cookie/CSRF、多标签刷新及Android生命周期/进程重建和音频中断；Windows音频后端只在其实现或系统API变化时定点验证。另按实际业务验证键鼠输入、真实触控和小屏题组；不能只依赖截图差异。
 
 测试报告保存用例/需求 ID、候选版本、实际命令、环境、退出码、失败/跳过理由、覆盖率与脱敏附件。具体合并与发布门禁、迁移/回滚以及交付证据保存在 [交付验收规范](../../delivery/acceptance.md)。

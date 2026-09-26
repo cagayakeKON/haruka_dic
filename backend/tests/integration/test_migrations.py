@@ -99,7 +99,7 @@ async def target() -> AsyncIterator[MigrationTarget]:
 def fixture_migrations(temporary: Path, *, mode: str) -> Path:
     directory = temporary / "migrations"
     shutil.copytree(MIGRATIONS, directory, ignore=shutil.ignore_patterns("__pycache__"))
-    first = directory / "versions/0001_b0_identity.py"
+    first = directory / "versions/0001_identity.py"
     contents = first.read_text(encoding="utf-8")
     contents = contents.replace("down_revision = None", 'down_revision = "test_checkpoint"')
     first.write_text(contents, encoding="utf-8")

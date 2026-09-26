@@ -14,9 +14,7 @@ import '../test_support/sample_adapter.dart';
 void main() {
   final config = AppConfig.parse(platform: AppPlatform.windows, environment: 'dev');
 
-  testWidgets('SCF-B0 health is explicit and survives resize without duplicate requests', (
-    tester,
-  ) async {
+  testWidgets('health is explicit and survives resize without duplicate requests', (tester) async {
     final pending = Completer<ResponseBody>();
     final adapter = SampleAdapter((_, _) => pending.future);
     final api = ApiClient(config, adapter: adapter);
@@ -51,9 +49,7 @@ void main() {
     expect(adapter.calls, 1);
   });
 
-  testWidgets('SCF-B0 health failure uses local language and never remote messages', (
-    tester,
-  ) async {
+  testWidgets('health failure uses local language and never remote messages', (tester) async {
     final adapter = SampleAdapter(
       (_, _) async => ResponseBody.fromString(
         jsonEncode({

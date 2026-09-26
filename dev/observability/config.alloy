@@ -33,9 +33,47 @@ discovery.relabel "haruka" {
   }
 }
 
-loki.source.docker "haruka" {
-  host = "tcp://socket-proxy:2375"
+discovery.relabel "postgres" {
   targets = discovery.relabel.haruka.output
+  rule {
+    source_labels = ["service"]
+    regex = "postgres"
+    action = "keep"
+  }
+}
+
+discovery.relabel "other_containers" {
+  targets = discovery.relabel.haruka.output
+  rule {
+    source_labels = ["service"]
+    regex = "postgres"
+    action = "drop"
+  }
+}
+
+loki.source.docker "other_containers" {
+  host = "tcp://socket-proxy:2375"
+  targets = discovery.relabel.other_containers.output
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.source.docker "postgres" {
+  host = "tcp://socket-proxy:2375"
+  targets = discovery.relabel.postgres.output
+  forward_to = [loki.process.postgres_safe.receiver]
+}
+
+loki.process "postgres_safe" {
+  stage.regex {
+    expression = "^.*? \\[(?P<backend_pid>[0-9]{1,10})\\] db=(?P<database_name>haruka_(?:dev|test)) app=(?P<application_name>haruka-(?:(?:local-dev|dev|test-integration)(?:-maintenance(?:-[a-f0-9]{8})?)?|test-[a-f0-9]{32})) state=(?P<sqlstate>[0-9A-Z]{5})[[:space:]]+(?P<severity>LOG|ERROR|WARNING|FATAL|PANIC):"
+  }
+  stage.template {
+    source = "safe_postgres_line"
+    template = `{{ if .database_name }}{"record_type":"postgres_engine","event":"database.engine","database_name":"{{ .database_name }}","application_name":"{{ .application_name }}","backend_pid":{{ .backend_pid }},"sqlstate":"{{ .sqlstate }}","severity":"{{ .severity }}"}{{ else }}{"record_type":"postgres_engine","event":"database.engine.parse_error"}{{ end }}`
+  }
+  stage.output {
+    source = "safe_postgres_line"
+  }
   forward_to = [loki.write.local.receiver]
 }
 

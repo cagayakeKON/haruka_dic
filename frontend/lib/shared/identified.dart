@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-/// Shares one registered identifier between Flutter and external semantic locators.
-/// The child's accessible name, role and state remain intact.
+/// Exposes the registered control ID to Flutter tests and external UI drivers.
 class Identified extends StatelessWidget {
   const Identified({required this.id, required this.child, this.merge = false, super.key});
 

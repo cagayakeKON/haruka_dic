@@ -64,7 +64,7 @@ async def handle_request_validation(request: Request, exc: Exception) -> JSONRes
                 else:
                     source = "cookie"
         # Foundation has no business input schema. Unknown loc/dict keys collapse
-        # to the safe container. Business routes must register public paths in B1.
+        # to the safe container. Business routes must register public paths explicitly.
         fields.append(FieldError(source=source, path=[], code=code, message=FIELD_MESSAGES[code]))
     return error_response(request, ErrorCode.INPUT_INVALID, field_errors=fields)
 

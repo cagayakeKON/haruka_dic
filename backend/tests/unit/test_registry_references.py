@@ -21,7 +21,7 @@ def test_mistake_and_avatar_permissions_keep_self_scope_and_template_boundaries(
         "client.profile.avatar.update",
     }
     document = permissions.permission_document()
-    assert document["catalog_version"] == "b0-identity-v3"
+    assert document["catalog_version"] == "identity-permissions-v3"
     catalog = document["permissions"]
     assert isinstance(catalog, list)
     for code in newly_registered:

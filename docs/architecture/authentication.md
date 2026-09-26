@@ -10,13 +10,13 @@ PLAN2分期说明：本文已选邮箱验证/邮件找回及不启用审批/人�
 
 已确认增加管理后台及完整 RBAC。登录需有对应 client.login/admin.login 资格；登录后根据有效权限显示两端页面/菜单/按钮，并由后端逐项检查业务操作和数据范围。用户私有 Library 不因管理角色自动变成共享数据；完整策略、角色、管理功能和撤权契约以 RBAC 专题为准。
 
-推荐首版采用邮箱 + 密码，注册时事务性创建User、私有Library以及一个空的UserExtension扩展行（物理user_extensions，资料/学习/设置各有字段组版本）。登录标识规范化后具有数据库唯一约束；密码不做静默截断或改变，User的password_version在任何密码哈希替换时单调增加。显示名、头像、出生年份/性别、母语/学习语言和模型Key不承担身份标识，也不成为注册/登录前置条件；资料接口不能修改邮箱、账号状态、安全epoch、password_version或权限。注册、所选激活及找回密码已纳入[B1账号闭环](../delivery/milestones/scaffold.md#3-b1三端账号闭环与收藏参考流程)；邀请/开放、邮箱验证及恢复方式须在B1账号契约冻结前明确，B1验收必须有实际可用的安全恢复路径，不能推迟到公开上线前才决定。
+首版已确认采用邮箱 + 密码，注册时事务性创建User、私有Library以及一个空的UserExtension扩展行（物理user_extensions，资料/学习/设置各有字段组版本）。登录标识规范化后具有数据库唯一约束；密码不做静默截断或改变，User的password_version在任何密码哈希替换时单调增加。显示名、头像、出生年份/性别、母语/学习语言和模型Key不承担身份标识，也不成为注册/登录前置条件；资料接口不能修改邮箱、账号状态、安全epoch、password_version或权限。注册、所选激活及找回密码已纳入[B1账号闭环](../delivery/milestones/scaffold.md#3-b1账号闭环与收藏参考流程)；用户已确认开放注册使用默认关闭的受控开关，邮箱验证后激活，邮件找回；不启用邀请、审批或人工恢复。外部发信配置尚未准备，B1验收仍须分别记录本地隔离流程及实际通道证据，不以策略确认代替可用性验证。
 
 Haruka 维护独立账号。参考 MyHome 的密码校验、会话、CSRF 与作用域查询机制，但不共享 MyHome 的账号表、Cookie、签名 Secret 或登录会话。首版不实现组织、共享资料库或单点登录。
 
 ## 2. 注册与会话流程
 
-1. 注册校验当前开放/审批策略、输入和频率，事务创建账号、资料库、空资料/学习/设置单例与允许公开分配的默认角色；客户端不能指定管理角色/权限/状态或借资料字段影响激活，失败不能留下半成品。
+1. 注册校验当前开放开关、邮箱验证策略、输入和频率，事务创建账号、资料库、空资料/学习/设置单例与允许公开分配的默认角色；客户端不能指定管理角色/权限/状态或借资料字段影响激活，失败不能留下半成品。
 2. 登录校验密码、账号状态及当前入口的 client.login/admin.login，创建带受众的独立会话；用户端已登录不自动取得管理会话。
 3. 原生验证JWT算法/签名/issuer/audience/期限，Web验证opaque Cookie对应的服务端会话；两者均核对PG撤销/epoch、Redis存续和当前权限，不能信任旧Token角色。
 4. Web有效会话只续idle、不在常规刷新中轮换Cookie；原生single-flight+CAS轮换刷新凭据，处理回执/重放/迟到代次；算法以本文会话机制为准。
@@ -100,7 +100,7 @@ PostgreSQL AuthSession 保存 session_id、user_id、audience、transport、crea
 
 ### Web续期与原生并发刷新
 
-Web正常业务访问或显式/auth/refresh只原子延长Redis idle TTL到不超过PG绝对期限，不轮换Cookie、不发送新的Set-Cookie。因此多标签常规续期无旧刷新Cookie迟到覆盖问题；失效会话必须重新登录。GET auth/csrf返回绑定当前会话的CSRF值，允许前端内存持有；Cookie写操作校验CSRF Header和Origin，登录/注册等尚无会话的写操作也要求可信Origin与JSON。带浏览器Origin的请求不能伪装native逃过来源验证。
+Web正常业务访问或显式/auth/refresh只原子延长Redis idle TTL到不超过PG绝对期限，不轮换Cookie、不发送新的Set-Cookie。因此多标签常规续期无旧刷新Cookie迟到覆盖问题；失效会话必须重新登录。GET auth/csrf返回绑定当前会话的CSRF值，允许前端内存持有；Cookie写操作校验CSRF Header和Origin，登录/注册等尚无会话的写操作也要求可信Origin与JSON。Web使用/auth/login和/auth/refresh；Windows/Android使用/auth/native/login和/auth/native/refresh，固定路由决定传输。原生入口拒绝浏览器Origin/Fetch Metadata和混合Cookie/Bearer，不能通过自报platform逃过来源验证；管理端仅支持Web。
 
 Web登录/退出/换账号/近期重验属于身份变更，跨标签协调并广播“身份可能变化”，其他标签暂停私有写入，重新取当前Cookie的me/access最小身份后再绑定缓存；不广播秘密，不要求额外profile.read。重验成功创建新会话标识并撤销旧会话，不能把认证提升绑定到不变的旧标识。异常并发/迟到身份响应一律重新查询服务端当前身份；无法确认则清空私有UI并重新登录，不仅凭返回的邮箱切换缓存。改密/重置撤销全部会话。
 

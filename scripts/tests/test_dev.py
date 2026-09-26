@@ -219,31 +219,39 @@ class ResultGates(unittest.TestCase):
             ):
                 dev.bootstrap(dev.Report("bootstrap", "backend"), "backend")
 
-    def test_unimplemented_milestones_never_pass(self) -> None:
+    def test_milestones_never_pass_without_explicit_evidence(self) -> None:
         for stage in ("B0", "B1", "B2"):
             with self.subTest(stage=stage), self.assertRaises(dev.DevError):
                 dev.check(dev.Report("check", stage), stage)
 
-    def test_b0_requires_explicit_identity_and_reports_and_other_scopes_refuse_them(self) -> None:
-        for identity, reports in (
-            (None, ()),
-            (Path("identity.json"), ()),
-            (None, (Path("report.json"),)),
-        ):
-            with self.subTest(identity=identity, reports=reports), patch("scripts.dev.run") as run:
-                with self.assertRaisesRegex(dev.DevError, "explicit --identity"):
-                    dev.check(
-                        dev.Report("check", "B0"), "B0", identity=identity, evidence_reports=reports
-                    )
-                run.assert_not_called()
+    def test_candidate_requires_explicit_identity_and_reports_and_other_scopes_refuse_them(
+        self,
+    ) -> None:
+        for stage in ("B0", "B1"):
+            for identity, reports in (
+                (None, ()),
+                (Path("identity.json"), ()),
+                (None, (Path("report.json"),)),
+            ):
+                with (
+                    self.subTest(stage=stage, identity=identity, reports=reports),
+                    patch("scripts.dev.run") as run,
+                ):
+                    with self.assertRaisesRegex(dev.DevError, "explicit --identity"):
+                        dev.check(
+                            dev.Report("check", stage),
+                            stage,
+                            identity=identity,
+                            evidence_reports=reports,
+                        )
+                    run.assert_not_called()
         for stage in (
             "docs",
             "tooling",
             "backend",
             "frontend",
             "infrastructure",
-            "B0-foundation",
-            "B1",
+            "foundation",
             "B2",
         ):
             with self.subTest(stage=stage), patch("scripts.dev.run") as run:
@@ -256,7 +264,7 @@ class ResultGates(unittest.TestCase):
                     )
                 run.assert_not_called()
 
-    def test_b0_cli_forwards_only_explicit_reports_and_records_candidate_scope(self) -> None:
+    def test_candidate_cli_forwards_explicit_reports_and_scope(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             identity = root / "identity.json"
@@ -323,7 +331,51 @@ class ResultGates(unittest.TestCase):
             self.assertEqual(identity.read_text(), '{"commit":"explicit-candidate"}')
             self.assertTrue(all(path.read_text() == "{}" for path in reports))
 
-    def test_b0_downstream_failure_and_missing_output_remain_failed(self) -> None:
+    def test_account_candidate_rejects_incomplete_required_matrix(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            identity = root / "identity.json"
+            evidence = root / "partial.json"
+            identity.write_text('{"commit":"explicit-candidate"}', encoding="utf-8")
+            evidence.write_text("{}", encoding="utf-8")
+            calls: list[list[str]] = []
+
+            def incomplete_gate(
+                _report: dev.Report, name: str, arguments: Sequence[str], **_kwargs: object
+            ) -> str:
+                self.assertEqual(name, "python")
+                calls.append(list(arguments))
+                Path(arguments[arguments.index("--output") + 1]).write_text(
+                    json.dumps(
+                        {
+                            "passed": False,
+                            "scope": "B1",
+                            "phase": "result",
+                            "identity": {"commit": "explicit-candidate"},
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                return ""
+
+            with (
+                patch("scripts.dev.ROOT", root),
+                patch("scripts.dev.run", side_effect=incomplete_gate),
+                self.assertRaisesRegex(dev.DevError, "passing B1 result matrix"),
+            ):
+                dev.check(
+                    dev.Report("check", "B1"),
+                    "B1",
+                    identity=identity,
+                    evidence_reports=[evidence],
+                )
+            self.assertEqual(len(calls), 1)
+            command = calls[0]
+            self.assertEqual(command[command.index("--scope") + 1], "B1")
+            self.assertEqual(command[command.index("--identity") + 1], str(identity.resolve()))
+            self.assertEqual(command[command.index("--report") + 1], str(evidence.resolve()))
+
+    def test_candidate_downstream_failure_and_missing_output_remain_failed(self) -> None:
         for gate_exit in (0, 1):
             with self.subTest(gate_exit=gate_exit), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)

@@ -1,4 +1,167 @@
 {
+  "auth_account_legacy_unverified": {
+    "data": {
+      "created_at": "2026-09-26T01:02:03Z",
+      "email": "legacy@example.test",
+      "email_verified_at": null,
+      "status": "active"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_admin_access": {
+    "data": {
+      "account_status": "active",
+      "audience": "admin",
+      "authz_version": {
+        "policy": 3,
+        "user": 2
+      },
+      "feature_flags": [],
+      "instance_id": "haruka-test-0123456789abcdef0123456789abcdef",
+      "navigation": [
+        {
+          "key": "administration",
+          "route_key": "/admin",
+          "title": "管理"
+        }
+      ],
+      "permissions": [
+        {
+          "code": "admin.auth_policy.read",
+          "data_scope": "platform_metadata"
+        }
+      ],
+      "session_ref": "018f1234-0000-7000-8000-000000000002",
+      "user_id": "018f1234-0000-7000-8000-000000000001"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_client_access_login_only": {
+    "data": {
+      "account_status": "active",
+      "audience": "client",
+      "authz_version": {
+        "policy": 3,
+        "user": 1
+      },
+      "feature_flags": [],
+      "instance_id": "haruka-test-0123456789abcdef0123456789abcdef",
+      "navigation": [],
+      "permissions": [
+        {
+          "code": "client.login",
+          "data_scope": "self"
+        }
+      ],
+      "session_ref": "018f1234-0000-7000-8000-000000000002",
+      "user_id": "018f1234-0000-7000-8000-000000000001"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_csrf": {
+    "data": {
+      "csrf_token": "SYNTHETIC_SAMPLE_NOT_VALID",
+      "session_ref": "018f1234-0000-7000-8000-000000000002"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_mail_accepted": {
+    "response": {
+      "data": {
+        "next_step": "check_email",
+        "state": "accepted"
+      },
+      "meta": {
+        "request_id": "018f1234-1234-7123-8123-123456789abc"
+      }
+    },
+    "status": 202
+  },
+  "auth_native_action_required": {
+    "data": {
+      "action_required": "verify_email",
+      "continuation_expires_at": "2026-09-27T01:02:03Z",
+      "continuation_token": "SYNTHETIC_SAMPLE_NOT_VALID",
+      "state": "action_required"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_native_authenticated": {
+    "data": {
+      "absolute_expires_at": "2026-09-27T01:02:03Z",
+      "access_expires_at": "2026-09-27T01:02:03Z",
+      "access_token": "SYNTHETIC_SAMPLE_NOT_VALID",
+      "audience": "client",
+      "refresh_expires_at": "2026-09-27T01:02:03Z",
+      "refresh_token": "SYNTHETIC_SAMPLE_NOT_VALID",
+      "server_time": "2026-09-26T01:02:03Z",
+      "session_generation": 1,
+      "session_ref": "018f1234-0000-7000-8000-000000000002",
+      "state": "authenticated"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_sessions_page": {
+    "data": [
+      {
+        "absolute_expires_at": "2026-09-27T01:02:03Z",
+        "audience": "client",
+        "created_at": "2026-09-26T01:02:03Z",
+        "device_summary": "Example emulator",
+        "id": "018f1234-0000-7000-8000-000000000002",
+        "is_current": true,
+        "last_seen_at": "2026-09-26T01:02:03Z",
+        "platform": "android",
+        "revoked_at": null,
+        "transport": "native"
+      }
+    ],
+    "meta": {
+      "has_more": false,
+      "next_cursor": null,
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_verified_empty": {
+    "body": "",
+    "status": 204
+  },
+  "auth_web_action_required": {
+    "data": {
+      "action_required": "verify_email",
+      "continuation_expires_at": "2026-09-27T01:02:03Z",
+      "continuation_token": "SYNTHETIC_SAMPLE_NOT_VALID",
+      "state": "action_required"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_web_authenticated": {
+    "data": {
+      "absolute_expires_at": "2026-09-27T01:02:03Z",
+      "audience": "client",
+      "idle_expires_at": "2026-09-27T01:02:03Z",
+      "server_time": "2026-09-26T01:02:03Z",
+      "session_ref": "018f1234-0000-7000-8000-000000000002",
+      "state": "authenticated"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
   "conflict": {
     "error": {
       "code": "REVISION_CONFLICT",
@@ -154,6 +317,193 @@
       "message": "输入信息有误",
       "message_args": {},
       "retryable": false
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "learning_collection": {
+    "data": {
+      "card_id": "018f1234-0000-7000-8000-000000000009",
+      "card_revision": 1,
+      "created_at": "2026-09-26T01:02:03Z",
+      "display_text": "青い",
+      "id": "018f1234-0000-7000-8000-000000000010",
+      "kind": "word",
+      "payload": {
+        "context_meaning": "蓝色的",
+        "examples": [
+          {
+            "meaning": "是蓝天。",
+            "text": "青い空です。"
+          },
+          {
+            "meaning": "蓝色的花开了。",
+            "text": "青い花が咲く。"
+          }
+        ],
+        "lexical_kind": "word",
+        "other_meanings": [
+          "年轻的"
+        ],
+        "part_of_speech": "形容詞",
+        "reading": "あおい",
+        "term": "青い"
+      },
+      "revision": 1,
+      "source_refs": [
+        {
+          "chapter_block_id": "018f1234-0000-7000-8000-000000000007",
+          "instance_id": "haruka-test-0123456789abcdef0123456789abcdef",
+          "library_id": "018f1234-0000-7000-8000-000000000003",
+          "locator_schema_version": 1,
+          "material_id": "018f1234-0000-7000-8000-000000000004",
+          "material_revision_id": "018f1234-0000-7000-8000-000000000005",
+          "node_title": "第一章",
+          "novel_chapter_id": "018f1234-0000-7000-8000-000000000006",
+          "prefix": "",
+          "quote": "青い空",
+          "source_title": "合成短篇",
+          "spans": [
+            {
+              "block_id": "018f1234-0000-7000-8000-000000000008",
+              "end": 3,
+              "start": 0
+            }
+          ],
+          "suffix": "が見える。",
+          "target_kind": "material_content",
+          "text_protocol_version": "canonical-text-v1"
+        }
+      ],
+      "target_language": "ja"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "learning_resolve_found": {
+    "data": {
+      "results": [
+        {
+          "card": {
+            "card_id": "018f1234-0000-7000-8000-000000000009",
+            "card_revision": 1,
+            "created_at": "2026-09-26T01:02:03Z",
+            "explanation_language": "zh-Hans",
+            "payload": {
+              "context_meaning": "蓝色的",
+              "examples": [
+                {
+                  "meaning": "是蓝天。",
+                  "text": "青い空です。"
+                },
+                {
+                  "meaning": "蓝色的花开了。",
+                  "text": "青い花が咲く。"
+                }
+              ],
+              "lexical_kind": "word",
+              "other_meanings": [
+                "年轻的"
+              ],
+              "part_of_speech": "形容詞",
+              "reading": "あおい",
+              "term": "青い"
+            },
+            "provenance": "material",
+            "schema_version": 1,
+            "source_refs": [
+              {
+                "chapter_block_id": "018f1234-0000-7000-8000-000000000007",
+                "instance_id": "haruka-test-0123456789abcdef0123456789abcdef",
+                "library_id": "018f1234-0000-7000-8000-000000000003",
+                "locator_schema_version": 1,
+                "material_id": "018f1234-0000-7000-8000-000000000004",
+                "material_revision_id": "018f1234-0000-7000-8000-000000000005",
+                "node_title": "第一章",
+                "novel_chapter_id": "018f1234-0000-7000-8000-000000000006",
+                "prefix": "",
+                "quote": "青い空",
+                "source_title": "合成短篇",
+                "spans": [
+                  {
+                    "block_id": "018f1234-0000-7000-8000-000000000008",
+                    "end": 3,
+                    "start": 0
+                  }
+                ],
+                "suffix": "が見える。",
+                "target_kind": "material_content",
+                "text_protocol_version": "canonical-text-v1"
+              }
+            ],
+            "target_language": "ja",
+            "type": "word"
+          },
+          "state": "found"
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "learning_word_card": {
+    "data": {
+      "card_id": "018f1234-0000-7000-8000-000000000009",
+      "card_revision": 1,
+      "created_at": "2026-09-26T01:02:03Z",
+      "explanation_language": "zh-Hans",
+      "payload": {
+        "context_meaning": "蓝色的",
+        "examples": [
+          {
+            "meaning": "是蓝天。",
+            "text": "青い空です。"
+          },
+          {
+            "meaning": "蓝色的花开了。",
+            "text": "青い花が咲く。"
+          }
+        ],
+        "lexical_kind": "word",
+        "other_meanings": [
+          "年轻的"
+        ],
+        "part_of_speech": "形容詞",
+        "reading": "あおい",
+        "term": "青い"
+      },
+      "provenance": "material",
+      "schema_version": 1,
+      "source_refs": [
+        {
+          "chapter_block_id": "018f1234-0000-7000-8000-000000000007",
+          "instance_id": "haruka-test-0123456789abcdef0123456789abcdef",
+          "library_id": "018f1234-0000-7000-8000-000000000003",
+          "locator_schema_version": 1,
+          "material_id": "018f1234-0000-7000-8000-000000000004",
+          "material_revision_id": "018f1234-0000-7000-8000-000000000005",
+          "node_title": "第一章",
+          "novel_chapter_id": "018f1234-0000-7000-8000-000000000006",
+          "prefix": "",
+          "quote": "青い空",
+          "source_title": "合成短篇",
+          "spans": [
+            {
+              "block_id": "018f1234-0000-7000-8000-000000000008",
+              "end": 3,
+              "start": 0
+            }
+          ],
+          "suffix": "が見える。",
+          "target_kind": "material_content",
+          "text_protocol_version": "canonical-text-v1"
+        }
+      ],
+      "target_language": "ja",
+      "type": "word"
     },
     "meta": {
       "request_id": "018f1234-1234-7123-8123-123456789abc"

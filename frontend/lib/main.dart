@@ -5,9 +5,12 @@ import 'package:flutter/services.dart';
 import 'app/haruka_app.dart';
 import 'app/platform_routes.dart';
 import 'core/config/app_config.dart';
+import 'core/auth/email_action_link.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Remove a one-time mail secret before the router, telemetry, or error UI starts.
+  final emailAction = captureEmailActionLink();
   configureUrlStrategy();
   try {
     final platform = kIsWeb
@@ -16,7 +19,7 @@ void main() {
         ? AppPlatform.android
         : AppPlatform.windows;
     final config = AppConfig.fromEnvironment(platform: platform, flavor: appFlavor);
-    runApp(HarukaApp(config: config));
+    runApp(HarukaApp(config: config, emailAction: emailAction, installErrorHandlers: true));
   } on FormatException {
     // Never display raw configuration values or fall back to another service.
     runApp(const ConfigurationErrorApp());

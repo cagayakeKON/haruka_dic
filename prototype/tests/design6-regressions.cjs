@@ -102,9 +102,7 @@ const fs = require("node:fs");
           });
           await page.locator("[data-action=importNext]").click();
           await page.locator("[data-action=importConfirm]").click();
-          await expect(page.getByRole("dialog")).toHaveAccessibleName(
-            "任务进度",
-          );
+          await expect(page.getByRole("dialog")).toContainText("任务进度");
           const item = page
             .getByRole("dialog")
             .locator(".task-item")

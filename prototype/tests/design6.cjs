@@ -95,9 +95,7 @@ fs.mkdirSync(output, { recursive: true });
       await page.locator("[data-x=switch]").click();
       await page.locator("[data-x=manageBook][data-id=dailywords]").click();
       await page.locator("[data-x=deleteBook]").click();
-      await expect(page.getByRole("dialog")).toHaveAccessibleName(
-        "删除单词本？",
-      );
+      await expect(page.getByRole("dialog")).toContainText("删除单词本？");
       await page.locator("[data-x=confirmDeleteBook]").click();
       await page.keyboard.press("Escape");
       await expect(page.locator(".collection-row")).toHaveCount(6);

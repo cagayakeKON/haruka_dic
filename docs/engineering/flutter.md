@@ -128,7 +128,7 @@ feature作用域不能因layout变化被销毁重建：Provider的身份包含�
 - 图片/题图按显示需求解码并限制缓存；预取与音频缓冲有容量、取消和账号隔离规则。不能靠无限keepAlive或把全书Widget永久挂载解决滚动恢复。
 - 播放进度、倒计时、流式文本等高频变化只更新必要子树，按需要合并UI刷新；不丢业务事件、保存结果或评分状态。静态组件优先const，订阅选择实际使用的状态字段。
 - 大文件解析/AI等既有后端职责留在后端；必要的本地重计算先测瓶颈，再按平台选分块/后台计算方式，不能假设原生isolate方案在Web自动同效。
-- Android性能用目标真机profile模式记录帧耗时/卡顿、峰值内存、打开大材料和连续阅读/输入表现；Web用实际浏览器性能工具补证，Windows在目标桌面环境验证。debug或浏览器窄屏截图不作为Android性能证据。[Flutter性能分析](https://docs.flutter.dev/perf/ui-performance)
+- Android性能用目标真机profile模式记录帧耗时/卡顿、峰值内存、打开大材料和连续阅读/输入表现；Web用实际浏览器性能工具补证。当前不执行Windows原生性能测试；debug或浏览器窄屏截图不作为Android性能证据。[Flutter性能分析](https://docs.flutter.dev/perf/ui-performance)
 
 性能门槛按 [交付验收](../delivery/acceptance.md) 在阶段1/对应功能原型登记设备、构建、刷新率、样本规模、测量窗口和目标，候选发布前锁定。没有数据时记录待测，不承诺已达固定帧率；界面动画优化不能跳过功能/权限正确性。
 

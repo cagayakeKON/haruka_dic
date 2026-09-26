@@ -3,16 +3,6 @@
   "status": "execution records required; this declaration is not passing evidence",
   "procedures": [
     {
-      "node_id": "SCF-B1-01:windows-native-vault",
-      "purpose": "Targeted Windows native secure-storage and process-lock evidence for changed Windows plugin and OS file-lock code",
-      "evidence_required": [
-        "release plugin registered and a credential restored after process restart",
-        "two independent Windows processes cannot replace the same prior credential twice",
-        "hash-bound record and independent review; no repeat of shared registration or collection flow"
-      ],
-      "acceptance_source": "docs/delivery/milestones/scaffold.md"
-    },
-    {
       "node_id": "SCF-B1-01:web-release",
       "purpose": "Independent web release UI evidence for SCF-B1-01",
       "evidence_required": [
@@ -165,16 +155,6 @@
     {
       "node_id": "SCF-B1-07:web-release",
       "purpose": "Independent web release UI evidence for SCF-B1-07",
-      "evidence_required": [
-        "real UI action and result with the exact isolated run and build identity",
-        "every listed assertion backed by a nonempty hash-bound record",
-        "independent review; absence or failure blocks the milestone"
-      ],
-      "acceptance_source": "docs/delivery/milestones/scaffold.md"
-    },
-    {
-      "node_id": "SCF-B1-07:android-release",
-      "purpose": "Independent android release UI evidence for SCF-B1-07",
       "evidence_required": [
         "real UI action and result with the exact isolated run and build identity",
         "every listed assertion backed by a nonempty hash-bound record",

@@ -103,7 +103,7 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 - Dio 拦截器记录正常/失败请求与关联 ID；go_router 观察页面切换；播放器、文件选择/保存、缓存、SSE 分别记录领域事件。
 - 页面使用路由名称/模板，网络使用方法与模板路径；不记录完整 URL 查询参数、请求/响应正文、Header 全量转储或输入框内容。
 - 异常保存经过脱敏和限长的堆栈、错误类型、release/build 与有限上下文。MyHome 接收器会抹去 stack/stack_trace，Haruka 需为安全堆栈定义专用字段，不能直接复用这一行为导致线上无法定位。
-- 发布流程保存匹配版本的 Dart 符号与 Web source maps，限制访问；用实际发布包验证堆栈还原。原生 Android/Windows 崩溃需要宿主层适配与下次启动补报，不能宣称 Dart handler 覆盖原生崩溃、OOM、系统强杀或浏览器进程退出；支持边界在阶段 1 原型和阶段 6 发布验收记录。
+- 发布流程保存匹配版本的 Dart 符号与 Web source maps，限制访问；用Web实际发布包验证堆栈还原。原生 Android/Windows 崩溃需要宿主层适配与下次启动补报，不能宣称 Dart handler 覆盖原生崩溃、OOM、系统强杀或浏览器进程退出；当前前端日志仅在Web验收，原生崩溃补报不写成已验证能力。
 
 ### 业务事件字典
 

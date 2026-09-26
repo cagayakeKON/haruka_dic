@@ -53,7 +53,7 @@ OCR统一使用视觉模型已由用户确认，拍照识词共用视觉调用�
 | DEC-09 | 单Python发行包haruka-backend、app导入包、推荐Hatchling，四个正式CLI共用资源组装 | B0验证wheel与配套资源在仓库外启动；运行lock与直接/传递构建依赖约束分别验证 |
 | DEC-10 | scripts/dev.py统一开发入口；后端注册定义单向导出OpenAPI/权限/错误/事件与Dart输出 | 具体载体/语义见脚手架蓝图；Dart生成器原型通过后锁定，临时手写DTO不能长期冒充已完成生成 |
 | DEC-11 | 阶段1内分B0工程基础、B1身份/收藏、B2 Fake持久任务参考闭环 | 只验证限定能力，不替代完整注册/后台、真实AI质量或发布验收 |
-| DEC-12 | flutter_test/integration_test为主，Playwright补Web、Patrol补Android；Windows原生驱动原型或明确人工验收 | 分工见[前端E2E](../engineering/testing/frontend-e2e.md)；Patrol已有Web能力但不支持Windows，版本与具体定位/系统能力仍须实测 |
+| DEC-12 | flutter_test/integration_test为主，Playwright补Web、Patrol补Android；Windows原生不执行 | 分工见[前端E2E](../engineering/testing/frontend-e2e.md)；Patrol已有Web能力但不支持Windows，受测平台版本与具体定位/系统能力仍须实测 |
 | DEC-13 | UI Test ID前端JSON单源生成Dart并供Playwright读取；测试数据分资产/场景/执行实例 | 见[测试数据](../engineering/testing/data.md)；按执行身份隔离，工厂不代做目标动作，秘密另传，清理先处理在途写入 |
 | DEC-14 | 用户确认无物理外键和公共创建/更新时间；工程采用共享表+ScopeContext、事务内逻辑关系校验及共同父行锁，不启用首版RLS | [数据库规范](../engineering/database.md) 的DB验收：UTC带时区、所有写入时间路径、实际PG关联/删除竞争；不宣称DB自动阻止任意SQL跨用户 |
 | DEC-15 | 三类分别处理/建模/展示为用户已确认；设计采用唯一material_type、专用处理器/manifest/controller，选错类型显式创建新材料重新处理 | [三类材料契约](../contracts/material-types.md) TYPE及NOV/TBK/考试验收；保留原文件/出处基础能力，禁止类型换皮与通用接口泄露考试答案；当前未实现 |

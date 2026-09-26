@@ -525,31 +525,6 @@
       ],
       "layer": "platform",
       "runner": "procedure",
-      "platform": "windows",
-      "audience": "client",
-      "transport": "native",
-      "parameters": {
-        "build": "release",
-        "service": "isolated-dev-test"
-      },
-      "shard": "account-windows-native-vault",
-      "nodes": [
-        "SCF-B1-01:windows-native-vault"
-      ],
-      "source": "tools/ci/account-procedures.json",
-      "assertions": [
-        "windows_plugin_registration",
-        "native_credential_persistence_after_restart",
-        "cross_process_refresh_lock"
-      ]
-    },
-    {
-      "case_id": "SCF-B1-01",
-      "acceptance_refs": [
-        "SCF-B1-01"
-      ],
-      "layer": "platform",
-      "runner": "procedure",
       "platform": "web",
       "audience": "client",
       "transport": "https",
@@ -946,31 +921,6 @@
       "shard": "account-web-release",
       "nodes": [
         "SCF-B1-07:web-release"
-      ],
-      "source": "tools/ci/account-procedures.json",
-      "assertions": [
-        "ui_mail_recovery",
-        "one_time_reset",
-        "previous_sessions_revoked"
-      ]
-    },
-    {
-      "case_id": "SCF-B1-07",
-      "acceptance_refs": [
-        "SCF-B1-07"
-      ],
-      "layer": "platform",
-      "runner": "procedure",
-      "platform": "android",
-      "audience": "client",
-      "transport": "native",
-      "parameters": {
-        "build": "release",
-        "service": "isolated-dev-test"
-      },
-      "shard": "account-android-release",
-      "nodes": [
-        "SCF-B1-07:android-release"
       ],
       "source": "tools/ci/account-procedures.json",
       "assertions": [

@@ -2,7 +2,16 @@
 
 from uuid import UUID
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Index, String, UniqueConstraint, text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -56,6 +65,12 @@ class Role(IdentityMixin, TimestampMixin, Base):
         comment="稳定角色代码",
         info=column_info("seed or controlled admin"),
     )
+    name: Mapped[str] = mapped_column(
+        String(100), nullable=False, comment="角色显示名", info=column_info("controlled admin")
+    )
+    description: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="角色说明", info=column_info("controlled admin")
+    )
     protected: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -75,12 +90,19 @@ class Role(IdentityMixin, TimestampMixin, Base):
 
 
 class RolePermission(IdentityMixin, TimestampMixin, Base):
-    __tablename__ = "role_permissions"
+    __tablename__ = "role_permission_links"
     __table_args__ = (
-        UniqueConstraint("role_id", "permission_code", "effect"),
+        UniqueConstraint(
+            "role_id",
+            "permission_code",
+            "effect",
+            "data_scope",
+            name="uq_role_permission_links_role_id_permission_code_e_5e3b7fafe483",
+        ),
         CheckConstraint("effect IN ('allow', 'deny')", name="effect"),
+        CheckConstraint("data_scope IN ('self', 'platform_metadata')", name="data_scope"),
         Index(
-            "ix_role_permissions_permission_code_role_id",
+            "ix_role_permission_links_permission_code_role_id",
             "permission_code",
             "role_id",
             info={"purpose": "permission retirement checks for referencing roles"},
@@ -111,14 +133,20 @@ class RolePermission(IdentityMixin, TimestampMixin, Base):
     effect: Mapped[str] = mapped_column(
         String(8), nullable=False, comment="允许或显式拒绝", info=column_info("controlled grant")
     )
+    data_scope: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        comment="授权数据范围",
+        info=column_info("locked permission catalog"),
+    )
 
 
 class UserRole(IdentityMixin, TimestampMixin, Base):
-    __tablename__ = "user_roles"
+    __tablename__ = "user_role_links"
     __table_args__ = (
         UniqueConstraint("user_id", "role_id"),
         Index(
-            "ix_user_roles_role_id_user_id",
+            "ix_user_role_links_role_id_user_id",
             "role_id",
             "user_id",
             info={"purpose": "protected role member and last administrator checks"},

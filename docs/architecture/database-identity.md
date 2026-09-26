@@ -1,6 +1,6 @@
 # 数据库设计书：账号、权限与个人设置
 
-状态：DBDESIGN3 命名与关系基线 v0.3，2026-09-25。属于阶段1后续表设计文档切片；仅第1节记录已落地的 B0 物理结构，其余为拟实施设计，不代表登录、完整 RBAC 或设置已经实现。总规则、公共列组与分册入口见 [数据库设计书](database-design.md)。
+状态：DBDESIGN3 命名与关系基线 v0.3，2026-09-25。属于阶段1后续表设计文档切片；第1节记录经2026-09-26增量对齐的B0物理结构，第2节区分已完成与待实施增量，其余为拟实施设计，不代表登录、完整 RBAC 或设置已经实现。总规则、公共列组与分册入口见 [数据库设计书](database-design.md)。
 
 本分册依据 [认证](authentication.md)、[授权](authorization.md)、[账号](../modules/accounts.md)、[设置](../modules/settings.md)、[管理](../modules/admin.md)、[权限目录](../contracts/permissions.md) 和 [API](../contracts/api.md)。原型账号、语言、阅读、声音和显示页用于核对字段用途；原型内的固定年份、模型名、声音名与本机表单值不是数据库默认值。
 
@@ -8,7 +8,7 @@
 
 ## 1. 已实现的 B0 基线：12张表
 
-核对来源为 [模型字典](../../contracts/database-schema.json)、[身份模型](../../backend/app/models/identity.py)、[授权模型](../../backend/app/models/authorization.py)、[0001迁移](../../backend/alembic/versions/0001_b0_identity.py) 和 [受控结构基线](../../backend/app/maintenance/schema_baseline.json)。数据库默认与 ORM 默认区别：下表 id 的数据库默认是“—”，UUID由服务端生成；updated_at 的 ORM onupdate=now() 不是数据库触发器。
+核对来源为 [模型字典](../../contracts/database-schema.json)、[身份模型](../../backend/app/models/identity.py)、[授权模型](../../backend/app/models/authorization.py)、[0001迁移](../../backend/alembic/versions/0001_b0_identity.py)、[0002增量迁移](../../backend/alembic/versions/0002_b0_identity_alignment.py) 和 [受控结构基线](../../backend/app/maintenance/schema_baseline.json)。数据库默认与 ORM 默认区别：下表 id 的数据库默认是“—”，UUID由服务端生成；updated_at 的 ORM onupdate=now() 不是数据库触发器。
 
 所有现有表入口仅为受控维护初始化；B0无公开删除。涉及关联写入时先锁 authorization_revisions 的 global 行，再锁目标父行；global 行尚不存在时使用既有维护 advisory lock。所有者不可变，普通关系有引用则限制删除，注明历史关系的审计/Outbox引用保留。下表索引仅记录当前实际存在者，未补列未来登录/分页索引。
 
@@ -163,7 +163,7 @@ scope_kind='system_catalog'；归属：无私有归属列；生命周期：可�
 
 逻辑关联：无。
 
-### role_permissions
+### role_permission_links
 
 scope_kind='system_catalog'；归属：无私有归属列；生命周期：可变；B0保留。角色显式允许或拒绝；匹配的拒绝优先。
 
@@ -172,16 +172,18 @@ scope_kind='system_catalog'；归属：无私有归属列；生命周期：可�
 | `role_id` | uuid | NN | — | 锁定并核对的角色标识 |
 | `permission_code` | varchar(100) | NN | — | 已注册的权限代码 |
 | `effect` | varchar(8) | NN | — | 允许或显式拒绝 |
+| `data_scope` | varchar(24) | NN | — | 授权数据范围，须与权限目录匹配 |
 | `id` | uuid | NN | — | 服务端生成的稳定标识；主键 |
 | `created_at` | timestamptz | NN | now() | 本行创建时间，UTC |
 | `updated_at` | timestamptz | NN | now() | 本行最近一次实际更新的时间，UTC |
 
 约束与索引：
 
-- `ck_role_permissions_effect`：check（effect IN ('allow', 'deny')）。
-- `pk_role_permissions`：primary_key（id）。
-- `uq_role_permissions_role_id_permission_code_effect`：unique（role_id, permission_code, effect）。
-- `ix_role_permissions_permission_code_role_id`：(permission_code, role_id)；权限停用时查引用角色。
+- `ck_role_permission_links_data_scope`：check（data_scope IN ('self', 'platform_metadata')）。
+- `ck_role_permission_links_effect`：check（effect IN ('allow', 'deny')）。
+- `pk_role_permission_links`：primary_key（id）。
+- `uq_role_permission_links_role_id_permission_code_e_5e3b7fafe483`：unique（role_id, permission_code, effect, data_scope）。
+- `ix_role_permission_links_permission_code_role_id`：(permission_code, role_id)；权限停用时查引用角色。
 
 逻辑关联：`role_id → roles.id`（限制删除）；`permission_code → permission_catalog.code`（限制删除）。
 
@@ -192,6 +194,8 @@ scope_kind='system_catalog'；归属：无私有归属列；生命周期：可�
 | 列 | PostgreSQL类型 | NULL | DB默认 | 语义 |
 | --- | --- | --- | --- | --- |
 | `code` | varchar(64) | NN | — | 稳定角色代码 |
+| `name` | varchar(100) | NN | — | 非唯一的角色显示名，旧记录按code回填 |
+| `description` | text | NULL | — | 角色说明 |
 | `protected` | boolean | NN | — | 受保护角色标记 |
 | `enabled` | boolean | NN | — | 角色是否启用 |
 | `revision` | bigint | NN | 1 | 角色并发修改版本 |
@@ -227,7 +231,7 @@ scope_kind='system_operation'；归属：无私有归属列；生命周期：可
 
 逻辑关联：无。
 
-### user_roles
+### user_role_links
 
 scope_kind='user_owned'；归属：user_id；生命周期：可变；B0保留。账号角色关联；受控事务内校验身份与受保护角色。
 
@@ -241,9 +245,9 @@ scope_kind='user_owned'；归属：user_id；生命周期：可变；B0保留。
 
 约束与索引：
 
-- `pk_user_roles`：primary_key（id）。
-- `uq_user_roles_user_id_role_id`：unique（user_id, role_id）。
-- `ix_user_roles_role_id_user_id`：(role_id, user_id)；检查受保护角色成员与最后管理员。
+- `pk_user_role_links`：primary_key（id）。
+- `uq_user_role_links_user_id_role_id`：unique（user_id, role_id）。
+- `ix_user_role_links_role_id_user_id`：(role_id, user_id)；检查受保护角色成员与最后管理员。
 
 逻辑关联：`user_id → users.id`（限制删除）；`role_id → roles.id`（限制删除）。
 
@@ -258,6 +262,11 @@ scope_kind='identity'；归属：无私有归属列；生命周期：可变；B0
 | `password_hash` | varchar(512) | NN | — | Argon2id密码哈希，不存明文 |
 | `status` | varchar(16) | NN | — | 账号状态 |
 | `authz_version` | bigint | NN | 1 | 账号授权版本 |
+| `password_version` | bigint | NN | 1 | 密码哈希版本，旧哈希按1回填 |
+| `security_epoch` | bigint | NN | 0 | 全局持久撤销代次 |
+| `revision` | bigint | NN | 1 | 账号并发修改版本 |
+| `email_verified_at` | timestamptz | NULL | — | 实际邮箱验证时间，旧记录不推定已验证 |
+| `locked_until` | timestamptz | NULL | — | 有期限的安全锁定截止 |
 | `client_security_epoch` | bigint | NN | 0 | 用户端持久撤销代次 |
 | `admin_security_epoch` | bigint | NN | 0 | 管理端持久撤销代次 |
 | `id` | uuid | NN | — | 服务端生成的稳定标识；主键 |
@@ -267,29 +276,33 @@ scope_kind='identity'；归属：无私有归属列；生命周期：可变；B0
 约束与索引：
 
 - `ck_users_authz_version_positive`：check（authz_version >= 1）。
+- `ck_users_password_version_positive`：check（password_version >= 1）。
+- `ck_users_revision_positive`：check（revision >= 1）。
+- `ck_users_security_epoch_nonnegative`：check（security_epoch >= 0）。
 - `ck_users_email_length`：check（length(email_normalized) BETWEEN 3 AND 254）。
 - `ck_users_security_epochs_nonnegative`：check（client_security_epoch >= 0 AND admin_security_epoch >= 0）。
 - `ck_users_status`：check（status IN ('pending', 'active', 'disabled')）。
 - `pk_users`：primary_key（id）。
 - `uq_users_email_normalized`：unique（email_normalized）。
+- `ix_users_status_created_at_id`：(status, created_at, id)；管理列表索引，管理接口尚未实现。
 
 逻辑关联：无。
 
-## 2. 既有表的拟增量
+## 2. 既有表的增量状态
 
-以下均需新的 Alembic 迁移，不能修改已验收的0001迁移或把未来列写入现有生成字典。添加列先回填并验证，再收紧约束；B0自然主键保留，不为了整齐重建授权目录。
+账号安全字段、角色显示字段与授权范围已由0002增量实现，详情以第1节和生成字典为准；其余表仍需后续Alembic迁移。0001历史保持不变，不把未实现列写入生成字典。添加列先回填并验证，再收紧约束；B0自然主键保留，不为了整齐重建授权目录。
 
-DBDESIGN3另约定两项未来改名：`user_roles → user_role_links`、`role_permissions → role_permission_links`。它们仍分别承载用户↔角色、角色↔权限的多对多关系，原行ID/授权事实保留，不新增平行表。本节之后使用目标名，第1节和生成字典保留实际名；迁移边界及全部表的归属/基数见[命名与关系清单](database-relations.md)。本轮没有实施改名。
+DBDESIGN3约定的 `user_roles → user_role_links`、`role_permissions → role_permission_links` 已写入0002受控迁移，仍分别承载用户↔角色、角色↔权限的多对多关系。迁移保留原行ID、allow/deny及账号哈希；孤儿关联或受众/范围不匹配时拒绝整次revision。第1节和生成字典使用当前名称，表数仍为12；运行实例须通过受控入口升级后才具有新结构。验证与实例边界见[B0设计对齐](../delivery/reviews/2026-09-26-b0-design-alignment.md)。
 
-| 表 | 新列/调整（拟） | 约束与索引/迁移依据 |
+| 表与状态 | 新列/调整 | 约束与索引/迁移依据 |
 | --- | --- | --- |
-| users | `password_version bigint NN DEFAULT 1`；`security_epoch bigint NN DEFAULT 0`；`revision bigint NN DEFAULT 1`；`email_verified_at timestamptz NULL`；`locked_until timestamptz NULL` | password_version/revision>=1、security_epoch>=0；B0已有两端epoch继续保留。账号全局epoch与受众epoch分别对比；旧哈希按1回填，不凭创建时间推定邮箱验证。拟加 `(status,created_at,id)` 管理列表索引；锁定为有期限安全属性，不扩展status枚举或形成永久锁号 |
-| roles | `name varchar(100) NN`；`description text NULL` | name仅显示非唯一；按既有code回填，更新revision。角色依赖/引用仍由授权服务限制删除 |
-| role_permission_links | `data_scope varchar(24) NN` | 从permission_catalog回填并核对；CHECK self/platform_metadata，服务校验权限受众与范围。唯一键改为 `(role_id,permission_code,effect,data_scope)`；不另建可写casbin_rule |
-| menus | `parent_menu_id uuid NULL`；`component_key varchar(64) NULL`；`title varchar(100) NN`；`icon_key varchar(64) NULL`；`sort_order integer NN DEFAULT 0`；`permission_match varchar(3) NN DEFAULT 'all'` | parent同受众且无环；sort_order>=0，match=all/any。route_key改为可空以表示分组；叶子route/component由发布注册表匹配。将既有permission_code搬入menu_permission_links后删除该列；父子索引 `(audience,parent_menu_id,sort_order,id)`。最低页面权限保持代码定义，表中条件只能追加 |
-| auth_policies | `require_email_verification boolean NN DEFAULT false`；`recovery_mode varchar(16) NN DEFAULT 'disabled'` | 仅在[账号待决](../decisions/pending.md)交付路径锁定后启用；recovery_mode=disabled/email/manual，部署必须具备所选交付能力；不把默认false当确认无需验证邮箱 |
-| admin_audit_events | `actor_user_id uuid NULL`；`audience varchar(10) NULL`；`permission_code varchar(100) NULL`；`target_type varchar(64) NULL`；`target_id uuid NULL`；`target_code varchar(100) NULL`；`operation_id uuid NULL`；`request_id uuid NULL`；`result varchar(24) NULL`；`reason_code varchar(64) NULL`；`payload_schema_version integer NN DEFAULT 1`；`change_summary jsonb NULL` | 扩展action长度到100并按发布事件注册，旧两动作CHECK由版本化允许清单替换；旧actor保留用于维护主体。新用户管理事件必须有actor_user_id/受众/安全结果；target_id与target_code按UUID实体/自然键目录择一，不能丢失permission/auth-policy等自然键目标；旧记录允许NULL且不伪造事实。summary只放白名单权限/状态差异，非完整对象。拟加 `(created_at,id)`、`(actor_user_id,created_at,id)`、`(target_type,target_id,created_at,id)`、`(action,created_at,id)`；按管理员授权时间窗口查询 |
-| outbox_events | B0字段保留；后续通用事件、聚合引用、重试/租约/发布时间由任务分册统一定义 | 不能把B0仅authorization.changed且audit_event_id必填的结构称为通用投递已实现；新旧事件兼容与索引见[总册](database-design.md)的任务分册入口 |
+| users（0002已实现） | `password_version bigint NN DEFAULT 1`；`security_epoch bigint NN DEFAULT 0`；`revision bigint NN DEFAULT 1`；`email_verified_at timestamptz NULL`；`locked_until timestamptz NULL` | password_version/revision>=1、security_epoch>=0；B0已有两端epoch继续保留。账号全局epoch与受众epoch分别对比；旧哈希按1回填，不凭创建时间推定邮箱验证。已加 `(status,created_at,id)` 管理列表索引；锁定为有期限安全属性，不扩展status枚举或形成永久锁号 |
+| roles（0002已实现） | `name varchar(100) NN`；`description text NULL` | name仅显示非唯一；按既有code回填，更新revision和updated_at。角色依赖/引用仍由授权服务限制删除 |
+| role_permission_links（0002已实现） | `data_scope varchar(24) NN` | 从permission_catalog回填并核对；CHECK self/platform_metadata，服务校验权限受众与范围。唯一键改为 `(role_id,permission_code,effect,data_scope)`；不另建可写casbin_rule |
+| menus（待实施） | `parent_menu_id uuid NULL`；`component_key varchar(64) NULL`；`title varchar(100) NN`；`icon_key varchar(64) NULL`；`sort_order integer NN DEFAULT 0`；`permission_match varchar(3) NN DEFAULT 'all'` | parent同受众且无环；sort_order>=0，match=all/any。route_key改为可空以表示分组；叶子route/component由发布注册表匹配。将既有permission_code搬入menu_permission_links后删除该列；父子索引 `(audience,parent_menu_id,sort_order,id)`。最低页面权限保持代码定义，表中条件只能追加 |
+| auth_policies（待实施） | `require_email_verification boolean NN DEFAULT false`；`recovery_mode varchar(16) NN DEFAULT 'disabled'` | 仅在[账号待决](../decisions/pending.md)交付路径锁定后启用；recovery_mode=disabled/email/manual，部署必须具备所选交付能力；不把默认false当确认无需验证邮箱 |
+| admin_audit_events（待实施） | `actor_user_id uuid NULL`；`audience varchar(10) NULL`；`permission_code varchar(100) NULL`；`target_type varchar(64) NULL`；`target_id uuid NULL`；`target_code varchar(100) NULL`；`operation_id uuid NULL`；`request_id uuid NULL`；`result varchar(24) NULL`；`reason_code varchar(64) NULL`；`payload_schema_version integer NN DEFAULT 1`；`change_summary jsonb NULL` | 扩展action长度到100并按发布事件注册，旧两动作CHECK由版本化允许清单替换；旧actor保留用于维护主体。新用户管理事件必须有actor_user_id/受众/安全结果；target_id与target_code按UUID实体/自然键目录择一，不能丢失permission/auth-policy等自然键目标；旧记录允许NULL且不伪造事实。summary只放白名单权限/状态差异，非完整对象。拟加 `(created_at,id)`、`(actor_user_id,created_at,id)`、`(target_type,target_id,created_at,id)`、`(action,created_at,id)`；按管理员授权时间窗口查询 |
+| outbox_events（待实施） | B0字段保留；后续通用事件、聚合引用、重试/租约/发布时间由任务分册统一定义 | 不能把B0仅authorization.changed且audit_event_id必填的结构称为通用投递已实现；新旧事件兼容与索引见[总册](database-design.md)的任务分册入口 |
 
 `users.revision` 用于管理表单并发；`authz_version` 用于本人角色变化；`authorization_revisions.revision` 为全局策略版本，API的policy_revision映射此列；`security_epoch/client_security_epoch/admin_security_epoch` 为撤销，`password_version` 为密码校验结果版本。五类职责不可用updated_at或同一个revision替代。
 
@@ -644,9 +657,9 @@ object_layout_version注册输出键规则：每次执行使用`global-word/tran
 
 ## 7. 实施顺序与验收落点
 
-1. 先实施users的密码/全局安全版本、AuthSession及所选身份流程；用A/B、client/admin、Web/native验证持久撤销和Redis材料丢失。既有B0账号回填不能伪造验证邮箱/登录记录。
+1. users的密码/全局安全版本已在0002补齐；随后实施AuthSession及所选身份流程，用A/B、client/admin、Web/native验证持久撤销和Redis材料丢失。既有B0账号回填不能伪造验证邮箱/登录记录。
 2. 注册事务增加一个user_extensions空行，后续实现本人资料与头像；三个字段组独立revision，头像用途/文件引用与GC共用扩展行锁。B0旧用户扩展行缺失的回填必须可重复且不覆盖已有资料；不创建旧三单例再迁移合并。
-3. 完整RBAC增加继承、授予边界、菜单多权限和实际范围列；旧单权限菜单/授权项确定性迁移。所有授权变更仍使用同一global父行，审核最后管理员和显式deny导致的间接扩权。
+3. 完整RBAC增加继承、授予边界与菜单多权限，消费0002已存在的授权范围列；旧单权限菜单确定性迁移。所有授权变更仍使用同一global父行，审核最后管理员和显式deny导致的间接扩权。
 4. 模型目录、个人Key、设置绑定和用量查询按对应功能切片落地；目录启用不代表已验证供应商能力，真实测试遵循已有授权。主密钥重加密与用户轮换并发必须验证。
 5. 上传/生成正式接入前，完成容量根与预留结算的PG原子路径。目录共享字节只算一次；各用户attempt用量分别记录。后台技术上限修改不自动删除学习成果。
 

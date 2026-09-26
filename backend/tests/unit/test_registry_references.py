@@ -14,6 +14,25 @@ def test_unknown_permission_template_cannot_export(monkeypatch: pytest.MonkeyPat
         permissions.permission_document()
 
 
+def test_mistake_and_avatar_permissions_keep_self_scope_and_template_boundaries() -> None:
+    newly_registered = {
+        "client.practice.mistake.read",
+        "client.practice.mistake.favorite",
+        "client.profile.avatar.update",
+    }
+    document = permissions.permission_document()
+    assert document["catalog_version"] == "b0-identity-v3"
+    catalog = document["permissions"]
+    assert isinstance(catalog, list)
+    for code in newly_registered:
+        assert {"code": code, "audience": "client", "data_scope": "self"} in catalog
+    assert newly_registered <= set(permissions.ROLE_TEMPLATES["learner"])
+    # Publishing vocabulary never grants private client actions to administrators,
+    # or expands the explicit read-only role into avatar/mistake mutation paths.
+    assert not newly_registered & set(permissions.ROLE_TEMPLATES["super_admin"])
+    assert not newly_registered & set(permissions.ROLE_TEMPLATES["client_readonly"])
+
+
 @pytest.mark.parametrize(
     "source",
     [

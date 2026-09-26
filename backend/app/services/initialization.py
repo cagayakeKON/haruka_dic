@@ -36,8 +36,8 @@ from app.models import (
     UserRole,
 )
 
-SEED_CODE = "b0-identity-v2"
-SEED_VERSION = 2
+SEED_CODE = "b0-identity-v3"
+SEED_VERSION = 3
 
 
 class InitializationError(RuntimeError):
@@ -141,12 +141,21 @@ async def _create_catalogs(session: AsyncSession) -> None:
     for code, grants in sorted(ROLE_TEMPLATES.items()):
         role = await session.scalar(select(Role).where(Role.code == code).with_for_update())
         if role is None:
-            role = Role(code=code, protected=code == "super_admin", enabled=True, revision=1)
+            role = Role(
+                code=code, name=code, protected=code == "super_admin", enabled=True, revision=1
+            )
             session.add(role)
             await session.flush()
             for permission_code in sorted(grants):
                 session.add(
-                    RolePermission(role_id=role.id, permission_code=permission_code, effect="allow")
+                    RolePermission(
+                        role_id=role.id,
+                        permission_code=permission_code,
+                        effect="allow",
+                        data_scope="self"
+                        if permission_code.startswith("client.")
+                        else "platform_metadata",
+                    )
                 )
         roles[code] = role
     await session.flush()
@@ -229,15 +238,23 @@ async def initialize_admin(
             login = await session.get(PermissionCatalog, "admin.login", with_for_update=True)
             effects = set(
                 (
-                    await session.scalars(
-                        select(RolePermission.effect).where(
+                    await session.execute(
+                        select(RolePermission.effect, RolePermission.data_scope).where(
                             RolePermission.role_id == role.id,
                             RolePermission.permission_code == "admin.login",
                         )
                     )
                 ).all()
             )
-            if login is None or not login.enabled or "deny" in effects or "allow" not in effects:
+            if (
+                login is None
+                or not login.enabled
+                or login.audience != "admin"
+                or login.data_scope != "platform_metadata"
+                or ("deny", "platform_metadata") in effects
+                or ("allow", "platform_metadata") not in effects
+                or any(scope != "platform_metadata" for _, scope in effects)
+            ):
                 raise InitializationError("the administrator template cannot log in")
             user = await session.scalar(
                 select(User).where(User.email_normalized == normalized).with_for_update()
@@ -268,6 +285,11 @@ async def initialize_admin(
                 password_hash=password_hash,
                 status="active",
                 authz_version=1,
+                password_version=1,
+                security_epoch=0,
+                revision=1,
+                email_verified_at=None,
+                locked_until=None,
                 client_security_epoch=0,
                 admin_security_epoch=0,
             )

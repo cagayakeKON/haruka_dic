@@ -55,6 +55,18 @@ void main() {
     });
   }
 
+  testWidgets('B0 clear signal shell keeps language scope visible at 200% text', (tester) async {
+    await pumpShell(tester, const Size(390, 844), scale: 2);
+    expect(find.text('首版材料支持日语和英语。'), findsOneWidget);
+    expect(find.text('尚未开放'), findsNWidgets(3));
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const ValueKey(UiTestIds.environmentNavigation)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey(UiTestIds.environmentPage)), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('SCF-FE-RESIZE widget: current route survives a compact to expanded change', (
     tester,
   ) async {

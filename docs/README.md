@@ -7,7 +7,7 @@
 | 现在要做什么 | 先读 | 再按需查 |
 | --- | --- | --- |
 | 了解产品 | [产品总览](product/overview.md) | [待决事项](decisions/pending.md) |
-| 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md) | [手机/电脑独立HTML原型](../prototype/README.md)、[Flutter适配](engineering/flutter.md)、对应模块；正式Flutter视觉仍待落地 |
+| 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md) | [手机/电脑独立HTML原型](../prototype/README.md)、[Flutter适配](engineering/flutter.md)、对应模块；B0基础壳已对齐，业务页面按切片落地 |
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 实现日英NLP（SudachiPy B / spaCy）、AI结果标注与ruby存储 | [统一文本分析](architecture/text-analysis.md)、[文件提取/ruby](contracts/source-extraction.md) | [物理字段](architecture/database-materials.md#27-全应用派生语言标注)、[缓存](architecture/learning-cache.md)、[DESIGN23记录](delivery/reviews/2026-09-26-text-analysis-ruby.md) |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |
@@ -101,6 +101,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [Windows安装身份原型](delivery/reviews/2026-09-22-b0-windows-installer.md)：独立安装/凭据service、共存/升级/卸载的真实验证；载荷为无网络探针，不代表正式应用分发。
 - [Windows干净检出](delivery/reviews/2026-09-22-b0-windows-clean.md) 与 [Linux干净检出](delivery/reviews/2026-09-22-b0-linux.md)：同候选的锁定构建、负例诊断、重复初始化和完整应用生命周期。
 - [B0最终验收](delivery/reviews/2026-09-22-b0-acceptance.md) 与 [独立证据核查](delivery/reviews/2026-09-22-b0-evidence.md)：44个必需节点、11份逐断言签收及统一入口88项检查通过；后续能力仍按所属阶段交付。
+- [B0设计对齐](delivery/reviews/2026-09-26-b0-design-alignment.md)：12张基础表的增量迁移、账号/角色/权限目录更新和Flutter基础壳视觉对齐；仅本次受影响范围验证。
 
 ## 5. 维护规则
 

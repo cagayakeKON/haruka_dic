@@ -213,7 +213,7 @@ def database_document(metadata: MetaData | None = None) -> dict[str, object]:
     source = json.dumps(tables, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
         "schema_version": 1,
-        "migration_revision": "0001_b0_identity",
+        "migration_revision": "0002_b0_identity_alignment",
         "source": "backend/app/models",
         "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "excluded_internal_tables": ["alembic_version"],

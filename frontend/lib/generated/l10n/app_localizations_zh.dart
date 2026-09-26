@@ -22,13 +22,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shellTitle => '准备开始学习';
 
   @override
-  String get shellDescription => '应用基础已就绪。账号、材料与学习功能正在建设中。';
+  String get shellDescription => 'Haruka 的学习空间正在搭建。当前可查看应用环境与服务连接。';
 
   @override
   String get materialsTitle => '你的学习材料';
 
   @override
-  String get materialsDescription => '未来可导入小说、课本和试卷，使用各自的阅读与练习页面。';
+  String get materialsDescription => '小说、课本和试卷将分别进入专属的阅读与学习页面。';
+
+  @override
+  String get materialLanguages => '首版材料支持日语和英语。';
 
   @override
   String get unavailable => '尚未开放';

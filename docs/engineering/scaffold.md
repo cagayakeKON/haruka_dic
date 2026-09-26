@@ -2,6 +2,8 @@
 
 状态：2026-09-22，完整B0已验收，实际范围与Windows/Linux干净检出、三端及完整门禁证据见 [验收记录](../delivery/reviews/2026-09-22-b0-acceptance.md)。B1/B2未实现。当前命令见 [开发指南](development.md)；本文继续维护B0/B1/B2工程合同，不以已完成基础壳代替后续业务目标。
 
+2026-09-26 [B0设计对齐](../delivery/reviews/2026-09-26-b0-design-alignment.md)更新12张基础表中的账号/角色/授权结构、发布权限目录和Flutter基础壳；只补充受影响范围的验证，B1/B2和NLP/AI/TTS/学习缓存业务仍未实现。原B0完整矩阵保留其历史候选身份。
+
 配套：[项目结构](../architecture/project-structure.md)、[开发指南](development.md)、[脚手架验收](../delivery/milestones/scaffold.md)、[API](../contracts/api.md)、[权限](../contracts/permissions.md)、[配置运维](../operations/configuration.md)。本文维护工程载体与入口，业务规则仍由各专题维护；检查阈值与必需测试仍以 [测试规范](testing/strategy.md) 为准。
 
 ## 1. 实施边界与文件归属

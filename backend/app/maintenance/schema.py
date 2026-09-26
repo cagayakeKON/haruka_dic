@@ -14,7 +14,7 @@ from sqlalchemy.schema import SchemaItem
 
 from app.models import Base
 
-EXPECTED_REVISION = "0001_b0_identity"
+EXPECTED_REVISION = "0002_b0_identity_alignment"
 
 
 class SchemaMismatchError(RuntimeError):
@@ -25,7 +25,7 @@ class ConstraintBaseline(BaseModel):
     """Reviewed PostgreSQL canonical expressions, paired with their exact model sources."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
-    revision: Literal["0001_b0_identity"]
+    revision: Literal["0002_b0_identity_alignment"]
     model_checks: dict[str, dict[str, str]]
     database_checks: dict[str, dict[str, str]]
 

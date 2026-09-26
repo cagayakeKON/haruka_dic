@@ -1,8 +1,9 @@
 """Identity roots required by controlled first-administrator initialization."""
 
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import BigInteger, CheckConstraint, String, UniqueConstraint, text
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Index, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,9 +17,19 @@ class User(IdentityMixin, TimestampMixin, Base):
         CheckConstraint("status IN ('pending', 'active', 'disabled')", name="status"),
         CheckConstraint("length(email_normalized) BETWEEN 3 AND 254", name="email_length"),
         CheckConstraint("authz_version >= 1", name="authz_version_positive"),
+        CheckConstraint("password_version >= 1", name="password_version_positive"),
+        CheckConstraint("security_epoch >= 0", name="security_epoch_nonnegative"),
+        CheckConstraint("revision >= 1", name="revision_positive"),
         CheckConstraint(
             "client_security_epoch >= 0 AND admin_security_epoch >= 0",
             name="security_epochs_nonnegative",
+        ),
+        Index(
+            "ix_users_status_created_at_id",
+            "status",
+            "created_at",
+            "id",
+            info={"purpose": "bounded administrator account listing"},
         ),
         {"comment": "独立账号身份；B0只支持受控首管理员初始化", "info": table_info("identity")},
     )
@@ -49,6 +60,39 @@ class User(IdentityMixin, TimestampMixin, Base):
         server_default=text("1"),
         comment="账号授权版本",
         info=column_info("authorization transaction"),
+    )
+    password_version: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="密码哈希版本",
+        info=column_info("identity service"),
+    )
+    security_epoch: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("0"),
+        comment="全局持久撤销代次",
+        info=column_info("identity service"),
+    )
+    revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="账号资料并发修改版本",
+        info=column_info("identity service"),
+    )
+    email_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="邮箱实际验证时间",
+        info=column_info("identity service"),
+    )
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="账号限时锁定截止",
+        info=column_info("identity service"),
     )
     client_security_epoch: Mapped[int] = mapped_column(
         BigInteger,

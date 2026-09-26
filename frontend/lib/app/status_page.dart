@@ -22,23 +22,33 @@ class StatusPage extends StatelessWidget {
             padding: const EdgeInsets.all(32),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.headlineMedium),
-                  const SizedBox(height: 16),
-                  Text(description),
-                  const SizedBox(height: 24),
-                  Identified(
-                    id: UiTestIds.backHome,
-                    merge: true,
-                    child: FilledButton(
-                      onPressed: () => context.go('/'),
-                      child: Text(AppLocalizations.of(context).backHome),
-                    ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border.all(color: Theme.of(context).colorScheme.outline),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(title, style: Theme.of(context).textTheme.headlineMedium),
+                      const SizedBox(height: 16),
+                      Text(description, style: Theme.of(context).textTheme.bodyLarge),
+                      const SizedBox(height: 24),
+                      Identified(
+                        id: UiTestIds.backHome,
+                        merge: true,
+                        child: FilledButton(
+                          onPressed: () => context.go('/'),
+                          child: Text(AppLocalizations.of(context).backHome),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

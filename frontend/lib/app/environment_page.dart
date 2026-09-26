@@ -53,6 +53,7 @@ class _EnvironmentPageState extends State<EnvironmentPage> {
     final config = widget.config;
     final strings = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Identified(
       id: UiTestIds.environmentPage,
       child: SingleChildScrollView(
@@ -65,45 +66,98 @@ class _EnvironmentPageState extends State<EnvironmentPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(strings.environment, style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 16),
-                Text(strings.environmentDescription),
+                const SizedBox(height: 12),
+                Text(
+                  strings.environmentDescription,
+                  style: theme.textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
+                ),
                 const SizedBox(height: 24),
-                Identified(
-                  id: UiTestIds.checkConnection,
-                  child: FilledButton(
-                    onPressed: _request == null ? _check : null,
-                    child: Text(
-                      _request == null ? strings.checkConnection : strings.checkingConnection,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    border: Border.all(color: colors.outline),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Identified(
+                          id: UiTestIds.checkConnection,
+                          child: FilledButton(
+                            onPressed: _request == null ? _check : null,
+                            child: Text(
+                              _request == null
+                                  ? strings.checkConnection
+                                  : strings.checkingConnection,
+                            ),
+                          ),
+                        ),
+                        if (_ready || _failure != null)
+                          Identified(
+                            id: UiTestIds.connectionStatus,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _ready ? Icons.check_circle_outline : Icons.error_outline,
+                                    color: _ready ? const Color(0xff25744c) : colors.error,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _ready
+                                          ? strings.connectionReady
+                                          : ApiCatalog.message(strings, _failure!),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
-                if (_ready || _failure != null)
-                  Identified(
-                    id: UiTestIds.connectionStatus,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Text(
-                        _ready ? strings.connectionReady : ApiCatalog.message(strings, _failure!),
-                      ),
+                const SizedBox(height: 24),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    border: Border.all(color: colors.outline),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final (label, value) in [
+                          (
+                            strings.environmentLabel,
+                            config.environment == 'dev'
+                                ? strings.devEnvironment
+                                : strings.productionEnvironment,
+                          ),
+                          (strings.instanceLabel, config.instanceId),
+                          (strings.apiLabel, config.apiBaseUrl.toString()),
+                          (strings.applicationLabel, config.applicationId),
+                        ]) ...[
+                          Text(
+                            label,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SelectableText(value, style: theme.textTheme.bodyLarge),
+                          const SizedBox(height: 24),
+                        ],
+                      ],
                     ),
                   ),
-                const SizedBox(height: 32),
-                for (final (label, value) in [
-                  (
-                    strings.environmentLabel,
-                    config.environment == 'dev'
-                        ? strings.devEnvironment
-                        : strings.productionEnvironment,
-                  ),
-                  (strings.instanceLabel, config.instanceId),
-                  (strings.apiLabel, config.apiBaseUrl.toString()),
-                  (strings.applicationLabel, config.applicationId),
-                ]) ...[
-                  Text(label, style: theme.textTheme.labelLarge),
-                  const SizedBox(height: 8),
-                  SelectableText(value, style: theme.textTheme.bodyLarge),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ],
             ),
           ),

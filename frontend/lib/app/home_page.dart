@@ -11,6 +11,12 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final materials = [
+      (strings.novels, Icons.auto_stories_outlined),
+      (strings.textbooks, Icons.menu_book_outlined),
+      (strings.exams, Icons.assignment_outlined),
+    ];
     return Identified(
       id: UiTestIds.homePage,
       child: SingleChildScrollView(
@@ -19,51 +25,90 @@ class HomePage extends StatelessWidget {
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 880),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(strings.shellTitle, style: theme.textTheme.headlineLarge),
-                const SizedBox(height: 16),
-                Text(strings.shellDescription, style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 48),
-                Text(strings.materialsTitle, style: theme.textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text(strings.materialsDescription),
-                const SizedBox(height: 24),
-                for (final (label, icon) in [
-                  (strings.novels, Icons.auto_stories_outlined),
-                  (strings.textbooks, Icons.menu_book_outlined),
-                  (strings.exams, Icons.assignment_outlined),
-                ])
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: DecoratedBox(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = constraints.maxWidth >= 760
+                    ? (constraints.maxWidth - 32) / 3
+                    : constraints.maxWidth;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 6,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Row(
-                          children: [
-                            Icon(icon, size: 28, color: theme.colorScheme.primary),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(label, style: theme.textTheme.titleMedium),
-                                  const SizedBox(height: 4),
-                                  Text(strings.unavailable),
-                                ],
-                              ),
-                            ),
-                          ],
+                        color: colors.secondary,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(6),
+                          bottomLeft: Radius.circular(6),
+                          topRight: Radius.circular(2),
+                          bottomRight: Radius.circular(2),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 24),
+                    Text(strings.shellTitle, style: theme.textTheme.headlineLarge),
+                    const SizedBox(height: 12),
+                    Text(
+                      strings.shellDescription,
+                      style: theme.textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 48),
+                    Text(strings.materialsTitle, style: theme.textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(
+                      strings.materialsDescription,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      strings.materialLanguages,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        for (final (label, icon) in materials)
+                          SizedBox(
+                            width: cardWidth,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: colors.surface,
+                                border: Border.all(color: colors.outline),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(22),
+                                  topRight: Radius.circular(22),
+                                  bottomLeft: Radius.circular(22),
+                                  bottomRight: Radius.circular(8),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(icon, size: 28, color: colors.primary),
+                                    const SizedBox(height: 20),
+                                    Text(label, style: theme.textTheme.titleMedium),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      strings.unavailable,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

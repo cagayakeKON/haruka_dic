@@ -2,7 +2,7 @@
 
 状态：2026-09-22，B0已建立12张账号/授权初始化基础表、UTC公共Mixin、受控迁移与字典检查器，局部证据见 [数据库切片](../delivery/reviews/2026-09-22-b0-identity.md)。不使用数据库外键；后续业务表仍按本文实施，未实现的隔离/删除/任务验收不计为通过。
 
-本文维护物理结构、公共字段、无外键关联、隔离与数据库变更规则。具体表结构与Redis键设计见[数据库设计书](../architecture/database-design.md)，其新增结构尚未实施。业务聚合/事务/任务状态以 [数据与任务](../architecture/data-jobs.md) 为准，身份和授权分别以 [认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准；操作流程见 [部署与恢复](../operations/deployment-recovery.md)，测试执行频率以根 [AGENTS.md](../../AGENTS.md) 为准。
+本文维护物理结构、公共字段、无外键关联、隔离与数据库变更规则。具体表结构与Redis键设计见[数据库设计书](../architecture/database-design.md)，其中B0账号/角色/授权增量已实现，其他新增业务结构仍待实施。业务聚合/事务/任务状态以 [数据与任务](../architecture/data-jobs.md) 为准，身份和授权分别以 [认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准；操作流程见 [部署与恢复](../operations/deployment-recovery.md)，测试执行频率以根 [AGENTS.md](../../AGENTS.md) 为准。
 
 ## 1. 总体边界
 
@@ -37,7 +37,7 @@ SQLAlchemy的onupdate由其生成DML时应用，并不是数据库触发器；�
 
 业务唯一性由单独UNIQUE/唯一索引表达，UUID不能代替业务去重。既有API中的session_id等语义名称可映射到物理id，但在字典登记，不能暗改接口。固定权限代码、受控幂等键等自然标识是否作主键须逐表说明，不强行给Alembic内部版本表加业务ID。
 
-完整目标命名和关系见[设计书清单](../architecture/database-relations.md)。独立状态绑定、业务目标及可重复编排明细保留bindings/targets/items等业务名称，不因引用两个对象就强加端点唯一或统一改成links。名称不代替作用域/存在性校验。B0实际`user_roles`、`role_permissions`在后续受控迁移前保持原名；设计目标`user_role_links`、`role_permission_links`不改写既有0001或生成字典。
+完整目标命名和关系见[设计书清单](../architecture/database-relations.md)。独立状态绑定、业务目标及可重复编排明细保留bindings/targets/items等业务名称，不因引用两个对象就强加端点唯一或统一改成links。名称不代替作用域/存在性校验。B0的`user_roles`、`role_permissions`通过0002受控迁移更名为`user_role_links`、`role_permission_links`；生成字典同步当前模型，既有0001不改写。
 
 Base统一使用MetaData.naming_convention。命名模板包含全部组合列，CHECK显式给语义名称；无fk模板。控制标识符为ASCII、最多63字节，长名由统一工具确定性缩短并检查碰撞，不能由各迁移作者随意截断。名称改变也是需要审查的schema差异。[SQLAlchemy命名约定](https://docs.sqlalchemy.org/en/20/core/constraints.html#configuring-constraint-naming-conventions)
 

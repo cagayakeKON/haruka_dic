@@ -35,6 +35,8 @@ CLIENT_CODES = tuple(
         "client.practice.start",
         "client.practice.answer",
         "client.practice.generate",
+        "client.practice.mistake.read",
+        "client.practice.mistake.favorite",
         "client.practice.grade.request",
         "client.practice.review.request",
         "client.diagnosis.read",
@@ -59,6 +61,7 @@ CLIENT_CODES = tuple(
         "client.exam_grade.regrade",
         "client.profile.read",
         "client.profile.update",
+        "client.profile.avatar.update",
         "client.credential.read",
         "client.credential.manage",
         "client.credential.test",
@@ -188,7 +191,7 @@ def permission_document() -> dict[str, object]:
         raise ValueError("permission registration is duplicated or references unknown codes")
     return {
         "schema_version": 1,
-        "catalog_version": "b0-identity-v2",
+        "catalog_version": "b0-identity-v3",
         "implemented_business_routes": [],
         "permissions": [
             {

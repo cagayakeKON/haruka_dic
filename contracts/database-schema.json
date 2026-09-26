@@ -2,10 +2,10 @@
   "excluded_internal_tables": [
     "alembic_version"
   ],
-  "migration_revision": "0001_b0_identity",
+  "migration_revision": "0002_b0_identity_alignment",
   "schema_version": 1,
   "source": "backend/app/models",
-  "source_sha256": "0e2a4d7121e3c93946252a025f0b49808710314396bc03d1af7dafa294c72d0a",
+  "source_sha256": "9fae6172a394aa5e14f8e834384807569e8065a8acaf3ec67a7328cf3c5aa74e",
   "tables": [
     {
       "columns": [
@@ -905,6 +905,18 @@
           "type": "VARCHAR(8)"
         },
         {
+          "comment": "授权数据范围",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked permission catalog"
+          },
+          "name": "data_scope",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
           "comment": "服务端生成的稳定标识",
           "default": null,
           "metadata": {
@@ -944,25 +956,31 @@
       "comment": "角色显式允许或拒绝；匹配的拒绝优先",
       "constraints": [
         {
+          "definition": "data_scope IN ('self', 'platform_metadata')",
+          "kind": "check",
+          "name": "ck_role_permission_links_data_scope"
+        },
+        {
           "definition": "effect IN ('allow', 'deny')",
           "kind": "check",
-          "name": "ck_role_permissions_effect"
+          "name": "ck_role_permission_links_effect"
         },
         {
           "definition": [
             "id"
           ],
           "kind": "primary_key",
-          "name": "pk_role_permissions"
+          "name": "pk_role_permission_links"
         },
         {
           "definition": [
             "role_id",
             "permission_code",
-            "effect"
+            "effect",
+            "data_scope"
           ],
           "kind": "unique",
-          "name": "uq_role_permissions_role_id_permission_code_effect"
+          "name": "uq_role_permission_links_role_id_permission_code_e_5e3b7fafe483"
         }
       ],
       "indexes": [
@@ -974,7 +992,7 @@
           "metadata": {
             "purpose": "permission retirement checks for referencing roles"
           },
-          "name": "ix_role_permissions_permission_code_role_id",
+          "name": "ix_role_permission_links_permission_code_role_id",
           "unique": false
         }
       ],
@@ -1012,7 +1030,7 @@
         "owner_column": null,
         "scope_kind": "system_catalog"
       },
-      "name": "role_permissions"
+      "name": "role_permission_links"
     },
     {
       "columns": [
@@ -1027,6 +1045,30 @@
           "nullable": false,
           "primary_key": false,
           "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "角色显示名",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled admin"
+          },
+          "name": "name",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "角色说明",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled admin"
+          },
+          "name": "description",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TEXT"
         },
         {
           "comment": "受保护角色标记",
@@ -1305,7 +1347,7 @@
             "id"
           ],
           "kind": "primary_key",
-          "name": "pk_user_roles"
+          "name": "pk_user_role_links"
         },
         {
           "definition": [
@@ -1313,7 +1355,7 @@
             "role_id"
           ],
           "kind": "unique",
-          "name": "uq_user_roles_user_id_role_id"
+          "name": "uq_user_role_links_user_id_role_id"
         }
       ],
       "indexes": [
@@ -1325,7 +1367,7 @@
           "metadata": {
             "purpose": "protected role member and last administrator checks"
           },
-          "name": "ix_user_roles_role_id_user_id",
+          "name": "ix_user_role_links_role_id_user_id",
           "unique": false
         }
       ],
@@ -1363,7 +1405,7 @@
         "owner_column": "user_id",
         "scope_kind": "user_owned"
       },
-      "name": "user_roles"
+      "name": "user_role_links"
     },
     {
       "columns": [
@@ -1426,6 +1468,66 @@
           "nullable": false,
           "primary_key": false,
           "type": "BIGINT"
+        },
+        {
+          "comment": "密码哈希版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "password_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "全局持久撤销代次",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "security_epoch",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "账号资料并发修改版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "邮箱实际验证时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "email_verified_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "账号限时锁定截止",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "locked_until",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
         },
         {
           "comment": "用户端持久撤销代次",
@@ -1501,6 +1603,21 @@
           "name": "ck_users_email_length"
         },
         {
+          "definition": "password_version >= 1",
+          "kind": "check",
+          "name": "ck_users_password_version_positive"
+        },
+        {
+          "definition": "revision >= 1",
+          "kind": "check",
+          "name": "ck_users_revision_positive"
+        },
+        {
+          "definition": "security_epoch >= 0",
+          "kind": "check",
+          "name": "ck_users_security_epoch_nonnegative"
+        },
+        {
           "definition": "client_security_epoch >= 0 AND admin_security_epoch >= 0",
           "kind": "check",
           "name": "ck_users_security_epochs_nonnegative"
@@ -1525,7 +1642,20 @@
           "name": "uq_users_email_normalized"
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "columns": [
+            "status",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded administrator account listing"
+          },
+          "name": "ix_users_status_created_at_id",
+          "unique": false
+        }
+      ],
       "metadata": {
         "allowed_entrances": [
           "controlled maintenance initialization"

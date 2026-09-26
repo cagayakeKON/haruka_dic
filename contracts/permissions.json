@@ -1,5 +1,5 @@
 {
-  "catalog_version": "b0-identity-v2",
+  "catalog_version": "b0-identity-v3",
   "implemented_business_routes": [],
   "menus": [
     {
@@ -393,6 +393,16 @@
     },
     {
       "audience": "client",
+      "code": "client.practice.mistake.favorite",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.practice.mistake.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
       "code": "client.practice.read",
       "data_scope": "self"
     },
@@ -404,6 +414,11 @@
     {
       "audience": "client",
       "code": "client.practice.start",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.profile.avatar.update",
       "data_scope": "self"
     },
     {
@@ -553,9 +568,12 @@
       "client.practice.answer",
       "client.practice.generate",
       "client.practice.grade.request",
+      "client.practice.mistake.favorite",
+      "client.practice.mistake.read",
       "client.practice.read",
       "client.practice.review.request",
       "client.practice.start",
+      "client.profile.avatar.update",
       "client.profile.read",
       "client.profile.update",
       "client.reading.progress.update",

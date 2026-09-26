@@ -1,8 +1,9 @@
 {
-  "schema_version": 1,
-  "head": "0001_b0_identity",
   "files": {
     "env.py": "778bc7c6f4d917cc610dafbb3cf88e55b7e65afc7d44158b37b3ef3ec1000f2b",
-    "versions/0001_b0_identity.py": "32a61198fdaf75fb357173f0b70a4c9230e8b61f516f26c06ee04b4c8fdc6467"
-  }
+    "versions/0001_b0_identity.py": "32a61198fdaf75fb357173f0b70a4c9230e8b61f516f26c06ee04b4c8fdc6467",
+    "versions/0002_b0_identity_alignment.py": "25ea14b747f2d55ea8b1b3b4e2d0a271b7bd9811de96498945a254d50a69e457"
+  },
+  "head": "0002_b0_identity_alignment",
+  "schema_version": 1
 }

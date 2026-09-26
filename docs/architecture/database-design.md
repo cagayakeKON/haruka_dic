@@ -1,6 +1,6 @@
 # Haruka 数据库设计书
 
-版本：DBDESIGN3 / v0.3，2026-09-25。所属阶段：阶段1中的数据库设计文档小阶段；设计覆盖已确认首版功能，工程按阶段1～5相关功能切片逐步落地。本轮基线提交：`7fed5fc`；B0实际结构仍以`0001_b0_identity`及生成字典为准。**本次交付表结构与 Redis 字段设计，不创建业务表、不执行迁移、不修改运行实例。**
+版本：DBDESIGN3 / v0.3，2026-09-25。所属阶段：阶段1中的数据库设计文档小阶段；设计覆盖已确认首版功能，工程按阶段1～5相关功能切片逐步落地。DBDESIGN3历史基线提交：`7fed5fc`。B0现行代码结构已由`0002_b0_identity_alignment`及生成字典对齐，见[B0增量记录](../delivery/reviews/2026-09-26-b0-design-alignment.md)；仍只有12张基础表。其余目标业务结构与Redis字段仍是设计，按功能切片实施。
 
 DESIGN23扩充全应用NLP和OCR/ruby存储：原材料NLP的3张设计表调整为text_analysis_versions/units/sentences，token改存有界单元JSONB；总计仍142。现有Explanation/Card保存AI成品，OCR阶段成品使用FileObject/JobStage；新增R19热点标注副本。详见[统一文本分析](text-analysis.md)及[提取契约](../contracts/source-extraction.md)，本轮只改文档。
 
@@ -20,12 +20,12 @@ DBDESIGN4（2026-09-26，基线0f031ae）修订[AUDIT1](../delivery/reviews/2026
 
 **当前物理目标142张：已有B0 12张，拟新增130张（含邮件交付条件表1张）。** 对全部158个原候选审查后减少16张；未启用邮件条件时目标141张。内部alembic_version、Redis键与逻辑DTO/查询投影不计表数。各表取舍见收敛册；下一次迁移只建立当期必需结构。
 
-DBDESIGN3采用业务归属/直接父对象命名，专用多对多关联表使用`_links`；关系基数由[完整清单](database-relations.md)明确标注，不靠表名单复数推断。本轮46项改名不改变142个实体：其中`user_roles`、`role_permissions`是B0当前实际名，未来目标分别为`user_role_links`、`role_permission_links`，不能把目标名称当成已迁移结构。字段、接口和Redis键保持原有契约。
+DBDESIGN3采用业务归属/直接父对象命名，专用多对多关联表使用`_links`；关系基数由[完整清单](database-relations.md)明确标注，不靠表名单复数推断。本轮46项改名不改变142个实体：其中B0的`user_roles`、`role_permissions`已由0002受控迁移更名为`user_role_links`、`role_permission_links`；其余目标名仍属于待实施结构。字段、接口和Redis键保持原有契约。
 
 设计状态严格区分：
 
-- **已有**：当前 SQLAlchemy 模型、`0001_b0_identity` 迁移及受管字典中的 B0 基础表。核对点见账号分册；已有字段的真实来源是[生成数据字典](../../contracts/database-schema.json)，不是本设计书的摘录。
-- **拟新增 / 拟修改**：各分册的业务表和 B0 增量，仅为本次可审查设计。具体类型/长度/索引属于拟采用方案，需随业务切片验证后写入模型、迁移和生成字典。
+- **已有**：当前SQLAlchemy模型、0001→0002迁移链及受管字典中的B0基础表。核对点见账号分册；已有字段的真实来源是[生成数据字典](../../contracts/database-schema.json)，不是本设计书的摘录。
+- **拟新增 / 拟修改**：尚未实施的业务表与B0其余拟增列，仅为可审查设计。具体类型/长度/索引属于拟采用方案，需随业务切片验证后写入模型、迁移和生成字典。
 - **待决**：产品未确定的注册/恢复、文件格式、词音目录/模型、删题语义和掌握策略等保留既有 OPEN 门槛；本书不替用户关闭。
 
 本书是**未实现结构的设计入口**；[数据库规范](../engineering/database.md)继续维护通用工程规则，[数据与任务](data-jobs.md)维护跨模块事务，[各协议](../README.md)维护 API/出处/CSV/状态行为。实施某表时将字段说明和逻辑关系转入 SQLAlchemy 注释与 `Table.info`，生成字典单向导出；本书改为链接已实现字典并保留设计理由，不维持与模型并行修改的第二份已实现字段真相。

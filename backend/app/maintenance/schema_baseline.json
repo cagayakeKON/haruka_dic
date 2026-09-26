@@ -27,8 +27,9 @@
       "ck_permission_catalog_audience": "audience::text = ANY (ARRAY['client'::character varying, 'admin'::character varying]::text[])",
       "ck_permission_catalog_data_scope": "data_scope::text = ANY (ARRAY['self'::character varying, 'platform_metadata'::character varying]::text[])"
     },
-    "role_permissions": {
-      "ck_role_permissions_effect": "effect::text = ANY (ARRAY['allow'::character varying, 'deny'::character varying]::text[])"
+    "role_permission_links": {
+      "ck_role_permission_links_data_scope": "data_scope::text = ANY (ARRAY['self'::character varying, 'platform_metadata'::character varying]::text[])",
+      "ck_role_permission_links_effect": "effect::text = ANY (ARRAY['allow'::character varying, 'deny'::character varying]::text[])"
     },
     "roles": {
       "ck_roles_revision_positive": "revision >= 1"
@@ -37,10 +38,13 @@
       "ck_seed_versions_digest": "payload_sha256::text ~ '^[a-f0-9]{64}$'::text",
       "ck_seed_versions_version_positive": "version >= 1"
     },
-    "user_roles": {},
+    "user_role_links": {},
     "users": {
       "ck_users_authz_version_positive": "authz_version >= 1",
       "ck_users_email_length": "length(email_normalized::text) >= 3 AND length(email_normalized::text) <= 254",
+      "ck_users_password_version_positive": "password_version >= 1",
+      "ck_users_revision_positive": "revision >= 1",
+      "ck_users_security_epoch_nonnegative": "security_epoch >= 0",
       "ck_users_security_epochs_nonnegative": "client_security_epoch >= 0 AND admin_security_epoch >= 0",
       "ck_users_status": "status::text = ANY (ARRAY['pending'::character varying, 'active'::character varying, 'disabled'::character varying]::text[])"
     }
@@ -73,8 +77,9 @@
       "ck_permission_catalog_audience": "audience IN ('client', 'admin')",
       "ck_permission_catalog_data_scope": "data_scope IN ('self', 'platform_metadata')"
     },
-    "role_permissions": {
-      "ck_role_permissions_effect": "effect IN ('allow', 'deny')"
+    "role_permission_links": {
+      "ck_role_permission_links_data_scope": "data_scope IN ('self', 'platform_metadata')",
+      "ck_role_permission_links_effect": "effect IN ('allow', 'deny')"
     },
     "roles": {
       "ck_roles_revision_positive": "revision >= 1"
@@ -83,13 +88,16 @@
       "ck_seed_versions_digest": "payload_sha256 ~ '^[a-f0-9]{64}$'",
       "ck_seed_versions_version_positive": "version >= 1"
     },
-    "user_roles": {},
+    "user_role_links": {},
     "users": {
       "ck_users_authz_version_positive": "authz_version >= 1",
       "ck_users_email_length": "length(email_normalized) BETWEEN 3 AND 254",
+      "ck_users_password_version_positive": "password_version >= 1",
+      "ck_users_revision_positive": "revision >= 1",
+      "ck_users_security_epoch_nonnegative": "security_epoch >= 0",
       "ck_users_security_epochs_nonnegative": "client_security_epoch >= 0 AND admin_security_epoch >= 0",
       "ck_users_status": "status IN ('pending', 'active', 'disabled')"
     }
   },
-  "revision": "0001_b0_identity"
+  "revision": "0002_b0_identity_alignment"
 }

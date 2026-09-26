@@ -29,6 +29,7 @@ from app.models import (
     AuthPolicy,
     Library,
     OutboxEvent,
+    PermissionCatalog,
     Role,
     RolePermission,
     SeedVersion,
@@ -82,7 +83,10 @@ async def test_seed_concurrency_upgrade_preserves_manual_grants(
             assert role is not None and policy is not None
             session.add(
                 RolePermission(
-                    role_id=role.id, permission_code="client.material.import", effect="deny"
+                    role_id=role.id,
+                    permission_code="client.material.import",
+                    effect="deny",
+                    data_scope="self",
                 )
             )
             policy.registration_mode = "approval"
@@ -131,6 +135,8 @@ async def test_admin_is_atomic_private_hashed_and_idempotent(target: Maintenance
             user = await session.get(User, first.user_id)
             assert user is not None
             assert user.password_hash.startswith("$argon2id$")
+            assert user.password_version == 1 and user.security_epoch == 0 and user.revision == 1
+            assert user.email_verified_at is None and user.locked_until is None
             assert PasswordHasher().verify(user.password_hash, password.get_secret_value())
             assert (
                 user.email == "Admin@Example.test" and user.email_normalized == "admin@example.test"
@@ -162,6 +168,57 @@ async def test_admin_is_atomic_private_hashed_and_idempotent(target: Maintenance
                 text("SELECT has_table_privilege('haruka_test_runtime', :table, 'DELETE')"),
                 {"table": f"{target.database_schema}.admin_audit_events"},
             )
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.parametrize(
+    "invalid", ["grant_scope", "mixed_grant", "catalog_scope", "catalog_audience"]
+)
+async def test_admin_initialization_requires_catalog_scope_grant(
+    target: MaintenanceSettings, invalid: str
+) -> None:
+    await apply_seed(target)
+    engine = create_maintenance_engine(target)
+    try:
+        async with AsyncSession(engine) as session, session.begin():
+            role = await session.scalar(select(Role).where(Role.code == "super_admin"))
+            assert role is not None
+            grant = await session.scalar(
+                select(RolePermission).where(
+                    RolePermission.role_id == role.id,
+                    RolePermission.permission_code == "admin.login",
+                    RolePermission.effect == "allow",
+                )
+            )
+            assert grant is not None
+            if invalid == "grant_scope":
+                grant.data_scope = "self"
+            elif invalid == "mixed_grant":
+                session.add(
+                    RolePermission(
+                        role_id=role.id,
+                        permission_code="admin.login",
+                        effect="allow",
+                        data_scope="self",
+                    )
+                )
+            else:
+                catalog = await session.get(PermissionCatalog, "admin.login")
+                assert catalog is not None
+                if invalid == "catalog_scope":
+                    catalog.data_scope = "self"
+                else:
+                    catalog.audience = "client"
+        with pytest.raises(InitializationError, match="cannot log in"):
+            await initialize_admin(
+                target,
+                email="admin@example.test",
+                password=SecretStr("Synthetic-Only-Password-For-Tests"),
+            )
+        async with AsyncSession(engine) as session:
+            assert await session.scalar(select(func.count()).select_from(User)) == 0
+            assert await session.scalar(select(func.count()).select_from(Library)) == 0
     finally:
         await engine.dispose()
 
@@ -257,7 +314,12 @@ async def test_pg_constraints_and_explicit_update_paths(target: MaintenanceSetti
             previous = changed.updated_at
         async with engine.begin() as connection:
             statement = insert(Role).values(
-                id=uuid4(), code="operator", enabled=False, protected=False, revision=1
+                id=uuid4(),
+                code="operator",
+                name="operator",
+                enabled=False,
+                protected=False,
+                revision=1,
             )
             await connection.execute(
                 statement.on_conflict_do_update(
@@ -284,7 +346,9 @@ async def test_pg_constraints_and_explicit_update_paths(target: MaintenanceSetti
             with pytest.raises(IntegrityError):
                 async with engine.begin() as connection:
                     await connection.execute(
-                        insert(Role).values(id=uuid4(), enabled=True, protected=False, **values)
+                        insert(Role).values(
+                            id=uuid4(), name="probe", enabled=True, protected=False, **values
+                        )
                     )
     finally:
         await engine.dispose()

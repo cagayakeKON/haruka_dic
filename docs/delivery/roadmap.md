@@ -2,13 +2,15 @@
 
 状态：2026-09-22，阶段1的完整B0已验收，B1/B2尚未实现，阶段1未完成。实际范围、候选和证据见 [B0验收记录](reviews/2026-09-22-b0-acceptance.md)。本页维护实施顺序、阶段验收和实际进度；范围以 [产品总览](../product/overview.md) 为准，逐功能流程由 [覆盖索引](coverage.md) 定位到对应模块，公共技术设计从 [架构总览](../architecture/overview.md) 进入。
 
+2026-09-26 [B0设计对齐](reviews/2026-09-26-b0-design-alignment.md)更新12张基础表中的账号/角色/授权结构、发布权限目录和Flutter基础壳；只补充受影响范围的验证，B1/B2和NLP/AI/TTS/学习缓存业务仍未实现。原B0完整矩阵保留其历史候选身份。
+
 文档整理与应用交付分别记账：[本轮重组记录](reviews/reorganization.md) 维护迁移、review及提交证据，不勾选下列工程验收。未来开发遵循 [AGENTS.md](../../AGENTS.md) 的前后端并行、分阶段提交、必要测试与review规则；本页不重复维护另一套频率要求。
 
 2026-09-25 DBDESIGN1新增[数据库设计书](../architecture/database-design.md)：核对B0已有12表，设计账号权限、材料考试、收藏学习/AI的字段、逻辑关联与[Redis键](../architecture/redis-design.md)，并映射下方实施阶段。属于阶段1内文档小阶段，业务结构仍需按B1/B2及后续功能分批迁移/验证；本次没有创建表、修改运行缓存或完成工程验收，见[设计审查记录](reviews/2026-09-25-database-design.md)。
 
 2026-09-25 DBDESIGN2按用户要求完成[物理结构必要性与实施复杂度收敛](../architecture/database-convergence.md)：158张候选收敛为142张（含已有12张、条件表1张），逐表说明保留/合并理由。具体字段同步三分册，注册单扩展行、用量并入attempt，工程仍分切片落地；[本轮审查](reviews/2026-09-25-database-convergence.md)只记录文档证据。
 
-2026-09-25 DBDESIGN3完成[表命名与关系设计](../architecture/database-relations.md)：采用业务归属/直接父对象命名，专用多对多关联表使用links；逐项列出142表的父/端点、基数与唯一依据。46项目标名调整中2项是B0未来改名，现有12表及代码/迁移保持现状；[本轮审查](reviews/2026-09-25-database-naming.md)仍仅文档验收。
+2026-09-25 DBDESIGN3完成[表命名与关系设计](../architecture/database-relations.md)：采用业务归属/直接父对象命名，专用多对多关联表使用links；逐项列出142表的父/端点、基数与唯一依据。当时46项目标名调整中2项是B0未来改名，现有12表及代码/迁移保持现状；[本轮审查](reviews/2026-09-25-database-naming.md)仍仅文档验收。
 
 2026-09-26 DBDESIGN4修订[AUDIT1](reviews/2026-09-26-business-design-audit.md)的6项数据库设计问题，目标仍142表/19类Redis键；[修订记录](reviews/2026-09-26-database-audit-fixes.md)仅为文档证据。阶段2验证根级Lesson与同版本/根目录顺序及统一听力问题代码；阶段3验证题目收藏来源联合/跨设备唯一、共享请求冻结代次、实际合成出处与格式派生容量/GC；阶段4结合真实Attempt/交卷/重评复核COL-005/006。上述工程验收均未勾选，原型差异、章节下载文案残留及排版协议细化不包含在本轮修订。
 
@@ -77,7 +79,7 @@ B0各切片已完成必要测试与独立review。Windows/Linux干净检出、�
 参考收藏与出题只提前实现最小业务链路，阶段3/4仍负责其完整功能与最终验收；不能因参考流程通过就勾选整项功能。
 
 - 建立 Flutter 三端、Python 工程、登录/注册/设置页面及 CI 检查入口。
-- 在B1及相关页面切片按[产品设计语言](../product/design-language.md)建立共享主题、字体/空间、基础控件和状态/动效表达；只核对当期受影响的DESIGN检查项。后续阶段2材料、阶段3解释/收藏/朗读、阶段4习题/考试沿用同一语言，管理与设置随功能交付；Flutter正式视觉尚未实现，不回写B0历史通过结论。
+- 在B1及相关页面切片按[产品设计语言](../product/design-language.md)建立共享主题、字体/空间、基础控件和状态/动效表达；只核对当期受影响的DESIGN检查项。后续阶段2材料、阶段3解释/收藏/朗读、阶段4习题/考试沿用同一语言，管理与设置随功能交付；B0已建立浅色主题与基础壳表达，正式业务页面视觉继续按切片实现，不回写B0历史通过结论。
 - 按 [Flutter适配规范](../engineering/flutter.md) 在B0建立布局策略/平台入口，B1/B2证明独立视图与共享业务状态、重排/输入/任务不重复及账号隔离；阅读、考试、媒体等后续阶段分别补齐FLT适配与真机性能证据。
 - 按 [后端手册](../engineering/backend.md) 落实模块公开入口、依赖/事务生命周期；B0建立 [统一返回](../contracts/api-responses.md) 与异常/OpenAPI/语言基础，B1在真实身份和收藏流程验收API-07～API-10的当期范围，不把文档模板视为实现。
 - 按 [前端E2E](../engineering/testing/frontend-e2e.md) 建立Test ID单源生成、Key/Web语义定位原型及平台runner分工；按 [测试数据](../engineering/testing/data.md) 建立共享样本、声明式场景、工厂秘密通道与资源账本，映射UIE/TDS验收。

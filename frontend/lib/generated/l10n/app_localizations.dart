@@ -119,7 +119,7 @@ abstract class AppLocalizations {
   /// No description provided for @shellDescription.
   ///
   /// In zh, this message translates to:
-  /// **'应用基础已就绪。账号、材料与学习功能正在建设中。'**
+  /// **'Haruka 的学习空间正在搭建。当前可查看应用环境与服务连接。'**
   String get shellDescription;
 
   /// No description provided for @materialsTitle.
@@ -131,8 +131,14 @@ abstract class AppLocalizations {
   /// No description provided for @materialsDescription.
   ///
   /// In zh, this message translates to:
-  /// **'未来可导入小说、课本和试卷，使用各自的阅读与练习页面。'**
+  /// **'小说、课本和试卷将分别进入专属的阅读与学习页面。'**
   String get materialsDescription;
+
+  /// No description provided for @materialLanguages.
+  ///
+  /// In zh, this message translates to:
+  /// **'首版材料支持日语和英语。'**
+  String get materialLanguages;
 
   /// No description provided for @unavailable.
   ///

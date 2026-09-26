@@ -1,6 +1,6 @@
 # 数据库设计书：表命名、归属与关系清单
 
-版本：DBDESIGN3 / v0.3，2026-09-25；基线提交 `7fed5fc`。本轮只调整设计表名、补齐关系说明，承接DBDESIGN2的142张物理目标，不增删表、不合并字段、不改变业务唯一性。**46个目标名调整，其中2个对应B0已有表的未来改名，44个属于未建表设计。代码、模型、迁移和生成字典保持现状。**
+版本：DBDESIGN3 / v0.3，2026-09-25；基线提交 `7fed5fc`。本轮只调整设计表名、补齐关系说明，承接DBDESIGN2的142张物理目标，不增删表、不合并字段、不改变业务唯一性。命名基线共46个目标名调整；其中2个B0关联表已在2026-09-26由0002增量迁移落地，其余44个属于未建表设计。当前已实现结构见[账号分册](database-identity.md)和[B0增量记录](../delivery/reviews/2026-09-26-b0-design-alignment.md)。
 
 DESIGN23（2026-09-26）进一步将第44～46项材料专用NLP改为全应用分析版本/句子/单元，token收进单元有界JSONB。三项替换仍占3表，总计142不变；本分册分类只表示字典位置，这3表同时服务非材料学习资源。旧命名稿的46项调整说明保留为历史基线，当前三项字段以[文本分册](database-materials.md#27-全应用派生语言标注)为准。
 
@@ -21,7 +21,7 @@ DBDESIGN4（2026-09-26）补齐根级教材课、直接题目收藏、共享词�
 
 ## 2. 全部142张目标表
 
-编号延续本轮讨论中的全表顺序；前12项为B0实体，其中第5、6项显示未来目标名。邮件交付条件表是第20项，未选邮件模式时目标为141张。Redis19类键及逻辑DTO不计入表数。
+编号延续本轮讨论中的全表顺序；前12项为B0实体，其中第5、6项已在0002中完成更名。邮件交付条件表是第20项，未选邮件模式时目标为141张。Redis19类键及逻辑DTO不计入表数。
 
 ### 2.1 账号、权限、配置与容量（34张）
 
@@ -34,7 +34,7 @@ DBDESIGN4（2026-09-26）补齐根级教材课、直接题目收藏、共享词�
 | 3 | `roles` | — | 系统目录根 | UQ(code) |
 | 4 | `permission_catalog` | — | 系统目录根 | PK(code) |
 | 5 | `user_role_links` | users ↔ roles | M:N关联 | UQ(user_id,role_id) |
-| 6 | `role_permission_links` | roles ↔ permission_catalog | M:N关联，按策略维度区分 | 目标UQ(role_id,permission_code,effect,data_scope)；B0尚无data_scope |
+| 6 | `role_permission_links` | roles ↔ permission_catalog | M:N关联，按策略维度区分 | UQ(role_id,permission_code,effect,data_scope)；0002已补data_scope |
 | 7 | `menus` | menus（可选父菜单） | 目录根兼自关联1:N | UQ(code)；parent_menu_id为拟增列，同树无环由服务验 |
 | 8 | `auth_policies` | — | 实例策略根 | PK(code)，受已注册代码约束 |
 | 9 | `authorization_revisions` | — | 全局单例保护根 | PK(code)，CHECK code='global' |
@@ -192,8 +192,8 @@ DBDESIGN4（2026-09-26）补齐根级教材课、直接题目收藏、共享词�
 
 | DBDESIGN2表名 | DBDESIGN3目标表名 | 实施状态 |
 | --- | --- | --- |
-| `user_roles` | `user_role_links` | B0已有；未来受控改名，当前仍为旧名 |
-| `role_permissions` | `role_permission_links` | B0已有；未来受控改名，当前仍为旧名 |
+| `user_roles` | `user_role_links` | B0已有；0002受控改名，保留原行ID及授权事实 |
+| `role_permissions` | `role_permission_links` | B0已有；0002受控改名，保留原行ID及授权事实 |
 | `study_profile_languages` | `user_languages` | 尚未建表；功能切片直接使用新目标名 |
 | `settings_model_bindings` | `user_model_bindings` | 尚未建表；功能切片直接使用新目标名 |
 | `settings_voice_bindings` | `user_voice_bindings` | 尚未建表；功能切片直接使用新目标名 |
@@ -239,8 +239,8 @@ DBDESIGN4（2026-09-26）补齐根级教材课、直接题目收藏、共享词�
 | `audio_segments` | `audio_asset_segments` | 尚未建表；功能切片直接使用新目标名 |
 | `notifications` | `user_notifications` | 尚未建表；功能切片直接使用新目标名 |
 
-现有B0 12张物理表以[账号分册第1节](database-identity.md)及[生成字典](../../contracts/database-schema.json)为准。其中 `user_roles → user_role_links`、`role_permissions → role_permission_links` 是同一实体的未来改名，不是新增两张关联表，也不将当前B0数量改成14。其余10张B0表名保持。
+现有B0 12张物理表以[账号分册第1节](database-identity.md)及[生成字典](../../contracts/database-schema.json)为准。其中 `user_roles → user_role_links`、`role_permissions → role_permission_links` 是0002中同一实体的改名，不是新增两张关联表，当前B0数量仍为12。其余10张B0表名保持。
 
-未来实施这两项改名必须新增受控Alembic revision，在同一受维护锁保护的升级中协调模型、表/索引/约束名称、逻辑关系元数据、受管基线和生成字典；保留原ID、数据、人工授权及deny含义，不能修改0001或删建覆盖。本轮不规定运行中双版本并行兼容；如部署要求旧代码继续访问，实施切片必须先明确过渡方案。改名前后行数、业务唯一性、反向查询与权限语义都要在届时真实迁移验收。
+0002已在同一受维护锁保护的升级中协调模型、表/索引/约束名称、逻辑关系元数据、受管基线和生成字典，保留原ID、数据、人工授权及deny含义，不修改0001或删建覆盖。该升级要求停止旧应用进程后执行，新旧代码不提供并行访问兼容层；后续如需滚动升级，必须另行明确过渡方案。改名与数据保留的真实PG验证见[B0增量记录](../delivery/reviews/2026-09-26-b0-design-alignment.md)。
 
-DBDESIGN2的[必要性收敛](database-convergence.md)保留158个原候选名称，物理目标列已同步本页新名称；历史review记录与当前生成字典中的旧名是历史/实现证据，不做全文替换。
+DBDESIGN2的[必要性收敛](database-convergence.md)保留158个原候选名称，物理目标列已同步本页新名称；历史review记录中的旧名保留为当时证据；当前生成字典使用0002新名，不对历史文档做全文替换。

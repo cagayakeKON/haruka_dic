@@ -2,6 +2,8 @@
 
 阶段1的B0已验收。可安装包、四个正式CLI、资源组装、统一HTTP返回、受控迁移/种子/首管理员和离线契约导出已建立；Windows/Linux干净构建与仓库外运行等证据见 [B0验收记录](../docs/delivery/reviews/2026-09-22-b0-acceptance.md)。登录、实际业务授权与持久任务尚待B1/B2。
 
+2026-09-26 [B0设计对齐](../docs/delivery/reviews/2026-09-26-b0-design-alignment.md)更新12张基础表中的账号/角色/授权结构、发布权限目录和Flutter基础壳；只补充受影响范围的验证，B1/B2和NLP/AI/TTS/学习缓存业务仍未实现。原B0完整矩阵保留其历史候选身份。
+
 先用Python3.13.6运行统一bootstrap。该命令按锁安装，不更新依赖，并在虚拟环境写入 `haruka-no-bytecode.pth`，让该解释器启动时不再于源码旁生成 `__pycache__`。开发入口拉起的 Python 子进程同时设置 `PYTHONDONTWRITEBYTECODE=1`。当前仓库内uv为`.tools/uv/uv.exe`，版本必须与工具清单一致；其他环境先安装清单指定版本。本机PATH的Python3.9不适用，以下显式选择锁定版本。
 
 ```powershell

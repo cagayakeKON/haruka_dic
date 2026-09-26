@@ -17,6 +17,7 @@ import pytest
 import pytest_asyncio
 from alembic import command
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.schema import CreateSchema, DropSchema
 
@@ -26,6 +27,7 @@ from app.maintenance.migrations import (
     MigrationError,
     database_status,
     load_migration_resources,
+    locked_connection,
     upgrade_database,
 )
 from app.maintenance.schema import EXPECTED_REVISION, SchemaMismatchError, check_schema
@@ -34,6 +36,7 @@ from app.maintenance.settings import (
     create_maintenance_engine,
     load_maintenance_settings,
 )
+from app.services.initialization import apply_seed
 
 pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 MIGRATIONS = Path(__file__).resolve().parents[2] / "alembic"
@@ -243,6 +246,204 @@ async def test_empty_upgrade_repeat_and_read_only_schema_drift(target: Migration
             await check_schema(engine, schema=target.settings.database_schema)
         async with engine.connect() as connection:
             assert await connection.scalar(text("SELECT COUNT(*) FROM users")) == 0
+    finally:
+        await engine.dispose()
+
+
+async def upgrade_only_0001(target: MigrationTarget) -> None:
+    """Prepare a real old revision through the same owned maintenance lock."""
+    resources = load_migration_resources(MIGRATIONS)
+    async with locked_connection(target.settings) as (connection, ownership):
+
+        def apply(sync: object) -> None:
+            from sqlalchemy import Connection
+
+            assert isinstance(sync, Connection)
+            config = resources.config()
+            config.attributes["connection"] = sync
+            config.attributes["lock_ownership"] = ownership
+            command.upgrade(config, "0001_b0_identity")
+
+        await connection.run_sync(apply)
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [None, "orphan_permission", "wrong_scope", "wrong_audience", "orphan_role", "orphan_user"],
+)
+async def test_0001_upgrade_preserves_grants_or_refuses_bad_catalog(
+    target: MigrationTarget, invalid: str | None
+) -> None:
+    await upgrade_only_0001(target)
+    role_id, user_id, grant_id, membership_id = (uuid4() for _ in range(4))
+    engine = create_maintenance_engine(target.settings)
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "INSERT INTO users (id,email,email_normalized,password_hash,status) "
+                    "VALUES (:id,'old@example.test','old@example.test','old-hash','active')"
+                ),
+                {"id": user_id},
+            )
+            await connection.execute(
+                text(
+                    "INSERT INTO roles (id,code,protected,enabled) VALUES (:id,'reviewer',false,true)"
+                ),
+                {"id": role_id},
+            )
+            if invalid != "orphan_permission":
+                await connection.execute(
+                    text(
+                        "INSERT INTO permission_catalog (code,audience,data_scope,enabled) "
+                        "VALUES ('client.material.read',:audience,:scope,true)"
+                    ),
+                    {
+                        "audience": "admin" if invalid == "wrong_audience" else "client",
+                        "scope": "platform_metadata"
+                        if invalid in {"wrong_scope", "wrong_audience"}
+                        else "self",
+                    },
+                )
+            await connection.execute(
+                text(
+                    "INSERT INTO role_permissions (id,role_id,permission_code,effect) "
+                    "VALUES (:id,:role,'client.material.read','deny')"
+                ),
+                {"id": grant_id, "role": uuid4() if invalid == "orphan_role" else role_id},
+            )
+            await connection.execute(
+                text("INSERT INTO user_roles (id,user_id,role_id) VALUES (:id,:user,:role)"),
+                {
+                    "id": membership_id,
+                    "user": uuid4() if invalid == "orphan_user" else user_id,
+                    "role": role_id,
+                },
+            )
+            if invalid is None:
+                await connection.execute(
+                    text(
+                        "INSERT INTO seed_versions (code,version,payload_sha256) "
+                        "VALUES ('b0-identity-v2',2,:digest)"
+                    ),
+                    {"digest": "a" * 64},
+                )
+        if invalid is not None:
+            with pytest.raises(MigrationError, match="identity associations"):
+                await upgrade_database(target.settings, MIGRATIONS)
+            async with engine.connect() as connection:
+                assert (
+                    await connection.scalar(text("SELECT version_num FROM alembic_version"))
+                    == "0001_b0_identity"
+                )
+                assert await connection.scalar(text("SELECT count(*) FROM role_permissions")) == 1
+            return
+        async with engine.connect() as connection:
+            old_user = (
+                await connection.execute(
+                    text("SELECT id,password_hash,created_at FROM users WHERE id=:id"),
+                    {"id": user_id},
+                )
+            ).one()
+            old_grant_created = await connection.scalar(
+                text("SELECT created_at FROM role_permissions WHERE id=:id"), {"id": grant_id}
+            )
+            old_membership_created = await connection.scalar(
+                text("SELECT created_at FROM user_roles WHERE id=:id"), {"id": membership_id}
+            )
+        result = await upgrade_database(target.settings, MIGRATIONS)
+        assert result.compatible
+        async with engine.connect() as connection:
+            grant = (
+                await connection.execute(
+                    text(
+                        "SELECT id,role_id,permission_code,effect,data_scope FROM role_permission_links"
+                    )
+                )
+            ).one()
+            assert tuple(grant) == (grant_id, role_id, "client.material.read", "deny", "self")
+            assert (
+                await connection.scalar(
+                    text("SELECT created_at FROM role_permission_links WHERE id=:id"),
+                    {"id": grant_id},
+                )
+                == old_grant_created
+            )
+            membership = (
+                await connection.execute(text("SELECT id,user_id,role_id FROM user_role_links"))
+            ).one()
+            assert tuple(membership) == (membership_id, user_id, role_id)
+            assert (
+                await connection.scalar(
+                    text("SELECT created_at FROM user_role_links WHERE id=:id"),
+                    {"id": membership_id},
+                )
+                == old_membership_created
+            )
+            role = (
+                await connection.execute(
+                    text("SELECT name,revision,created_at,updated_at FROM roles")
+                )
+            ).one()
+            assert role.name == "reviewer" and role.revision == 2
+            assert role.updated_at >= role.created_at
+            account = (
+                await connection.execute(
+                    text(
+                        "SELECT password_version,security_epoch,revision,email_verified_at,locked_until "
+                        "FROM users"
+                    )
+                )
+            ).one()
+            assert tuple(account) == (1, 0, 1, None, None)
+            assert (
+                await connection.execute(
+                    text("SELECT id,password_hash,created_at FROM users WHERE id=:id"),
+                    {"id": user_id},
+                )
+            ).one() == old_user
+            assert (
+                await connection.scalar(
+                    text(
+                        "SELECT count(*) FROM pg_constraint WHERE connamespace=current_schema()::regnamespace "
+                        "AND contype='f'"
+                    )
+                )
+                == 0
+            )
+        with pytest.raises(IntegrityError):
+            async with engine.begin() as connection:
+                await connection.execute(
+                    text(
+                        "INSERT INTO role_permission_links "
+                        "(id,role_id,permission_code,effect,data_scope) "
+                        "VALUES (:id,:role,'client.material.read','allow','arbitrary')"
+                    ),
+                    {"id": uuid4(), "role": role_id},
+                )
+        assert (await apply_seed(target.settings)).changed
+        async with engine.connect() as connection:
+            assert (
+                await connection.scalar(
+                    text(
+                        "SELECT count(*) FROM role_permission_links WHERE id=:id AND effect='deny'"
+                    ),
+                    {"id": grant_id},
+                )
+                == 1
+            )
+            assert (
+                await connection.scalar(
+                    text("SELECT name FROM roles WHERE id=:id"), {"id": role_id}
+                )
+                == "reviewer"
+            )
+            assert (
+                await connection.scalar(
+                    text("SELECT count(*) FROM seed_versions WHERE code='b0-identity-v2'")
+                )
+                == 1
+            )
     finally:
         await engine.dispose()
 

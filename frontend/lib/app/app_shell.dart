@@ -31,7 +31,16 @@ class AppShell extends StatelessWidget {
             final layout = AdaptivePolicy.forWidth(constraints.maxWidth);
             final compact = layout == LayoutSize.compact;
             return Scaffold(
-              appBar: AppBar(title: Text(config.displayName)),
+              appBar: AppBar(
+                title: Text(
+                  config.displayName,
+                  style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(1),
+                  child: Container(height: 1, color: Theme.of(context).colorScheme.outline),
+                ),
+              ),
               body: SafeArea(
                 top: false,
                 bottom: !compact,
@@ -106,7 +115,7 @@ class WideNavigation extends StatelessWidget {
     return SizedBox(
       width: expanded ? 208 : 112,
       child: ColoredBox(
-        color: const Color(0xfff5f6f8),
+        color: colors.surface,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -124,7 +133,11 @@ class WideNavigation extends StatelessWidget {
                         onPressed: () => onSelected(index),
                         style: TextButton.styleFrom(
                           minimumSize: const Size(double.infinity, 64),
+                          foregroundColor: selected == index
+                              ? colors.primary
+                              : colors.onSurfaceVariant,
                           backgroundColor: selected == index ? colors.primaryContainer : null,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.all(12),
                         ),
                         child: expanded
@@ -132,14 +145,31 @@ class WideNavigation extends StatelessWidget {
                                 children: [
                                   Icon(items[index].$3),
                                   const SizedBox(width: 12),
-                                  Expanded(child: Text(items[index].$2)),
+                                  Expanded(
+                                    child: Text(
+                                      items[index].$2,
+                                      style: TextStyle(
+                                        fontWeight: selected == index
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               )
                             : Column(
                                 children: [
                                   Icon(items[index].$3),
                                   const SizedBox(height: 4),
-                                  Text(items[index].$2, textAlign: TextAlign.center),
+                                  Text(
+                                    items[index].$2,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontWeight: selected == index
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
                                 ],
                               ),
                       ),

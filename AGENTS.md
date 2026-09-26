@@ -2,7 +2,7 @@
 
 ## 项目与当前状态
 
-Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md；[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)正在实施、联调与审查，尚未完成当前验收，B2未实现。现行产品设计语言为[「晴空频率」](docs/product/design-language.md)，整体方向已确认，手机/电脑HTML原型已按该语言重建，Flutter基础壳已按最新设计对齐，正式业务按所属阶段推进；不设“继续阅读”，演示边界见prototype/README.md。
+Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md；[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)已按用户最终验收决定通过，未运行的检查仍按原始证据标注，B2未实现。现行产品设计语言为[「晴空频率」](docs/product/design-language.md)，整体方向已确认，手机/电脑HTML原型已按该语言重建，Flutter基础壳已按最新设计对齐，正式业务按所属阶段推进；不设“继续阅读”，演示边界见prototype/README.md。
 
 文档任务只修改文档；用户要求开始实现时，按实施计划推进必要工程工作。不把计划当成已实现，不为了运行不存在的检查擅自创建项目骨架。
 

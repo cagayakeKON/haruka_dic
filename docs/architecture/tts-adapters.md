@@ -35,11 +35,15 @@
 
 OpenRouter也须冻结实际模型及已允许的路由约束，不启用语义不同模型/声音的自动fallback；需要新配置时由用户明确选择。供应商返回实际路由/修订可得则记入成品，未知标记unknown，不伪造固定版本。供应商升级导致契约变化时发布新适配修订并补测试；仅兼容解码修复可声明输入语义不变，保留旧资产可读。
 
+私有成品沿audio_assets.synthesis_config保存这些信息；共享合成根沿global_word_audios.synthesis_provenance保存冻结请求规格与observed实际路由/模型修订，结构及unknown/NULL规则唯一见[共享成品字段](database-learning.md#65-global_word_audiosglobal_word_lookup_statesglobal_word_generation_slots)。不通过后来更新profile补写历史实际修订，不只保存在贡献者私人attempt；共享成品不保存凭据、生产者或供应商账户/请求ID。
+
 ## 4. 流式保存、失败与复用
 
 所有路径统一为“持久attempt → 模型调用 → 受控临时对象/缓冲 → 完整校验 → 不可变音频与manifest → PG发布”。流式首包可在线临时试听，结束标志、格式、长度/帧完整性及模型特有结束条件满足后才标ready；无法验证的截断音频不能作为成功缓存。缓存对象保留完整可播放字节，不只保存易过期供应商URL。
 
 raw PCM必须由适配器提供真实采样参数再确定性封装，已有WAV/MP3不能重复包头；格式派生按原始资产摘要+转码版本缓存，无需新供应商attempt。完整音频已收到但落盘失败只恢复发布/下载；超时且供应商结果未知进入unknown，统一恢复流程先对账，不由SDK和Worker各自重试。每次真实重试单独记录attempt与用量，未知用量为null，缓存命中无attempt。
+
+共享词音格式派生在同一global_word_audios表中使用derived行，明确source_audio_id及源摘要、转码版本/输出spec/派生键；原件必须是synthesized根，不形成派生链。根与派生对象各自完整校验及计共享容量，目录/个人选择仍指根；缺格式只走受控确定性处理与恢复，不能占模型生成slot或借其他用户Key，发布、读取及GC见共享成品字段。
 
 任何私有材料TTS、查询词音、例句、AI解释与小说逐句朗读都进入同一服务。收藏中的受控标准独立单词才可进入global_word，私人上下文与读音不能泄露进公共目录；考试听力仍走冻结脚本和场次授权。10k查询上下文预算不转为10k合成输入，TTS只发送适配器声明的必要内容。
 

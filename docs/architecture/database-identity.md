@@ -609,13 +609,21 @@ CHECK分支完整：role类必须target_role_id有值且权限两列空；permis
 
 ### global_storage_reservations
 
-`scope_kind=system_operation`，列组B+R；仅global_word生成/结算服务，客户端/等候者不可读取生产者关联。
+`scope_kind=system_operation`，列组B+R；仅global_word生成/确定性转码/结算服务，客户端/等候者不可读取生产者关联。合成与转码在本表内以受控分支区分，不增加容量表。
 
 | 列 | PostgreSQL类型/NULL/默认 | 语义 |
 | --- | --- | --- |
 | catalog_code | varchar(32) NN | 固定global_word，关联global_storage_states.catalog_code |
-| producer_user_id | uuid NN | 实际生产者users.id，仅内部核对其私有Job归属 |
-| producer_job_id | uuid NN | 实际私有jobs.id；不返回等候者 |
+| reservation_kind | varchar(16) NN DEFAULT 'synthesis' | synthesis/transcode；服务固定，不接受客户端任意指定 |
+| producer_user_id | uuid NULL | synthesis必有的实际生产者users.id；transcode必须空 |
+| producer_job_id | uuid NULL | synthesis必有的实际私有jobs.id；transcode必须空，不借用贡献者Job |
+| source_audio_id | uuid NULL | transcode必有的global_word_audios合成根，synthesis为空 |
+| derivation_key_digest | bytea NULL | transcode必有的32字节派生身份，synthesis为空 |
+| transcode_spec | jsonb NULL | transcode必有的冻结源摘要、transcode_version、output_spec及schema；synthesis为空 |
+| transcode_fence | bigint NULL | transcode必有，初值0，每次领取/接管/撤销递增；synthesis为空 |
+| transcode_lease_owner, transcode_lease_expires_at | varchar(128) NULL / timestamptz NULL | 转码执行租约，两列同空同有；非transcode为空 |
+| output_bucket, object_layout_version | varchar(63) NULL / varchar(64) NULL | transcode受理时冻结的受控Bucket及对象键规则版本，synthesis为空；不接受客户端对象路径 |
+| output_candidate | jsonb NULL | 转码阶段有界版本化候选：fence、对象键/版本、摘要、长度、格式/采样/时长及校验版本；仅完整校验后保存，不含音频字节 |
 | reservation_stage | varchar(64) NN | 受控输出阶段 |
 | operation_id | uuid NN | 实际生产动作 |
 | reserved_bytes | bigint NN | 共享成品承诺的字节上限 |
@@ -624,7 +632,15 @@ CHECK分支完整：role类必须target_role_id有值且权限两列空；permis
 | expires_at | timestamptz NULL | 核对期限，不是自动释放授权 |
 | settled_at | timestamptz NULL | 结算/释放时间 |
 
-唯一 `(catalog_code,producer_job_id,reservation_stage)`；CHECK catalog固定值、状态/字节/终态约束与私有预留相同；索引 `(status,expires_at,id) WHERE status IN ('reserved','unknown')`。归属核对只允许确认producer_user_id与Job/有效目录生成slot一致，不能由管理员借此读取其正文/Key。按身份→global_storage_states→必要的user_storage_states→预留行→目录生成父槽/Job的固定顺序，和输出发布同事务结算；晚到旧fence不能结算新占用或发布指针。同类多根按稳定ID排序；未知、取消及GC同样不能仅按TTL退占用。
+部分唯一 `(catalog_code,producer_job_id,reservation_stage) WHERE reservation_kind='synthesis'`；转码活动部分唯一 `(catalog_code,source_audio_id,derivation_key_digest) WHERE reservation_kind='transcode' AND status IN ('reserved','unknown')`。CHECK分支字段全有/全空、catalog固定值、派生摘要32字节且spec对象、状态/字节/终态约束与私有预留相同；索引 `(status,expires_at,id) WHERE status IN ('reserved','unknown')`及`(source_audio_id) WHERE source_audio_id IS NOT NULL`。synthesis归属只核对producer_user_id与Job/有效目录生成slot一致，不能借此读取正文/Key。transcode只读取已发布公共根及白名单本地转码spec，不持有个人Key、不创建供应商attempt；请求受理先校验当前本人来源与speech.play，后台恢复仅执行该冻结公共输入的确定性处理。
+
+按身份→global_storage_states→必要的user_storage_states→预留行→实际需要的本人来源/目录父槽/根audio的固定顺序受理、发布和GC；同类多根按稳定ID排序。转码首个请求在容量根锁内查重、复核根ready并建立预留，其余请求复用；转码在锁外执行。派生发布事务要求确切预留仍reserved、spec/源摘要未变、根可用，插入派生唯一行并按实际对象字节结算；同一结果重投不重复计量，已released或旧预留的迟到写入只能清理临时对象。崩溃后的reserved/unknown按已发布派生行、预留及受控对象核对恢复，不依赖私人生产Job；证明无在途发布后才可释放，之后显式重试可建新预留。存在派生对象时先读取或恢复发布，不新建重复成品。synthesis的slot/fence仍须匹配；两分支都不能仅按TTL退占用。公共根及各派生分别计实际字节，不向每个播放者重复收容量。
+
+转码执行领取与恢复也使用上述锁序。CHECK transcode_fence>=0，lease两列同空同有，仅transcode的reserved/unknown可有lease，终态lease清空；synthesis的执行/对象字段全空。工作者领取时锁预留，核对无有效lease并推进fence，保存owner/到期时间；续租、保存候选及最终发布必须匹配确切owner/fence和有效lease，超时本身不授予发布。取消/释放先推进fence使旧执行失效；接管只能由受控确定性媒体服务执行，不获得任何模型调用能力。
+
+object_layout_version注册输出键规则：每次执行使用`global-word/transcode/<reservation_id>/<fence>/output`独占对象键，Bucket由output_bucket确定，输出协议和前缀由服务固定；每次写入使用不可覆盖/条件创建，旧fence不能覆盖新执行对象。已写成但尚未写PG的对象可按持久reservation_id及已分配fence定位，恢复必须检查完整长度/摘要/实际解码及冻结spec，不能仅凭HEAD存在判ready。对象只经目录PG成品引用提供读取，候选键没有公共直读授权。完整校验后在有效lease下保存output_candidate；最终发布从同一候选创建derived行并结算，事务失败保留候选与对象以恢复。
+
+恢复先查派生成品唯一键及已提交预留；未发布时在接管新fence后核对已记录候选或旧fence确定路径，只对完整已封存对象复制到当前fence的不可变键并重新校验，再发布。无法证明完整的残留隔离并仅重做确定性转码，不重调TTS。同一预留全部在途/残留候选字节受reserved_bytes上界约束，接管前清理并确认旧写入结束，或先按容量根扩容，不能按每个fence重复使用一份容量无界落盘。释放必须撤销旧租约写入能力、确认无有效写入/发布并处理候选；无法确认保持unknown。已失效执行者不能发布、续租或释放新占用，只能经受控清理处理自身fence对象；GC依据预留ID/fence检查在途与保留，不按对象年龄直接删除候选。
 
 ## 7. 实施顺序与验收落点
 

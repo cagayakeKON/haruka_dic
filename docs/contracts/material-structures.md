@@ -109,6 +109,8 @@ AI结构化输出至少包含：
 
 应用把AI结果保存为有代次的候选，不直接修改ExamItem或冻结版本。每个疑似听力题必须生成`listening_type_review`，每个脚本/题目匹配生成`listening_binding_review`；缺脚本生成`listening_script_missing`，已确认绑定但未有可播放资产生成`listening_audio_missing`。用户可确认、修正文稿/说话人/顺序、改绑题组或拒绝错误候选；确认动作保存操作者、源候选版本和expected_revision。迟到旧run不能覆盖新一轮候选或人工确认。
 
+上述四项为听力准备的受控问题代码；追加稿语言待确认另注册`language_confirmation_required`，其证据、关闭条件及恢复动作见[发布前语言确认](material-types.md#12-发布前语言确认与恢复)。字段字典CHECK、服务枚举、API及ready阻断判断共用同一发布注册集合，不另用`script_missing/audio_missing`别名；其他质量问题也须先登记代码和处理规则，不能接受模型自由文本充当kind。实施用缺稿、缺音频及语言待确认样本核对从候选写入到关闭/ready检查的全链路。
+
 ### 5.2 领域对象与冻结
 
 | 对象 | 关键字段/关系 | 发布要求 |

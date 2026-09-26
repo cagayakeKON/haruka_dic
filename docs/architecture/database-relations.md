@@ -4,6 +4,8 @@
 
 DESIGN23（2026-09-26）进一步将第44～46项材料专用NLP改为全应用分析版本/句子/单元，token收进单元有界JSONB。三项替换仍占3表，总计142不变；本分册分类只表示字典位置，这3表同时服务非材料学习资源。旧命名稿的46项调整说明保留为历史基线，当前三项字段以[文本分册](database-materials.md#27-全应用派生语言标注)为准。
 
+DBDESIGN4（2026-09-26）补齐根级教材课、直接题目收藏、共享词音请求/成品与转码容量约束；global_word_audios内的原件与派生采用受控一层1:N自关联，不新增表。以下对应行的基数/唯一摘要已同步，总计仍142。
+
 ## 1. 命名规则与阅读方法
 
 - 表名表达业务归属或直接父对象：个人配置使用 `user_*`，材料源数据使用 `material_*`，场次答案使用 `exam_session_answers`。根实体保留 `users`、`materials`、`jobs` 等业务名称，不把所有库内表机械加上user/library全祖先链。
@@ -60,7 +62,7 @@ DESIGN23（2026-09-26）进一步将第44～46项材料专用NLP改为全应用�
 | 31 | `user_storage_states` | users | 1:0..1，可延迟初始化的热点计数 | UQ(user_id) |
 | 32 | `global_storage_states` | — | 共享词音容量根 | UQ(catalog_code)，CHECK固定global_word |
 | 33 | `user_storage_reservations` | users；容量根user_storage_states | 1:N预留账本 | UQ(user_id,request_kind,request_id,purpose) |
-| 34 | `global_storage_reservations` | global_storage_states | 1:N预留账本 | UQ(catalog_code,producer_job_id,reservation_stage) |
+| 34 | `global_storage_reservations` | global_storage_states；合成Job或共享audio根 | 1:N预留账本，合成/转码分支 | 合成部分UQ(catalog_code,producer_job_id,reservation_stage)；转码活动部分UQ(catalog_code,source_audio_id,derivation_key_digest) |
 
 ### 2.2 材料、阅读与考试（46张）
 
@@ -83,7 +85,7 @@ DESIGN23（2026-09-26）进一步将第44～46项材料专用NLP改为全应用�
 | 47 | `novel_chapters` | material_revisions（novel） | 1:N章节 | UQ(S,material_revision_id,ordinal) |
 | 48 | `novel_chapter_blocks` | novel_chapters；material_content_blocks为来源 | 章节1:N编排项；同块可多次/分范围引用 | UQ(S,chapter_id,ordinal)，不添加章节×块唯一 |
 | 49 | `textbook_units` | material_revisions（textbook） | 1:N单元，含可选自父 | UQ(S,material_revision_id,ordinal) |
-| 50 | `textbook_lessons` | textbook_units | 1:N课 | UQ(S,unit_id,ordinal) |
+| 50 | `textbook_lessons` | material_revisions；textbook_units可空 | 版本1:N课；有Unit时Unit1:N课 | 非空Unit部分UQ(S,unit_id,ordinal)；根课部分UQ(S,material_revision_id,ordinal) |
 | 51 | `textbook_content_nodes` | textbook_lessons | 1:N内容节点 | UQ(S,lesson_id,ordinal) |
 | 52 | `textbook_content_node_links` | textbook_content_nodes ↔ textbook_content_nodes | M:N自关联，按关系类型区分 | UQ(S,from_node_id,to_node_id,relation_kind) |
 | 53 | `textbook_dialogue_turns` | textbook_content_nodes | 1:N对话轮次 | UQ(S,content_node_id,ordinal) |
@@ -121,7 +123,7 @@ DESIGN23（2026-09-26）进一步将第44～46项材料专用NLP改为全应用�
 
 | 序号 | 目标表名 | 主要父表 / 关联端点 | 关系类型 | 基数依据与唯一约束摘要 |
 | --- | --- | --- | --- | --- |
-| 81 | `collection_items` | libraries | 1:N收藏根 | 部分UQ(S,card_id,card_revision)；词形/义项不唯一 |
+| 81 | `collection_items` | libraries；卡片或类型化题目来源 | 1:N收藏根；题目按作答上下文区分 | 部分UQ(S,card_id,card_revision)及(S,question_identity_digest)；两来源分支互斥，词形/义项不唯一 |
 | 82 | `library_tags` | libraries | 1:N标签 | UQ(S,name_normalized) |
 | 83 | `collection_tag_links` | collection_items ↔ library_tags | M:N关联 | UQ(S,collection_item_id,tag_id) |
 | 84 | `vocabulary_notebooks` | libraries | 1:N词本 | UQ(S,target_language,name_normalized) |
@@ -172,10 +174,10 @@ DESIGN23（2026-09-26）进一步将第44～46项材料专用NLP改为全应用�
 | 129 | `global_word_entries` | — | 共享词条目录根 | UQ(catalog_source,catalog_version,language,dialect,entry_key,pronunciation_variant) |
 | 130 | `global_voice_profiles` | — | 共享声音配置根 | UQ(code)；WHERE is_default部分UQ(language) |
 | 131 | `global_voice_profile_versions` | global_voice_profiles | 1:N配置版本 | UQ(profile_id,profile_revision) |
-| 132 | `global_word_audios` | global_word_entries；global_voice_profile_versions | 各1:N生成资产，按代次区分 | UQ(strict_key_digest,generation)，不是词条×配置单例 |
+| 132 | `global_word_audios` | global_word_entries；global_voice_profile_versions；本表合成根 | 词条/profile各1:N成品；根1:N格式派生，禁止派生链 | synthesized部分UQ(strict_key_digest,generation)；derived部分UQ(source_audio_id,derivation_key_digest) |
 | 133 | `global_word_lookup_states` | global_word_entries；global_voice_profiles | 各1:N；每词条×配置一条状态 | UQ(word_entry_id,profile_id)，有独立选用状态，保留states |
 | 134 | `global_word_generation_slots` | global_word_entries；global_voice_profile_versions | 各1:N严格生成占用 | UQ(strict_key_digest)，生产者为受限操作引用 |
-| 135 | `speech_requests` | libraries；类型化朗读来源 | 来源1:N请求历史 | UQ(S,source_kind,source_resource_id,request_generation) |
+| 135 | `speech_requests` | libraries；类型化朗读来源；冻结的共享词条/profile/执行 | 来源1:N请求历史 | UQ(S,source_kind,source_resource_id,request_generation)；共享请求代次等于个人选择代次，旧请求不重绑新执行 |
 | 136 | `jobs` | users；libraries可空 | 用户1:N持久任务 | PK(id)，账号级Key测试可无库 |
 | 137 | `job_stages` | jobs | 1:N阶段及阶段代次 | UQ(owner,job_id,job_generation,stage_key,stage_generation) |
 | 138 | `ai_runs` | users；jobs/agent_threads可空 | 用户1:N运行；有父时父1:N | PK(id)，不强加job_id唯一 |

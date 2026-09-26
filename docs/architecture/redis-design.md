@@ -118,6 +118,8 @@ DESIGN22 R07查阅键纳入[ContextPlan实际语境](../contracts/query-context.
 
 ## 5. 任务、通知与协调字段
 
+R10的global_audio_id固定指合成根，格式派生仍从PG按根/派生键读取，不把派生当新的lookup/profile或增加Redis权威表。根/派生隔离、损坏及当前选用必须回查PG有效状态，旧ready副本不能放行；历史speech_requests按其冻结profile/strict/generation查原成品，不能改查R10最新指针冒充历史匹配。确定性转码不使用R16模型生成占用；丢缓存先查既有派生成品/预留，不重合成。
+
 R13 payload 与[任务进度事件](../contracts/job-progress.md)同源：`job_id`、`generation`、`sequence`、`type`、`occurred_at`、`status`、`stage`、`progress_percent: 0..100|null`、`material_id?`、`published_revision_id?`、`availability?`、`error_code?`。不保存业务正文。先读取 PG 当前 generation/sequence 再按其版本取副本，不能用 Redis 的“最新”推断任务已完成。
 
 R14 每条 Stream 字段为 `schema_version`、`event_id`、`generation`、`sequence`、`envelope_json`。Stream ID 仅作 Redis 传输游标，客户端的事实游标仍为 PG generation/sequence。重复 event_id/sequence 消费幂等；裁剪、淘汰、重连乱序或缺号时重新授权并查 PG 快照。采用精确最大长度或读取侧硬上限，不把近似裁剪误称严格容量。

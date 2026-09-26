@@ -4,6 +4,8 @@
 
 DESIGN23扩充全应用NLP和OCR/ruby存储：原材料NLP的3张设计表调整为text_analysis_versions/units/sentences，token改存有界单元JSONB；总计仍142。现有Explanation/Card保存AI成品，OCR阶段成品使用FileObject/JobStage；新增R19热点标注副本。详见[统一文本分析](text-analysis.md)及[提取契约](../contracts/source-extraction.md)，本轮只改文档。
 
+DBDESIGN4（2026-09-26，基线0f031ae）修订[AUDIT1](../delivery/reviews/2026-09-26-business-design-audit.md)的6项数据库设计问题：根级Lesson、直接题目收藏身份/唯一、共享等待请求冻结配置/执行、共享格式派生/容量/GC、实际合成出处及听力问题代码。字段和关系在既有表内补齐，目标仍142、Redis仍19类，B0字典/迁移不改；局部检查与独立复核见[修订记录](../delivery/reviews/2026-09-26-database-audit-fixes.md)。该修订不包含原型、排版协议细化或其他审查待办。
+
 ## 1. 阅读入口与设计状态
 
 | 分册 | 内容 |

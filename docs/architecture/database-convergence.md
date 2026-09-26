@@ -4,6 +4,8 @@
 
 DESIGN23将上述3项NLP目标由材料专用改成全应用版本/句子/有界单元，逐词行改为unit标注数组；3表替换3表，不增加142总数。此新决定覆盖本页原逐词持久行取舍，字段与性能待验证边界见[统一NLP](text-analysis.md)。
 
+DBDESIGN4在既有表内修订业务约束，142目标不变：根级Lesson使用可空Unit及部分唯一；题目收藏增加来源/作答身份；共享词音格式成品在global_word_audios内一行一个对象、按kind区分合成根与一层派生，保留真实1:N和独立校验/GC，避免无界JSON数组或重复模型代次。转码沿既有共享预留账本的受控分支计量，请求与实际合成出处独立冻结；具体字段只在三分册维护。
+
 ## 1. 结论与计数口径
 
 **158张候选 → 142张物理目标表，减少16张。** 其中已有B0仍为12张，未实现目标130张；130中包含邮件交付条件表1张，条件未确定时确定目标是141张（12已有+129拟新增）。不计alembic_version、API对象、查询投影、Redis键或把Outbox跨分册重复计数。条件表不是本轮新增范围。
@@ -112,7 +114,7 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 53 | `novel_chapter_blocks` | 保留 | 章与源块/范围的多重映射，原文不复制 | 2 |
 | 54 | `textbook_manifests` | 并入/复用 `material_revisions` | 每源版本唯一头，源发布后允许结构组首次发布；保留课本schema | 2 |
 | 55 | `textbook_units` | 保留 | 独立教材树/顺序，不与小说合万能节点 | 2 |
-| 56 | `textbook_lessons` | 保留 | 一单元多课，专用分页/定位与引用 | 2 |
+| 56 | `textbook_lessons` | 保留 | 书下根级课或一单元多课，专用分页/定位与引用 | 2 |
 | 57 | `textbook_content_nodes` | 保留 | 一课多角色节点，受控类型载荷而非大文档 | 2 |
 | 58 | `textbook_content_edges` | 保留；目标 `textbook_content_node_links` | 翻译/答案等多对多关联，题面裁剪需独立验证 | 2 |
 | 59 | `textbook_dialogue_turns` | 保留 | 可变数量轮次、说话人/顺序/朗读定位 | 2 |
@@ -207,7 +209,7 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 143 | `global_word_entries` | 保留 | 独立受控公共词音身份，不能私人owner空值混表 | 3 |
 | 144 | `global_voice_profiles` | 保留 | 稳定声音profile根/当前指针/默认选择 | 3 |
 | 145 | `global_voice_profile_versions` | 保留 | 多不可变声音修订，旧音频保留准确配置 | 3 |
-| 146 | `global_word_audios` | 保留 | 共享成品与私有文件权限/保留边界不同 | 3 |
+| 146 | `global_word_audios` | 保留 | 共享原件与一层格式派生成品，每对象一行；权限/容量/保留不同于私有文件 | 3 |
 | 147 | `global_word_lookup_states` | 保留 | 跨profile版本选用，独立于严格生成槽 | 3 |
 | 148 | `global_word_generation_slots` | 保留 | 共享租约/生产者映射需专用scope，不泄露私人Job | 3 |
 | 149 | `collection_word_audio_refs` | 并入/复用 `collection_items` | 每收藏唯一当前词音选择，可并入条目用代次保护 | 3 |

@@ -8,6 +8,8 @@ DESIGN22查询/解释请求与只读resolve共用[QueryInput、ContextPlan及上
 
 DESIGN18分词浮层、单词喇叭和连续朗读复用现有领域接口，不新增通用执行接口。朗读仍走speech/resolve与明确的speech/requests；材料/解释查询按实际来源走explanations或agent轮次，收藏仍提交完整card_id/card_revision与归本选择。非材料可见文字按[出处协议](content-locator.md#11-非材料学习文字的选区)传受控资源/版本/字段范围，服务端重取并授权；不可提交隐藏答案、试卷稿件或客户端正文冒充已发布源。
 
+DBDESIGN4使题目收藏的question_ref分支明确采用[规范来源与作答身份](../modules/vocabulary-practice.md#题目直接收藏)，与card分支互斥且由服务端去重。共享speech_requests读取其受理时冻结的profile/strict/执行代次，不返回别人的slot/Job/Key；resolve临时等待投影不写个人请求。global_word媒体可返回合成根下经验证的格式派生，但须同时验证本人来源/根选用关系及派生归属，不能凭派生ID下载。所需确定性格式准备不调用供应商、不要求生成Key，不新增公开转码命令接口；状态与存储规则见[共享音频字典](../architecture/database-learning.md#65-global_word_audiosglobal_word_lookup_statesglobal_word_generation_slots)。
+
 DESIGN18多词查询按[多范围协议](content-locator.md#12-分词气泡与多范围查询)提交有序目标与父句，独立结果卡分别可收藏，原文由服务端重取。连续播放manifest绑定当前章/起始句/结束边界与版本；只读resolve不能生成，明确生成的请求绑定该范围及本人配置，预取仅在窗口内执行且逐阶段重查权限。播放模式和片段内暂停位置不进入合成键；服务端逐句保存音频，不提供整章单一音频资产；DESIGN20增加下述章节准备编排入口。
 
 DESIGN23正文/结果详情DTO按获准可见字段返回`text_analysis`投影：source_ref/version、analysis_version_id、schema/pipeline、当前范围的coverage/state、units（稳定字段/项、快照摘要、token/ruby）及sentences有序spans；与返回文字版本完全匹配，按unit游标有界分页。标注pending/failed不让已保存AI结果丢失，长按不调用模型。复用各领域读取/准备/任务恢复入口，不开放任意source_kind/JSONPath通用查询；考试服务先裁剪可见性，缓存键只处理最终有权投影。契约见[统一NLP](../architecture/text-analysis.md)和[源提取](source-extraction.md)。

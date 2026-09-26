@@ -31,9 +31,14 @@ DESIGN23解释/卡片/收藏/题目/反馈的白名单文字由[统一NLP](text-
 | display_text, normalized_text | text NN | 显示原文与确定性检索值分开 |
 | target_language | varchar(35) NN | 经校验的目标语，不等于解释语言 |
 | lemma, reading, meaning, context, notes | text NULL | 词典形、读音、释义、上下文与私人笔记 |
-| payload, payload_schema_version | jsonb NN / integer NN | 六类完整载荷；exercise 只来自已校验卡片 |
+| payload, payload_schema_version | jsonb NN / integer NN | 六类完整载荷；exercise来自已校验ExerciseCard或服务端重取的有权题目快照，不从客户端正文构建 |
 | origin | varchar(24) NN | manual/selection/agent/exercise/csv_import/photo_import |
 | card_id, card_revision | uuid NULL / bigint NULL | 原始已提交卡片版本，成对存在 |
+| question_source_kind, question_source_id | varchar(24) NULL / uuid NULL | 直接题目来源分支textbook/ai_exercise/exam及确切入口节点，映射见下文 |
+| exercise_question_id, question_version | uuid NULL / bigint NULL | 冻结公共题目版本行与其正版本号 |
+| question_context_kind, question_context_id | varchar(16) NULL / uuid NULL | none/practice/exam；none为空ID，其他为已提交question_attempts.id |
+| question_ref, question_ref_schema_version | jsonb NULL / integer NULL | 服务端冻结的受控来源、场次/题项/版本引用；不是客户端自报正文或权限 |
+| question_identity_digest | bytea NULL | 规范题目收藏身份的32字节摘要；独立于幂等键、笔记与归本 |
 | learning_revision | bigint NN DEFAULT 1 | 实质词形/语言/义项/读音变化递增 |
 | exercise_control | varchar(16) NN DEFAULT 'active' | active/excluded；不改掌握证据 |
 | source_created_at, source_updated_at | timestamptz NULL | CSV 历史时间，不能覆盖公共时间 |
@@ -42,6 +47,14 @@ DESIGN23解释/卡片/收藏/题目/反馈的白名单文字由[统一NLP](text-
 | delete_generation | bigint NN DEFAULT 0 | 删除防迟到代次，CHECK >=0 |
 
 约束/索引：UK `(scope,card_id,card_revision) WHERE card_id IS NOT NULL` 保证同一卡片版本只建一次，已删卡片收藏不因重试复活；若未来允许重新收藏同一卡片需独立显式恢复契约。IX `(scope,kind,created_at,id) WHERE deleted_at IS NULL` 支撑列表和每日单词；IX `(scope,target_language,normalized_text,id) WHERE deleted_at IS NULL` 支撑词形排序；IX `(scope,source_kind,source_resource_id)` 支撑出处检查。不同义项/出处不按 lemma 唯一。含糊匹配/笔记搜索先采用有界作用域过滤；全文/模糊索引需真实样本后决定。
+
+直接题目收藏另设部分UK `(scope,question_identity_digest) WHERE question_identity_digest IS NOT NULL`，覆盖tombstone，不因换幂等键/设备或删除后重试重复创建。IX `(scope,exercise_question_id)`、`(scope,question_source_kind,question_source_id)`和`(scope,question_context_id)`均限定对应引用非空，供归属/GC检查。CHECK卡片两列全空或全有；题目分支除context_id按none允许空外，其余新增列全空或全有，版本正、摘要32字节；两分支互斥，kind=exercise必须恰有一分支，非exercise禁用题目分支。JSON中的对应身份必须与物理列一致，由类型化服务校验，不以JSON替代唯一键。
+
+question_source_id按kind分别指向textbook_content_node_question_links、exercise_set_items、exam_items；服务重取该行指向的exercise_questions及其question_version。无已提交作答时context_kind=none，仅收藏可见题面，页面未提交输入不进入快照；普通已提交作答用practice及确切Attempt，考试用exam及交卷事务已创建的Attempt，核对所属exam_session_answers已locked、场次submitted及冻结卷/题项一致，不等待评分完成。question_ref登记这些稳定逻辑引用及确切源版本；payload只冻结当前允许复制的题面、作答及已发布答案/评分版本，不复制受限听力稿/媒体或未发布评分。
+
+身份规范化唯一沿用[题目收藏规则](../modules/vocabulary-practice.md#题目直接收藏)：scope、来源kind/入口节点ID、exercise_question_id/question_version、context_kind/context_id构成稳定身份；来源的不可变版本由该节点及冻结引用验证，不把当前评分代次/可见结果、入口页面、notebook_ids、幂等键或题目正文拼进身份。同一场次重评后重复收藏返回原快照，不暗中补答案或产生新条目；不同Attempt独立。命中摘要后比较完整规范身份，不同身份的摘要冲突明确失败，不错合并。
+
+创建/删除来源与新增收藏引用遵循同一父锁协议：身份/授权外层锁后，先默认词本所需user_extensions及目标notebook按ID，再来源材料/题目根、题目版本、来源集/场次与Attempt，最后collection；已有只处理词本/条目的路径不反向回锁题源。锁内重验来源与收藏/归本权限、scope/版本/提交状态，再用部分UK仲裁跨设备并发；重复命中不追加归本或覆盖快照，命中tombstone返回已删除冲突，不自动恢复。独立收藏保留获权快照及必要媒体引用，question_ref按注册路径参与GC；原源已失权不靠引用重新读取更多原文。来源删除/引用清理服务不得持collection后反向锁题源。
 
 每日单词直接对 `kind='word'` 的实际 `created_at` 使用本人时区转换得到的 UTC 半开区间，分页与计数共用 `as_of`。不建每日调度表；归本/移动/重复收藏/CSV 补空均不改加入日期。mastery 不放在可写条目字段，来自 4.2 的只读投影。
 
@@ -339,11 +352,23 @@ dialect 明确无区域差异时保存经注册的语言默认代码，不能任
 
 | 表 | 专有列（类型 / 空值 / 默认） | 含义 |
 | --- | --- | --- |
-| global_word_audios | `word_entry_id,profile_version_id uuid NN`、`strict_key_digest bytea NN`、`generation bigint NN`、`bucket_name varchar(63) NN`、`object_key text NN`、`object_version varchar(256) NULL`、`content_digest bytea NN`、`media_type varchar(64) NN`、`codec varchar(32) NN`、`sample_rate_hz,channels integer NN`、`duration_ms,size_bytes bigint NN`、`validation_version varchar(64) NN`、`validated_at timestamptz NN`、`state varchar(16) NN` | ready/broken/quarantined/retired；对象位于独立公共目录前缀，不能引用私有 FileObject 改标共享 |
+| global_word_audios | `artifact_kind varchar(16) NN DEFAULT 'synthesized'`、`word_entry_id,profile_version_id uuid NN`、`strict_key_digest bytea NN`、`generation bigint NN`、`bucket_name varchar(63) NN`、`object_key text NN`、`object_version varchar(256) NULL`、`content_digest bytea NN`、`media_type varchar(64) NN`、`codec varchar(32) NN`、`sample_rate_hz,channels integer NN`、`duration_ms,size_bytes bigint NN`、`validation_version varchar(64) NN`、`validated_at timestamptz NN`、`state varchar(16) NN` | kind synthesized/derived；state ready/broken/quarantined/retired；每行一个不可变完整对象，位于独立公共目录前缀，不能引用私有FileObject改标共享 |
+| audio同表：确定性格式派生 | `source_audio_id uuid NULL`、`source_content_digest,derivation_key_digest bytea NULL`、`transcode_version varchar(64) NULL`、`output_spec jsonb NULL`、`output_spec_schema_version integer NULL` | derived必须全有，synthesized必须全空；source指向本表synthesized根资产，禁止派生链/自引用；继承根的词条/profile/严格合成键/生成代次，不另分配模型generation |
+| audio同表：合成出处 | `synthesis_provenance jsonb NULL`、`provenance_schema_version integer NULL` | synthesized必须对象及正schema版本，derived必须全空并经source_audio_id读取根；发布后不可变，字段白名单见下文 |
 | global_word_lookup_states | R；`word_entry_id,profile_id uuid NN`、`lookup_generation bigint NN DEFAULT 0`、`selected_profile_version_id uuid NN`、`effective_audio_id uuid NULL`、`active_slot_id uuid NULL` | 稳定查阅身份跨profile修订维持当前指针；旧结果不覆盖新选择 |
 | global_word_generation_slots | R；`word_entry_id,profile_version_id uuid NN`、`strict_key_digest bytea NN`、`producer_job_id uuid NULL`、`producer_run_id uuid NULL`、`global_storage_reservation_id uuid NULL`、`generation bigint NN DEFAULT 0`、`fence bigint NN DEFAULT 0`、`lease_owner varchar(128) NULL`、`lease_expires_at timestamptz NULL`、`state varchar(24) NN DEFAULT 'idle'` | 内部租约映射关联私人生产Job及身份分册共享容量预留，普通目录DTO绝不返回；idle/occupied/unknown |
 
-UK audio `(strict_key_digest,generation)`；UK lookup `(word_entry_id,profile_id)`；UK slot `(strict_key_digest)`；IX audio `(word_entry_id,profile_version_id,state)`，IX slot `(lease_expires_at,id) WHERE state='occupied'`。producer job/run成对；租约字段成对；sample_rate/channels/size/duration>0。相同 strict 的 ready 不由用户强制替换；发现发音问题走固定目录隔离/修复流程，无自动供应商调用。
+audio部分UK `(strict_key_digest,generation) WHERE artifact_kind='synthesized'`；派生部分UK `(source_audio_id,derivation_key_digest) WHERE artifact_kind='derived'`；对象UK `(bucket_name,object_key)`。UK lookup `(word_entry_id,profile_id)`；UK slot `(strict_key_digest)`；IX audio `(word_entry_id,profile_version_id,state)`，IX slot `(lease_expires_at,id) WHERE state='occupied'`。producer job/run成对；租约字段成对；sample_rate/channels/size/duration>0；generation非负、所有摘要32字节、派生schema正且spec为对象。lookup.effective_audio_id、speech_requests.global_audio_id及收藏word_audio_id只指synthesized根，不把播放容器选择变成新的模型选择。
+
+格式派生键由根content_digest、受控transcode_version、规范output_spec及其schema计算，spec只允许经验证的目标容器/codec/采样参数，不含任意命令/路径。派生发布前核对源确为ready根、实际原字节摘要、同word/profile/strict/generation、完整输出与对象大小；相同键的不同spec或非确定输出拒绝而非覆盖。每种成品独立一行，允许同根1:N派生，不把可独立校验/清理的对象挤进无界JSON数组，物理表总数不增加。
+
+转码是固定职责的确定性媒体处理，不读取贡献者Job/Key或调用供应商。受本人来源与speech.play授权的媒体适配请求可触发缺少格式的准备，先按[共享容量预留](database-identity.md#global_storage_reservations)冻结源及派生spec，锁外校验/转码/写受控对象，再按容量根→预留→目录父→根audio顺序发布派生行并结算一次。并发同键复用活动预留及成品唯一键；预留尚未完成返回准备状态，不伪造ready。失败保留可恢复对象；取消/过期不能在仍有写入时释放。没有供应商attempt或模型Token用量，也不占新的global_word_generation_slot。
+
+根对象/合成出处与派生成品字节均不可原位改写；状态可在同目录父/根audio保护下受控变更。只知道派生ID不授予读取权：媒体服务验证本人来源及根选用关系、根/派生状态和parent/digest，再读取格式对象；响应不含内部Bucket路径。根隔离/退役时拒绝所有派生；派生损坏不影响其他成品。新增派生、读取租约与GC共锁根，容量计每个对象实际字节一次；原音频仍被选用或有合法引用时派生不按TTL/LRU回收。根最终GC先阻止新增、核对私有选用/历史请求/活动预留及读取引用，清派生对象与行并幂等扣容量，再清根，不能留下可读孤儿或依靠物理级联。
+
+broken派生先尝试受控存储恢复，并按已登记的确切对象定位/版本、content_digest及格式元数据重新校验，通过后在根锁内恢复ready。无法恢复已登记版本，或确定性转码结果与原摘要不一致时保持broken，不能在同一派生键下偷换对象定位/摘要，也不能伪造新模型generation或自动重调TTS；这是明确的不可用状态，不算缓存命中。真正采用新格式/转码协议时使用新的受控派生键，旧成品保留其状态与合法引用；本轮不新增任意重定位/覆盖成品接口。
+
+synthesis_provenance为版本化白名单值对象：冻结requested_provider/model_id/model_revision、已展开的路由约束、voice_id、adapter_id/adapter_version/input_contract_version/api_family/api_version及有效合成参数；observed字段分别保存供应商确实返回的provider_route/model_id/model_revision，每项为`{status: known|unknown, value: string|null}`，known值非空，unknown值必须NULL。请求时的目录推断不能填充observed，也不以字面字符串unknown冒充实际模型版本。保存的信息需经适配器与路由允许集合校验；不含贡献者、Key、私人Job/attempt ID、供应商账户/请求ID或原始响应。根成品发布时与真实结果同事务冻结，之后profile更新或贡献者删除都不改变该出处；派生仅追加转码spec，不伪造新的合成出处。相同strict的ready根不由用户强制替换；发现发音问题走固定目录隔离/修复流程，无自动供应商调用。
 
 全局占用新生成前验证实际发起人的本人Key/权限/容量，Job/AiRun/attempt/用量仍为其私有记录。等待者只能拿本人等待引用，不能读取/取消生产Job；取消、失败、撤权、unknown后不自动换用等待者Key。ready目录引用独立于贡献者/收藏，删任何私人条目不删除公共成品。元数据API不返回生产者、首次用户生成时间或引用人数。
 
@@ -353,10 +378,18 @@ UK audio `(strict_key_digest,generation)`；UK lookup `(word_entry_id,profile_id
 | --- | --- | --- |
 | collection_items同表：标准词音组 | `word_audio_learning_revision bigint NULL`、`word_audio_entry_id,word_audio_profile_id,word_audio_profile_version_id uuid NULL`、`word_audio_id uuid NULL`、`word_audio_selection_generation bigint NN DEFAULT 0` | 前四列全空或全有，非word必须全空且audio为空；audio非空需有完整选择；generation>=0；IX `(word_audio_id) WHERE word_audio_id IS NOT NULL` 供固定目录GC |
 | speech_requests / L+R | `asset_kind varchar(16) NN`、`source_kind varchar(24) NN`、`source_resource_id uuid NN`、`source_version bigint NN`、`request_generation bigint NN`、`state varchar(24) NN`、`audio_asset_id,global_word_lookup_id,global_audio_id,job_id uuid NULL`、`requested_at timestamptz NN` | private/global_word；waiting/ready/missing/failed/cancelled；UK `(scope,source_kind,source_resource_id,request_generation)`；IX `(scope,state,created_at,id)` |
+| request同表：共享请求冻结身份 | `global_word_entry_id,global_profile_version_id uuid NULL`、`global_strict_key_digest bytea NULL`、`source_learning_revision,source_selection_generation bigint NULL` | global_word必须全有，private必须全空；冻结本人词内容版本及本次词音选择，不能从可变lookup/收藏当前列回推 |
+| request同表：执行身份 | `global_slot_id uuid NULL`、`global_generation bigint NULL` | private两列必须全空；以下仅限global_word：waiting必须两列全有；直接命中ready允许slot空但generation必有；从等待进入终态仍保留原slot/generation；未占用的missing两列均空 |
 
 收藏标准词音原是每条collection唯一附属，不另建collection_word_audio_refs。根条目锁内验证本人word/learning_revision及公共词条/profile，改读音/选择推进word_audio_selection_generation；实质词内容变化清旧绑定并推进代次。异步完成按冻结learning_revision与selection_generation更新audio指针，只更新本字段组及updated_at，不能覆盖笔记/归本/内容。用户修改词音选择使用条目R，异步发布不推进供表单使用的R；返回DTO的词音代次单独标识。条目删除解除当前选用，历史请求仍保留原引用；共享成品不随删词删除。
 
 speech 请求形状 CHECK：private 禁用全局列；global_word 禁用 private audio 列；等待他人生产时 job_id 为空，只有本人实际发起的job可关联。客户端读媒体必须同时验证本人来源版本/选用关系和实际资产一致，知道公共 audio id 不授予任意播放权。新个人引用只由已有授权写动作保存，只读 resolve 不写学习事实。
+
+global_word首版来源固定为本人kind=word的collection_item。source_version记录受理时条目revision，source_learning_revision记录实际learning_revision，source_selection_generation复制word_audio_selection_generation；本分支request_generation与source_selection_generation相等且非负，learning/source版本正，strict摘要32字节。首次选用、显式换声/换读音/重新生成意图在条目锁内推进selection_generation并创建请求；同选择重复点击复用请求，不因笔记更新而改变词音选择。profile/strict/学习版本/选择代次及一经确定的slot/generation不可原位重绑；重新等候新执行代次也需明确新意图、新选择代次及新请求。
+
+共享请求在受理事务冻结词条、精确profile_version及其strict键；等待时锁定并核对实际occupied slot，记录其id/generation。ready命中则冻结根audio的generation。missing不得作为未来任意slot的自动订阅；resolve返回的临时等待描述不等于已插入speech_requests，只有既有有权写动作可持久化个人请求。CHECK global_word.ready必须有global_audio_id/global_generation且其他状态audio为空；slot非空时generation必有；global_word_lookup_id必有但仅用于查阅导航，不决定历史结果身份。IX `(global_word_entry_id,global_profile_version_id)`、`(global_slot_id,global_generation)`、`(global_audio_id)`均限定相应列非空，供共享发布通知和受控GC检索，不能向其他用户暴露请求者。
+
+回调通过冻结strict/profile/word与global_generation查synthesized成品，即使slot或lookup后来推进也能准确解析旧请求；旧执行失败/unknown不得绑定新一代成品。先验证请求仍waiting及当前本人权限/来源未删，才补其匹配的历史ready引用；更新当前collection.word_audio_id还须逐项匹配learning_revision、selection_generation、词条、profile版本及该请求代次。A等v1后改v2，v1成功最多完成A的旧请求，不覆盖当前选择；notes/revision变化而learning/selection未变不误拒正常完成。已取消/撤权请求不复活；共享成品是否发布由实际生产者的有效资格与slot/fence独立决定，不能借等待者权限继续生产。历史引用纳入GC，但不授予绕过当前来源权限播放旧词的能力。
 
 ### 6.7 调用前容量预留
 
@@ -471,9 +504,11 @@ UK `(owner,source_event_id,notification_kind)`，IX `(owner,created_at,id)`、`(
 | 学习/错题投影 | CollectionItem→LearningState；根题/投影按稳定ID | 原始事实保留；状态可重算，乱序消费复核事实版本；无独立复习/每日队列表 |
 | AgentThread | thread→附件/轮次 | 删除推进代次；绑定有效图片无普通TTL；独立收藏/解释不随thread删除 |
 | 私有解释/音频 | 合法来源根→LookupState→GenerationSlot→Run/Asset | 完整成功结果和有效引用持久保留；本机/Redis淘汰仅丢副本 |
-| global_word | 词条/profile→lookup→slot | 公共成品独立于贡献者；生产者关联只在内部slot；目录维护不发起个人Key调用 |
+| global_word | 涉及个人选用先collection；再词条/profile→lookup→slot→根audio→派生/request；容量根/预留在上述业务锁之前 | 公共成品独立于贡献者；生产者关联仅在受限slot/合成预留；目录维护/转码不发起个人Key调用 |
 | Job/Outbox/attempt | Job→Stage/Run→Attempt（含用量组） | 重复投递按业务唯一/fence拒绝，未知外部结果不自动重试；用量补齐不能改当前业务成绩 |
 
 表级 schema/索引是实施输入，实际 Alembic 迁移需逐切片交付并验证：无FK/隐式级联、UTC更新时间、所有者不可变、单行CHECK与逻辑引用、A/B隔离、父删/新增引用竞争、双端辅助接受顺序、整卷发布/重评重放、Redis丢失不触发重复模型调用、global_word生产者与等待者隔离、unknown/NULL用量及容量/GC。索引列顺序和文本检索性能须以目标PG和合成样本EXPLAIN确认，本设计不宣称已测试。
+
+global_word目录发布不在持目录锁时批量锁各用户收藏；先提交公共成品/安全状态通知，再在各本人授权事务中按上表处理请求与当前选用。GC持目录/根audio锁后用实际反向引用查询复核私有选用/请求，不反向取得collection/request行锁；所有新增/解除这些引用的写路径均先持对应本人来源再持同一目录/根保护锁，避免发布、改选与GC反锁。状态变更/删除迟到回调按冻结身份和当前权限拒绝，不用旧Redis ready记录绕过根状态。
 
 保留期除权威文档已给出者外由部署配置锁定；不能把临时预览TTL套给成功解释、TTS、评分或合法历史。模型配置/协议精度按既有契约定版；AI错题删除（OPEN-10）、掌握窗口校准（OPEN-11）、公共词表/标准声音profile范围仍是相关阶段的实施前置。本分册未引入商业化、人工改分、自由问答、独立聊天、SRS或全库备份。

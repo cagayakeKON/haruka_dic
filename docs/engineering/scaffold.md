@@ -53,7 +53,7 @@ PEP 517隔离构建依赖另在同一pyproject的tool.uv.build-constraint-depend
 
 CLI是同步main适配，内部按需进入事件循环；不会在已有循环内再调用asyncio.run。共用app/bootstrap.py的类型化依赖组装和关闭逻辑；禁止import模块时读秘密、建连接、迁移数据库、启动线程或请求模型。FastAPI通过lifespan获取/释放资源，Worker/Outbox通过等价异步上下文管理器复用资源工厂。启动失败也按逆序清理已取得资源；每个请求/独立任务持有独立数据库Session。[FastAPI lifespan](https://fastapi.tiangolo.com/advanced/events/)
 
-API、Worker、Outbox只检查schema兼容，不自动迁移或种子初始化。收到停止请求后API停止接收新请求，Worker停止领取，按有界等待处理在途任务/unknown结果，最后关闭连接池与客户端；超时/退出状态、未完成任务和租约可查询。Windows开发进程与Linux容器分别验证停止信号和子进程释放，不以一种系统的信号处理推定另一种正确。
+API、Worker、Outbox启动时完整检查schema兼容一次，不自动迁移或种子初始化；运行中的readiness按[健康检查边界](../operations/configuration.md#31-b0健康检查的执行边界)检查连接、迁移版本和必需依赖，不重复反射表结构。收到停止请求后API停止接收新请求，Worker停止领取，按有界等待处理在途任务/unknown结果，最后关闭连接池与客户端；超时/退出状态、未完成任务和租约可查询。Windows开发进程与Linux容器分别验证停止信号和子进程释放，不以一种系统的信号处理推定另一种正确。
 
 ### 不依赖工作目录的打包验证
 

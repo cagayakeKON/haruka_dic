@@ -4,6 +4,8 @@
 
 2026-09-26 [B0设计对齐](reviews/2026-09-26-b0-design-alignment.md)更新12张基础表中的账号/角色/授权结构、发布权限目录和Flutter基础壳；只补充受影响范围的验证，B1/B2和NLP/AI/TTS/学习缓存业务仍未实现。原B0完整矩阵保留其历史候选身份。
 
+2026-09-26 [B0健康检查调整](reviews/2026-09-26-b0-readiness.md)将完整结构校验保留在启动和受控维护阶段，运行中readiness只检查连接、精确迁移版本和profile必需依赖；本次是后端局部修订，不改变数据库结构或B1/B2进度。
+
 文档整理与应用交付分别记账：[本轮重组记录](reviews/reorganization.md) 维护迁移、review及提交证据，不勾选下列工程验收。未来开发遵循 [AGENTS.md](../../AGENTS.md) 的前后端并行、分阶段提交、必要测试与review规则；本页不重复维护另一套频率要求。
 
 2026-09-25 DBDESIGN1新增[数据库设计书](../architecture/database-design.md)：核对B0已有12表，设计账号权限、材料考试、收藏学习/AI的字段、逻辑关联与[Redis键](../architecture/redis-design.md)，并映射下方实施阶段。属于阶段1内文档小阶段，业务结构仍需按B1/B2及后续功能分批迁移/验证；本次没有创建表、修改运行缓存或完成工程验收，见[设计审查记录](reviews/2026-09-25-database-design.md)。

@@ -73,6 +73,7 @@ async def test_core_never_constructs_jobs_and_cleans_up(monkeypatch: pytest.Monk
     monkeypatch.setattr(assembly, "KafkaProducer", unexpected)
     monkeypatch.setattr(assembly, "ObjectStorage", unexpected)
     monkeypatch.setattr(assembly, "_check_database_schema", schema_check)
+    monkeypatch.setattr(assembly, "_check_database_revision", schema_check)
     async with assembly.bootstrap(core_settings()) as runtime:
         assert runtime.ready and await runtime.check_readiness()
         assert runtime.resources is not None and runtime.resources.kafka is None

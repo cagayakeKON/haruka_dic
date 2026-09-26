@@ -12,12 +12,14 @@ from app.main import create_app
 pytestmark = pytest.mark.contract
 
 
-@pytest.mark.parametrize("unavailable", ["database", "cache", "schema", "kafka", "storage"])
+@pytest.mark.parametrize("unavailable", ["database", "cache", "revision", "kafka", "storage"])
 def test_readiness_revalidates_dependencies(
     infrastructure_settings: Settings, monkeypatch: pytest.MonkeyPatch, unavailable: str
 ) -> None:
     failed: set[str] = set()
     closed: list[str] = []
+    schema_checks = 0
+    revision_checks = 0
 
     class Resource:
         def __init__(self, name: str, _configuration: InfrastructureSettings) -> None:
@@ -31,10 +33,17 @@ def test_readiness_revalidates_dependencies(
             closed.append(self.name)
 
     async def schema_check(_database: object) -> None:
-        if "schema" in failed:
-            raise RuntimeError("private-schema-sentinel")
+        nonlocal schema_checks
+        schema_checks += 1
+
+    async def revision_check(_database: object) -> None:
+        nonlocal revision_checks
+        revision_checks += 1
+        if "revision" in failed:
+            raise RuntimeError("private-revision-sentinel")
 
     monkeypatch.setattr(assembly, "_check_database_schema", schema_check)
+    monkeypatch.setattr(assembly, "_check_database_revision", revision_check)
     for symbol, name in (
         ("Database", "database"),
         ("Cache", "cache"),
@@ -44,6 +53,7 @@ def test_readiness_revalidates_dependencies(
         monkeypatch.setattr(assembly, symbol, partial(Resource, name))
     with TestClient(create_app(infrastructure_settings)) as client:
         assert client.get("/health/ready").status_code == 200
+        assert client.get("/health/ready").status_code == 200
         failed.add(unavailable)
         failure = client.get("/health/ready")
         assert failure.status_code == 503
@@ -52,4 +62,6 @@ def test_readiness_revalidates_dependencies(
         assert client.get("/health/live").status_code == 200
         failed.clear()
         assert client.get("/health/ready").status_code == 200
+    assert schema_checks == 1
+    assert revision_checks == 4
     assert closed == ["storage", "kafka", "cache", "database"]

@@ -102,6 +102,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 - [Windows干净检出](delivery/reviews/2026-09-22-b0-windows-clean.md) 与 [Linux干净检出](delivery/reviews/2026-09-22-b0-linux.md)：同候选的锁定构建、负例诊断、重复初始化和完整应用生命周期。
 - [B0最终验收](delivery/reviews/2026-09-22-b0-acceptance.md) 与 [独立证据核查](delivery/reviews/2026-09-22-b0-evidence.md)：44个必需节点、11份逐断言签收及统一入口88项检查通过；后续能力仍按所属阶段交付。
 - [B0设计对齐](delivery/reviews/2026-09-26-b0-design-alignment.md)：12张基础表的增量迁移、账号/角色/权限目录更新和Flutter基础壳视觉对齐；仅本次受影响范围验证。
+- [B0健康检查调整](delivery/reviews/2026-09-26-b0-readiness.md)：启动/迁移保留完整结构校验，运行中readiness改为连接、迁移版本和必需依赖检查。
 
 ## 5. 维护规则
 

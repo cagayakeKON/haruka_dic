@@ -12,7 +12,7 @@ from app.adapters.database import Database
 from app.adapters.queue import KafkaConsumer, KafkaProducer
 from app.adapters.storage import ObjectStorage
 from app.core.settings import Settings
-from app.maintenance.schema import check_schema
+from app.maintenance.schema import check_revision, check_schema
 
 logger = logging.getLogger(__name__)
 
@@ -67,13 +67,13 @@ class Runtime:
         return self.active and self.resources is not None and self.schema_compatible
 
     async def check_readiness(self) -> bool:
-        """Revalidate required dependencies and schema under a single bounded probe."""
+        """Revalidate required dependencies and migration head under one bounded probe."""
         if not self.active or self.resources is None:
             return False
         try:
             async with asyncio.timeout(5), asyncio.TaskGroup() as probes:
                 probes.create_task(self.resources.database.check())
-                probes.create_task(_check_database_schema(self.resources.database))
+                probes.create_task(_check_database_revision(self.resources.database))
                 probes.create_task(self.resources.cache.check())
                 if self.resources.kafka is not None:
                     probes.create_task(self.resources.kafka.check())
@@ -89,6 +89,10 @@ class Runtime:
 
 async def _check_database_schema(database: Database) -> None:
     await check_schema(database.engine)
+
+
+async def _check_database_revision(database: Database) -> None:
+    await check_revision(database.engine)
 
 
 @asynccontextmanager

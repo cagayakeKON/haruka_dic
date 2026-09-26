@@ -157,3 +157,37 @@ async def check_schema(engine: AsyncEngine, *, schema: str = "public") -> None:
         ):
             raise SchemaMismatchError("migration test schemas require the isolated test database")
         await connection.run_sync(check_schema_connection, schema)
+
+
+async def check_revision(engine: AsyncEngine, *, schema: str = "public") -> None:
+    """Probe the current Alembic head without reflecting application tables.
+
+    This is the per-request readiness path. Startup and maintenance keep the
+    complete schema check; this probe only proves the live connection targets
+    the expected schema and has exactly one reviewed revision row.
+    """
+    validate_schema_name(schema)
+    async with engine.connect() as connection:
+        if (
+            schema != "public"
+            and await connection.scalar(text("SELECT current_database()")) != "haruka_test"
+        ):
+            raise SchemaMismatchError("migration test schemas require the isolated test database")
+        if (
+            await connection.scalar(text("SELECT current_schema()")) != schema
+            or await connection.scalar(text("SHOW search_path")) != schema
+        ):
+            raise SchemaMismatchError(
+                "database connection search path differs from the requested schema"
+            )
+        if (
+            await connection.scalar(
+                text("SELECT to_regclass(:table_name)"), {"table_name": f"{schema}.alembic_version"}
+            )
+            is None
+        ):
+            raise SchemaMismatchError("database migration revision is missing")
+        version = sql_table("alembic_version", column("version_num", String(32)), schema=schema)
+        rows = (await connection.execute(select(version.c.version_num).limit(2))).scalars().all()
+        if len(rows) != 1 or rows[0] != EXPECTED_REVISION:
+            raise SchemaMismatchError("database revision is not compatible with this application")

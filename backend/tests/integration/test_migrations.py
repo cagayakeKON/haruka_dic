@@ -30,7 +30,12 @@ from app.maintenance.migrations import (
     locked_connection,
     upgrade_database,
 )
-from app.maintenance.schema import EXPECTED_REVISION, SchemaMismatchError, check_schema
+from app.maintenance.schema import (
+    EXPECTED_REVISION,
+    SchemaMismatchError,
+    check_revision,
+    check_schema,
+)
 from app.maintenance.settings import (
     MaintenanceSettings,
     create_maintenance_engine,
@@ -246,6 +251,72 @@ async def test_empty_upgrade_repeat_and_read_only_schema_drift(target: Migration
             await check_schema(engine, schema=target.settings.database_schema)
         async with engine.connect() as connection:
             assert await connection.scalar(text("SELECT COUNT(*) FROM users")) == 0
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.parametrize("invalid", ["missing", "empty", "multiple", "wrong"])
+async def test_light_revision_probe_rejects_bad_head_and_recovers(
+    target: MigrationTarget, monkeypatch: pytest.MonkeyPatch, invalid: str
+) -> None:
+    await upgrade_database(target.settings, MIGRATIONS)
+    engine = create_maintenance_engine(target.settings)
+    try:
+
+        def unexpected(*_args: object, **_kwargs: object) -> None:
+            pytest.fail("readiness reflected application tables")
+
+        with monkeypatch.context() as patch:
+            patch.setattr("app.maintenance.schema.inspect", unexpected)
+            patch.setattr("app.maintenance.schema.compare_metadata", unexpected)
+            await check_revision(engine, schema=target.settings.database_schema)
+            await check_revision(engine, schema=target.settings.database_schema)
+        async with engine.begin() as connection:
+            if invalid == "missing":
+                await connection.execute(text("DROP TABLE alembic_version"))
+            elif invalid == "empty":
+                await connection.execute(text("DELETE FROM alembic_version"))
+            elif invalid == "multiple":
+                await connection.execute(
+                    text("INSERT INTO alembic_version (version_num) VALUES ('unexpected')")
+                )
+            else:
+                await connection.execute(
+                    text("UPDATE alembic_version SET version_num='unexpected'")
+                )
+        with pytest.raises(SchemaMismatchError, match="revision"):
+            await check_revision(engine, schema=target.settings.database_schema)
+        async with engine.begin() as connection:
+            if invalid == "missing":
+                await connection.execute(
+                    text(
+                        "CREATE TABLE alembic_version (version_num varchar(32) NOT NULL PRIMARY KEY)"
+                    )
+                )
+            else:
+                await connection.execute(text("DELETE FROM alembic_version"))
+            await connection.execute(
+                text("INSERT INTO alembic_version (version_num) VALUES (:revision)"),
+                {"revision": EXPECTED_REVISION},
+            )
+        await check_revision(engine, schema=target.settings.database_schema)
+    finally:
+        await engine.dispose()
+
+
+async def test_full_schema_check_still_catches_drift_with_valid_head(
+    target: MigrationTarget,
+) -> None:
+    await upgrade_database(target.settings, MIGRATIONS)
+    engine = create_maintenance_engine(target.settings)
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(
+                text("ALTER TABLE users DROP CONSTRAINT ck_users_revision_positive")
+            )
+        await check_revision(engine, schema=target.settings.database_schema)
+        with pytest.raises(SchemaMismatchError):
+            await check_schema(engine, schema=target.settings.database_schema)
     finally:
         await engine.dispose()
 
@@ -509,3 +580,7 @@ async def test_schema_check_rejects_an_engine_pointing_at_another_search_path(
 ) -> None:
     with pytest.raises(SchemaMismatchError, match="search path"):
         await check_schema(target.observer, schema=target.settings.database_schema)
+    with pytest.raises(SchemaMismatchError, match="search path"):
+        await check_revision(target.observer, schema=target.settings.database_schema)
+    with pytest.raises(ValueError, match="isolated migration test schema"):
+        await check_revision(target.observer, schema="unregistered_schema")

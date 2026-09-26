@@ -17,7 +17,7 @@
 
 `--config` 显式指定配置文件；环境变量优先，不自动读取当前目录的 `.env`。配置检查只输出是否通过，不输出输入值。API 默认仅绑定回环地址。此切片仅允许 dev/test，staging/production 在持久依赖及安全接线完成前拒绝启动。
 
-`GET /health/live` 表示应用循环存活；`GET /health/ready` 实查数据库结构与当前profile所需依赖，成功200、失败503。`HARUKA_RESOURCE_PROFILE=core`只要求PG/Redis，默认jobs另检查Kafka/私有Bucket。运行账号必须是对应数据库的专用runtime角色，启动时检查实际连接身份、禁止的DDL/审计修改权限和schema；失败清理此前资源并停止启动。`backend/.env.example` 是不连接基础设施的离线壳模式，始终不报告ready。基础设施就绪不代表登录或业务授权已实现。
+`GET /health/live` 只表示应用循环存活；`GET /health/ready` 每次检查PG连接、精确迁移版本与当前profile所需依赖，成功200、失败503，不反射完整表结构。`HARUKA_RESOURCE_PROFILE=core`只要求PG/Redis，默认jobs另检查Kafka/私有Bucket。运行账号必须是对应数据库的专用runtime角色，启动时检查实际连接身份、禁止的DDL/审计修改权限，并完整校验schema一次；失败清理此前资源并停止启动。受控迁移完成仍执行完整结构校验，具体频率与边界见[健康检查](../docs/operations/configuration.md#31-b0健康检查的执行边界)。`backend/.env.example` 是不连接基础设施的离线壳模式，始终不报告ready。基础设施就绪不代表登录或业务授权已实现。
 
 没有业务API，`/api/v1/*` 返回统一404。Worker/Outbox的 `--check-startup` 共用资源生命周期，Worker额外创建并关闭不自动提交offset的Consumer；尚不领取任务或发送Outbox。普通启动不建表、迁移、建Bucket或种子。
 

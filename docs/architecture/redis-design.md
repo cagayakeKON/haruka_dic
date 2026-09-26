@@ -152,6 +152,6 @@ R18 member 为随机 `connection_id`，score 为 `lease_expires_at_ms`；网关�
 | B1 权限 | av/gv 改变后旧缓存/丢失通知/旧 JWT 均拒绝；Redis 不可用/PG 不可用失败关闭；授权评估版本变化不读旧 schema |
 | B2 任务 | 重复/乱序事件、Stream 截断、缺口/重连回 PG；Redis 协调键过期后仍由 PG fence 阻止重复发布；unknown 不自动重调 |
 | 阶段3 解释/TTS | Redis/本机全 miss 仍读持久成功结果且供应商计数不增加；旧填充不覆盖当前 lookup；来源删除/撤权不因缓存放行；global_word 不暴露贡献者 |
-| 阶段4 考试 | 缓存命中仍执行题面裁剪；有限播放次数不依赖 Redis、不通过普通下载绕过；跨端接管和 edit_epoch 正确 |
+| 阶段5 考试 | 缓存命中仍执行题面裁剪；有限播放次数不依赖 Redis、不通过普通下载绕过；跨端接管和 edit_epoch 正确 |
 
 具体 TTL、容量与阈值在对应切片的配置/压力样本验证后锁定，当前不声称性能、服务可用性或故障恢复已验收。

@@ -1,5 +1,7 @@
 # 账号认证与用户数据隔离
 
+PLAN2分期说明：本文已选邮箱验证/邮件找回及不启用审批/人工恢复的描述是B1冻结基线。B2b按[账号模块](../modules/accounts.md)追加当前原型审批/人工恢复策略，复用本认证契约的挑战用途/单次消费、password_version/security_epoch、持久撤销与失败关闭，不改B1默认行为、不增加邀请或代登录。
+
 状态：Draft v0.6，2026-09-23，未实现。产品依据：[PRD](../product/overview.md)；授权依据：[管理后台与 RBAC](authorization.md)；详细操作：[账号流程](../modules/accounts.md)；部署参考：[MyHome 复用](../operations/myhome-integration.md)。
 
 ## 1. 已确认范围与推荐方式

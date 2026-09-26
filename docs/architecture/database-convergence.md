@@ -52,6 +52,8 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 
 每个DBDESIGN1候选恰好一行；“并入/复用”不是待建表，箭头后的目标才是当前物理承载。阶段是首次相关功能切片及后续完整能力，不代表该阶段一次建立全部目标。B0保持原结构证据，未实现字段随切片增加。
 
+阶段列表示首次消费者及后续完整化：B1合法来源/已提交卡片的直接依赖按既定参考流程最小落地，不借fixture绕过生产schema；B1卡片的必需AiRun及其凭据记录、来源绑定的lookup、文件所需容量关联一起建成；均为合法dev/test前置夹具，不调用供应商，不开放B2凭据管理。可空内部线程/消息不为凑示例提前创建；条件性的解释关联以实际卡片schema为准。M3/M4公共题预览先建题根/版本/依据，P2才建AI选源/生成集；考试场次在阶段5。详见[路线图](../delivery/roadmap.md)，不一次迁移全表。
+
 ### 账号、权限与配置
 
 | 序号 | 原候选表 | 结论 / 物理目标 | 必要性与实施成本 | 阶段 |
@@ -66,7 +68,7 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 8 | `auth_policies` | 保留 | 实例身份策略，独立管理且已有B0 | 1/B0 |
 | 9 | `authorization_revisions` | 保留 | 全局授权串行化/缓存版本保护行，写频率不同 | 1/B0 |
 | 10 | `admin_audit_events` | 保留 | 追加安全审计，保留/不可改语义独立 | 1/B0 |
-| 11 | `outbox_events` | 保留 | 业务提交与消息投递解耦的持久事实；B0增量 | 1/B0→B2 |
+| 11 | `outbox_events` | 保留 | 业务提交与消息投递解耦的持久事实；B0增量 | 1/B0→B1→B2 |
 | 12 | `seed_versions` | 保留 | 受控初始化的幂等版本记录，已有实现 | 1/B0 |
 | 13 | `user_profiles` | 并入/复用 `user_extensions` | 与学习偏好/设置同用户同生命周期，小型列组；保留profile_revision | 1/B1 |
 | 14 | `study_profiles` | 并入/复用 `user_extensions` | 仅解释语/当前语两个单例字段；保留study_revision | 1/B1 |
@@ -75,7 +77,7 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 17 | `settings_model_bindings` | 保留；目标 `user_model_bindings` | 一用户多能力配置，凭据反查与唯一约束需要行 | 1 |
 | 18 | `settings_voice_bindings` | 保留；目标 `user_voice_bindings` | 语言×用途多选择，引用标准profile或本人模型声音 | 1 |
 | 19 | `avatar_assets` | 并入/复用 `file_objects` | 一份已验证头像对应一个file对象；专用purpose/像素/处理版本足够 | 1 |
-| 20 | `provider_credentials` | 保留；目标 `user_provider_credentials` | 多Key独立撤销/版本/加密和权限，不入扩展行 | 1/B2 |
+| 20 | `provider_credentials` | 保留；目标 `user_provider_credentials` | 多Key独立撤销/版本/加密和权限，不入扩展行 | 1/B1卡片夹具直接依赖→B2c |
 | 21 | `credential_capability_checks` | 并入/复用 `ai_runs` | 一次显式测试对应一个AiRun，运行已有结果/版本/结束时间 | 1/B2 |
 | 22 | `auth_sessions` | 保留；目标 `user_auth_sessions` | 多设备/受众，独立持久撤销与到期清理 | 1/B1 |
 | 23 | `auth_challenges` | 保留；目标 `user_auth_challenges` | 可多次签发，单次消费/过期/安全版本独立 | 1 |
@@ -90,27 +92,27 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 32 | `feature_flags` | 保留 | 发布功能开关影响全局策略，独立于个人偏好 | 1 |
 | 33 | `runtime_limit_policies` | 保留 | 实例/默认/共享目录多维限额，非计数事实 | 1 |
 | 34 | `user_runtime_limits` | 保留 | 每用户多维覆盖，管理权限不同于本人偏好 | 1 |
-| 35 | `user_storage_states` | 保留 | 每用户唯一但高频预留/结算锁必须隔离资料写入 | 2 |
-| 36 | `global_storage_states` | 保留 | 独立系统容量根，禁止owner为空混入私人表 | 2～3 |
-| 37 | `storage_reservations` | 保留；目标 `user_storage_reservations` | 一用户多预留，独立unknown/结算/恢复账本 | 2 |
+| 35 | `user_storage_states` | 保留 | 每用户唯一但高频预留/结算锁必须隔离资料写入 | 1/B1源夹具需要时→B2a→2 |
+| 36 | `global_storage_states` | 保留 | 独立系统容量根，禁止owner为空混入私人表 | 3/L4 |
+| 37 | `storage_reservations` | 保留；目标 `user_storage_reservations` | 一用户多预留，独立unknown/结算/恢复账本 | 1/B1源夹具需要时→B2a→2 |
 | 38 | `global_storage_reservations` | 保留 | 共享占用与私人Job的受限映射，目录服务专用 | 3 |
 
 ### 材料、阅读与考试
 
 | 序号 | 原候选表 | 结论 / 物理目标 | 必要性与实施成本 | 阶段 |
 | --- | --- | --- | --- | --- |
-| 39 | `upload_intents` | 保留 | 可变临时上传/租约与不可变文件不同生命周期 | 2（头像切片提前） |
-| 40 | `file_objects` | 保留 | 不可变字节身份、验证和GC，被多业务引用 | 2（头像切片提前） |
+| 39 | `upload_intents` | 保留 | 可变临时上传/租约与不可变文件不同生命周期 | 1/B2a→2/3 |
+| 40 | `file_objects` | 保留 | 不可变字节身份、验证和GC，被多业务引用 | 1/B1必要源→B2a→2/3 |
 | 41 | `material_imports` | 保留 | 上传前意图/显式确认，可失败而无正式材料 | 2 |
-| 42 | `materials` | 保留 | 库中稳定材料根及删除代次，跨内容版本保护 | 2 |
-| 43 | `material_revisions` | 保留 | 一材料多不可变版本，旧结果/书签/冻结卷引用 | 2 |
-| 44 | `source_assets` | 保留；目标 `material_source_assets` | 同版本多文件/图像的出处角色，文件可多处使用 | 2 |
-| 45 | `source_units` | 保留；目标 `material_source_units` | 可分页加载的来源层级，稳定定位不等于显示节点 | 2 |
-| 46 | `content_blocks` | 保留；目标 `material_content_blocks` | 独立稳定正文ID与偏移，多个领域节点可引用 | 2 |
+| 42 | `materials` | 保留 | 库中稳定材料根及删除代次，跨内容版本保护 | 1/B1最小源→2 |
+| 43 | `material_revisions` | 保留 | 一材料多不可变版本，旧结果/书签/冻结卷引用 | 1/B1最小源→2 |
+| 44 | `source_assets` | 保留；目标 `material_source_assets` | 同版本多文件/图像的出处角色，文件可多处使用 | 1/B1所需源→2 |
+| 45 | `source_units` | 保留；目标 `material_source_units` | 可分页加载的来源层级，稳定定位不等于显示节点 | 1/B1所需源→2 |
+| 46 | `content_blocks` | 保留；目标 `material_content_blocks` | 独立稳定正文ID与偏移，多个领域节点可引用 | 1/B1所需源→2 |
 | 47 | `import_issues` | 保留；目标 `material_import_issues` | 多位置/多阶段问题独立关闭，与源版本不同可变性 | 2 |
-| 48 | `linguistic_analysis_versions` | DESIGN23调整为 `text_analysis_versions` | 注册学习资源的源版本×pipeline，覆盖材料与AI/收藏/题目 | 2～4 |
-| 49 | `sentences` | DESIGN23调整为 `text_analysis_sentences` | 独立句ID及跨unit spans，供点句/回跳/音频引用 | 2～4 |
-| 50 | `tokens` | DESIGN23收敛为 `text_analysis_units` 中的有界token数组 | 物理表名额改为文本单元，整句读取，无当前逐词SQL需求；不存整书JSON | 2～4 |
+| 48 | `linguistic_analysis_versions` | DESIGN23调整为 `text_analysis_versions` | 注册学习资源的源版本×pipeline，覆盖材料与AI/收藏/题目 | 2～5 |
+| 49 | `sentences` | DESIGN23调整为 `text_analysis_sentences` | 独立句ID及跨unit spans，供点句/回跳/音频引用 | 2～5 |
+| 50 | `tokens` | DESIGN23收敛为 `text_analysis_units` 中的有界token数组 | 物理表名额改为文本单元，整句读取，无当前逐词SQL需求；不存整书JSON | 2～5 |
 | 51 | `novel_manifests` | 并入/复用 `material_revisions` | 每源版本唯一头，共同父锁；移入可独立首次发布/冻结的结构组 | 2 |
 | 52 | `novel_chapters` | 保留 | 一版多章与顺序，小说独立结构 | 2 |
 | 53 | `novel_chapter_blocks` | 保留 | 章与源块/范围的多重映射，原文不复制 | 2 |
@@ -143,12 +145,12 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 80 | `exam_listening_synthesis_specs` | 保留 | 同binding多配置/代次，旧成功结果仍被历史引用 | 2～3 |
 | 81 | `exam_listening_audio_bindings` | 并入/复用 `exam_listening_synthesis_specs` | 每spec唯一发布状态，同锁同生命周期，合入spec | 2～3 |
 | 82 | `exam_playback_policies` | 并入/复用 `exam_listening_bindings` | 每binding唯一规则，无独立修订历史；随冻结卷改版 | 2 |
-| 83 | `exam_sessions` | 保留 | 多考试场次，独立计时/编辑/交卷/有效成绩生命周期 | 4 |
-| 84 | `exam_answers` | 保留；目标 `exam_session_answers` | 多题可变草稿→锁卷，不与不可变Attempt合并 | 4 |
-| 85 | `exam_session_listening_usages` | 保留 | 每场×stimulus虽唯一，但高频计数和attempt汇总需锁 | 4 |
-| 86 | `exam_listening_play_attempts` | 保留；目标 `exam_session_listening_play_attempts` | 多播放领取/首字节/续播/终态事实，不能Redis替代 | 4 |
-| 87 | `exam_media_faults` | 保留；目标 `exam_session_media_faults` | 场次多资产故障独立事实，资源恢复也不清除 | 4 |
-| 88 | `exam_media_fault_items` | 保留；目标 `exam_media_fault_item_links` | 多受影响叶子固定账本，冻结评分阻断与反查 | 4 |
+| 83 | `exam_sessions` | 保留 | 多考试场次，独立计时/编辑/交卷/有效成绩生命周期 | 5 |
+| 84 | `exam_answers` | 保留；目标 `exam_session_answers` | 多题可变草稿→锁卷，不与不可变Attempt合并 | 5 |
+| 85 | `exam_session_listening_usages` | 保留 | 每场×stimulus虽唯一，但高频计数和attempt汇总需锁 | 5 |
+| 86 | `exam_listening_play_attempts` | 保留；目标 `exam_session_listening_play_attempts` | 多播放领取/首字节/续播/终态事实，不能Redis替代 | 5 |
+| 87 | `exam_media_faults` | 保留；目标 `exam_session_media_faults` | 场次多资产故障独立事实，资源恢复也不清除 | 5/E1 |
+| 88 | `exam_media_fault_items` | 保留；目标 `exam_media_fault_item_links` | 多受影响叶子固定账本，冻结评分阻断与反查 | 5/E1 |
 
 ### 收藏、学习与AI（Outbox已计入账号）
 
@@ -162,21 +164,21 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 94 | `collection_merges` | 并入/复用 `collection_items` | 源收藏壳已经保留且只一个去向，映射移入源行 | 3 |
 | 95 | `collection_selection_snapshots` | 保留 | 跨页批量动作需冻结边界，独立失效/幂等 | 3 |
 | 96 | `collection_selection_members` | 保留；目标 `collection_selection_item_links` | 选择可很大且逐项校验/执行，需明细而非数组 | 3 |
-| 97 | `csv_import_batches` | 保留 | 预览/确认/分批提交/恢复根，与Job不等价 | 5 |
-| 98 | `csv_import_rows` | 保留 | 多行独立错误/选择/提交状态，CSV不能当一JSON | 5 |
-| 99 | `photo_word_imports` | 保留 | 独立上传/显式识别/预览/确认生命周期 | 3 |
-| 100 | `photo_word_candidates` | 保留；目标 `photo_word_import_candidates` | 多候选/代次和逐项收藏结果，支持部分失败 | 3 |
-| 101 | `exercise_question_roots` | 保留 | 稳定题根保护多个版本/引用/作废，不能锁不存在概念 | 1/B2→4 |
-| 102 | `exercise_questions` | 保留 | 一根多不可变题版本，题面与依据投影分离 | 1/B2→4 |
-| 103 | `question_grading_bases` | 保留 | 每题多依据版本/来源/确认，独立隐藏读取 | 1/B2→4 |
-| 104 | `question_source_refs` | 保留 | 题目多来源/考察点，删除GC与权限反查 | 1/B2→4 |
+| 97 | `csv_import_batches` | 保留 | 预览/确认/分批提交/恢复根，与Job不等价 | 3/L3 |
+| 98 | `csv_import_rows` | 保留 | 多行独立错误/选择/提交状态，CSV不能当一JSON | 3/L3 |
+| 99 | `photo_word_imports` | 保留 | 独立上传/显式识别/预览/确认生命周期 | 3/L3 |
+| 100 | `photo_word_candidates` | 保留；目标 `photo_word_import_candidates` | 多候选/代次和逐项收藏结果，支持部分失败 | 3/L3 |
+| 101 | `exercise_question_roots` | 保留 | 稳定题根保护多个版本/引用/作废，不能锁不存在概念 | 2/M3/M4→4 |
+| 102 | `exercise_questions` | 保留 | 一根多不可变题版本，题面与依据投影分离 | 2/M3/M4→4 |
+| 103 | `question_grading_bases` | 保留 | 每题多依据版本/来源/确认，独立隐藏读取 | 2/M3/M4→4 |
+| 104 | `question_source_refs` | 保留 | 题目多来源/考察点，删除GC与权限反查 | 2/M3/M4→4 |
 | 105 | `assessment_targets` | 保留；目标 `question_assessment_targets` | 一评分叶子可测多个词/技能，学习证据关联 | 4 |
-| 106 | `exercise_selection_snapshots` | 保留 | 多来源AI选源/抽样及事实边界，与批量修改快照不混用 | 4 |
-| 107 | `exercise_selection_candidates` | 保留 | 多来源候选、排除原因、稳定版本/抽样，计划共享保留 | 4 |
-| 108 | `ai_exercise_plans` | 并入/复用 `exercise_sets` | 确认与产出集一对一，同归属/Job；不可变字段组合并 | 4 |
-| 109 | `ai_exercise_plan_sources` | 并入/复用 `exercise_selection_candidates` | 重复selected候选快照；改持久引用及同父锁GC防误删 | 4 |
-| 110 | `exercise_sets` | 保留 | 确认前不创建，确认后状态与冻结计划同一根 | 1/B2→4 |
-| 111 | `exercise_set_items` | 保留 | 一个集多题，发布的固定题序与分值 | 1/B2→4 |
+| 106 | `exercise_selection_snapshots` | 保留 | 多来源AI选源/抽样及事实边界，与批量修改快照不混用 | 4/P2 |
+| 107 | `exercise_selection_candidates` | 保留 | 多来源候选、排除原因、稳定版本/抽样，计划共享保留 | 4/P2 |
+| 108 | `ai_exercise_plans` | 并入/复用 `exercise_sets` | 确认与产出集一对一，同归属/Job；不可变字段组合并 | 4/P2 |
+| 109 | `ai_exercise_plan_sources` | 并入/复用 `exercise_selection_candidates` | 重复selected候选快照；改持久引用及同父锁GC防误删 | 4/P2 |
+| 110 | `exercise_sets` | 保留 | 确认前不创建，确认后状态与冻结计划同一根 | 4/P2 |
+| 111 | `exercise_set_items` | 保留 | 一个集多题，发布的固定题序与分值 | 4/P2 |
 | 112 | `practice_sessions` | 保留 | 同集可多次练习，状态独立于集 | 4 |
 | 113 | `practice_session_items` | 保留 | 多题进度/跳过/已提交引用，与原集解耦 | 4 |
 | 114 | `question_attempts` | 保留 | 每次提交不可变、重做追加，评分指针独立 | 4 |
@@ -194,15 +196,15 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 126 | `learner_profiles` | 保留；目标 `learner_language_profiles` | 每目标语统计投影，与人工偏好不是同一对象 | 4 |
 | 127 | `diagnosis_reports` | 保留 | 多窗口/事实版本报告，模型结果不可变 | 4 |
 | 128 | `diagnosis_evidence_refs` | 保留；目标 `diagnosis_report_evidence_refs` | 报告多证据/出处，权限/GC反查 | 4 |
-| 129 | `agent_threads` | 保留 | 内部上下文根/轮次/删除代次，不是用户聊天产品 | 4 |
-| 130 | `agent_messages` | 保留；目标 `agent_thread_messages` | 多轮/多角色历史，版本化SDK读取 | 4 |
-| 131 | `agent_message_attachments` | 保留 | 消息多图及草稿绑定，附件独立过期/版本 | 4 |
-| 132 | `cards` | 保留 | 一次运行多卡、逐卡收藏与出处，和消息成功不同 | 4 |
+| 129 | `agent_threads` | 保留 | 内部上下文根/轮次/删除代次，不是用户聊天产品 | 1/B1卡片直接依赖→3/L2 |
+| 130 | `agent_messages` | 保留；目标 `agent_thread_messages` | 多轮/多角色历史，版本化SDK读取 | 1/B1卡片直接依赖→3/L2 |
+| 131 | `agent_message_attachments` | 保留 | 消息多图及草稿绑定，附件独立过期/版本 | 3/L2 |
+| 132 | `cards` | 保留 | 一次运行多卡、逐卡收藏与出处，和消息成功不同 | 1/B1已提交卡片→3/L2 |
 | 133 | `ai_feedback` | 保留 | 一个结果可独立反馈，跨explanation/card两类目标；不污染各结果存储 | 3～4 |
-| 134 | `explanations` | 保留 | 完整不可变模型成果，独立于来源/查询绑定 | 3 |
-| 135 | `source_result_bindings` | 保留 | 多来源引用同成果，授权/保留/书内查询入口 | 3 |
+| 134 | `explanations` | 保留 | 完整不可变模型成果，独立于来源/查询绑定 | 1/B1实际结果依赖→3/L2 |
+| 135 | `source_result_bindings` | 保留 | 多来源引用同成果，授权/保留/书内查询入口 | 1/B1实际来源依赖→3/L2 |
 | 136 | `material_learning_indexes` | 并入/复用 `source_result_bindings` | 每binding唯一且可由binding+当前lookup查询，合入索引列 | 3 |
-| 137 | `learning_lookup_states` | 保留 | 稳定查阅键跨配置选用结果，和严格生成键非一对一 | 3 |
+| 137 | `learning_lookup_states` | 保留 | 稳定查阅键跨配置选用结果，和严格生成键非一对一 | 1/B1来源绑定依赖→3/L2 |
 | 138 | `generation_slots` | 保留；目标 `learning_generation_slots` | 严格配置调用并发/unknown/fence，独立于查阅选用 | 3 |
 | 139 | `audio_assets` | 保留 | 一个合成多片段/状态，独立持久成果根 | 3 |
 | 140 | `audio_segments` | 保留；目标 `audio_asset_segments` | 多音频文件/时间映射，真实成品独立验证 | 3 |
@@ -216,14 +218,14 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 148 | `global_word_generation_slots` | 保留 | 共享租约/生产者映射需专用scope，不泄露私人Job | 3 |
 | 149 | `collection_word_audio_refs` | 并入/复用 `collection_items` | 每收藏唯一当前词音选择，可并入条目用代次保护 | 3 |
 | 150 | `speech_requests` | 保留 | 多来源/多次请求及本人等候关系，不等于共享生产Job | 3 |
-| 151 | `jobs` | 保留 | 用户授权长任务/恢复/取消根，调度扫描需要独立状态 | 1/B2 |
-| 152 | `job_stages` | 保留 | 一个Job多已提交阶段，重启恢复边界 | 1/B2 |
-| 153 | `ai_runs` | 保留 | 一个Job可多模型阶段/运行，也承载短Key测试 | 1/B2 |
+| 151 | `jobs` | 保留 | 用户授权长任务/恢复/取消根，调度扫描需要独立状态 | 1/B1通知需要时→B2 |
+| 152 | `job_stages` | 保留 | 一个Job多已提交阶段，重启恢复边界 | 1/B1通知需要时→B2 |
+| 153 | `ai_runs` | 保留 | 一个Job可多模型阶段/运行，也承载短Key测试 | 1/B1已提交卡片依赖→B2c |
 | 154 | `external_call_attempts` | 保留 | 一个run多真实供应商尝试，unknown/用量独立事实 | 1/B2 |
 | 155 | `model_call_usages` | 并入/复用 `external_call_attempts` | 每attempt一份用量，同锁同保留期；合并免重复元数据与JOIN | 1/B2 |
-| 156 | `inbox_events` | 保留 | 消费者×event去重与业务结果同事务，保留重放窗口 | 1/B2 |
+| 156 | `inbox_events` | 保留 | 消费者×event去重与业务结果同事务，保留重放窗口 | 1/B1通知需要时→B2 |
 | 157 | `idempotency_records` | 保留 | 用户请求重放/响应映射，不等于消息消费去重 | 1/B1→B2 |
-| 158 | `notifications` | 保留；目标 `user_notifications` | 一Job可多安全事件提示且独立已读/留存，不并入Job | 2 |
+| 158 | `notifications` | 保留；目标 `user_notifications` | 一Job可多安全事件提示且独立已读/留存，不并入Job | 2/M1 |
 
 ## 5. 实施复杂度与落地门槛
 
@@ -235,7 +237,7 @@ B0没有上述拟合并表，后续迁移直接创建收敛目标，不能先照
 | 材料/阅读与准备 | 高：源版本/定位、多类型发布、文件GC | 小说/课本合并头但分别校验；试卷、脚本、候选/确认仍分生命周期。阅读打开历史按现行行为统计要求有界保留 |
 | 缓存/TTS/共享词音 | 高：引用保留、跨配置迟到、私有/公共隔离 | 先实现私有路径，再按共享目录功能增加独立scope；lookup与严格slot不可合并；无供应商调用的resolve不能建工作流 |
 | 练习/考试/证据 | 高：冻结、计序、评分代次、投影重放 | 保留不可变事实与当前投影；同阶段不重复维护计划来源/评分反馈附表；播放计次必须PG账本 |
-| CSV（阶段5） | 中高：预览、逐行幂等、部分失败/恢复 | 到CSV切片才建立批次/行；复用上传和既有收藏，不按材料导入构造万能流程 |
+| CSV（阶段3/L3） | 中高：预览、逐行幂等、部分失败/恢复 | 到CSV切片才建立批次/行；复用上传和既有收藏，不按材料导入构造万能流程 |
 
 表数并非完成度或工期。剩余复杂度主要由已确认的考试听力、重评学习证据、完整RBAC、可靠任务和共享音频要求产生；本轮不通过删产品要求降低数字。若后续真实访问/并发样本证明某保留拆分无价值，随对应切片再作有证据的局部调整；新增表同样需要基数/生命周期/锁/查询理由。
 

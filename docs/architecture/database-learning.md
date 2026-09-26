@@ -419,7 +419,7 @@ Job IX `(owner,state,created_at,id)`、`(state,not_before,id) WHERE state IN ('q
 
 另增 `capability varchar(12) NN`（text/vision/tts），与本run冻结模型能力一致。credential_test专用安全结果使用已有state/finished_at/error_code；finished_at映射tested_at，取消/中断不投影成成功。新增部分IX `(owner,credential_id,credential_version,model_id,capability,finished_at DESC,id) WHERE operation_kind='credential_test' AND finished_at IS NOT NULL`；测试查询还必须精确匹配provider/model_id/model_revision（NULL明确表示未知修订），模型切换不沿用另一模型测试成功；模型准确标识复用这几列，不复制catalog显示名。保存/轮换Key不会创建test run；当前版本无已结束测试显示untested。旧凭据版本迟到结果保留历史但不覆盖新版本结论，不另建credential_capability_checks。
 
-state accepted/running/succeeded/failed/cancelled/interrupted/unknown_outcome；IX `(owner,operation_kind,created_at,id)`、`(owner,job_id)`、`(owner,agent_thread_id,state)`。非空 credential 引用只记录身份/版本，无密文/Key；每个新模型阶段重取当前本人凭据/能力/权限，不复用失效解密缓存。无Job短请求仅限不产生需容量预留的持久学习成品，例如显式Key能力测试；查询卡片/解释/音频/出题/诊断即使快速返回，也在本设计中由内部Job承载成品预留/发布，不新增用户任务入口。SDK/HTTP/Worker共享计数上限。派生 Token 汇总可由查询计算，不另建与attempt同时相加的权威总计。
+state accepted/running/succeeded/failed/cancelled/interrupted/unknown_outcome；IX `(owner,operation_kind,created_at,id)`、`(owner,job_id)`、`(owner,agent_thread_id,state)`。非空 credential 引用只记录身份/版本，无密文/Key；每个新模型阶段重取当前本人凭据/能力/权限，不复用失效解密缓存。数据结构允许不产生持久学习成品的短请求无Job，但PLAN2的正式Key能力测试在B2c统一走异步Job/Stage/Outbox与可恢复结果；查询卡片/解释/音频/出题/诊断即使快速返回，也在本设计中由内部Job承载成品预留/发布，不新增用户任务入口。SDK/HTTP/Worker共享计数上限。派生 Token 汇总可由查询计算，不另建与attempt同时相加的权威总计。
 
 ### 7.3 `external_call_attempts`
 
@@ -492,7 +492,7 @@ UK `(owner,audience,action_code,key_digest)`；IX `(expires_at,id)`；state proc
 
 UK `(owner,source_event_id,notification_kind)`，IX `(owner,created_at,id)`、`(owner,created_at,id) WHERE read_at IS NULL`。依据[材料完成提示](../modules/materials-reading.md)和原型站内已读流程保存完成/失败/待校对等已提交事件的本人提示；message_code与安全参数由客户端本地化，不包含原文/题答/秘密。事件消费与Inbox同事务幂等创建；Redis只推新消息信号，清空Redis不丢已读事实。
 
-读取/标记本人已读拟沿用 client.job.read 与实际来源read，结果跳转重新授权；明确拒绝时不借提示泄露标题/正文。具体列表/已读API与权限映射尚需在通知功能切片补入API目录后实施，本表不宣称它们已交付。不增加系统推送、邮件学习提醒或通知开关；消息安全保留期由部署配置明确，删除来源显示不可用安全状态，不能通过通知恢复已删材料。
+读取/标记本人已读采用client.notification.read/update，源失权只显示通用安全提示，跳转重新授权；列表/已读API与并发快照规则见[站内消息契约](../contracts/notifications.md)，M1实施，本表不宣称已交付。不增加系统推送、邮件学习提醒或通知开关；消息安全保留期由部署配置明确，删除来源显示不可用安全状态，不能通过通知恢复已删材料。
 
 ## 8. 引用、生命周期与实施检查
 

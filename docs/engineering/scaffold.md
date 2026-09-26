@@ -8,7 +8,7 @@
 
 ## 1. 实施边界与文件归属
 
-脚手架分 B0 工程基础、B1 三端身份与收藏参考流程、B2 Fake 模型异步参考流程，全部是路线图阶段 1 的子里程碑。文件随实际职责建立，不预建所有 feature 空目录。文档修改不会自动初始化 Git、安装工具或连接共享 MyHome。
+脚手架分 B0 工程基础、B1 三端身份与收藏参考流程、B2配置/完整治理与模型任务（B2a/b/c），全部是路线图阶段 1 的子里程碑。文件随实际职责建立，不预建所有 feature 空目录。文档修改不会自动初始化 Git、安装工具或连接共享 MyHome。
 
 | 未来载体 | 维护内容与唯一来源 |
 | --- | --- |
@@ -161,6 +161,6 @@ haruka-manage提供db status、db upgrade、seed apply、admin init等明确子�
 
 B1先完成三端正式注册、所选激活、登录、找回/重置、改密与本人会话管理；所选邮件或人工交付方式的必要持久通知/受控操作也在B1交付，不能用预置active账号替代。在此基础上用合成材料版本/选区作为合法来源，经me/access、选区只读查询已准备的已提交卡片、POST collections与GET collections完成本人收藏新增和列表，贯通DTO、Repository、Riverpod、服务授权、迁移和日志；无需为此先实现全部上传/阅读器，也不增加未经设计的来源类型。
 
-B2从B1收藏创建正式 `POST ai-exercise-selections` 预览，确认后调用 `POST ai-exercise-generations` 生成一个小规模AI习题集；Job、Outbox、Kafka、Worker、SSE和持久化均用正式机制，只在dev/test把模型调用注入Fake。验证成功、拒绝、重复投递、取消/故障和A/B隔离；Fake不能证明真实供应商能力、实际usage口径或AI质量，也不建立词汇复习或到期调度。
+B2a/b完成资料设置与完整身份治理，B2c使用正式 `POST provider-credentials/{id}/test` 单能力小样本测试贯通Job、Outbox、Kafka、Worker、WebSocket与持久安全结果；dev/test只替换供应商边界。验证成功/拒绝、重复投递、unknown、撤权/取消/故障及A/B隔离，Fake不代替获授权真实能力协议证据。查询/SSE在L2，正式出题/删题在P2，不提前依赖习题领域。
 
-详细SCF验收ID、平台/参数、坏样本与证据由[脚手架验收](../delivery/milestones/scaffold.md)维护。B1通过必须包含所选注册/激活/恢复闭环；B0/B1/B2仍不代替阶段1其余资料设置/完整后台和后续材料学习、发布验收，工程完成后才按实际证据更新路线图。
+详细SCF验收ID、平台/参数、坏样本与证据由[脚手架验收](../delivery/milestones/scaffold.md)维护。B1通过必须包含所选注册/激活/恢复闭环；B2的SCF任务证据不代替B2a/b资料设置/完整后台验收或阶段1整体签收，后续材料学习与发布仍须各自验收，工程完成后才按实际证据更新路线图。

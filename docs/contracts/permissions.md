@@ -16,6 +16,7 @@
 
 | 权限代码 | 页面/接口动作 | 附加依赖和模型调用含义 |
 | --- | --- | --- |
+| client.notification.read/update | 本人站内消息列表/未读；单条或快照范围全部已读 | update需read；源失权只给通用提示，跳转重新验资源动作，job.read不隐含此权限；见[消息](notifications.md) |
 | client.login | 学习端登录、身份续期、access快照/已登录遥测 | 不授予其他业务动作 |
 | client.material.list/read | 书库列表/搜索；材料元数据、小说/课本版本内容与出处读取 | read校验类型/文件用途与来源；list无原文，试卷正文/题面/答案另走exam权限与专用DTO |
 | client.material.import | 上传或复用本人原文件建立所选类型的新材料 | 确定性提取；复用源需material.read，exam源另需exam.read+exam.edit完整原件资格；目标exam另需exam.import，视觉OCR/进一步AI分析另验analyze |

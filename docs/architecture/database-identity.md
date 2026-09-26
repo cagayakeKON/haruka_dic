@@ -120,7 +120,7 @@ scope_kind='system_catalog'；归属：无私有归属列；生命周期：可�
 
 ### outbox_events
 
-scope_kind='system_operation'；归属：无私有归属列；生命周期：可变；B0保留。授权变更持久通知；B0只提交，B2实现投递。
+scope_kind='system_operation'；归属：无私有归属列；生命周期：可变；B0保留。授权变更持久通知；B0只提交，B1按所选账号通知需要先实现投递，B2复用并扩充。
 
 | 列 | PostgreSQL类型 | NULL | DB默认 | 语义 |
 | --- | --- | --- | --- | --- |

@@ -60,7 +60,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/PATCH users/me/settings | 模型/声音、时区、AI习题默认、阅读/朗读、theme/无障碍默认；field mask + expected_revision | profile.read/update；本机缓存/服务地址不伪装服务器字段，拒绝修改派生掌握/权限/配额 |
 | POST users/me/avatar-upload-intents；POST users/me/avatar-upload-intents/{id}/complete；DELETE users/me/avatar | 本人avatar用途临时上传、验证/重编码后原子替换或删除当前头像 | profile.read+profile.avatar.update；只接受配置允许的静态图片，不接受外链/任意FileObject ID；替换使用profile expected_revision，删除保留受控GC |
 | GET users/me/avatar | 当前本人私有头像媒体；无头像返回404/受控空态 | profile.read；每次鉴权，`Cache-Control: private, no-store`，不要求avatar.update，不产生长期公共URL或跨账号ETag，不因知道asset ID/旧revision读取他人对象 |
-| GET/POST/PATCH/DELETE provider-credentials；POST {id}/test | 掩码/增删轮换；受限能力测试 | credential.read/manage/test；永不GET明文 |
+| GET/POST/PATCH/DELETE provider-credentials；POST {id}/test；GET {id}/tests/{run_id} | 掩码/增删轮换；显式单能力固定最小样本异步测试，202返回job_id/run_id，读取持久安全结果 | credential.read/manage/test；测试需test，结果需read及本人凭据/run归属；Job进度另验job.read与来源，永不GET明文 |
 | GET users/me/model-usage | 本人按时间范围、供应商、模型、能力、操作类型聚合的调用状态及input/output/cache等用量；可按有权run查询明细 | credential.read与self范围；未知分项为null，应用缓存命中不冒充模型调用，不返回Key/Prompt/回复；口径见[模型用量统计](model-usage.md) |
 | POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/requested_stages；视觉OCR与进一步AI分析分别明确范围/上限；新上传或本人源文件重新处理 | material.import、目标试卷组合权限；视觉OCR另验analyze；复用验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |
@@ -112,6 +112,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | POST exam-sessions/{id}/grading-runs；GET {id}/results | 初次批改或新generation重评；部分/有效成绩 | exam_grade.request/regrade/read |
 | WebSocket jobs/events | [版本化进度、订阅、代次/序号与恢复](job-progress.md)；只订阅，不创建或重试任务 | client会话、job.read、本人Job与来源read；Web严格Origin，原生Bearer；每次交付与心跳重验，撤权关闭 |
 | GET jobs/{id}；POST {id}/cancel/retry | 当前阶段、可操作状态、结果引用；语言校对GET及retry.language_confirmation分支见[语言确认](material-types.md#12-发布前语言确认与恢复) | read的结果另验来源read；语言证据额外检查导入/重解析/试卷校对权限；cancel只需本人范围/可取消状态和job.cancel；retry重验原业务权限/模型调用意图与语言确认输入版本，不能泛化为任意阶段修改 |
+| GET notifications；POST {id}/read；POST notifications/read-all | 本人消息/未读数、单条已读、列表快照上界内全部已读；详见[消息契约](notifications.md) | notification.read/update，self；跳转另验资源动作，不能借消息越权 |
 | GET runs/{id}/events | Agent/解释的SSE文字、卡片及关联run状态；材料/通用任务进度使用jobs/events WebSocket | run类型所需read，不能只因有run_id放行 |
 | GET runs/{id}；POST runs/{id}/cancel | 持久运行快照/完整结果；取消意图 | 读需对应领域权限；取消需本人job.cancel，失去agent.use不妨碍仍获授权的停止操作 |
 | POST frontend-logs、admin/frontend-logs、frontend-logs/anonymous | 受众内批量/受限匿名，逐项接收结果 | 观测规范；不接收任意查询 |

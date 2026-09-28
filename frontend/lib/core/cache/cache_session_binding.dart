@@ -17,7 +17,14 @@ final cacheCoordinatorProvider = Provider<CacheCoordinator>(
 /// Keeps the cache attached only to a confirmed client access projection.
 /// Every identity change blocks reads synchronously, before disk cleanup runs.
 final class CacheSessionBinding with WidgetsBindingObserver {
-  CacheSessionBinding(this.auth, this.config, this.cache) {
+  CacheSessionBinding(
+    this.auth,
+    this.config,
+    this.cache, {
+    Uri Function()? endpoint,
+    String Function()? instanceId,
+  }) : _endpoint = endpoint ?? (() => config.apiBaseUrl),
+       _instanceId = instanceId ?? (() => config.instanceId) {
     auth.addListener(_onIdentityChanged);
     WidgetsBinding.instance.addObserver(this);
     _onIdentityChanged();
@@ -27,6 +34,8 @@ final class CacheSessionBinding with WidgetsBindingObserver {
   final AuthController auth;
   final AppConfig config;
   final CacheCoordinator cache;
+  final Uri Function() _endpoint;
+  final String Function() _instanceId;
   Future<void> _tail = Future<void>.value();
   String? _target;
   int _transition = 0;
@@ -119,7 +128,7 @@ final class CacheSessionBinding with WidgetsBindingObserver {
     final target = access == null
         ? null
         : jsonEncode([
-            config.apiBaseUrl.toString(),
+            _endpoint().toString(),
             access.instanceId,
             access.userId,
             access.audience,
@@ -140,9 +149,9 @@ final class CacheSessionBinding with WidgetsBindingObserver {
     _tail = _tail.catchError((Object _) {}).then((_) async {
       if (_disposed || transition != _transition) return;
       final confirmed =
-          access != null && access.instanceId == config.instanceId && access.audience == 'client'
+          access != null && access.instanceId == _instanceId() && access.audience == 'client'
           ? CacheScope.confirmed(
-              endpoint: config.apiBaseUrl,
+              endpoint: _endpoint(),
               instanceId: access.instanceId,
               userId: access.userId,
               audience: access.audience,

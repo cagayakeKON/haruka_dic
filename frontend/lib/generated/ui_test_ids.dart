@@ -1,4 +1,4 @@
-// GENERATED from config/ui_test_ids.json; sha256:7fbfcd374cfc34e327a1049879897358f9f617a6dccb5c87cc2e3bb3a50f2045. Do not edit.
+// GENERATED from config/ui_test_ids.json; sha256:7119b6237c1db03bca5943666d90eeda5c37a6cf777497575c63b8539893f2a5. Do not edit.
 abstract final class UiTestIds {
   static const accountChangePassword = "client.account.password.submit";
   static const accountConfirmPassword = "client.account.password.confirm";
@@ -77,6 +77,14 @@ abstract final class UiTestIds {
   static const registerSubmit = "client.auth.register.submit";
   static const registrationAcceptedVerifyLink = "client.auth.result.verify_link";
   static const sessionRevokeAll = "client.account.sessions.revoke_all";
+  static const settingsAvatarDelete = "client.settings.avatar.delete";
+  static const settingsAvatarReplace = "client.settings.avatar.replace";
+  static const settingsCacheClear = "client.settings.cache.clear";
+  static const settingsGuideSave = "client.settings.guide.save";
+  static const settingsGuideSkip = "client.settings.guide.skip";
+  static const settingsProfileSave = "client.settings.profile.save";
+  static const settingsServiceConfirm = "client.settings.service.confirm";
+  static const settingsServiceProbe = "client.settings.service.probe";
   static const verificationPage = "client.auth.verification.page";
   static const verificationSubmit = "client.auth.verification.submit";
   static const verificationToken = "client.auth.verification.token";

@@ -1,5 +1,7 @@
 """Pydantic authority for cross-language samples, without production sample routes."""
 
+import base64
+import hashlib
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -24,6 +26,13 @@ from app.schemas.auth import (
     WebAuthenticated,
     WebLoginRead,
 )
+from app.schemas.avatar import (
+    AvatarDelete,
+    AvatarUploadComplete,
+    AvatarUploadIntentCreate,
+    AvatarUploadIntentRead,
+)
+from app.schemas.language_capabilities import LanguageCapabilitiesRead
 from app.schemas.learning_reference import (
     CollectionRead,
     ExplanationResolveRead,
@@ -33,6 +42,16 @@ from app.schemas.learning_reference import (
     WordCardPayload,
     WordCardRead,
     WordExample,
+)
+from app.schemas.profile import (
+    ProfileCompleteness,
+    ProfileRead,
+    ProfileUpdate,
+    SettingsRead,
+    SettingsUpdate,
+    StudyProfileRead,
+    StudyProfileUpdate,
+    TargetLanguageRead,
 )
 from app.schemas.responses import (
     ApiError,
@@ -46,6 +65,7 @@ from app.schemas.responses import (
     SuccessResponse,
 )
 from app.schemas.scalars import CanonicalDecimal
+from app.services.language_capabilities import read_catalogue
 
 REQUEST_ID = UUID("018f1234-1234-7123-8123-123456789abc")
 RESOURCE_ID = UUID("018f1234-5678-7123-8123-123456789abc")
@@ -180,6 +200,50 @@ def compatibility_openapi() -> dict[str, object]:
     def learning_resolve() -> Response:
         return Response(status_code=501)
 
+    @app.get("/samples/settings/profile", response_model=SuccessResponse[ProfileRead])
+    def profile_read() -> Response:
+        return Response(status_code=501)
+
+    @app.patch("/samples/settings/profile", response_model=SuccessResponse[ProfileRead])
+    def profile_update(body: ProfileUpdate) -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/settings/study", response_model=SuccessResponse[StudyProfileRead])
+    def study_read() -> Response:
+        return Response(status_code=501)
+
+    @app.patch("/samples/settings/study", response_model=SuccessResponse[StudyProfileRead])
+    def study_update(body: StudyProfileUpdate) -> Response:
+        return Response(status_code=501)
+
+    @app.get("/samples/settings/preferences", response_model=SuccessResponse[SettingsRead])
+    def settings_read() -> Response:
+        return Response(status_code=501)
+
+    @app.patch("/samples/settings/preferences", response_model=SuccessResponse[SettingsRead])
+    def settings_update(body: SettingsUpdate) -> Response:
+        return Response(status_code=501)
+
+    @app.get(
+        "/samples/settings/languages", response_model=SuccessResponse[LanguageCapabilitiesRead]
+    )
+    def languages_read() -> Response:
+        return Response(status_code=501)
+
+    @app.post(
+        "/samples/settings/avatar-intent", response_model=SuccessResponse[AvatarUploadIntentRead]
+    )
+    def avatar_intent(body: AvatarUploadIntentCreate) -> Response:
+        return Response(status_code=501)
+
+    @app.post("/samples/settings/avatar-complete", response_model=SuccessResponse[ProfileRead])
+    def avatar_complete(body: AvatarUploadComplete) -> Response:
+        return Response(status_code=501)
+
+    @app.delete("/samples/settings/avatar", response_model=SuccessResponse[ProfileRead])
+    def avatar_delete(body: AvatarDelete) -> Response:
+        return Response(status_code=501)
+
     return app.openapi()
 
 
@@ -269,6 +333,152 @@ def compatibility_samples() -> dict[str, object]:
             "upload": {"method": "PUT", "media_type": "application/octet-stream"},
         },
         **_auth_samples(),
+        **_settings_samples(),
+    }
+
+
+def _settings_samples() -> dict[str, object]:
+    """B2a wire samples, including field masks and the avatar transport declaration."""
+    meta = ResponseMeta(request_id=REQUEST_ID)
+    completeness = ProfileCompleteness(
+        display_name=False, explanation_language=False, target_language=False, timezone=False
+    )
+    empty_profile = ProfileRead(
+        revision=1,
+        use_optional_demographics_for_ai=False,
+        avatar_revision=0,
+        profile_completeness=completeness,
+    )
+    filled_profile = ProfileRead(
+        revision=2,
+        display_name="遥",
+        birth_year=1998,
+        age_band="18_29",
+        gender_code="self_described",
+        gender_self_description="合成样本",
+        use_optional_demographics_for_ai=False,
+        avatar_asset_id=RESOURCE_ID,
+        avatar_revision=1,
+        profile_completeness=ProfileCompleteness(
+            display_name=True, explanation_language=True, target_language=True, timezone=True
+        ),
+    )
+    empty_study = StudyProfileRead(revision=1, native_languages=[], target_languages=[])
+    filled_study = StudyProfileRead(
+        revision=2,
+        native_languages=["zh-Hans"],
+        explanation_language="zh-Hans",
+        active_target_language="ja",
+        target_languages=[
+            TargetLanguageRead(
+                language_tag="ja",
+                self_assessed_level="beginner",
+                learning_goals=["reading", "listening"],
+            )
+        ],
+    )
+    empty_settings = SettingsRead(
+        revision=1,
+        ui_locale="zh-Hans",
+        theme_mode="system",
+        reduce_motion="system",
+        playback_speed=Decimal("1.00"),
+        query_context_budget_tokens=8000,
+    )
+    filled_settings = SettingsRead(
+        revision=2,
+        ui_locale="zh-Hans",
+        timezone="Asia/Tokyo",
+        theme_mode="dark",
+        reduce_motion="on",
+        reading_font_family="serif",
+        reading_font_size=Decimal("18.00"),
+        reading_line_height=Decimal("1.50"),
+        reading_theme="sepia",
+        playback_speed=Decimal("1.25"),
+        query_context_budget_tokens=16000,
+    )
+    # Wire-only bytes have a PNG signature so the Dart declaration code accepts them.
+    # They are not an image-processing fixture and must never be uploaded to an API.
+    avatar_bytes = bytes.fromhex("89504e470d0a1a0a00000000")
+    avatar_base64 = base64.b64encode(avatar_bytes).decode("ascii")
+
+    def success(value: ApiModel) -> dict[str, object]:
+        return SuccessResponse(data=value, meta=meta).model_dump(mode="json")
+
+    def body(value: ApiModel) -> dict[str, object]:
+        return value.model_dump(mode="json", exclude_unset=True)
+
+    return {
+        "settings_profile_empty": success(empty_profile),
+        "settings_profile_present": success(filled_profile),
+        "settings_profile_patch_null": body(
+            ProfileUpdate.model_validate({"expected_revision": 2, "fields": {"birth_year": None}})
+        ),
+        "settings_study_empty": success(empty_study),
+        "settings_study_present": success(filled_study),
+        "settings_study_patch": body(
+            StudyProfileUpdate.model_validate(
+                {
+                    "expected_revision": 1,
+                    "fields": {
+                        "native_languages": ["zh-Hans"],
+                        "explanation_language": "zh-Hans",
+                        "active_target_language": "ja",
+                        "target_languages": [
+                            {
+                                "language_tag": "ja",
+                                "self_assessed_level": "beginner",
+                                "learning_goals": ["reading", "listening"],
+                            }
+                        ],
+                    },
+                }
+            )
+        ),
+        "settings_preferences_empty": success(empty_settings),
+        "settings_preferences_present": success(filled_settings),
+        "settings_preferences_patch": body(
+            SettingsUpdate.model_validate(
+                {
+                    "expected_revision": 1,
+                    "fields": {
+                        "timezone": None,
+                        "reading_font_size": "18.00",
+                        "playback_speed": "1.25",
+                    },
+                }
+            )
+        ),
+        "settings_language_capabilities": success(read_catalogue()),
+        "settings_avatar_intent": success(
+            AvatarUploadIntentRead(
+                id=RESOURCE_ID,
+                expires_at=datetime.fromisoformat("2026-09-28T01:02:03+00:00"),
+                max_size_bytes=5 * 1024 * 1024,
+                accepted_formats=["jpeg", "png", "webp"],
+            )
+        ),
+        "settings_avatar_create": body(
+            AvatarUploadIntentCreate(
+                declared_format="png",
+                expected_size_bytes=len(avatar_bytes),
+                expected_sha256=hashlib.sha256(avatar_bytes).hexdigest(),
+            )
+        ),
+        "settings_avatar_complete": body(
+            AvatarUploadComplete(expected_revision=1, image_base64=avatar_base64)
+        ),
+        "settings_avatar_delete": body(AvatarDelete(expected_revision=2)),
+        "settings_avatar_bytes": list(avatar_bytes),
+        "settings_revision_conflict": ErrorResponse(
+            error=ApiError(
+                code=ErrorCode.REVISION_CONFLICT,
+                message="内容已更新，请重新加载",
+                details=RevisionConflictDetails(current_revision=2),
+            ),
+            meta=meta,
+        ).model_dump(mode="json"),
     }
 
 

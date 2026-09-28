@@ -1,6 +1,6 @@
 # 个人设置、模型凭据与客户端缓存
 
-状态：Draft v0.2，2026-09-23，尚未实现。本文负责个人资料、学习档案、基础偏好、设置表单、配置生效和缓存操作；注册/登录/改密/设备会话以 [账号流程](accounts.md) 为准，身份/权限/离线限制以 [认证与隔离](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准。全部 API 为未来契约，见 [API 契约](../contracts/api.md)。
+状态：设计基线 v0.2；[B2a本人资料与设置](../delivery/reviews/2026-09-28-profile-settings-acceptance.md)当期验收通过，正式Web/Android、隔离PG和最终制品视觉证据见记录。本人资料、学习档案、显示/阅读/查询预算偏好由 `/users/me/profile`、`/users/me/study-profile`、`/users/me/settings` 读写，已登录应用的设置页走这三组接口。显式登录后若 `profile_completeness` 仍缺显示名、解释语言、学习语言或时区，会进入可跳过引导；跳过不提交、不在本机记下完成。头像的校验、发布和 `private, no-store` 读取在后端可用；已登录设置页按当前资料指针读取本人 JPEG，并在有 `profile.avatar.update` 时用同一按钮提交意图与完成请求。预览页的头像按钮仍只切换字形。Windows/Android 可在登录前或设置里探测新的 HTTPS 服务地址；确认后才退出当前实例、清理本机缓存并改指向，探测不带旧凭据，连接失败保持未登录。确认后的地址保存在本机，下次启动继续使用，且不写入遥测。Web 只显示当前部署地址。B2c模型凭据、L4媒体本机容量配额及其消费者仍未交付；B2a只保存当期阅读/查询偏好，不冒充后续业务已消费。注册/登录/改密/设备会话以 [账号流程](accounts.md) 为准，身份/权限/离线限制以 [认证与隔离](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准。字段契约见 [API 契约](../contracts/api.md)。
 
 DESIGN20已确认小说章节的提前下载：在章节入口多选解析/朗读，单项或双项，生成完成后提前缓存到当前账号设备；暂停/继续和失败重试包含该受控章范围。现有容量/清理/离线租期继续适用，具体状态见[章节准备契约](../contracts/novel-preparation.md)；全局下载中心、固定保留等管理增强仍为P1，不能将已确认章节能力整体推迟到P1。
 
@@ -102,6 +102,8 @@ P0接受JPEG/PNG/WebP静态图片，初始硬上限建议5MiB、4096×4096，最
 Windows/Web使用系统文件选择器，Android使用系统图片选择器；P0不为头像申请相机权限，未来增加现场拍照需单独验证权限与临时文件清理。三端裁剪只是预览建议，不能替代服务端重新处理；选择或裁剪失败保留旧头像并允许重试。
 
 流程为申请本人avatar用途的临时UploadIntent → 直传staging对象 → 完成接口验证摘要/大小/解码 → 发布不可变AvatarAsset（purpose=avatar的FileObject专用投影）→ 在profile_revision事务中替换当前指针。重复完成/重试只发布一次；过大、格式不支持、解码失败和revision冲突使用稳定错误码分别反馈，任何失败都不改变旧头像，孤立临时对象按期限回收。删除头像只提交资料指针变更，旧资产在没有活动资料/审计保留引用后受控GC。
+
+当前实现的完成请求是 `application/json`，正文为 `expected_revision` 与标准 base64 的 `image_base64`，从而沿用现有 JSON 写保护。图片格式以上传意图中的 `declared_format` 对照实际魔数，不一致、SVG、动画、解码失败或超限都不替换旧头像。预签名直传、材料对象存储和容量预留账本尚未接入；成品字节与 `file_objects` 同行保存，`GET /users/me/avatar` 在每次会话和 `profile.read` 校验后返回，并固定 `Cache-Control: private, no-store`。重复完成只发布一次。删除只清空资料指针，并把旧对象标为延迟回收。
 
 头像读取每次经过当前会话和profile.read校验，P0响应固定使用 `Cache-Control: private, no-store`，不发送可被共享/浏览器HTTP缓存复用的长期URL或仅按数字revision生成的跨账号ETag。Windows/Android在成功鉴权取得字节后可维护应用管理的副本，Web首版只用当前AccountScope内存副本；两者都按instance/user/avatar_asset摘要或avatar_revision分区并在退出、换账号、撤权或revision变化时失效。同一路径 `/users/me/avatar` 从A切到B必须重新请求并显示B或空头像，不能命中A的浏览器缓存；缓存优化若以后改用条件请求，必须另立owner绑定验证器、重新鉴权和撤权语义。
 

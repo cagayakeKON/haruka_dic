@@ -39,6 +39,11 @@ CLIENT_EVENTS = frozenset(
         "reading.chapter.opened",
         "explanation.requested",
         "collection.saved",
+        "profile.updated",
+        "study_profile.updated",
+        "settings.updated",
+        "profile.avatar.updated",
+        "profile.avatar.deleted",
         "http.completed",
         "http.failed",
         "telemetry.delivery.recovered",
@@ -52,10 +57,19 @@ CLIENT_EVENTS = frozenset(
         "cache.download",
         "cache.evicted",
         "schema.migration",
+        "connection.probed",
+        "account.scope.changed",
     }
 )
 ANONYMOUS_EVENTS = frozenset(
-    {"app.started", "app.crash.capture", "auth.register.submitted", "auth.login.result"}
+    {
+        "app.started",
+        "app.crash.capture",
+        "auth.register.submitted",
+        "auth.login.result",
+        "connection.probed",
+        "account.scope.changed",
+    }
 )
 CLIENT_EVENT_ATTRIBUTES: dict[str, frozenset[str]] = {
     "app.started": frozenset({"duration_ms"}),
@@ -71,6 +85,11 @@ CLIENT_EVENT_ATTRIBUTES: dict[str, frozenset[str]] = {
     "reading.chapter.opened": frozenset({"material_type", "duration_ms"}),
     "explanation.requested": frozenset({"target_kind", "duration_ms"}),
     "collection.saved": frozenset({"card_type", "result", "duration_ms"}),
+    "profile.updated": frozenset(),
+    "study_profile.updated": frozenset(),
+    "settings.updated": frozenset(),
+    "profile.avatar.updated": frozenset(),
+    "profile.avatar.deleted": frozenset(),
     "http.completed": frozenset({"status_code", "duration_ms", "retry_count"}),
     "http.failed": frozenset({"status_code", "duration_ms", "retry_count", "error_category"}),
     "telemetry.delivery.recovered": frozenset({"dropped_count", "drop_reason"}),
@@ -84,6 +103,8 @@ CLIENT_EVENT_ATTRIBUTES: dict[str, frozenset[str]] = {
     "cache.download": frozenset({"result"}),
     "cache.evicted": frozenset({"result"}),
     "schema.migration": frozenset({"result"}),
+    "connection.probed": frozenset({"result", "duration_ms"}),
+    "account.scope.changed": frozenset({"reason", "result"}),
 }
 
 
@@ -103,6 +124,7 @@ class TelemetryAttributes(ApiModel):
             "materials",
             "chapter",
             "collection",
+            "settings",
             "admin_policy",
         ]
         | None
@@ -129,6 +151,7 @@ class TelemetryAttributes(ApiModel):
             "quota_exceeded",
             "audio_unavailable",
             "invalid_payload",
+            "instance_switch",
         ]
         | None
     ) = None

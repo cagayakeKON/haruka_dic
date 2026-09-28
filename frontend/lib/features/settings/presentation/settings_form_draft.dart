@@ -28,6 +28,24 @@ void resetSettingsFormDraft(PreviewFixtureStore store, SettingsGroup group) {
   store.editSettingsDraft((_) {});
 }
 
+/// Accept the newest server revision without discarding fields the user edited.
+/// The next save applies the visible draft against that revision.
+void rebaseSettingsFormDraft(
+  PreviewFixtureStore store,
+  CachedSettingsRepository repository,
+  SettingsGroup group,
+) {
+  final snapshot = repository.snapshot(group);
+  final baseline = _baselines[store]?[group];
+  if (snapshot == null || baseline == null || baseline.scope != repository.scopeGeneration) return;
+  _baselines[store]![group] = _DraftBaseline(
+    repository.scopeGeneration,
+    snapshot.revision,
+    _normalized(group, snapshot.fields),
+  );
+  store.editSettingsDraft((_) {});
+}
+
 void hydrateSettingsFormDraft(
   PreviewFixtureStore store,
   CachedSettingsRepository repository,
@@ -72,7 +90,7 @@ Map<String, Object> _normalized(SettingsGroup group, Map<String, Object?> fields
             .toSet(),
         'learningLanguages': {for (final row in targets) row['language_tag'] as String},
         'activeLanguage': active,
-        'explanationLanguage': fields['explanation_language'] as String? ?? 'zh-Hans',
+        'explanationLanguage': fields['explanation_language'] as String? ?? '',
         'learningLevel': switch (activeRow?['self_assessed_level']) {
           'unknown' => 'unset',
           'elementary' => 'basic',

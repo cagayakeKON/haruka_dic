@@ -9,6 +9,12 @@
   "status": "rejected-prototype",
   "adopted_solution": "handwritten-dto-transition",
   "decision_deadline": "before-B2",
+  "long_term_decision": {
+    "date": "2026-09-28",
+    "status": "adopted",
+    "strategy": "centralized-handwritten-dto-with-generated-cross-language-samples",
+    "decision_record": "tools/codegen/dart-api/README.md"
+  },
   "properties": {
     "pubName": "haruka",
     "pubLibrary": "haruka_api",

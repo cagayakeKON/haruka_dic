@@ -4,7 +4,27 @@ import pytest
 from pydantic import ValidationError
 
 from app.main import create_app
-from app.schemas.responses import PageResponse, SuccessResponse
+from app.schemas.avatar import (
+    AvatarDelete,
+    AvatarUploadComplete,
+    AvatarUploadIntentCreate,
+    AvatarUploadIntentRead,
+)
+from app.schemas.language_capabilities import LanguageCapabilitiesRead
+from app.schemas.profile import (
+    ProfileRead,
+    ProfileUpdate,
+    SettingsRead,
+    SettingsUpdate,
+    StudyProfileRead,
+    StudyProfileUpdate,
+)
+from app.schemas.responses import (
+    ErrorResponse,
+    PageResponse,
+    RevisionConflictDetails,
+    SuccessResponse,
+)
 from tests.support.api_compatibility import (
     CompatibilityRead,
     compatibility_openapi,
@@ -30,3 +50,38 @@ def test_samples_preserve_numeric_and_optional_protocol_semantics() -> None:
     assert all(
         not path.startswith("/samples/") for path in create_app(schema_only=True).openapi()["paths"]
     )
+
+
+def test_settings_cross_language_samples_are_validated_wire_shapes() -> None:
+    samples = compatibility_samples()
+    for key in ("settings_profile_empty", "settings_profile_present"):
+        SuccessResponse[ProfileRead].model_validate(samples[key])
+    for key in ("settings_study_empty", "settings_study_present"):
+        SuccessResponse[StudyProfileRead].model_validate(samples[key])
+    for key in ("settings_preferences_empty", "settings_preferences_present"):
+        SuccessResponse[SettingsRead].model_validate(samples[key])
+    SuccessResponse[LanguageCapabilitiesRead].model_validate(
+        samples["settings_language_capabilities"]
+    )
+    SuccessResponse[AvatarUploadIntentRead].model_validate(samples["settings_avatar_intent"])
+    ProfileUpdate.model_validate(samples["settings_profile_patch_null"])
+    StudyProfileUpdate.model_validate(samples["settings_study_patch"])
+    SettingsUpdate.model_validate(samples["settings_preferences_patch"])
+    AvatarUploadIntentCreate.model_validate(samples["settings_avatar_create"])
+    AvatarUploadComplete.model_validate(samples["settings_avatar_complete"])
+    AvatarDelete.model_validate(samples["settings_avatar_delete"])
+    assert ProfileUpdate.model_validate(samples["settings_profile_patch_null"]).fields.model_dump(
+        exclude_unset=True
+    ) == {"birth_year": None}
+    assert (
+        SettingsUpdate.model_validate(samples["settings_preferences_patch"]).fields.timezone is None
+    )
+    assert (
+        SuccessResponse[SettingsRead]
+        .model_validate(samples["settings_preferences_present"])
+        .data.reading_font_size
+        == 18
+    )
+    details = ErrorResponse.model_validate(samples["settings_revision_conflict"]).error.details
+    assert isinstance(details, RevisionConflictDetails)
+    assert details.current_revision == 2

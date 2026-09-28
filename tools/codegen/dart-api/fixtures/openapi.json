@@ -216,6 +216,115 @@
         "title": "AuthzVersionRead",
         "type": "object"
       },
+      "AvatarDelete": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AvatarDelete",
+        "type": "object"
+      },
+      "AvatarUploadComplete": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "image_base64": {
+            "maxLength": 6990508,
+            "minLength": 4,
+            "title": "Image Base64",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "image_base64"
+        ],
+        "title": "AvatarUploadComplete",
+        "type": "object"
+      },
+      "AvatarUploadIntentCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "declared_format": {
+            "enum": [
+              "jpeg",
+              "png",
+              "webp"
+            ],
+            "title": "Declared Format",
+            "type": "string"
+          },
+          "expected_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Expected Sha256",
+            "type": "string"
+          },
+          "expected_size_bytes": {
+            "maximum": 5242880.0,
+            "minimum": 1.0,
+            "title": "Expected Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "declared_format",
+          "expected_size_bytes",
+          "expected_sha256"
+        ],
+        "title": "AvatarUploadIntentCreate",
+        "type": "object"
+      },
+      "AvatarUploadIntentRead": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_formats": {
+            "items": {
+              "enum": [
+                "jpeg",
+                "png",
+                "webp"
+              ],
+              "type": "string"
+            },
+            "title": "Accepted Formats",
+            "type": "array"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_size_bytes": {
+            "title": "Max Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "expires_at",
+          "max_size_bytes",
+          "accepted_formats"
+        ],
+        "title": "AvatarUploadIntentRead",
+        "type": "object"
+      },
       "ChoiceCard": {
         "additionalProperties": false,
         "properties": {
@@ -471,6 +580,8 @@
           "ACCESS_EXPIRED",
           "SESSION_REVOKED",
           "SESSION_INVALID",
+          "AUTH_SCOPE_REQUIRED",
+          "AUTH_SCOPE_CHANGED",
           "PERMISSION_DENIED",
           "CSRF_FAILED",
           "RESOURCE_NOT_FOUND",
@@ -619,6 +730,68 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LanguageCapabilitiesRead": {
+        "additionalProperties": false,
+        "properties": {
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/LanguageCapability"
+            },
+            "title": "Languages",
+            "type": "array"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "languages"
+        ],
+        "title": "LanguageCapabilitiesRead",
+        "type": "object"
+      },
+      "LanguageCapability": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "explanation_supported": {
+            "title": "Explanation Supported",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "learning_supported": {
+            "title": "Learning Supported",
+            "type": "boolean"
+          },
+          "native_supported": {
+            "title": "Native Supported",
+            "type": "boolean"
+          },
+          "ui_supported": {
+            "title": "Ui Supported",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "ui_supported",
+          "learning_supported",
+          "explanation_supported",
+          "native_supported"
+        ],
+        "title": "LanguageCapability",
         "type": "object"
       },
       "MailAccepted": {
@@ -961,6 +1134,240 @@
         "title": "PermissionRead",
         "type": "object"
       },
+      "ProfileCompleteness": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "boolean"
+          },
+          "explanation_language": {
+            "title": "Explanation Language",
+            "type": "boolean"
+          },
+          "target_language": {
+            "title": "Target Language",
+            "type": "boolean"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "display_name",
+          "explanation_language",
+          "target_language",
+          "timezone"
+        ],
+        "title": "ProfileCompleteness",
+        "type": "object"
+      },
+      "ProfileFields": {
+        "additionalProperties": false,
+        "properties": {
+          "birth_year": {
+            "anyOf": [
+              {
+                "minimum": 1900.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Year"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "gender_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unspecified",
+                  "female",
+                  "male",
+                  "non_binary",
+                  "self_described",
+                  "prefer_not_to_say"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Code"
+          },
+          "gender_self_description": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Self Description"
+          },
+          "use_optional_demographics_for_ai": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Optional Demographics For Ai"
+          }
+        },
+        "title": "ProfileFields",
+        "type": "object"
+      },
+      "ProfileRead": {
+        "additionalProperties": false,
+        "properties": {
+          "age_band": {
+            "anyOf": [
+              {
+                "enum": [
+                  "under_18",
+                  "18_29",
+                  "30_49",
+                  "50_plus"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Band"
+          },
+          "avatar_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Asset Id"
+          },
+          "avatar_revision": {
+            "minimum": 0.0,
+            "title": "Avatar Revision",
+            "type": "integer"
+          },
+          "birth_year": {
+            "anyOf": [
+              {
+                "minimum": 1900.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Year"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "gender_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unspecified",
+                  "female",
+                  "male",
+                  "non_binary",
+                  "self_described",
+                  "prefer_not_to_say"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Code"
+          },
+          "gender_self_description": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Self Description"
+          },
+          "profile_completeness": {
+            "$ref": "#/components/schemas/ProfileCompleteness"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "use_optional_demographics_for_ai": {
+            "title": "Use Optional Demographics For Ai",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revision",
+          "use_optional_demographics_for_ai",
+          "avatar_revision",
+          "profile_completeness"
+        ],
+        "title": "ProfileRead",
+        "type": "object"
+      },
+      "ProfileUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/ProfileFields"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fields"
+        ],
+        "title": "ProfileUpdate",
+        "type": "object"
+      },
       "ResolvedCard": {
         "additionalProperties": false,
         "properties": {
@@ -1114,6 +1521,271 @@
         "title": "SessionSummary",
         "type": "object"
       },
+      "SettingsFields": {
+        "additionalProperties": false,
+        "properties": {
+          "playback_speed": {
+            "anyOf": [
+              {
+                "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playback Speed"
+          },
+          "query_context_budget_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Context Budget Tokens"
+          },
+          "reading_font_family": {
+            "anyOf": [
+              {
+                "enum": [
+                  "serif",
+                  "sans"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Family"
+          },
+          "reading_font_size": {
+            "anyOf": [
+              {
+                "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Size"
+          },
+          "reading_line_height": {
+            "anyOf": [
+              {
+                "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Line Height"
+          },
+          "reading_theme": {
+            "anyOf": [
+              {
+                "enum": [
+                  "light",
+                  "dark",
+                  "sepia"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Theme"
+          },
+          "reduce_motion": {
+            "anyOf": [
+              {
+                "enum": [
+                  "system",
+                  "on"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reduce Motion"
+          },
+          "theme_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "system",
+                  "light",
+                  "dark"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Mode"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "title": "SettingsFields",
+        "type": "object"
+      },
+      "SettingsRead": {
+        "additionalProperties": false,
+        "properties": {
+          "playback_speed": {
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+            "title": "Playback Speed",
+            "type": "string"
+          },
+          "query_context_budget_tokens": {
+            "maximum": 64000.0,
+            "minimum": 1000.0,
+            "title": "Query Context Budget Tokens",
+            "type": "integer"
+          },
+          "reading_font_family": {
+            "anyOf": [
+              {
+                "enum": [
+                  "serif",
+                  "sans"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Family"
+          },
+          "reading_font_size": {
+            "anyOf": [
+              {
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Size"
+          },
+          "reading_line_height": {
+            "anyOf": [
+              {
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Line Height"
+          },
+          "reading_theme": {
+            "anyOf": [
+              {
+                "enum": [
+                  "light",
+                  "dark",
+                  "sepia"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Theme"
+          },
+          "reduce_motion": {
+            "enum": [
+              "system",
+              "on"
+            ],
+            "title": "Reduce Motion",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "theme_mode": {
+            "enum": [
+              "system",
+              "light",
+              "dark"
+            ],
+            "title": "Theme Mode",
+            "type": "string"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "ui_locale": {
+            "const": "zh-Hans",
+            "title": "Ui Locale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "ui_locale",
+          "theme_mode",
+          "reduce_motion",
+          "playback_speed",
+          "query_context_budget_tokens"
+        ],
+        "title": "SettingsRead",
+        "type": "object"
+      },
+      "SettingsUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/SettingsFields"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fields"
+        ],
+        "title": "SettingsUpdate",
+        "type": "object"
+      },
       "SourceSpan": {
         "additionalProperties": false,
         "properties": {
@@ -1139,6 +1811,167 @@
           "end"
         ],
         "title": "SourceSpan",
+        "type": "object"
+      },
+      "StudyFields": {
+        "additionalProperties": false,
+        "properties": {
+          "active_target_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Target Language"
+          },
+          "explanation_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "zh-Hans",
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation Language"
+          },
+          "native_languages": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "zh-Hans",
+                    "zh-Hant",
+                    "ja",
+                    "en",
+                    "ko"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Languages"
+          },
+          "target_languages": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TargetLanguageInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Languages"
+          }
+        },
+        "title": "StudyFields",
+        "type": "object"
+      },
+      "StudyProfileRead": {
+        "additionalProperties": false,
+        "properties": {
+          "active_target_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Target Language"
+          },
+          "explanation_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "zh-Hans",
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation Language"
+          },
+          "native_languages": {
+            "items": {
+              "enum": [
+                "zh-Hans",
+                "zh-Hant",
+                "ja",
+                "en",
+                "ko"
+              ],
+              "type": "string"
+            },
+            "title": "Native Languages",
+            "type": "array"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "target_languages": {
+            "items": {
+              "$ref": "#/components/schemas/TargetLanguageRead"
+            },
+            "title": "Target Languages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "revision",
+          "native_languages",
+          "target_languages"
+        ],
+        "title": "StudyProfileRead",
+        "type": "object"
+      },
+      "StudyProfileUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/StudyFields"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fields"
+        ],
+        "title": "StudyProfileUpdate",
         "type": "object"
       },
       "SuccessResponse_AccessRead_": {
@@ -1239,6 +2072,23 @@
         "title": "SuccessResponse[Annotated[Union[WebAuthenticated, ActivationRequired], FieldInfo(annotation=NoneType, required=True, discriminator='state')]]",
         "type": "object"
       },
+      "SuccessResponse_AvatarUploadIntentRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AvatarUploadIntentRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[AvatarUploadIntentRead]",
+        "type": "object"
+      },
       "SuccessResponse_CollectionRead_": {
         "additionalProperties": false,
         "properties": {
@@ -1307,6 +2157,23 @@
         "title": "SuccessResponse[ExplanationResolveRead]",
         "type": "object"
       },
+      "SuccessResponse_LanguageCapabilitiesRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LanguageCapabilitiesRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[LanguageCapabilitiesRead]",
+        "type": "object"
+      },
       "SuccessResponse_MailAccepted_": {
         "additionalProperties": false,
         "properties": {
@@ -1324,6 +2191,57 @@
         "title": "SuccessResponse[MailAccepted]",
         "type": "object"
       },
+      "SuccessResponse_ProfileRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProfileRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[ProfileRead]",
+        "type": "object"
+      },
+      "SuccessResponse_SettingsRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SettingsRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[SettingsRead]",
+        "type": "object"
+      },
+      "SuccessResponse_StudyProfileRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StudyProfileRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[StudyProfileRead]",
+        "type": "object"
+      },
       "SuccessResponse_WordCardRead_": {
         "additionalProperties": false,
         "properties": {
@@ -1339,6 +2257,101 @@
           "meta"
         ],
         "title": "SuccessResponse[WordCardRead]",
+        "type": "object"
+      },
+      "TargetLanguageInput": {
+        "additionalProperties": false,
+        "properties": {
+          "language_tag": {
+            "enum": [
+              "ja",
+              "en"
+            ],
+            "title": "Language Tag",
+            "type": "string"
+          },
+          "learning_goals": {
+            "items": {
+              "enum": [
+                "reading",
+                "textbook",
+                "exam",
+                "listening",
+                "speaking",
+                "writing",
+                "vocabulary",
+                "grammar"
+              ],
+              "type": "string"
+            },
+            "title": "Learning Goals",
+            "type": "array"
+          },
+          "self_assessed_level": {
+            "default": "unknown",
+            "enum": [
+              "unknown",
+              "beginner",
+              "elementary",
+              "intermediate",
+              "advanced"
+            ],
+            "title": "Self Assessed Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language_tag"
+        ],
+        "title": "TargetLanguageInput",
+        "type": "object"
+      },
+      "TargetLanguageRead": {
+        "additionalProperties": false,
+        "properties": {
+          "language_tag": {
+            "enum": [
+              "ja",
+              "en"
+            ],
+            "title": "Language Tag",
+            "type": "string"
+          },
+          "learning_goals": {
+            "items": {
+              "enum": [
+                "reading",
+                "textbook",
+                "exam",
+                "listening",
+                "speaking",
+                "writing",
+                "vocabulary",
+                "grammar"
+              ],
+              "type": "string"
+            },
+            "title": "Learning Goals",
+            "type": "array"
+          },
+          "self_assessed_level": {
+            "enum": [
+              "unknown",
+              "beginner",
+              "elementary",
+              "intermediate",
+              "advanced"
+            ],
+            "title": "Self Assessed Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language_tag",
+          "self_assessed_level",
+          "learning_goals"
+        ],
+        "title": "TargetLanguageRead",
         "type": "object"
       },
       "TextCard": {
@@ -1930,6 +2943,300 @@
           }
         },
         "summary": "Read Sample"
+      }
+    },
+    "/samples/settings/avatar": {
+      "delete": {
+        "operationId": "avatar_delete_samples_settings_avatar_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarDelete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Avatar Delete"
+      }
+    },
+    "/samples/settings/avatar-complete": {
+      "post": {
+        "operationId": "avatar_complete_samples_settings_avatar_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarUploadComplete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Avatar Complete"
+      }
+    },
+    "/samples/settings/avatar-intent": {
+      "post": {
+        "operationId": "avatar_intent_samples_settings_avatar_intent_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarUploadIntentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_AvatarUploadIntentRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Avatar Intent"
+      }
+    },
+    "/samples/settings/languages": {
+      "get": {
+        "operationId": "languages_read_samples_settings_languages_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_LanguageCapabilitiesRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Languages Read"
+      }
+    },
+    "/samples/settings/preferences": {
+      "get": {
+        "operationId": "settings_read_samples_settings_preferences_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_SettingsRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Settings Read"
+      },
+      "patch": {
+        "operationId": "settings_update_samples_settings_preferences_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_SettingsRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Settings Update"
+      }
+    },
+    "/samples/settings/profile": {
+      "get": {
+        "operationId": "profile_read_samples_settings_profile_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Profile Read"
+      },
+      "patch": {
+        "operationId": "profile_update_samples_settings_profile_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Profile Update"
+      }
+    },
+    "/samples/settings/study": {
+      "get": {
+        "operationId": "study_read_samples_settings_study_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_StudyProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Study Read"
+      },
+      "patch": {
+        "operationId": "study_update_samples_settings_study_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_StudyProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Study Update"
       }
     },
     "/samples/upload": {

@@ -372,6 +372,266 @@
         "title": "AuthzVersionRead",
         "type": "object"
       },
+      "AvatarDelete": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AvatarDelete",
+        "type": "object"
+      },
+      "AvatarUploadComplete": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "image_base64": {
+            "maxLength": 6990508,
+            "minLength": 4,
+            "title": "Image Base64",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "image_base64"
+        ],
+        "title": "AvatarUploadComplete",
+        "type": "object"
+      },
+      "AvatarUploadIntentCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "declared_format": {
+            "enum": [
+              "jpeg",
+              "png",
+              "webp"
+            ],
+            "title": "Declared Format",
+            "type": "string"
+          },
+          "expected_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Expected Sha256",
+            "type": "string"
+          },
+          "expected_size_bytes": {
+            "maximum": 5242880.0,
+            "minimum": 1.0,
+            "title": "Expected Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "declared_format",
+          "expected_size_bytes",
+          "expected_sha256"
+        ],
+        "title": "AvatarUploadIntentCreate",
+        "type": "object"
+      },
+      "AvatarUploadIntentRead": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_formats": {
+            "items": {
+              "enum": [
+                "jpeg",
+                "png",
+                "webp"
+              ],
+              "type": "string"
+            },
+            "title": "Accepted Formats",
+            "type": "array"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_size_bytes": {
+            "title": "Max Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "expires_at",
+          "max_size_bytes",
+          "accepted_formats"
+        ],
+        "title": "AvatarUploadIntentRead",
+        "type": "object"
+      },
+      "CacheAuthzVersion": {
+        "additionalProperties": false,
+        "properties": {
+          "policy": {
+            "title": "Policy",
+            "type": "integer"
+          },
+          "user": {
+            "title": "User",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user",
+          "policy"
+        ],
+        "title": "CacheAuthzVersion",
+        "type": "object"
+      },
+      "CacheValidationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {},
+            "maxItems": 50,
+            "title": "Items",
+            "type": "array"
+          },
+          "protocol_version": {
+            "maximum": 1.0,
+            "minimum": 1.0,
+            "title": "Protocol Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "protocol_version",
+          "items"
+        ],
+        "title": "CacheValidationRequest",
+        "type": "object"
+      },
+      "CacheValidationResult": {
+        "additionalProperties": false,
+        "properties": {
+          "grant_revoked": {
+            "default": false,
+            "title": "Grant Revoked",
+            "type": "boolean"
+          },
+          "offline_grant": {
+            "title": "Offline Grant",
+            "type": "null"
+          },
+          "read_ref": {
+            "title": "Read Ref",
+            "type": "null"
+          },
+          "request_ref": {
+            "format": "uuid",
+            "title": "Request Ref",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "validated_versions": {
+            "title": "Validated Versions",
+            "type": "null"
+          }
+        },
+        "required": [
+          "request_ref",
+          "state"
+        ],
+        "title": "CacheValidationResult",
+        "type": "object"
+      },
+      "CacheValidationScope": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
+          "authz_version": {
+            "$ref": "#/components/schemas/CacheAuthzVersion"
+          },
+          "instance_id": {
+            "title": "Instance Id",
+            "type": "string"
+          },
+          "security_epoch": {
+            "title": "Security Epoch",
+            "type": "integer"
+          },
+          "session_ref": {
+            "format": "uuid",
+            "title": "Session Ref",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance_id",
+          "user_id",
+          "audience",
+          "session_ref",
+          "security_epoch",
+          "authz_version"
+        ],
+        "title": "CacheValidationScope",
+        "type": "object"
+      },
+      "ClientCacheValidation": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CacheValidationResult"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "protocol_version": {
+            "title": "Protocol Version",
+            "type": "integer"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/CacheValidationScope"
+          },
+          "server_time": {
+            "format": "date-time",
+            "title": "Server Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "protocol_version",
+          "server_time",
+          "scope",
+          "items"
+        ],
+        "title": "ClientCacheValidation",
+        "type": "object"
+      },
       "CollectionCreate": {
         "additionalProperties": false,
         "properties": {
@@ -702,6 +962,68 @@
           }
         },
         "title": "HealthRead",
+        "type": "object"
+      },
+      "LanguageCapabilitiesRead": {
+        "additionalProperties": false,
+        "properties": {
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/LanguageCapability"
+            },
+            "title": "Languages",
+            "type": "array"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "languages"
+        ],
+        "title": "LanguageCapabilitiesRead",
+        "type": "object"
+      },
+      "LanguageCapability": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "explanation_supported": {
+            "title": "Explanation Supported",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "learning_supported": {
+            "title": "Learning Supported",
+            "type": "boolean"
+          },
+          "native_supported": {
+            "title": "Native Supported",
+            "type": "boolean"
+          },
+          "ui_supported": {
+            "title": "Ui Supported",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "ui_supported",
+          "learning_supported",
+          "explanation_supported",
+          "native_supported"
+        ],
+        "title": "LanguageCapability",
         "type": "object"
       },
       "LoginRequest": {
@@ -1352,6 +1674,240 @@
         "title": "PermissionRead",
         "type": "object"
       },
+      "ProfileCompleteness": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "boolean"
+          },
+          "explanation_language": {
+            "title": "Explanation Language",
+            "type": "boolean"
+          },
+          "target_language": {
+            "title": "Target Language",
+            "type": "boolean"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "display_name",
+          "explanation_language",
+          "target_language",
+          "timezone"
+        ],
+        "title": "ProfileCompleteness",
+        "type": "object"
+      },
+      "ProfileFields": {
+        "additionalProperties": false,
+        "properties": {
+          "birth_year": {
+            "anyOf": [
+              {
+                "minimum": 1900.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Year"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "gender_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unspecified",
+                  "female",
+                  "male",
+                  "non_binary",
+                  "self_described",
+                  "prefer_not_to_say"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Code"
+          },
+          "gender_self_description": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Self Description"
+          },
+          "use_optional_demographics_for_ai": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Optional Demographics For Ai"
+          }
+        },
+        "title": "ProfileFields",
+        "type": "object"
+      },
+      "ProfileRead": {
+        "additionalProperties": false,
+        "properties": {
+          "age_band": {
+            "anyOf": [
+              {
+                "enum": [
+                  "under_18",
+                  "18_29",
+                  "30_49",
+                  "50_plus"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Band"
+          },
+          "avatar_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Asset Id"
+          },
+          "avatar_revision": {
+            "minimum": 0.0,
+            "title": "Avatar Revision",
+            "type": "integer"
+          },
+          "birth_year": {
+            "anyOf": [
+              {
+                "minimum": 1900.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Year"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "gender_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unspecified",
+                  "female",
+                  "male",
+                  "non_binary",
+                  "self_described",
+                  "prefer_not_to_say"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Code"
+          },
+          "gender_self_description": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender Self Description"
+          },
+          "profile_completeness": {
+            "$ref": "#/components/schemas/ProfileCompleteness"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "use_optional_demographics_for_ai": {
+            "title": "Use Optional Demographics For Ai",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revision",
+          "use_optional_demographics_for_ai",
+          "avatar_revision",
+          "profile_completeness"
+        ],
+        "title": "ProfileRead",
+        "type": "object"
+      },
+      "ProfileUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/ProfileFields"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fields"
+        ],
+        "title": "ProfileUpdate",
+        "type": "object"
+      },
       "RecoveryCompleteRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1587,6 +2143,271 @@
         "title": "SessionSummary",
         "type": "object"
       },
+      "SettingsFields": {
+        "additionalProperties": false,
+        "properties": {
+          "playback_speed": {
+            "anyOf": [
+              {
+                "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playback Speed"
+          },
+          "query_context_budget_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Context Budget Tokens"
+          },
+          "reading_font_family": {
+            "anyOf": [
+              {
+                "enum": [
+                  "serif",
+                  "sans"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Family"
+          },
+          "reading_font_size": {
+            "anyOf": [
+              {
+                "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Size"
+          },
+          "reading_line_height": {
+            "anyOf": [
+              {
+                "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Line Height"
+          },
+          "reading_theme": {
+            "anyOf": [
+              {
+                "enum": [
+                  "light",
+                  "dark",
+                  "sepia"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Theme"
+          },
+          "reduce_motion": {
+            "anyOf": [
+              {
+                "enum": [
+                  "system",
+                  "on"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reduce Motion"
+          },
+          "theme_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "system",
+                  "light",
+                  "dark"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Mode"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "title": "SettingsFields",
+        "type": "object"
+      },
+      "SettingsRead": {
+        "additionalProperties": false,
+        "properties": {
+          "playback_speed": {
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+            "title": "Playback Speed",
+            "type": "string"
+          },
+          "query_context_budget_tokens": {
+            "maximum": 64000.0,
+            "minimum": 1000.0,
+            "title": "Query Context Budget Tokens",
+            "type": "integer"
+          },
+          "reading_font_family": {
+            "anyOf": [
+              {
+                "enum": [
+                  "serif",
+                  "sans"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Family"
+          },
+          "reading_font_size": {
+            "anyOf": [
+              {
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Font Size"
+          },
+          "reading_line_height": {
+            "anyOf": [
+              {
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Line Height"
+          },
+          "reading_theme": {
+            "anyOf": [
+              {
+                "enum": [
+                  "light",
+                  "dark",
+                  "sepia"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reading Theme"
+          },
+          "reduce_motion": {
+            "enum": [
+              "system",
+              "on"
+            ],
+            "title": "Reduce Motion",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "theme_mode": {
+            "enum": [
+              "system",
+              "light",
+              "dark"
+            ],
+            "title": "Theme Mode",
+            "type": "string"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "ui_locale": {
+            "const": "zh-Hans",
+            "title": "Ui Locale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "ui_locale",
+          "theme_mode",
+          "reduce_motion",
+          "playback_speed",
+          "query_context_budget_tokens"
+        ],
+        "title": "SettingsRead",
+        "type": "object"
+      },
+      "SettingsUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/SettingsFields"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fields"
+        ],
+        "title": "SettingsUpdate",
+        "type": "object"
+      },
       "SourceSpan": {
         "additionalProperties": false,
         "properties": {
@@ -1612,6 +2433,167 @@
           "end"
         ],
         "title": "SourceSpan",
+        "type": "object"
+      },
+      "StudyFields": {
+        "additionalProperties": false,
+        "properties": {
+          "active_target_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Target Language"
+          },
+          "explanation_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "zh-Hans",
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation Language"
+          },
+          "native_languages": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "zh-Hans",
+                    "zh-Hant",
+                    "ja",
+                    "en",
+                    "ko"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Languages"
+          },
+          "target_languages": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TargetLanguageInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Languages"
+          }
+        },
+        "title": "StudyFields",
+        "type": "object"
+      },
+      "StudyProfileRead": {
+        "additionalProperties": false,
+        "properties": {
+          "active_target_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Target Language"
+          },
+          "explanation_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "zh-Hans",
+                  "ja",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation Language"
+          },
+          "native_languages": {
+            "items": {
+              "enum": [
+                "zh-Hans",
+                "zh-Hant",
+                "ja",
+                "en",
+                "ko"
+              ],
+              "type": "string"
+            },
+            "title": "Native Languages",
+            "type": "array"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "target_languages": {
+            "items": {
+              "$ref": "#/components/schemas/TargetLanguageRead"
+            },
+            "title": "Target Languages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "revision",
+          "native_languages",
+          "target_languages"
+        ],
+        "title": "StudyProfileRead",
+        "type": "object"
+      },
+      "StudyProfileUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/StudyFields"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fields"
+        ],
+        "title": "StudyProfileUpdate",
         "type": "object"
       },
       "SuccessResponse_AccessRead_": {
@@ -1763,6 +2745,40 @@
         "title": "SuccessResponse[AuthPolicyRead]",
         "type": "object"
       },
+      "SuccessResponse_AvatarUploadIntentRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AvatarUploadIntentRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[AvatarUploadIntentRead]",
+        "type": "object"
+      },
+      "SuccessResponse_ClientCacheValidation_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ClientCacheValidation"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[ClientCacheValidation]",
+        "type": "object"
+      },
       "SuccessResponse_CollectionRead_": {
         "additionalProperties": false,
         "properties": {
@@ -1829,6 +2845,23 @@
           "meta"
         ],
         "title": "SuccessResponse[HealthRead]",
+        "type": "object"
+      },
+      "SuccessResponse_LanguageCapabilitiesRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LanguageCapabilitiesRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[LanguageCapabilitiesRead]",
         "type": "object"
       },
       "SuccessResponse_MailAccepted_": {
@@ -1899,6 +2932,57 @@
         "title": "SuccessResponse[NovelChapterRead]",
         "type": "object"
       },
+      "SuccessResponse_ProfileRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProfileRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[ProfileRead]",
+        "type": "object"
+      },
+      "SuccessResponse_SettingsRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SettingsRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[SettingsRead]",
+        "type": "object"
+      },
+      "SuccessResponse_StudyProfileRead_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StudyProfileRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[StudyProfileRead]",
+        "type": "object"
+      },
       "SuccessResponse_TelemetryBatchRead_": {
         "additionalProperties": false,
         "properties": {
@@ -1931,6 +3015,101 @@
           "meta"
         ],
         "title": "SuccessResponse[WebAuthenticated]",
+        "type": "object"
+      },
+      "TargetLanguageInput": {
+        "additionalProperties": false,
+        "properties": {
+          "language_tag": {
+            "enum": [
+              "ja",
+              "en"
+            ],
+            "title": "Language Tag",
+            "type": "string"
+          },
+          "learning_goals": {
+            "items": {
+              "enum": [
+                "reading",
+                "textbook",
+                "exam",
+                "listening",
+                "speaking",
+                "writing",
+                "vocabulary",
+                "grammar"
+              ],
+              "type": "string"
+            },
+            "title": "Learning Goals",
+            "type": "array"
+          },
+          "self_assessed_level": {
+            "default": "unknown",
+            "enum": [
+              "unknown",
+              "beginner",
+              "elementary",
+              "intermediate",
+              "advanced"
+            ],
+            "title": "Self Assessed Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language_tag"
+        ],
+        "title": "TargetLanguageInput",
+        "type": "object"
+      },
+      "TargetLanguageRead": {
+        "additionalProperties": false,
+        "properties": {
+          "language_tag": {
+            "enum": [
+              "ja",
+              "en"
+            ],
+            "title": "Language Tag",
+            "type": "string"
+          },
+          "learning_goals": {
+            "items": {
+              "enum": [
+                "reading",
+                "textbook",
+                "exam",
+                "listening",
+                "speaking",
+                "writing",
+                "vocabulary",
+                "grammar"
+              ],
+              "type": "string"
+            },
+            "title": "Learning Goals",
+            "type": "array"
+          },
+          "self_assessed_level": {
+            "enum": [
+              "unknown",
+              "beginner",
+              "elementary",
+              "intermediate",
+              "advanced"
+            ],
+            "title": "Self Assessed Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language_tag",
+          "self_assessed_level",
+          "learning_goals"
+        ],
+        "title": "TargetLanguageRead",
         "type": "object"
       },
       "TelemetryBatchRead": {
@@ -3736,7 +4915,8 @@
                                         "browser_storage_unsafe",
                                         "quota_exceeded",
                                         "audio_unavailable",
-                                        "invalid_payload"
+                                        "invalid_payload",
+                                        "instance_switch"
                                       ],
                                       "type": "string"
                                     },
@@ -3796,6 +4976,7 @@
                                         "materials",
                                         "chapter",
                                         "collection",
+                                        "settings",
                                         "admin_policy"
                                       ],
                                       "type": "string"
@@ -7154,7 +8335,8 @@
                                         "browser_storage_unsafe",
                                         "quota_exceeded",
                                         "audio_unavailable",
-                                        "invalid_payload"
+                                        "invalid_payload",
+                                        "instance_switch"
                                       ],
                                       "type": "string"
                                     },
@@ -7214,6 +8396,7 @@
                                         "materials",
                                         "chapter",
                                         "collection",
+                                        "settings",
                                         "admin_policy"
                                       ],
                                       "type": "string"
@@ -7688,7 +8871,8 @@
                                         "browser_storage_unsafe",
                                         "quota_exceeded",
                                         "audio_unavailable",
-                                        "invalid_payload"
+                                        "invalid_payload",
+                                        "instance_switch"
                                       ],
                                       "type": "string"
                                     },
@@ -7748,6 +8932,7 @@
                                         "materials",
                                         "chapter",
                                         "collection",
+                                        "settings",
                                         "admin_policy"
                                       ],
                                       "type": "string"
@@ -8093,6 +9278,118 @@
         ]
       }
     },
+    "/api/v1/language-capabilities": {
+      "get": {
+        "operationId": "get_language_capabilities",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_LanguageCapabilitiesRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Language Capabilities",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": []
+      }
+    },
     "/api/v1/materials": {
       "get": {
         "operationId": "list_materials",
@@ -8369,6 +9666,128 @@
         "x-haruka-permissions": [
           "client.login"
         ]
+      }
+    },
+    "/api/v1/me/cache/validate": {
+      "post": {
+        "operationId": "validate_client_cache",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CacheValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ClientCacheValidation_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Validate Client Cache",
+        "tags": [
+          "client-cache"
+        ],
+        "x-haruka-permissions": []
       }
     },
     "/api/v1/meta": {
@@ -8709,6 +10128,1295 @@
           "authentication"
         ],
         "x-haruka-access": "client-identity"
+      }
+    },
+    "/api/v1/users/me/avatar": {
+      "delete": {
+        "operationId": "delete_my_avatar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarDelete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Delete My Avatar",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read",
+          "client.profile.avatar.update"
+        ]
+      },
+      "get": {
+        "operationId": "get_my_avatar",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/jpeg": {}
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "My Avatar",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read"
+        ]
+      }
+    },
+    "/api/v1/users/me/avatar-upload-intents": {
+      "post": {
+        "operationId": "create_avatar_upload_intent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarUploadIntentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_AvatarUploadIntentRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Create Avatar Upload Intent",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read",
+          "client.profile.avatar.update"
+        ]
+      }
+    },
+    "/api/v1/users/me/avatar-upload-intents/{intent_id}/complete": {
+      "post": {
+        "operationId": "complete_avatar_upload_intent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "intent_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Intent Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarUploadComplete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Complete Avatar Upload Intent",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read",
+          "client.profile.avatar.update"
+        ]
+      }
+    },
+    "/api/v1/users/me/profile": {
+      "get": {
+        "operationId": "get_my_profile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "My Profile",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read"
+        ]
+      },
+      "patch": {
+        "operationId": "update_my_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Update My Profile",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read",
+          "client.profile.update"
+        ]
+      }
+    },
+    "/api/v1/users/me/settings": {
+      "get": {
+        "operationId": "get_my_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_SettingsRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "My Settings",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read"
+        ]
+      },
+      "patch": {
+        "operationId": "update_my_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_SettingsRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Update My Settings",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read",
+          "client.profile.update"
+        ]
+      }
+    },
+    "/api/v1/users/me/study-profile": {
+      "get": {
+        "operationId": "get_my_study_profile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_StudyProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "My Study Profile",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read"
+        ]
+      },
+      "patch": {
+        "operationId": "update_my_study_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_StudyProfileRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Update My Study Profile",
+        "tags": [
+          "profile"
+        ],
+        "x-haruka-permissions": [
+          "client.profile.read",
+          "client.profile.update"
+        ]
       }
     },
     "/health/live": {

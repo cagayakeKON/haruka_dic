@@ -1,8 +1,16 @@
 {
   "schema_version": 1,
-  "status": "reviewed-handwritten-transition",
-  "reviewed_schemas_sha256": "c3a0f594d0e7d3c95dc3d6e031947f52f7cfc7c35255ded6d4880037d3a48505",
+  "status": "reviewed-handwritten-contract",
+  "reviewed_schemas_sha256": "85daaf838d340794a91a4eb3f0041c037469666a8cf87e2d02134c2d2586f7b4",
   "consumer": "frontend/lib/core/api",
   "compatibility_fixture": "tools/codegen/dart-api/fixtures",
-  "expires_before": "B2"
+  "decision_date": "2026-09-28",
+  "decision": "centralized-handwritten-dto-with-generated-cross-language-samples",
+  "schema_change_gate": "independent review of changed OpenAPI schemas, handwritten consumers and compatibility samples before updating reviewed_schemas_sha256",
+  "consumer_tests": [
+    "frontend/test/api_contract_test.dart",
+    "frontend/test/auth_contract_test.dart",
+    "frontend/test/learning_contract_test.dart",
+    "frontend/test/settings_contract_samples_test.dart"
+  ]
 }

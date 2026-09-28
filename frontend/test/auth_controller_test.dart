@@ -107,6 +107,95 @@ void main() {
   );
   final requestId = '018f1234-1234-7123-8123-123456789abc';
 
+  test('adopting an endpoint clears old policy until the new policy is verified', () async {
+    final adapter = SampleAdapter((options, _) async {
+      if (options.path == '/api/v1/meta') {
+        return jsonBody({
+          'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+          'meta': {'request_id': requestId},
+        });
+      }
+      if (options.path == '/api/v1/auth/policy') {
+        return jsonBody({
+          'data': {
+            'registration_enabled': options.uri.port == 18081,
+            'approval_required': false,
+            'email_verification_required': true,
+            'recovery_enabled': true,
+            'recovery_mode': 'email',
+            'action_link_base_url': 'https://localhost:18443',
+            'password_min_length': 15,
+            'password_max_length': 128,
+          },
+          'meta': {'request_id': requestId},
+        });
+      }
+      throw StateError('Unexpected path');
+    });
+    final api = ApiClient(config, adapter: adapter);
+    final controller = AuthController(
+      AuthRepository(api, config),
+      config,
+      vault: _MemoryVault(),
+      sync: _NoSync(),
+    );
+    await controller.reloadPolicy();
+    expect(controller.policy?.registrationEnabled, isTrue);
+    final nextEndpoint = Uri.parse('http://127.0.0.1:18082');
+    api.retarget(nextEndpoint, config.instanceId);
+    controller.adoptInstance(nextEndpoint, config.instanceId);
+    expect(controller.policy, isNull);
+    expect(controller.phase, AuthPhase.anonymous);
+    await controller.reloadPolicy();
+    expect(controller.policy?.registrationEnabled, isFalse);
+    controller.dispose();
+    api.close();
+  });
+
+  test('a switch during meta verification never sends a pending registration password', () async {
+    final metaStarted = Completer<void>();
+    final releaseMeta = Completer<void>();
+    var registrationRequests = 0;
+    final adapter = SampleAdapter((options, _) async {
+      if (options.path == '/api/v1/meta') {
+        metaStarted.complete();
+        await releaseMeta.future;
+        return jsonBody({
+          'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+          'meta': {'request_id': requestId},
+        });
+      }
+      if (options.path == '/api/v1/auth/register') registrationRequests++;
+      throw StateError('Unexpected path');
+    });
+    final api = ApiClient(config, adapter: adapter);
+    final controller = AuthController(
+      AuthRepository(api, config),
+      config,
+      vault: _MemoryVault(),
+      sync: _NoSync(),
+    );
+    final pending = controller.register('test@example.com', 'private-password');
+    await metaStarted.future;
+    controller.invalidateForInstanceSwitch();
+    await expectLater(
+      controller.requestRecovery('test@example.com'),
+      throwsA(isA<ApiFailure>().having((e) => e.code, 'code', 'SESSION_INVALID')),
+    );
+    final nextEndpoint = Uri.parse('http://127.0.0.1:18082');
+    api.retarget(nextEndpoint, config.instanceId);
+    controller.adoptInstance(nextEndpoint, config.instanceId);
+    releaseMeta.complete();
+    await expectLater(
+      pending,
+      throwsA(isA<ApiFailure>().having((e) => e.code, 'code', 'SESSION_INVALID')),
+    );
+    expect(registrationRequests, 0);
+    controller.finishInstanceSwitch();
+    controller.dispose();
+    api.close();
+  });
+
   test('resend accepts the exact 202 check_email contract receipt', () async {
     final receipt = samples['auth_mail_accepted'] as Map<String, dynamic>;
     final adapter = SampleAdapter((options, _) async {

@@ -5,7 +5,7 @@ import 'credential_vault_native.dart'
 /// Only a native refresh secret is persisted. Access tokens remain in memory,
 /// while Web sessions are exclusively held in HttpOnly cookies.
 abstract interface class CredentialVault {
-  factory CredentialVault(String instanceId, String audience) =
+  factory CredentialVault(Uri endpoint, String instanceId, String audience) =
       implementation.PlatformCredentialVault;
 
   Future<RefreshCredential?> read();

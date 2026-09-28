@@ -2,9 +2,9 @@
 
 2026-09-26实施入口：[PLAN2路线图](delivery/roadmap.md)保留B0/B1并重排后续阶段；[原型功能清单](delivery/prototype-scope.md)覆盖当前手机/电脑全部产品操作，[站内消息契约](contracts/notifications.md)补齐已读与跳转，[走查及review记录](delivery/reviews/2026-09-26-prototype-implementation-plan.md)记录本轮证据。
 
-阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。[B1账号与收藏闭环](delivery/reviews/2026-09-26-b1-implementation.md)（含注册、邮箱激活和找回）已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。B2持久模型任务未实现。独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
+阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。[B1账号与收藏闭环](delivery/reviews/2026-09-26-b1-implementation.md)（含注册、邮箱激活和找回）已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。[B2a本人资料与设置](delivery/reviews/2026-09-28-profile-settings-acceptance.md)当期验收通过；B2b治理、B2c凭据与模型任务尚未实现。独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
 
-FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + Dio + Drift/SQLite及平台音频存储，统一读取、更新、跨端刷新、离线与清理；[校验契约](contracts/client-cache.md)、[设计审查](delivery/reviews/2026-09-26-frontend-cache.md)、[前端缓存/UI测试用例](engineering/testing/frontend-cache-ui-cases.md)和[本轮手机/桌面实拍对照](delivery/reviews/2026-09-27-frontend-preview.md)记录实施边界。前端框架正在实现，不能据此认定服务端或完整闭环已交付。
+FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + Dio + Drift/SQLite及平台音频存储，统一读取、更新、跨端刷新、离线与清理；[校验契约](contracts/client-cache.md)、[设计审查](delivery/reviews/2026-09-26-frontend-cache.md)、[前端缓存/UI测试用例](engineering/testing/frontend-cache-ui-cases.md)和[本轮手机/桌面实拍对照](delivery/reviews/2026-09-27-frontend-preview.md)记录实施边界。B2a已接入本人资料/设置的账号与实例作用域、写后定向更新、本机清理及空的服务端校验注册框架；材料、模型、音频和完整离线许可仍随所属切片交付，不能据此签收FCACHE全族。
 
 [缓存恢复修复记录](delivery/reviews/2026-09-27-cache-recovery-fixes.md)记录持久许可与代次恢复、设置草稿、通知刷新、音频配额和会话栅栏的局部修复；正式离线协议与音频页面接入仍按所属切片推进。
 

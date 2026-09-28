@@ -4166,6 +4166,66 @@ abstract class AppLocalizations {
   /// **'保存资料'**
   String get mockSettingSaveProfile;
 
+  /// No description provided for @profileGuideTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认学习资料'**
+  String get profileGuideTitle;
+
+  /// No description provided for @profileGuideBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示名、解释语言、学习语言和时区都可以稍后填写。跳过不会保存，也不会记成已完成。'**
+  String get profileGuideBody;
+
+  /// No description provided for @profileGuideSkip.
+  ///
+  /// In zh, this message translates to:
+  /// **'跳过'**
+  String get profileGuideSkip;
+
+  /// No description provided for @serviceSwitchWebFixed.
+  ///
+  /// In zh, this message translates to:
+  /// **'Web 使用当前部署，不能在应用内更换服务地址。'**
+  String get serviceSwitchWebFixed;
+
+  /// No description provided for @serviceSwitchConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出并使用此服务'**
+  String get serviceSwitchConfirm;
+
+  /// No description provided for @serviceSwitchWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'将退出当前服务并清理本机缓存。'**
+  String get serviceSwitchWarning;
+
+  /// No description provided for @serviceSwitchFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'未能连接新服务，当前已退出。'**
+  String get serviceSwitchFailed;
+
+  /// No description provided for @serviceSwitchProbeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'未能连接该服务。'**
+  String get serviceSwitchProbeFailed;
+
+  /// No description provided for @serviceSwitchRevokeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机已退出。原服务上的会话可能尚未撤销。'**
+  String get serviceSwitchRevokeFailed;
+
+  /// No description provided for @serviceSwitchIdentity.
+  ///
+  /// In zh, this message translates to:
+  /// **'实例 {instance}，接口 {version}'**
+  String serviceSwitchIdentity(String instance, String version);
+
   /// No description provided for @mockSettingSavedResults.
   ///
   /// In zh, this message translates to:
@@ -7682,6 +7742,24 @@ abstract class AppLocalizations {
   /// **'阅读预览'**
   String get mockSettingReadingPreview;
 
+  /// No description provided for @settingMotionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'降低位移与弹跳'**
+  String get settingMotionHint;
+
+  /// No description provided for @settingAppearancePreviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'一页故事，一点新发现。'**
+  String get settingAppearancePreviewTitle;
+
+  /// No description provided for @settingAppearancePreviewBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'阅读、解释和作答会沿用同一套色彩与文字层级。'**
+  String get settingAppearancePreviewBody;
+
   /// No description provided for @mockSettingSaveReading.
   ///
   /// In zh, this message translates to:
@@ -7693,6 +7771,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'取文范围'**
   String get mockSettingContextRange;
+
+  /// No description provided for @settingContextIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'查询会携带当前句和前后文，帮助理解词义与指代。'**
+  String get settingContextIntro;
+
+  /// No description provided for @settingContextBudgetHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'支持 1,000–64,000 tokens。Token 是模型计算文字的单位，当前完整句另计；内容不足时不会凑满。'**
+  String get settingContextBudgetHint;
+
+  /// No description provided for @settingContextBudgetSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'最多 {budget} tokens 前后文'**
+  String settingContextBudgetSummary(String budget);
+
+  /// No description provided for @settingContextAvailability.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存的偏好会在查询功能开放后使用，已有结果不会改变。'**
+  String get settingContextAvailability;
 
   /// No description provided for @mockSettingSaveQuery.
   ///

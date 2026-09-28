@@ -14,3 +14,13 @@ audience_context: ContextVar[Literal["client", "admin"] | None] = ContextVar(
 
 def current_correlation() -> tuple[UUID | None, UUID | None]:
     return request_id_context.get(), operation_id_context.get()
+
+
+def current_log_context() -> dict[str, object]:
+    """Trusted correlation fields for safe structured business events."""
+    return {
+        "request_id": request_id_context.get(),
+        "operation_id": operation_id_context.get(),
+        "user_id": user_id_context.get(),
+        "audience": audience_context.get(),
+    }

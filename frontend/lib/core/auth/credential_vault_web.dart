@@ -2,7 +2,7 @@ import 'credential_vault.dart';
 
 /// Web never reads, writes, or mirrors an HttpOnly session into Dart storage.
 final class PlatformCredentialVault implements CredentialVault {
-  PlatformCredentialVault(String instanceId, String audience);
+  PlatformCredentialVault(Uri endpoint, String instanceId, String audience);
 
   @override
   Future<RefreshCredential?> read() async => null;

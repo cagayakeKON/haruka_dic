@@ -121,13 +121,13 @@ app/schemas/responses.py 是 [统一返回](../contracts/api-responses.md) 的 S
 
 ### Dart生成器原型
 
-本轮已评估dart-dio 7.25.0，其union输出未通过样本；按 [受审过渡记录](../../tools/codegen/dart-api/README.md) 使用集中手写DTO和同一Python/Dart兼容样本，范围限B0/B1。以下保留长期生成方案的选择标准，B2前必须锁定，不将当前手写DTO称为自动生成。
+2026-09-22 已评估dart-dio 7.25.0，其union输出未通过样本；当时按 [受审记录](../../tools/codegen/dart-api/README.md) 使用限B0/B1的集中手写DTO过渡。2026-09-28 已在B2a前锁定长期方案：继续使用受审的集中手写DTO/feature转换、后端单向生成的Python/Dart共享样本与全量OpenAPI schema指纹门禁；schema改变须独立review旧接口兼容、受影响Dart转换和样本测试后更新指纹。正式生成目标仍仅为清单内的错误目录等文件，不生成Dart DTO，不将手写代码称为自动生成。以下保留当时生成器评估与选择标准作为决策依据。
 
 首选评估OpenAPI Generator的dart-dio，确切版本、获取方式/摘要、Java运行要求和配置随B0原型锁定；不直接复制默认选项。前端已规划Dio，原型要验证生成代码可以纳入单一Flutter工程的lib/generated/api，不覆盖应用pubspec或形成未经决定的第二Dart包。生成模板/必要适配必须版本化且可重复，不允许手改结果。[生成器选项](https://openapi-generator.tech/docs/generators/dart-dio/)
 
 原型样本至少包含：snake_case映射、UUID字符串、UTC、Decimal字符串、缺省/显式null/值三态、未知枚举、嵌套列表/分页/统一错误、204、二进制/上传、带discriminator的结构化卡片。Cookie/原生认证协调、SSE重连、幂等与重试由现有手写core适配，不交给生成器默认行为决定。
 
-通过后才登记正式生成器与模板摘要。若无法可靠融入现有工程，按决策记录选择另一个经同样样本验证的生成器，或明确登记集中手写DTO过渡；过渡仅限B0/B1、保持同样跨语言契约测试，不把手写DTO放generated目录，不称为自动生成通过。进入B2前必须锁定长期方案；选择长期手写时需明确修改该生成目标与相关门禁，不能反复以临时状态绕过。
+当时的候选标准是：生成器通过样本后才登记正式生成器与模板摘要；若无法可靠融入现有工程，选择另一个经同样样本验证的生成器，或按决策记录转为长期集中手写DTO。现已选择后者并在[决策记录](../../tools/codegen/dart-api/README.md)明确生成范围与兼容门禁。手写DTO保留在core/api或所属feature数据层，不放generated目录；后端样本和前端消费测试覆盖已实现接口的wire形状，不以临时状态反复绕过B2验收。
 
 ### 确定性与文件纳管
 

@@ -17,11 +17,13 @@ dependencies = [
   "cryptography==50.0.1",
   "fastapi==0.141.1",
   "minio==7.2.20",
+  "pillow==11.3.0",
   "pydantic-settings==2.15.0",
   "pyjwt==2.15.0",
   "redis==8.1.0",
   "regex==2026.9.10",
   "sqlalchemy[asyncio]==2.0.54",
+  "tzdata==2026.2",
   "urllib3==2.8.0",
   "uvicorn==0.53.0",
 ]

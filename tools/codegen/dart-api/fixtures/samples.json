@@ -544,6 +544,262 @@
     }
   },
   "schema_version": 1,
+  "settings_avatar_bytes": [
+    137,
+    80,
+    78,
+    71,
+    13,
+    10,
+    26,
+    10,
+    0,
+    0,
+    0,
+    0
+  ],
+  "settings_avatar_complete": {
+    "expected_revision": 1,
+    "image_base64": "iVBORw0KGgoAAAAA"
+  },
+  "settings_avatar_create": {
+    "declared_format": "png",
+    "expected_sha256": "1b56b50ac4e976f488f128cabdcdffb2fc9331d6974bb9968131a415d14ade24",
+    "expected_size_bytes": 12
+  },
+  "settings_avatar_delete": {
+    "expected_revision": 2
+  },
+  "settings_avatar_intent": {
+    "data": {
+      "accepted_formats": [
+        "jpeg",
+        "png",
+        "webp"
+      ],
+      "expires_at": "2026-09-28T01:02:03Z",
+      "id": "018f1234-5678-7123-8123-123456789abc",
+      "max_size_bytes": 5242880
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_language_capabilities": {
+    "data": {
+      "languages": [
+        {
+          "code": "zh-Hans",
+          "explanation_supported": true,
+          "label": "简体中文",
+          "learning_supported": false,
+          "native_supported": true,
+          "ui_supported": true
+        },
+        {
+          "code": "zh-Hant",
+          "explanation_supported": false,
+          "label": "繁體中文",
+          "learning_supported": false,
+          "native_supported": true,
+          "ui_supported": false
+        },
+        {
+          "code": "ja",
+          "explanation_supported": true,
+          "label": "日本語",
+          "learning_supported": true,
+          "native_supported": true,
+          "ui_supported": false
+        },
+        {
+          "code": "en",
+          "explanation_supported": true,
+          "label": "English",
+          "learning_supported": true,
+          "native_supported": true,
+          "ui_supported": false
+        },
+        {
+          "code": "ko",
+          "explanation_supported": false,
+          "label": "한국어",
+          "learning_supported": false,
+          "native_supported": true,
+          "ui_supported": false
+        }
+      ],
+      "version": 1
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_preferences_empty": {
+    "data": {
+      "playback_speed": "1.00",
+      "query_context_budget_tokens": 8000,
+      "reading_font_family": null,
+      "reading_font_size": null,
+      "reading_line_height": null,
+      "reading_theme": null,
+      "reduce_motion": "system",
+      "revision": 1,
+      "theme_mode": "system",
+      "timezone": null,
+      "ui_locale": "zh-Hans"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_preferences_patch": {
+    "expected_revision": 1,
+    "fields": {
+      "playback_speed": "1.25",
+      "reading_font_size": "18.00",
+      "timezone": null
+    }
+  },
+  "settings_preferences_present": {
+    "data": {
+      "playback_speed": "1.25",
+      "query_context_budget_tokens": 16000,
+      "reading_font_family": "serif",
+      "reading_font_size": "18.00",
+      "reading_line_height": "1.50",
+      "reading_theme": "sepia",
+      "reduce_motion": "on",
+      "revision": 2,
+      "theme_mode": "dark",
+      "timezone": "Asia/Tokyo",
+      "ui_locale": "zh-Hans"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_profile_empty": {
+    "data": {
+      "age_band": null,
+      "avatar_asset_id": null,
+      "avatar_revision": 0,
+      "birth_year": null,
+      "display_name": null,
+      "gender_code": null,
+      "gender_self_description": null,
+      "profile_completeness": {
+        "display_name": false,
+        "explanation_language": false,
+        "target_language": false,
+        "timezone": false
+      },
+      "revision": 1,
+      "use_optional_demographics_for_ai": false
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_profile_patch_null": {
+    "expected_revision": 2,
+    "fields": {
+      "birth_year": null
+    }
+  },
+  "settings_profile_present": {
+    "data": {
+      "age_band": "18_29",
+      "avatar_asset_id": "018f1234-5678-7123-8123-123456789abc",
+      "avatar_revision": 1,
+      "birth_year": 1998,
+      "display_name": "遥",
+      "gender_code": "self_described",
+      "gender_self_description": "合成样本",
+      "profile_completeness": {
+        "display_name": true,
+        "explanation_language": true,
+        "target_language": true,
+        "timezone": true
+      },
+      "revision": 2,
+      "use_optional_demographics_for_ai": false
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_revision_conflict": {
+    "error": {
+      "code": "REVISION_CONFLICT",
+      "details": {
+        "current_revision": 2,
+        "kind": "revision_conflict"
+      },
+      "field_errors": [],
+      "message": "内容已更新，请重新加载",
+      "message_args": {},
+      "retryable": false
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_study_empty": {
+    "data": {
+      "active_target_language": null,
+      "explanation_language": null,
+      "native_languages": [],
+      "revision": 1,
+      "target_languages": []
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "settings_study_patch": {
+    "expected_revision": 1,
+    "fields": {
+      "active_target_language": "ja",
+      "explanation_language": "zh-Hans",
+      "native_languages": [
+        "zh-Hans"
+      ],
+      "target_languages": [
+        {
+          "language_tag": "ja",
+          "learning_goals": [
+            "reading",
+            "listening"
+          ],
+          "self_assessed_level": "beginner"
+        }
+      ]
+    }
+  },
+  "settings_study_present": {
+    "data": {
+      "active_target_language": "ja",
+      "explanation_language": "zh-Hans",
+      "native_languages": [
+        "zh-Hans"
+      ],
+      "revision": 2,
+      "target_languages": [
+        {
+          "language_tag": "ja",
+          "learning_goals": [
+            "reading",
+            "listening"
+          ],
+          "self_assessed_level": "beginner"
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
   "success_missing": {
     "data": {
       "card": {

@@ -2,22 +2,48 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'credential_vault.dart';
 
+String _endpointScope(Uri endpoint) {
+  if (!endpoint.isAbsolute ||
+      !endpoint.hasAuthority ||
+      endpoint.host.isEmpty ||
+      endpoint.userInfo.isNotEmpty ||
+      endpoint.hasQuery ||
+      endpoint.hasFragment ||
+      (endpoint.scheme != 'https' && endpoint.scheme != 'http')) {
+    throw const FormatException('Invalid credential endpoint');
+  }
+  final defaultPort = endpoint.scheme == 'https' ? 443 : 80;
+  return Uri(
+    scheme: endpoint.scheme,
+    host: endpoint.host.toLowerCase(),
+    port: endpoint.port == defaultPort ? null : endpoint.port,
+    path: endpoint.path == '/' ? '' : endpoint.path,
+  ).toString();
+}
+
+String _scopeDigest(Uri endpoint) =>
+    sha256.convert(utf8.encode(_endpointScope(endpoint))).toString();
+
 final class PlatformCredentialVault implements CredentialVault {
   PlatformCredentialVault(
+    Uri endpoint,
     String instanceId,
     String audience, {
     SecretStore? store,
     Directory? lockDirectory,
   }) : assert(RegExp(r'^[a-z0-9-]+$').hasMatch(instanceId)),
        assert(audience == 'client' || audience == 'admin'),
-       _key = 'haruka.$instanceId.$audience.refresh',
-       _lockName = '$instanceId.$audience.lock',
+       _key = 'haruka.v2.${_scopeDigest(endpoint)}.$instanceId.$audience.refresh',
+       _lockName = '${_scopeDigest(endpoint)}.$instanceId.$audience.lock',
+       _legacyKey = 'haruka.$instanceId.$audience.refresh',
        _store = store ?? _PluginSecretStore(),
        // Keep the public injection name stable for native concurrency tests.
        // ignore: prefer_initializing_formals
@@ -31,6 +57,7 @@ final class PlatformCredentialVault implements CredentialVault {
 
   final String _key;
   final String _lockName;
+  final String _legacyKey;
   final SecretStore _store;
   final Directory? _lockDirectory;
   static final Map<String, Future<void>> _queues = {};
@@ -78,6 +105,8 @@ final class PlatformCredentialVault implements CredentialVault {
   }
 
   Future<RefreshCredential?> _readNow() async {
+    // The old key has no endpoint binding. It cannot be migrated safely.
+    await _store.delete(_legacyKey);
     final raw = await _store.read(_key);
     if (raw == null) return null;
     try {

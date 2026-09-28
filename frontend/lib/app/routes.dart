@@ -28,7 +28,14 @@ import 'package:haruka/features/collections/presentation/daily_words_page.dart';
 import 'package:haruka/features/collections/presentation/csv_page.dart';
 import 'package:haruka/features/library/presentation/material_pages.dart';
 import 'package:haruka/features/collections/presentation/notebook_pages.dart';
+import 'package:haruka/features/settings/data/cached_settings_repository.dart';
+import 'package:haruka/features/settings/data/settings_source.dart';
+import 'package:haruka/features/settings/domain/profile_guide.dart';
+import 'package:haruka/features/settings/presentation/profile_guide_page.dart';
 import 'package:haruka/features/settings/presentation/settings_pages.dart';
+import 'package:haruka/features/settings/presentation/settings_repository_scope.dart';
+import 'package:haruka/features/settings/presentation/settings_snapshot_gate.dart';
+import 'package:haruka/features/settings/domain/settings_snapshot.dart';
 import 'package:haruka/features/ai_exercises/presentation/exercise_support_pages.dart';
 import 'package:haruka/features/notifications/presentation/notifications_page.dart';
 import 'package:haruka/features/jobs/presentation/jobs_page.dart';
@@ -65,6 +72,9 @@ abstract final class AppRoutes {
   static const accountSessions = '/account/sessions';
   static const materials = '/reference/materials';
   static const collections = '/collections';
+  static const settings = '/settings';
+  static const settingsSection = '/settings/:section';
+  static const guide = '/guide';
   static const admin = '/admin';
   static const adminLogin = '/admin/login';
   static const adminPassword = '/admin/password';
@@ -285,12 +295,12 @@ List<RouteBase> _adminRoutes(
       ]
     : const [];
 
-ValueKey<String> _accountScope(AppConfig config, AuthController auth, String page) {
+ValueKey<String> _accountScope(AuthController auth, String page) {
   final access = auth.access;
   return ValueKey(
     [
       page,
-      config.instanceId,
+      auth.boundInstanceId,
       access?.userId ?? '',
       access?.audience ?? '',
       access?.sessionRef ?? '',
@@ -303,6 +313,28 @@ ValueKey<String> _accountScope(AppConfig config, AuthController auth, String pag
 Widget _watchAuth(AuthController auth, Widget Function() build) =>
     ListenableBuilder(listenable: auth, builder: (context, child) => build());
 
+Widget _settingsRoute(
+  BuildContext context,
+  AppConfig config,
+  AuthController auth,
+  String location,
+  SettingsPageBuilder? settingsPage,
+  String? section,
+) => _watchAuth(auth, () {
+  final allowed =
+      auth.isAuthenticated && !auth.admin && (auth.access?.allows('client.profile.read') ?? false);
+  if (!allowed || settingsPage == null) {
+    return StatusPage(
+      id: UiTestIds.notFoundPage,
+      title: AppLocalizations.of(context).apiPermissionDenied,
+      description: AppLocalizations.of(context).authBackToLogin,
+    );
+  }
+  return AppShell(config: config, location: location, child: settingsPage(context, section));
+});
+
+typedef SettingsPageBuilder = Widget Function(BuildContext context, String? section);
+
 GoRouter createRouter(
   AppConfig config,
   ApiClient api,
@@ -310,6 +342,9 @@ GoRouter createRouter(
   String? initialLocation,
   CapturedEmailAction? emailAction,
   Telemetry? telemetry,
+  SettingsPageBuilder? settingsPage,
+  SettingsSource? settingsSource,
+  CachedSettingsRepository? settingsRepository,
 }) => GoRouter(
   initialLocation: initialLocation,
   refreshListenable: auth,
@@ -378,7 +413,12 @@ GoRouter createRouter(
                     operationId: operationId,
                   );
                   if (active) {
-                    router.go(AppRoutes.account);
+                    final location = await profileGuideLocation(
+                      canReadProfile: auth.access?.allows('client.profile.read') ?? false,
+                      source: settingsSource,
+                    );
+                    if (auth.actionEpoch != attemptEpoch) return;
+                    router.go(location);
                   } else if (auth.phase == AuthPhase.pendingEmail) {
                     router.go(AppRoutes.activation);
                   }
@@ -549,14 +589,14 @@ GoRouter createRouter(
     _appRoute(
       path: AppRoutes.account,
       builder: (context, state) =>
-          _watchAuth(auth, () => AccountPage(key: _accountScope(config, auth, 'account'))),
+          _watchAuth(auth, () => AccountPage(key: _accountScope(auth, 'account'))),
     ),
     _appRoute(
       path: AppRoutes.accountPassword,
       builder: (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && !auth.admin
-            ? PasswordChangePage(key: _accountScope(config, auth, 'password'))
+            ? PasswordChangePage(key: _accountScope(auth, 'password'))
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,
@@ -569,7 +609,7 @@ GoRouter createRouter(
       builder: (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && !auth.admin
-            ? DeviceSessionsPage(key: _accountScope(config, auth, 'sessions'))
+            ? DeviceSessionsPage(key: _accountScope(auth, 'sessions'))
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,
@@ -583,8 +623,8 @@ GoRouter createRouter(
         auth,
         () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.material.list')
             ? ReferenceMaterialsPage(
-                key: _accountScope(config, auth, 'reference-materials'),
-                scope: _accountScope(config, auth, 'reference-materials').value,
+                key: _accountScope(auth, 'reference-materials'),
+                scope: _accountScope(auth, 'reference-materials').value,
               )
             : StatusPage(
                 id: UiTestIds.notFoundPage,
@@ -594,13 +634,100 @@ GoRouter createRouter(
       ),
     ),
     _appRoute(
+      path: AppRoutes.guide,
+      builder: (context, state) => _watchAuth(auth, () {
+        final repository = settingsRepository;
+        final allowed =
+            auth.isAuthenticated &&
+            !auth.admin &&
+            (auth.access?.allows('client.profile.read') ?? false);
+        if (!allowed || repository == null) {
+          return StatusPage(
+            id: UiTestIds.notFoundPage,
+            title: AppLocalizations.of(context).apiPermissionDenied,
+            description: AppLocalizations.of(context).authBackToLogin,
+          );
+        }
+        return AppShell(
+          config: config,
+          location: state.uri.path,
+          child: SettingsRepositoryScope(
+            repository: repository,
+            child: SettingsSnapshotGate(
+              groups: const {
+                SettingsGroup.profile,
+                SettingsGroup.studyProfile,
+                SettingsGroup.preferences,
+              },
+              builder: (context) => ProfileGuidePage(
+                key: _accountScope(auth, 'profile-guide'),
+                canSave: auth.access?.allows('client.profile.update') ?? false,
+                profile: repository.snapshot(SettingsGroup.profile)!,
+                study: repository.snapshot(SettingsGroup.studyProfile)!,
+                preferences: repository.snapshot(SettingsGroup.preferences)!,
+                onSkip: () => context.go(AppRoutes.settings),
+                onSave: (input) async {
+                  final epoch = auth.actionEpoch;
+                  final instance = auth.boundInstanceId;
+                  final user = auth.access?.userId;
+                  final scope = repository.scopeGeneration;
+                  final profileBefore = repository.snapshot(SettingsGroup.profile);
+                  final studyBefore = repository.snapshot(SettingsGroup.studyProfile);
+                  final preferencesBefore = repository.snapshot(SettingsGroup.preferences);
+                  bool stillOwned() =>
+                      auth.isAuthenticated &&
+                      !auth.admin &&
+                      auth.actionEpoch == epoch &&
+                      auth.boundInstanceId == instance &&
+                      auth.access?.userId == user &&
+                      repository.scopeGeneration == scope;
+                  for (final entry in profileGuidePatches(
+                    input,
+                    profile: profileBefore,
+                    studyProfile: studyBefore,
+                    preferences: preferencesBefore,
+                  ).entries) {
+                    if (!stillOwned()) return;
+                    await repository.save(entry.key, entry.value);
+                    if (!stillOwned()) return;
+                    telemetry?.track(switch (entry.key) {
+                      SettingsGroup.profile => 'profile.updated',
+                      SettingsGroup.studyProfile => 'study_profile.updated',
+                      SettingsGroup.preferences => 'settings.updated',
+                    });
+                  }
+                  if (context.mounted && stillOwned()) context.go(AppRoutes.settings);
+                },
+              ),
+            ),
+          ),
+        );
+      }),
+    ),
+    _appRoute(
+      path: AppRoutes.settings,
+      builder: (context, state) =>
+          _settingsRoute(context, config, auth, state.uri.path, settingsPage, null),
+    ),
+    _appRoute(
+      path: AppRoutes.settingsSection,
+      builder: (context, state) => _settingsRoute(
+        context,
+        config,
+        auth,
+        state.uri.path,
+        settingsPage,
+        state.pathParameters['section'] ?? '',
+      ),
+    ),
+    _appRoute(
       path: AppRoutes.collections,
       builder: (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.collection.read')
             ? CollectionsPage(
-                key: _accountScope(config, auth, 'collections'),
-                scope: _accountScope(config, auth, 'collections').value,
+                key: _accountScope(auth, 'collections'),
+                scope: _accountScope(auth, 'collections').value,
               )
             : StatusPage(
                 id: UiTestIds.notFoundPage,
@@ -614,7 +741,7 @@ GoRouter createRouter(
       (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && auth.admin
-            ? AdminPolicyPage(key: _accountScope(config, auth, 'admin-policy'))
+            ? AdminPolicyPage(key: _accountScope(auth, 'admin-policy'))
             : auth.phase == AuthPhase.starting || auth.phase == AuthPhase.unavailable
             ? AuthUnavailablePage(
                 loading: auth.phase == AuthPhase.starting,
@@ -662,7 +789,7 @@ GoRouter createRouter(
       (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && auth.admin
-            ? PasswordChangePage(key: _accountScope(config, auth, 'admin-password'), admin: true)
+            ? PasswordChangePage(key: _accountScope(auth, 'admin-password'), admin: true)
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,
@@ -672,7 +799,7 @@ GoRouter createRouter(
       (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && auth.admin
-            ? DeviceSessionsPage(key: _accountScope(config, auth, 'admin-sessions'), admin: true)
+            ? DeviceSessionsPage(key: _accountScope(auth, 'admin-sessions'), admin: true)
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,

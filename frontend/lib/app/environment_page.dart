@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:go_router/go_router.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/responses.dart';
@@ -7,6 +8,7 @@ import '../core/config/app_config.dart';
 import '../generated/api_catalog.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
+import '../features/settings/presentation/service_endpoint_form.dart';
 import '../shared/identified.dart';
 import 'theme.dart';
 
@@ -52,6 +54,9 @@ class _EnvironmentPageState extends State<EnvironmentPage> {
   @override
   Widget build(BuildContext context) {
     final config = widget.config;
+    final live = ServiceEndpointScope.maybeOf(context);
+    final endpoint = live?.currentEndpoint().toString() ?? config.apiBaseUrl.toString();
+    final instance = live?.currentInstance() ?? config.instanceId;
     final strings = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -143,8 +148,8 @@ class _EnvironmentPageState extends State<EnvironmentPage> {
                                 ? strings.devEnvironment
                                 : strings.productionEnvironment,
                           ),
-                          (strings.instanceLabel, config.instanceId),
-                          (strings.apiLabel, config.apiBaseUrl.toString()),
+                          (strings.instanceLabel, instance),
+                          (strings.apiLabel, endpoint),
                           (strings.applicationLabel, config.applicationId),
                         ]) ...[
                           Text(
@@ -161,6 +166,15 @@ class _EnvironmentPageState extends State<EnvironmentPage> {
                     ),
                   ),
                 ),
+                if (live != null) ...[
+                  const SizedBox(height: 24),
+                  ServiceEndpointForm(
+                    controller: live,
+                    onAdopted: () {
+                      if (context.mounted) context.go('/login');
+                    },
+                  ),
+                ],
               ],
             ),
           ),

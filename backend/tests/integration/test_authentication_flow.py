@@ -14,8 +14,6 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 import httpx2 as httpx
-
-from tests.support.bound_client import BoundAsyncClient
 import pytest
 import pytest_asyncio
 from pydantic import SecretStr
@@ -60,6 +58,7 @@ from app.services.auth_crypto import AuthCrypto
 from app.services.initialization import apply_seed, initialize_admin
 from app.services.notifications import claim_due_mail
 from app.services.outbox_delivery import deliver_outbox_one
+from tests.support.bound_client import BoundAsyncClient
 from tests.support.identity_scenarios import prepare_login_only_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
@@ -403,6 +402,27 @@ async def test_login_only_identity_survives_dependency_faults_without_profile_gr
         assert {grant["code"] for grant in access.json()["data"]["permissions"]} == {"client.login"}
         assert (await web.get("/api/v1/users/me/account")).status_code == 200
         assert (await web.get("/api/v1/materials")).status_code == 403
+        assert (await web.get("/api/v1/language-capabilities")).status_code == 200
+        assert (await web.get("/api/v1/users/me/profile")).status_code == 403
+        csrf = (await web.get("/api/v1/auth/csrf")).json()["data"]["csrf_token"]
+        assert (
+            await web.post(
+                "/api/v1/me/cache/validate",
+                json={"protocol_version": 1, "items": []},
+                headers={**headers, "X-CSRF-Token": csrf},
+            )
+        ).status_code == 200
+        assert (
+            await web.post(
+                "/api/v1/users/me/avatar-upload-intents",
+                json={
+                    "declared_format": "png",
+                    "expected_size_bytes": 1,
+                    "expected_sha256": "0" * 64,
+                },
+                headers={**headers, "X-CSRF-Token": csrf},
+            )
+        ).status_code == 403
 
         async def unavailable_get(*_args: object, **_kwargs: object) -> object:
             raise ConnectionError("synthetic isolated cache outage")

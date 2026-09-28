@@ -12,6 +12,7 @@ from app.models.authorization import (
     SeedVersion,
     UserRole,
 )
+from app.models.avatar import FileObject, UploadIntent
 from app.models.base import Base, TimestampMixin
 from app.models.identity import Library, User
 from app.models.identity_security import (
@@ -19,6 +20,7 @@ from app.models.identity_security import (
     AuthChallengeDelivery,
     AuthSession,
     UserExtension,
+    UserLanguage,
 )
 from app.models.learning_reference import (
     Card,
@@ -43,6 +45,7 @@ __all__ = [
     "Base",
     "Card",
     "CollectionItem",
+    "FileObject",
     "IdempotencyRecord",
     "Library",
     "Material",
@@ -59,7 +62,9 @@ __all__ = [
     "SeedVersion",
     "SourceResultBinding",
     "TimestampMixin",
+    "UploadIntent",
     "User",
     "UserExtension",
+    "UserLanguage",
     "UserRole",
 ]

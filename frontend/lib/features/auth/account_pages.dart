@@ -65,12 +65,14 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                 account: _account,
                 canReadMaterials: controller.access!.allows('client.material.list'),
                 canReadCollections: controller.access!.allows('client.collection.read'),
+                canReadProfile: controller.access!.allows('client.profile.read'),
                 onSignOut: _signOut,
               )
             : _MobileAccountHome(
                 account: _account,
                 canReadMaterials: controller.access!.allows('client.material.list'),
                 canReadCollections: controller.access!.allows('client.collection.read'),
+                canReadProfile: controller.access!.allows('client.profile.read'),
                 onSignOut: _signOut,
               ),
       ),
@@ -174,12 +176,14 @@ class _MobileAccountHome extends StatelessWidget {
     required this.account,
     required this.canReadMaterials,
     required this.canReadCollections,
+    required this.canReadProfile,
     required this.onSignOut,
   });
 
   final Future<AccountRead>? account;
   final bool canReadMaterials;
   final bool canReadCollections;
+  final bool canReadProfile;
   final Future<void> Function() onSignOut;
 
   @override
@@ -253,6 +257,15 @@ class _MobileAccountHome extends StatelessWidget {
                 margin: EdgeInsets.zero,
                 child: Column(
                   children: [
+                    if (canReadProfile) ...[
+                      _AccountActionTile(
+                        id: UiTestIds.accountNavigation,
+                        icon: Icons.tune_outlined,
+                        label: '个人资料与设置',
+                        onTap: () => context.go(AppRoutes.settings),
+                      ),
+                      const Divider(height: 1, indent: 18, endIndent: 18),
+                    ],
                     _AccountActionTile(
                       id: UiTestIds.accountChangePassword,
                       icon: Icons.lock_outline,
@@ -289,12 +302,14 @@ class _DesktopAccountHome extends StatelessWidget {
     required this.account,
     required this.canReadMaterials,
     required this.canReadCollections,
+    required this.canReadProfile,
     required this.onSignOut,
   });
 
   final Future<AccountRead>? account;
   final bool canReadMaterials;
   final bool canReadCollections;
+  final bool canReadProfile;
   final Future<void> Function() onSignOut;
 
   @override
@@ -390,6 +405,13 @@ class _DesktopAccountHome extends StatelessWidget {
                               child: _DesktopAccountGroup(
                                 title: strings.authAccount,
                                 children: [
+                                  if (canReadProfile)
+                                    _AccountActionTile(
+                                      id: UiTestIds.accountNavigation,
+                                      icon: Icons.tune_outlined,
+                                      label: '个人资料与设置',
+                                      onTap: () => context.go(AppRoutes.settings),
+                                    ),
                                   _AccountActionTile(
                                     id: UiTestIds.accountChangePassword,
                                     icon: Icons.lock_outline,

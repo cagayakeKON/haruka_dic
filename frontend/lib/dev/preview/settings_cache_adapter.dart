@@ -9,7 +9,7 @@ import 'package:haruka/core/cache/cache_models.dart';
 /// Isolated preview storage. No mock identity or result is passed to the real
 /// authenticated application's cache coordinator.
 final class PreviewSettingsCacheAdapter extends ChangeNotifier {
-  PreviewSettingsCacheAdapter({CacheCoordinator? coordinator})
+  PreviewSettingsCacheAdapter({CacheCoordinator? coordinator, this.ownsScope = true})
     : _coordinator = coordinator ?? CacheCoordinator() {
     _changes = _coordinator.changes.listen((_) {
       if (_disposed) return;
@@ -24,6 +24,7 @@ final class PreviewSettingsCacheAdapter extends ChangeNotifier {
   }
 
   final CacheCoordinator _coordinator;
+  final bool ownsScope;
   CacheCoordinator get coordinator => _coordinator;
   late final StreamSubscription<void> _changes;
   Future<void>? _initialization;
@@ -55,20 +56,27 @@ final class PreviewSettingsCacheAdapter extends ChangeNotifier {
 
   Future<void> _initialize() async {
     try {
-      // The explicit preview endpoint and identity isolate fixture data from
-      // authenticated cache partitions while allowing local cache inspection.
-      await _coordinator.attach(
-        CacheScope.confirmed(
-          endpoint: Uri.parse('http://127.0.0.1/mock-preview'),
-          instanceId: 'preview-fixtures',
-          userId: 'preview-user',
-          audience: 'client',
-          sessionRef: 'preview-session',
-        ),
-      );
-      _usage = await _coordinator.usage();
-      _usageScopeGeneration = _coordinator.scopeGeneration;
-      _lastError = null;
+      // Preview owns a private identity. The authenticated app passes
+      // ownsScope: false so this adapter never replaces the signed-in partition.
+      if (ownsScope) {
+        await _coordinator.attach(
+          CacheScope.confirmed(
+            endpoint: Uri.parse('http://127.0.0.1/mock-preview'),
+            instanceId: 'preview-fixtures',
+            userId: 'preview-user',
+            audience: 'client',
+            sessionRef: 'preview-session',
+          ),
+        );
+      }
+      if (_coordinator.scope == null) {
+        _usage = null;
+        _lastError = null;
+      } else {
+        _usage = await _coordinator.usage();
+        _usageScopeGeneration = _coordinator.scopeGeneration;
+        _lastError = null;
+      }
     } on Object catch (error) {
       _lastError = error;
     }
@@ -145,7 +153,7 @@ final class PreviewSettingsCacheAdapter extends ChangeNotifier {
 
   Future<void> _shutdown() async {
     await _initialization;
-    await _coordinator.closeScope();
+    if (ownsScope) await _coordinator.closeScope();
   }
 }
 

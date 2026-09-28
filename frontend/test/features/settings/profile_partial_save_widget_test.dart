@@ -9,6 +9,7 @@ import 'package:haruka/core/cache/cache_models.dart';
 import 'package:haruka/dev/preview/settings_cache_adapter.dart';
 import 'package:haruka/features/settings/domain/settings_snapshot.dart';
 import 'package:haruka/features/settings/data/settings_source.dart';
+import 'package:haruka/features/settings/data/http_settings_source.dart';
 import 'package:haruka/features/settings/presentation/profile_page.dart';
 import 'package:haruka/features/settings/presentation/settings_pages.dart';
 import 'package:haruka/features/settings/presentation/settings_repository_scope.dart';
@@ -33,10 +34,77 @@ Widget injectedSettingsApp(MockSettingsSource source) => PreviewHarukaApp(
   ),
 );
 
+Future<void> tapVisibleText(WidgetTester tester, String label) async {
+  final target = find.text(label);
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  await tester.tap(target);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   provideDummy<SettingsSnapshot>(
     SettingsSnapshot(group: SettingsGroup.profile, revision: 1, fields: const {}),
   );
+
+  for (final size in [const Size(390, 844), const Size(1440, 900)]) {
+    testWidgets('appearance switch submits system and stays off at $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final source = MockSettingsSource();
+      var preferences = SettingsSnapshot(
+        group: SettingsGroup.preferences,
+        revision: 1,
+        fields: const {'theme_mode': 'light', 'reduce_motion': 'on'},
+      );
+      when(source.fetch(any, any)).thenAnswer((invocation) async {
+        final group = invocation.positionalArguments.first as SettingsGroup;
+        return group == SettingsGroup.preferences
+            ? preferences
+            : SettingsSnapshot(group: group, revision: 1, fields: const {});
+      });
+      final submitted = <SettingsPatch>[];
+      when(source.patch(any, any)).thenAnswer((invocation) async {
+        final patch = invocation.positionalArguments[1] as SettingsPatch;
+        submitted.add(patch);
+        preferences = SettingsSnapshot(
+          group: SettingsGroup.preferences,
+          revision: patch.expectedRevision + 1,
+          fields: {...preferences.fields, ...patch.fields},
+        );
+        return preferences;
+      });
+      await tester.pumpWidget(injectedSettingsApp(source));
+      await tester.pumpAndSettle();
+      if (size.width < 600) {
+        await tester.tap(find.widgetWithText(NavigationDestination, '我的'));
+        await tester.pumpAndSettle();
+        final appearance = find.widgetWithText(ListTile, '外观设置');
+        await tester.ensureVisible(appearance);
+        await tester.tap(appearance);
+      } else {
+        await tester.tap(find.text('我的').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('外观设置').first);
+      }
+      await tester.pumpAndSettle();
+      final switchTile = find.byType(SwitchListTile);
+      expect(tester.widget<SwitchListTile>(switchTile).value, isTrue);
+      await tester.tap(switchTile);
+      await tester.pumpAndSettle();
+      expect(submitted, hasLength(1));
+      expect(submitted.single.fields['reduce_motion'], 'system');
+      expect(
+        settingsPatchBody(SettingsGroup.preferences, submitted.single)['fields'],
+        containsPair('reduce_motion', 'system'),
+      );
+      expect(preferences.fields['reduce_motion'], 'system');
+      expect(tester.widget<SwitchListTile>(switchTile).value, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('profile confirmation followed by timezone failure reports partial save', (
     tester,
@@ -105,31 +173,23 @@ void main() {
     );
     await tester.enterText(fields.first, '原名  ');
     await tester.enterText(fields.at(1), '无效年份');
-    await tester.ensureVisible(find.text('保存资料'));
-    await tester.tap(find.text('保存资料'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存资料');
     expect(find.text('请输入有效的出生年份'), findsOneWidget);
     verifyNever(source.patch(any, any));
     await tester.enterText(fields.at(1), '');
     await tester.enterText(fields.first, '新名字  ');
-    final selects = find.descendant(
-      of: find.byType(ProfileFields),
-      matching: find.byType(DropdownButtonFormField<String>),
-    );
-    await tester.ensureVisible(selects.at(1));
-    await tester.tap(selects.at(1));
+    final timezone = find.byKey(const ValueKey('profile-timezone:Asia/Tokyo'));
+    await tester.ensureVisible(timezone);
+    await tester.tap(timezone);
     await tester.pumpAndSettle();
     await tester.tap(find.text('UTC').last);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('保存资料'));
-    await tester.tap(find.text('保存资料'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存资料');
 
     expect(records[SettingsGroup.profile]!.fields['display_name'], '新名字');
     expect(records[SettingsGroup.preferences]!.fields['timezone'], 'Asia/Tokyo');
     expect(find.text('个人资料已保存，时区未保存，请重试'), findsOneWidget);
-    await tester.tap(find.text('保存资料'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存资料');
     verify(source.patch(SettingsGroup.profile, any)).called(1);
     verify(source.patch(SettingsGroup.preferences, any)).called(2);
     expect(tester.takeException(), isNull);
@@ -200,9 +260,7 @@ void main() {
     await tester.ensureVisible(readingGoal);
     await tester.tap(readingGoal);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('保存学习目标'));
-    await tester.tap(find.text('保存学习目标'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存学习目标');
     final targets = (records[SettingsGroup.studyProfile]!.fields['target_languages'] as List)
         .cast<Map<String, Object?>>();
     expect(targets.single['language_tag'], 'en');
@@ -216,9 +274,7 @@ void main() {
     await tester.tap(query);
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, '23000');
-    await tester.ensureVisible(find.text('保存查询偏好'));
-    await tester.tap(find.text('保存查询偏好'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存查询偏好');
     expect(records[SettingsGroup.preferences]?.fields['query_context_budget_tokens'], 23000);
     expect(records[SettingsGroup.preferences]?.revision, 2);
     await tester.pump(const Duration(seconds: 5));
@@ -251,8 +307,7 @@ void main() {
       ),
       isTrue,
     );
-    await tester.tap(find.text('保存查询偏好'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存查询偏好');
     expect(
       find.text('内容已更新，请重新加载'),
       findsOneWidget,
@@ -262,13 +317,13 @@ void main() {
     verify(source.patch(SettingsGroup.preferences, any)).called(1);
     await tester.tap(find.text('重试加载'));
     await tester.pumpAndSettle();
-    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, '40000');
+    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, '27000');
+    await tapVisibleText(tester, '保存查询偏好');
+    expect(records[SettingsGroup.preferences]?.fields['query_context_budget_tokens'], 27000);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('profile revision merges clean timezone and blocks conflicting name until reload', (
-    tester,
-  ) async {
+  testWidgets('profile revision keeps a conflicting name draft through reload', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -326,27 +381,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(name).controller?.text, '本地草稿');
     expect(find.byKey(const ValueKey('profile-timezone:UTC')), findsOneWidget);
-    await tester.ensureVisible(find.text('保存资料'));
-    await tester.tap(find.text('保存资料'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存资料');
     expect(find.text('内容已更新，请重新加载'), findsOneWidget);
     verifyNever(source.patch(any, any));
     await tester.tap(find.text('重试加载'));
     await tester.pumpAndSettle();
-    expect(tester.widget<TextField>(name).controller?.text, '远端姓名');
+    expect(tester.widget<TextField>(name).controller?.text, '本地草稿');
     final timezone = find.byKey(const ValueKey('profile-timezone:UTC'));
     await tester.ensureVisible(timezone);
     await tester.tap(timezone);
     await tester.pumpAndSettle();
     await tester.tap(find.text('东京 / Asia/Tokyo').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('保存资料'));
-    await tester.pumpAndSettle();
-    verifyNever(source.patch(SettingsGroup.profile, any));
+    await tapVisibleText(tester, '保存资料');
+    verify(source.patch(SettingsGroup.profile, any)).called(1);
     verify(source.patch(SettingsGroup.preferences, any)).called(1);
     await tester.enterText(name, '确认后的姓名');
-    await tester.tap(find.text('保存资料'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存资料');
     verify(source.patch(SettingsGroup.profile, any)).called(1);
     when(source.patch(SettingsGroup.profile, any)).thenAnswer((_) async {
       records[SettingsGroup.profile] = SettingsSnapshot(
@@ -357,8 +408,7 @@ void main() {
       throw const SettingsRevisionConflict();
     });
     await tester.enterText(name, '冲突草稿');
-    await tester.tap(find.text('保存资料'));
-    await tester.pumpAndSettle();
+    await tapVisibleText(tester, '保存资料');
     expect(find.text('内容已更新，请重新加载'), findsOneWidget);
     expect(tester.widget<TextField>(name).controller?.text, '冲突草稿');
     expect(repository.snapshot(SettingsGroup.profile)?.fields['display_name'], '另一端姓名');

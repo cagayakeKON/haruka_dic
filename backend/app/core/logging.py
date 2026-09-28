@@ -36,6 +36,11 @@ EVENTS = frozenset(
         "auth.recovery.request.accepted",
         "auth.cache_invalidation.deferred",
         "collection.saved",
+        "profile.updated",
+        "study_profile.updated",
+        "settings.updated",
+        "profile.avatar.updated",
+        "profile.avatar.deleted",
         "mail.delivery.key_unavailable",
         "mail.delivery.retry_or_failed",
         "mail.delivery.sent",
@@ -166,6 +171,14 @@ class SafeJsonFormatter(logging.Formatter):
             outcome: object = getattr(record, "collection_outcome", None)
             if outcome in {"created", "existing", "replayed"}:
                 payload["collection_outcome"] = outcome
+        if event in {"profile.updated", "study_profile.updated", "settings.updated"}:
+            field_count: object = getattr(record, "field_count", None)
+            if type(field_count) is int and 1 <= field_count <= 12:
+                payload["field_count"] = field_count
+        if event == "profile.avatar.updated":
+            size_bucket: object = getattr(record, "size_bucket", None)
+            if size_bucket in {"up_to_1mb", "up_to_3mb", "up_to_5mb"}:
+                payload["size_bucket"] = size_bucket
         client_event: object = getattr(record, "client_telemetry", None)
         if (
             event == "frontend.received"

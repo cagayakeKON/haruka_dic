@@ -146,10 +146,13 @@ final class CachedSettingsRepository extends ChangeNotifier {
       }
       if (!scopeChanged && readsRetired && _accessReady) {
         for (final group in SettingsGroup.values) {
-          if (_statuses[group] == SettingsReadStatus.blocked)
+          if (_statuses[group] == SettingsReadStatus.blocked) {
             unawaited(refresh(group, force: true));
+          }
         }
       }
+      // Consumers also need the new scope when no group has been loaded yet.
+      notifyListeners();
       return;
     }
     if (!invalidated && !readinessChanged && !readsRetired) return;
@@ -242,6 +245,7 @@ final class CachedSettingsRepository extends ChangeNotifier {
     if (!_cache.accessReady) throw const CacheBlocked('identity_unconfirmed');
     final binding = _cache.scope?.binding;
     final accountGeneration = _cache.accountGeneration;
+    final expectedScopeGeneration = scopeGeneration;
     void checkScope() {
       if (!_cache.accessReady ||
           binding != _cache.scope?.binding ||
@@ -260,8 +264,9 @@ final class CachedSettingsRepository extends ChangeNotifier {
     _mutating.add(group);
     notifyListeners();
     try {
-      if (!_cache.dependenciesSafe({group.dependency}))
+      if (!_cache.dependenciesSafe({group.dependency})) {
         throw const CacheBlocked('invalidation_not_durable');
+      }
       final committed = await source.patch(
         group,
         SettingsPatch(expectedRevision: current.revision, fields: fields),
@@ -270,30 +275,52 @@ final class CachedSettingsRepository extends ChangeNotifier {
       if (committed.group != group || committed.revision <= current.revision) {
         throw StateError('Settings source returned an invalid revision');
       }
-      // The server has committed. Keep the prior draft visible while durable
-      // invalidation waits for the partition lock, but bar another PATCH.
-      _statuses[group] = SettingsReadStatus.refreshing;
-      notifyListeners();
-      _selfHandledGeneration = _cache.invalidationGeneration + 1;
-      _selfHandledTags = {group.dependency};
-      try {
-        await _cache.applyCommittedMutation({group.dependency});
-      } on Object {
-        checkScope();
-        _selfHandledGeneration = null;
-        _selfHandledTags = const {};
-        _publish(group, null, SettingsReadStatus.blocked);
-      }
-      _selfHandledGeneration = null;
-      _selfHandledTags = const {};
-      checkScope();
-      await refresh(group, force: true);
+      await reconcileExternalCommit(group, expectedScopeGeneration: expectedScopeGeneration);
       checkScope();
       return committed;
     } finally {
       _mutating.remove(group);
       if (!_disposed) notifyListeners();
     }
+  }
+
+  /// Called after a separately authorized mutation, such as avatar publish or
+  /// delete, has committed the profile revision on the server.
+  Future<void> reconcileExternalCommit(
+    SettingsGroup group, {
+    required int expectedScopeGeneration,
+  }) async {
+    final binding = _cache.scope?.binding;
+    final account = _cache.accountGeneration;
+    void checkScope() {
+      if (_disposed ||
+          !_cache.accessReady ||
+          expectedScopeGeneration != scopeGeneration ||
+          binding != _cache.scope?.binding ||
+          account != _cache.accountGeneration) {
+        throw const CacheBlocked('scope_changed');
+      }
+    }
+
+    checkScope();
+    // Keep the existing draft mounted while the invalidation reaches other
+    // tabs; another PATCH cannot use the prior revision during that window.
+    _statuses[group] = SettingsReadStatus.refreshing;
+    notifyListeners();
+    _selfHandledGeneration = _cache.invalidationGeneration + 1;
+    _selfHandledTags = {group.dependency};
+    try {
+      await _cache.applyCommittedMutation({group.dependency});
+    } on Object {
+      checkScope();
+      _publish(group, null, SettingsReadStatus.blocked);
+    } finally {
+      _selfHandledGeneration = null;
+      _selfHandledTags = const {};
+    }
+    checkScope();
+    await refresh(group, force: true);
+    checkScope();
   }
 
   @override

@@ -1,11 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:haruka/generated/l10n/app_localizations.dart';
-import 'package:haruka/app/page_route_activity.dart';
-import 'package:haruka/app/lifecycle_visibility.dart';
 
 import '../data/cached_settings_repository.dart';
 import '../domain/settings_snapshot.dart';
@@ -23,89 +20,55 @@ final class SettingsSnapshotGate extends StatefulWidget {
   State<SettingsSnapshotGate> createState() => _SettingsSnapshotGateState();
 }
 
-final class _SettingsSnapshotGateState extends State<SettingsSnapshotGate>
-    with WidgetsBindingObserver {
-  late final PageRouteActivity _pageActivity = PageRouteActivity(
-    onCovered: _syncVisibility,
-    onReturned: _syncVisibility,
-  );
+final class _SettingsSnapshotGateState extends State<SettingsSnapshotGate> {
   CachedSettingsRepository? _repository;
   int? _scopeGeneration;
-  Timer? _refreshTimer;
-  bool _foreground = true;
-  bool _active = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
+  final Set<SettingsGroup> _requested = {};
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _pageActivity.bind(context);
     final repository = SettingsRepositoryScope.of(context);
-    if (identical(repository, _repository) && _scopeGeneration == repository.scopeGeneration) {
-      _syncVisibility();
-      return;
+    if (!identical(repository, _repository) || _scopeGeneration != repository.scopeGeneration) {
+      _repository = repository;
+      _scopeGeneration = repository.scopeGeneration;
+      _requested.clear();
     }
-    _repository = repository;
-    _scopeGeneration = repository.scopeGeneration;
-    _syncVisibility(force: true);
+    _scheduleMissingReads(repository);
   }
 
-  void _refreshVisible(CachedSettingsRepository repository, {bool periodic = false}) {
-    if (!mounted ||
-        !_foreground ||
-        !_pageActivity.isCurrent ||
-        !identical(repository, _repository)) {
-      return;
-    }
-    for (final group in widget.groups) {
-      if (periodic &&
-          (repository.busy(group) ||
-              repository.status(group) == SettingsReadStatus.loading ||
-              repository.status(group) == SettingsReadStatus.refreshing)) {
-        continue;
+  void _scheduleMissingReads(CachedSettingsRepository repository) {
+    final scope = repository.scopeGeneration;
+    scheduleMicrotask(() async {
+      try {
+        await repository.waitForReadiness?.call();
+      } on Object {
+        // The repository publishes a scoped failure when its own read retries.
       }
-      unawaited(repository.refresh(group, force: true));
-    }
-  }
-
-  void _syncVisibility({bool force = false}) {
-    final visible = _pageActivity.isCurrent;
-    if (!force && visible == _active) return;
-    _active = visible;
-    _refreshTimer?.cancel();
-    _refreshTimer = null;
-    if (!visible) return;
-    final repository = _repository;
-    if (repository == null) return;
-    scheduleMicrotask(() => _refreshVisible(repository));
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _refreshVisible(repository, periodic: true),
-    );
+      if (!mounted || !identical(repository, _repository) || scope != repository.scopeGeneration) {
+        return;
+      }
+      for (final group in widget.groups) {
+        final status = repository.status(group);
+        if (_requested.contains(group) ||
+            repository.snapshot(group) != null ||
+            status == SettingsReadStatus.loading ||
+            status == SettingsReadStatus.refreshing) {
+          continue;
+        }
+        _requested.add(group);
+        unawaited(repository.refresh(group));
+      }
+    });
   }
 
   @override
   void didUpdateWidget(covariant SettingsSnapshotGate oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!setEquals(oldWidget.groups, widget.groups)) _syncVisibility(force: true);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    _foreground = foregroundAfterLifecycle(state, wasForeground: _foreground);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _refreshTimer?.cancel();
-    _pageActivity.dispose();
-    super.dispose();
+    if (oldWidget.groups != widget.groups) {
+      final repository = _repository;
+      if (repository != null) _scheduleMissingReads(repository);
+    }
   }
 
   @override
@@ -123,10 +86,7 @@ final class _SettingsSnapshotGateState extends State<SettingsSnapshotGate>
       final stale = statuses.contains(SettingsReadStatus.stale);
       return Stack(
         children: [
-          AbsorbPointer(
-            absorbing: statuses.contains(SettingsReadStatus.refreshing),
-            child: widget.builder(context),
-          ),
+          widget.builder(context),
           if (stale)
             Positioned(
               top: 0,
@@ -140,6 +100,7 @@ final class _SettingsSnapshotGateState extends State<SettingsSnapshotGate>
                       onPressed: () {
                         for (final group in widget.groups) {
                           if (repository.status(group) == SettingsReadStatus.stale) {
+                            _requested.add(group);
                             unawaited(repository.refresh(group, force: true));
                           }
                         }
@@ -161,6 +122,7 @@ final class _SettingsSnapshotGateState extends State<SettingsSnapshotGate>
           onPressed: () {
             for (final group in widget.groups) {
               if (repository.status(group) != SettingsReadStatus.ready) {
+                _requested.add(group);
                 unawaited(repository.refresh(group, force: true));
               }
             }

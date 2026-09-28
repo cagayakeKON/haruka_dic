@@ -60,7 +60,7 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/PATCH users/me/profile | 本人显示名、可选出生年份/性别、资料完整度；field mask + expected_revision | profile.read/update；拒绝邮箱/角色/状态/权限及整数年龄写入，可选人口字段默认不进入AI |
 | GET/PATCH users/me/study-profile | 母语/解释语言、目标语言/当前语言、各语言水平/目标；field mask + expected_revision | profile.read/update；受版本化语言能力目录约束，移除默认值不删除历史学习数据 |
 | GET/PATCH users/me/settings | 模型/声音、时区、AI习题默认、阅读/朗读、theme/显示默认；field mask + expected_revision | profile.read/update；本机缓存/服务地址不伪装服务器字段，拒绝修改派生掌握/权限/配额 |
-| POST users/me/avatar-upload-intents；POST users/me/avatar-upload-intents/{id}/complete；DELETE users/me/avatar | 本人avatar用途临时上传、验证/重编码后原子替换或删除当前头像 | profile.read+profile.avatar.update；只接受配置允许的静态图片，不接受外链/任意FileObject ID；替换使用profile expected_revision，删除保留受控GC |
+| POST users/me/avatar-upload-intents；POST users/me/avatar-upload-intents/{id}/complete；DELETE users/me/avatar | 本人avatar用途临时上传、验证/重编码后原子替换或删除当前头像。完成请求为 application/json，包含资料 expected_revision 与 image_base64；declared_format 必须与实际魔数一致。本切片不提供预签名直传或容量预留 | profile.read+profile.avatar.update；只接受配置允许的静态图片，不接受外链/任意FileObject ID；替换使用profile expected_revision，删除保留受控GC |
 | GET users/me/avatar | 当前本人私有头像媒体；无头像返回404/受控空态 | profile.read；每次鉴权，`Cache-Control: private, no-store`，不要求avatar.update，不产生长期公共URL或跨账号ETag，不因知道asset ID/旧revision读取他人对象 |
 | GET/POST/PATCH/DELETE provider-credentials；POST {id}/test；GET {id}/tests/{run_id} | 掩码/增删轮换；显式单能力固定最小样本异步测试，202返回job_id/run_id，读取持久安全结果 | credential.read/manage/test；测试需test，结果需read及本人凭据/run归属；Job进度另验job.read与来源，永不GET明文 |
 | GET users/me/model-usage | 本人按时间范围、供应商、模型、能力、操作类型聚合的调用状态及input/output/cache等用量；可按有权run查询明细 | credential.read与self范围；未知分项为null，应用缓存命中不冒充模型调用，不返回Key/Prompt/回复；口径见[模型用量统计](model-usage.md) |

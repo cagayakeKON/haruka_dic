@@ -15,8 +15,19 @@ import '../core/cache/cache_coordinator.dart';
 import '../core/cache/cache_session_binding.dart';
 import '../core/auth/email_action_link.dart';
 import '../core/telemetry/telemetry.dart';
+import '../dev/preview/fixture_store.dart';
+import '../dev/preview/settings_cache_adapter.dart';
 import '../features/collections/reference_controller.dart';
 import '../features/collections/reference_repository.dart';
+import '../features/settings/data/cached_settings_repository.dart';
+import '../features/settings/data/http_settings_source.dart';
+import '../features/settings/data/language_capabilities.dart';
+import '../features/settings/data/service_endpoint_store.dart';
+import '../features/settings/domain/settings_snapshot.dart';
+import '../features/settings/domain/service_endpoint.dart';
+import '../features/settings/presentation/service_endpoint_form.dart';
+import '../features/settings/presentation/settings_chrome.dart';
+import '../features/settings/presentation/settings_pages.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
 import '../shared/identified.dart';
@@ -55,12 +66,21 @@ class _HarukaAppState extends State<HarukaApp> {
   late final AuthController _auth;
   late final CacheCoordinator _cache;
   late final CacheSessionBinding _cacheBinding;
+  late final PreviewFixtureStore _settingsDraft;
+  late final PreviewSettingsCacheAdapter _settingsCache;
+  late final CachedSettingsRepository _settingsRepository;
+  late final ServiceEndpointController _serviceEndpoints;
+  final ServiceEndpointStore _endpointStore = ServiceEndpointStore();
   StreamSubscription<void>? _cacheChanges;
   late final Telemetry _telemetry;
   FlutterExceptionHandler? _previousFlutterError;
   bool Function(Object, StackTrace)? _previousPlatformError;
   String? _lastRoute;
   SemanticsHandle? _semantics;
+  int? _preferencesRequestedScope;
+  int? _languagesRequestedScope;
+  LanguageCapabilities? _languages;
+  bool _languageReadFailed = false;
 
   @override
   void initState() {
@@ -79,8 +99,61 @@ class _HarukaAppState extends State<HarukaApp> {
       ],
     );
     _auth = _providers.read(authControllerProvider);
-    _cacheBinding = CacheSessionBinding(_auth, widget.config, _cache);
+    _cacheBinding = CacheSessionBinding(
+      _auth,
+      widget.config,
+      _cache,
+      endpoint: () => _api.endpoint,
+      instanceId: () => _api.instanceId,
+    );
+    _serviceEndpoints = ServiceEndpointController(
+      canSwitch: widget.config.platform != AppPlatform.web,
+      allowDevelopmentHttp: widget.config.environment == 'dev',
+      currentEndpoint: () => _api.endpoint,
+      currentInstance: () => _api.instanceId,
+      signedIn: () => _auth.isAuthenticated,
+      probe: probeServiceEndpoint,
+      signOut: () => _auth.signOut(),
+      clearCache: _cache.closeScope,
+      retarget: _api.retarget,
+      stopOldActions: _auth.invalidateForInstanceSwitch,
+      resumeActions: _auth.finishInstanceSwitch,
+      bindInstance: _auth.adoptInstance,
+      verify: () async {
+        await _api.verifyInstance();
+        await _auth.reloadPolicy();
+        if (widget.config.platform == AppPlatform.web) return;
+        await _endpointStore.save(_api.endpoint, _api.instanceId);
+      },
+      recordProbe: ({required result, required durationMs}) {
+        _telemetry.track(
+          'connection.probed',
+          attributes: {'result': result, 'duration_ms': durationMs},
+        );
+      },
+      recordSwitch: ({required result}) {
+        _telemetry.track(
+          'account.scope.changed',
+          attributes: {'reason': 'instance_switch', 'result': result},
+        );
+      },
+    );
+    _settingsDraft = PreviewFixtureStore();
+    _settingsCache = PreviewSettingsCacheAdapter(coordinator: _cache, ownsScope: false);
+    _settingsRepository = CachedSettingsRepository(
+      cache: _cache,
+      source: HttpSettingsSource(
+        _api,
+        read: <T>(action) => _auth.authorizedRead(action),
+        write: <T>(action) => _auth.authorizedWrite(action),
+      ),
+      waitForReadiness: () => _cacheBinding.settled,
+    );
+    _settingsRepository.addListener(_onSettingsChanged);
+    _auth.addListener(_onAuthChanged);
     _cacheChanges = _cache.changes.listen((_) {
+      _requestPreferencesForScope();
+      _requestLanguagesForScope();
       if (mounted) setState(() {});
     });
     _telemetry = Telemetry(widget.config, _api, _auth);
@@ -92,6 +165,16 @@ class _HarukaAppState extends State<HarukaApp> {
       initialLocation: widget.initialLocation,
       emailAction: widget.emailAction,
       telemetry: _telemetry,
+      settingsPage: (context, section) => AccountSettingsHost(
+        store: _settingsDraft,
+        cache: _settingsCache,
+        repository: _settingsRepository,
+        child: section == null
+            ? const SettingsPage(framed: false)
+            : SettingsDetailPage(section: section, framed: false),
+      ),
+      settingsSource: _settingsRepository.source,
+      settingsRepository: _settingsRepository,
     );
     _router.routeInformationProvider.addListener(_observeRoute);
     _observeRoute();
@@ -106,9 +189,7 @@ class _HarukaAppState extends State<HarukaApp> {
         return true;
       };
     }
-    unawaited(
-      _auth.start(admin: (widget.initialLocation ?? Uri.base.path).startsWith(AppRoutes.admin)),
-    );
+    unawaited(_openSavedEndpoint());
     if (kIsWeb) {
       _semantics = SemanticsBinding.instance.ensureSemantics();
     }
@@ -120,6 +201,12 @@ class _HarukaAppState extends State<HarukaApp> {
       FlutterError.onError = _previousFlutterError;
       WidgetsBinding.instance.platformDispatcher.onError = _previousPlatformError;
     }
+    _serviceEndpoints.dispose();
+    _auth.removeListener(_onAuthChanged);
+    _settingsRepository.removeListener(_onSettingsChanged);
+    _settingsRepository.dispose();
+    _settingsCache.dispose();
+    _settingsDraft.dispose();
     _router.routeInformationProvider.removeListener(_observeRoute);
     _router.dispose();
     _api.beginRequestObservation = null;
@@ -130,6 +217,81 @@ class _HarukaAppState extends State<HarukaApp> {
     if (widget.api == null) _api.close();
     _semantics?.dispose();
     super.dispose();
+  }
+
+  Future<void> _openSavedEndpoint() async {
+    final saved = await _endpointStore.read(
+      allowDevelopmentHttp: widget.config.environment == 'dev',
+    );
+    if (!mounted) return;
+    if (saved != null && widget.config.platform != AppPlatform.web) {
+      _api.retarget(saved.endpoint, saved.instanceId);
+      _auth.adoptInstance(saved.endpoint, saved.instanceId);
+    }
+    await _auth.start(admin: (widget.initialLocation ?? Uri.base.path).startsWith(AppRoutes.admin));
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onAuthChanged() {
+    _requestPreferencesForScope();
+    _requestLanguagesForScope();
+    if (mounted) setState(() {});
+  }
+
+  void _requestLanguagesForScope() {
+    if (!_auth.isAuthenticated || _auth.admin) {
+      _languagesRequestedScope = null;
+      _languages = null;
+      _languageReadFailed = false;
+      return;
+    }
+    final scope = _cache.scopeGeneration;
+    if (_languagesRequestedScope == scope) return;
+    _languagesRequestedScope = scope;
+    _languages = null;
+    _languageReadFailed = false;
+    unawaited(
+      Future<void>(() async {
+        try {
+          final loaded = await readLanguageCapabilities(_api, _auth);
+          if (!mounted ||
+              !_auth.isAuthenticated ||
+              _auth.admin ||
+              _languagesRequestedScope != scope ||
+              _cache.scopeGeneration != scope) {
+            return;
+          }
+          setState(() {
+            _languages = loaded;
+            _languageReadFailed = false;
+          });
+        } on Object {
+          if (!mounted || _languagesRequestedScope != scope || _cache.scopeGeneration != scope) {
+            return;
+          }
+          setState(() {
+            _languagesRequestedScope = null;
+            _languageReadFailed = true;
+          });
+        }
+      }),
+    );
+  }
+
+  void _requestPreferencesForScope() {
+    if (!_auth.isAuthenticated ||
+        _auth.admin ||
+        !(_auth.access?.allows('client.profile.read') ?? false)) {
+      _preferencesRequestedScope = null;
+      return;
+    }
+    final scope = _settingsRepository.scopeGeneration;
+    if (_preferencesRequestedScope == scope) return;
+    _preferencesRequestedScope = scope;
+    scheduleMicrotask(() => _settingsRepository.refresh(SettingsGroup.preferences));
   }
 
   void _observeRoute() {
@@ -147,6 +309,7 @@ class _HarukaAppState extends State<HarukaApp> {
       AppRoutes.accountSessions || AppRoutes.adminSessions => 'sessions',
       AppRoutes.materials => 'materials',
       AppRoutes.collections => 'collection',
+      AppRoutes.settings => 'settings',
       AppRoutes.admin => 'admin_policy',
       _ => null,
     };
@@ -154,48 +317,77 @@ class _HarukaAppState extends State<HarukaApp> {
   }
 
   @override
-  Widget build(BuildContext context) => UncontrolledProviderScope(
-    container: _providers,
-    child: MaterialApp.router(
-      title: widget.config.displayName,
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: appTheme(),
-      builder: (context, child) => AnimatedBuilder(
-        animation: _cacheBinding.foregroundRevalidating,
-        builder: (context, _) {
-          final revalidating = _cacheBinding.foregroundRevalidating.value;
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: HarukaTheme.systemUiOverlayStyle(context),
-            child: switch (_cache.terminalReason) {
-              'cache_update_required' ||
-              'cache_writer_unavailable' => CacheBlockedScreen(reason: _cache.terminalReason!),
-              _ => Stack(
-                children: [
-                  Positioned.fill(
-                    child: Offstage(
-                      offstage: revalidating,
-                      child: ExcludeFocus(
-                        excluding: revalidating,
-                        child: IgnorePointer(
-                          ignoring: revalidating,
-                          child: child ?? const SizedBox.shrink(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (revalidating)
-                    const Positioned.fill(child: CacheBlockedScreen(reason: 'revalidating')),
-                ],
+  Widget build(BuildContext context) {
+    final preferences = _auth.isAuthenticated
+        ? _settingsRepository.snapshot(SettingsGroup.preferences)
+        : null;
+    final themeMode = switch (preferences?.fields['theme_mode']) {
+      'dark' => ThemeMode.dark,
+      'light' => ThemeMode.light,
+      _ => ThemeMode.system,
+    };
+    final reduceMotion = preferences?.fields['reduce_motion'] == 'on';
+    return UncontrolledProviderScope(
+      container: _providers,
+      child: MaterialApp.router(
+        title: widget.config.displayName,
+        debugShowCheckedModeBanner: false,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: appTheme(),
+        darkTheme: HarukaTheme.dark(),
+        themeMode: themeMode,
+        builder: (context, child) => ServiceEndpointScope(
+          controller: _serviceEndpoints,
+          child: LanguageCapabilitiesScope(
+            value: _languages,
+            failed: _languageReadFailed,
+            retry: _requestLanguagesForScope,
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: MediaQuery.disableAnimationsOf(context) || reduceMotion,
               ),
-            },
-          );
-        },
+              child: AnimatedBuilder(
+                animation: _cacheBinding.foregroundRevalidating,
+                builder: (context, _) {
+                  final revalidating = _cacheBinding.foregroundRevalidating.value;
+                  return AnnotatedRegion<SystemUiOverlayStyle>(
+                    value: HarukaTheme.systemUiOverlayStyle(context),
+                    child: switch (_cache.terminalReason) {
+                      'cache_update_required' || 'cache_writer_unavailable' => CacheBlockedScreen(
+                        reason: _cache.terminalReason!,
+                      ),
+                      _ => Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Offstage(
+                              offstage: revalidating,
+                              child: ExcludeFocus(
+                                excluding: revalidating,
+                                child: IgnorePointer(
+                                  ignoring: revalidating,
+                                  child: child ?? const SizedBox.shrink(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (revalidating)
+                            const Positioned.fill(
+                              child: CacheBlockedScreen(reason: 'revalidating'),
+                            ),
+                        ],
+                      ),
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        routerConfig: _router,
       ),
-      routerConfig: _router,
-    ),
-  );
+    );
+  }
 }
 
 class ConfigurationErrorApp extends StatelessWidget {

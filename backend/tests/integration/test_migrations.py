@@ -338,6 +338,94 @@ async def upgrade_only_0001(target: MigrationTarget) -> None:
         await connection.run_sync(apply)
 
 
+async def upgrade_only_0004(target: MigrationTarget) -> None:
+    """Prepare the last delivered revision under the owned migration lock."""
+    resources = load_migration_resources(MIGRATIONS)
+    async with locked_connection(target.settings) as (connection, ownership):
+
+        def apply(sync: object) -> None:
+            from sqlalchemy import Connection
+
+            assert isinstance(sync, Connection)
+            config = resources.config()
+            config.attributes["connection"] = sync
+            config.attributes["lock_ownership"] = ownership
+            command.upgrade(config, "0004_learning_collections")
+
+        await connection.run_sync(apply)
+
+
+async def test_prior_revision_profile_avatar_upgrade_preserves_existing_account(
+    target: MigrationTarget,
+) -> None:
+    await upgrade_only_0004(target)
+    user_id, extension_id = uuid4(), uuid4()
+    engine = create_maintenance_engine(target.settings)
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "INSERT INTO users (id,email,email_normalized,password_hash,status) "
+                    "VALUES (:id,'prior@example.test','prior@example.test','synthetic-hash','active')"
+                ),
+                {"id": user_id},
+            )
+            await connection.execute(
+                text(
+                    "INSERT INTO user_extensions "
+                    "(id,user_id,profile_revision,study_revision,settings_revision) "
+                    "VALUES (:id,:user_id,2,3,4)"
+                ),
+                {"id": extension_id, "user_id": user_id},
+            )
+        async with engine.connect() as connection:
+            before = (
+                await connection.execute(
+                    text(
+                        "SELECT user_id,profile_revision,study_revision,settings_revision,"
+                        "created_at,updated_at FROM user_extensions WHERE id=:id"
+                    ),
+                    {"id": extension_id},
+                )
+            ).one()
+        upgraded = await upgrade_database(target.settings, MIGRATIONS)
+        assert upgraded.current_revision == EXPECTED_REVISION
+        async with engine.connect() as connection:
+            after = (
+                await connection.execute(
+                    text(
+                        "SELECT user_id,profile_revision,study_revision,settings_revision,"
+                        "created_at,updated_at,ui_locale,theme_mode,reduce_motion,"
+                        "use_optional_demographics_for_ai,avatar_asset_id "
+                        "FROM user_extensions WHERE id=:id"
+                    ),
+                    {"id": extension_id},
+                )
+            ).one()
+            assert tuple(after[:6]) == tuple(before)
+            assert after.created_at.tzinfo is not None
+            assert after.updated_at.tzinfo is not None
+            assert tuple(after[6:]) == ("zh-Hans", "system", "system", False, None)
+            assert (
+                await connection.scalar(
+                    text("SELECT count(*) FROM users WHERE id=:id"), {"id": user_id}
+                )
+                == 1
+            )
+            assert (
+                await connection.scalar(
+                    text(
+                        "SELECT count(*) FROM pg_constraint c JOIN pg_namespace n "
+                        "ON n.oid=c.connamespace WHERE n.nspname=current_schema() "
+                        "AND c.contype='f'"
+                    )
+                )
+                == 0
+            )
+    finally:
+        await engine.dispose()
+
+
 @pytest.mark.parametrize(
     "invalid",
     [None, "orphan_permission", "wrong_scope", "wrong_audience", "orphan_role", "orphan_user"],

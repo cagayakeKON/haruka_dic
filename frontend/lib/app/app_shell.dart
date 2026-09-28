@@ -20,6 +20,16 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ProviderScope.containerOf(context).read(authControllerProvider);
+    return ListenableBuilder(
+      listenable: auth,
+      builder: (context, _) => auth.isAuthenticated && !auth.admin
+          ? _ClientShell(location: location, auth: auth, child: child)
+          : _buildPublicShell(context),
+    );
+  }
+
+  Widget _buildPublicShell(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final selected = location == AppRoutes.environment ? 1 : 0;
     void navigate(int index) => context.go(index == 0 ? AppRoutes.home : AppRoutes.environment);
@@ -66,6 +76,12 @@ class AppShell extends StatelessWidget {
                                 onPressed: () => context.go(AppRoutes.collections),
                                 icon: const Icon(Icons.bookmark_outline),
                               ),
+                            ),
+                          if (auth.access!.allows('client.profile.read'))
+                            IconButton(
+                              tooltip: strings.mockSettingMyTitle,
+                              onPressed: () => context.go(AppRoutes.settings),
+                              icon: const Icon(Icons.tune),
                             ),
                         ],
                       );
@@ -227,6 +243,133 @@ class WideNavigation extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The signed-in shell exposes only routes delivered in the current slice.
+class _ClientShell extends StatelessWidget {
+  const _ClientShell({required this.location, required this.child, required this.auth});
+
+  final String location;
+  final Widget child;
+  final AuthController auth;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final items = <(String, String, IconData, String)>[
+      if (auth.access?.allows('client.material.list') ?? false)
+        (UiTestIds.referenceMaterialsNav, '材料', Icons.auto_stories_outlined, AppRoutes.materials),
+      if (auth.access?.allows('client.collection.read') ?? false)
+        (
+          UiTestIds.referenceCollectionsNav,
+          l10n.mockShellNotebooks,
+          Icons.bookmark_outline,
+          AppRoutes.collections,
+        ),
+      if (auth.access?.allows('client.profile.read') ?? false)
+        (
+          UiTestIds.accountNavigation,
+          l10n.mockSettingMyTitle,
+          Icons.person_outline,
+          AppRoutes.settings,
+        ),
+    ];
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final detail = location.startsWith('${AppRoutes.settings}/');
+    final section = detail ? location.substring(AppRoutes.settings.length + 1) : '';
+    final compactTitle = switch (section) {
+      'profile' => l10n.mockSettingProfile,
+      'languages' => l10n.mockSettingLanguageOptions,
+      'appearance' => l10n.mockSettingAppearance,
+      'readingPrefs' => l10n.mockSettingReadingPreferences,
+      'queryPreferences' => l10n.mockSettingQueryContext,
+      'cache' => l10n.mockSettingLocalCache,
+      'security' => l10n.mockSettingSecurityAccount,
+      'connection' => l10n.mockSettingServiceConnection,
+      _ => l10n.mockSettingMyTitle,
+    };
+    final selection = items.indexWhere(
+      (item) => location == item.$4 || location.startsWith('${item.$4}/'),
+    );
+    final selected = selection < 0 ? 0 : selection;
+    return Scaffold(
+      appBar: AppBar(
+        leading: compact && detail
+            ? IconButton(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go(AppRoutes.settings),
+              )
+            : null,
+        title: Text(
+          compact && (location == AppRoutes.settings || detail) ? compactTitle : 'haruka',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        actions: [
+          IconButton(
+            tooltip: l10n.authAccount,
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => context.go(AppRoutes.account),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        bottom: !compact,
+        child: Row(
+          children: [
+            if (!compact && items.isNotEmpty)
+              SizedBox(
+                width: MediaQuery.sizeOf(context).width >= 1280 ? 248 : 224,
+                child: ColoredBox(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      for (var i = 0; i < items.length; i++)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Identified(
+                            id: items[i].$1,
+                            merge: true,
+                            child: ListTile(
+                              leading: Icon(items[i].$3),
+                              title: Text(items[i].$2),
+                              selected: i == selected,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              tileColor: i == selected
+                                  ? Theme.of(context).colorScheme.primaryContainer
+                                  : null,
+                              onTap: () => context.go(items[i].$4),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            Expanded(child: child),
+          ],
+        ),
+      ),
+      bottomNavigationBar: compact && !detail && items.isNotEmpty
+          ? NavigationBar(
+              selectedIndex: selected,
+              onDestinationSelected: (index) => context.go(items[index].$4),
+              destinations: [
+                for (final item in items)
+                  Identified(
+                    id: item.$1,
+                    merge: true,
+                    child: NavigationDestination(icon: Icon(item.$3), label: item.$2),
+                  ),
+              ],
+            )
+          : null,
     );
   }
 }

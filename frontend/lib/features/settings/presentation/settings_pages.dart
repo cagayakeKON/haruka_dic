@@ -7,15 +7,21 @@ import 'package:haruka/app/routes.dart';
 import 'package:haruka/app/motion.dart';
 import 'package:haruka/app/theme.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
+import 'package:haruka/generated/ui_test_ids.dart';
 import 'package:haruka/dev/preview/settings_cache_adapter.dart';
 import 'package:haruka/features/settings/data/cached_settings_repository.dart';
+import 'package:haruka/features/settings/data/language_capabilities.dart';
 import 'package:haruka/features/settings/domain/settings_snapshot.dart';
+import 'package:haruka/features/settings/presentation/settings_chrome.dart';
 import 'package:haruka/features/settings/presentation/settings_repository_scope.dart';
 import 'package:haruka/features/settings/presentation/settings_snapshot_gate.dart';
 import 'package:haruka/shared/presentation/components.dart';
 import 'package:haruka/features/settings/presentation/profile_page.dart';
+import 'package:haruka/features/settings/presentation/avatar_row.dart';
+import 'package:haruka/features/settings/presentation/service_endpoint_form.dart';
 import 'package:haruka/features/settings/presentation/settings_form_draft.dart';
 import 'package:haruka/features/settings/data/settings_source.dart';
+import 'package:haruka/features/settings/data/http_settings_source.dart';
 import 'package:haruka/app/preview_shell.dart';
 import 'package:haruka/app/page_route_activity.dart';
 import 'package:haruka/app/lifecycle_visibility.dart';
@@ -61,81 +67,91 @@ String? mockLearningLevelSummary(BuildContext context) {
   return l10n.mockSettingLanguageLevelSummary(language, level);
 }
 
-Map<String, List<(String, String, IconData, String)>> mockSettingGroups(BuildContext context) =>
-    <String, List<(String, String, IconData, String)>>{
-      AppLocalizations.of(context).mockSettingAccountLanguageGroup: [
-        (
-          'profile',
-          AppLocalizations.of(context).mockSettingProfile,
-          Icons.person_outline,
-          AppLocalizations.of(context).mockSettingProfileSubtitle,
-        ),
-        (
-          'languages',
-          AppLocalizations.of(context).mockSettingLanguageOptions,
-          Icons.language_outlined,
-          mockLanguageOptionsSummary(context),
-        ),
-        (
-          'security',
-          AppLocalizations.of(context).mockSettingSecurityAccount,
-          Icons.shield_outlined,
-          AppLocalizations.of(context).mockSettingSecurityAccountSubtitle,
-        ),
+Map<String, List<(String, String, IconData, String)>> mockSettingGroups(BuildContext context) {
+  final groups = <String, List<(String, String, IconData, String)>>{
+    AppLocalizations.of(context).mockSettingAccountLanguageGroup: [
+      (
+        'profile',
+        AppLocalizations.of(context).mockSettingProfile,
+        Icons.person_outline,
+        AppLocalizations.of(context).mockSettingProfileSubtitle,
+      ),
+      (
+        'languages',
+        AppLocalizations.of(context).mockSettingLanguageOptions,
+        Icons.language_outlined,
+        mockLanguageOptionsSummary(context),
+      ),
+      (
+        'security',
+        AppLocalizations.of(context).mockSettingSecurityAccount,
+        Icons.shield_outlined,
+        AppLocalizations.of(context).mockSettingSecurityAccountSubtitle,
+      ),
+    ],
+    AppLocalizations.of(context).mockSettingReadingDisplayGroup: [
+      (
+        'appearance',
+        AppLocalizations.of(context).mockSettingAppearance,
+        Icons.light_mode_outlined,
+        AppLocalizations.of(context).mockSettingAppearanceSubtitle,
+      ),
+      (
+        'readingPrefs',
+        AppLocalizations.of(context).mockSettingReadingPreferences,
+        Icons.menu_book_outlined,
+        AppLocalizations.of(context).mockSettingReadingPreferencesSubtitle,
+      ),
+      (
+        'speech',
+        AppLocalizations.of(context).mockSettingSpeech,
+        Icons.headphones_outlined,
+        AppLocalizations.of(context).mockSettingSpeechSubtitle,
+      ),
+    ],
+    AppLocalizations.of(context).mockSettingModelDeviceGroup: [
+      (
+        'queryPreferences',
+        AppLocalizations.of(context).mockSettingQueryContext,
+        Icons.chat_bubble_outline,
+        AppLocalizations.of(context).mockSettingQueryContextSubtitle,
+      ),
+      (
+        'model',
+        AppLocalizations.of(context).mockSettingPersonalModel,
+        Icons.auto_awesome_outlined,
+        AppLocalizations.of(context).mockSettingPersonalModelSubtitle,
+      ),
+      (
+        'usage',
+        AppLocalizations.of(context).mockSettingModelUsage,
+        Icons.grid_view_outlined,
+        AppLocalizations.of(context).mockSettingModelUsageSubtitle,
+      ),
+      (
+        'cache',
+        AppLocalizations.of(context).mockSettingLocalCache,
+        Icons.storage_outlined,
+        AppLocalizations.of(context).mockSettingLocalCacheSubtitle,
+      ),
+      (
+        'connection',
+        AppLocalizations.of(context).mockSettingServiceConnection,
+        Icons.language_outlined,
+        AppLocalizations.of(context).mockSettingServiceConnectionSubtitle,
+      ),
+    ],
+  };
+  if (settingsUsePreviewAvatar(context)) return groups;
+  const previewOnly = {'speech', 'model', 'usage'};
+  return {
+    for (final group in groups.entries)
+      group.key: [
+        for (final item in group.value)
+          if (!previewOnly.contains(item.$1)) item,
       ],
-      AppLocalizations.of(context).mockSettingReadingDisplayGroup: [
-        (
-          'appearance',
-          AppLocalizations.of(context).mockSettingAppearance,
-          Icons.light_mode_outlined,
-          AppLocalizations.of(context).mockSettingAppearanceSubtitle,
-        ),
-        (
-          'readingPrefs',
-          AppLocalizations.of(context).mockSettingReadingPreferences,
-          Icons.menu_book_outlined,
-          AppLocalizations.of(context).mockSettingReadingPreferencesSubtitle,
-        ),
-        (
-          'speech',
-          AppLocalizations.of(context).mockSettingSpeech,
-          Icons.headphones_outlined,
-          AppLocalizations.of(context).mockSettingSpeechSubtitle,
-        ),
-      ],
-      AppLocalizations.of(context).mockSettingModelDeviceGroup: [
-        (
-          'queryPreferences',
-          AppLocalizations.of(context).mockSettingQueryContext,
-          Icons.chat_bubble_outline,
-          AppLocalizations.of(context).mockSettingQueryContextSubtitle,
-        ),
-        (
-          'model',
-          AppLocalizations.of(context).mockSettingPersonalModel,
-          Icons.auto_awesome_outlined,
-          AppLocalizations.of(context).mockSettingPersonalModelSubtitle,
-        ),
-        (
-          'usage',
-          AppLocalizations.of(context).mockSettingModelUsage,
-          Icons.grid_view_outlined,
-          AppLocalizations.of(context).mockSettingModelUsageSubtitle,
-        ),
-        (
-          'cache',
-          AppLocalizations.of(context).mockSettingLocalCache,
-          Icons.storage_outlined,
-          AppLocalizations.of(context).mockSettingLocalCacheSubtitle,
-        ),
-        (
-          'connection',
-          AppLocalizations.of(context).mockSettingServiceConnection,
-          Icons.language_outlined,
-          AppLocalizations.of(context).mockSettingServiceConnectionSubtitle,
-        ),
-      ],
-    };
+  };
+}
 
 String mockSettingTitle(BuildContext context, String key) {
   for (final group in mockSettingGroups(context).values) {
@@ -147,7 +163,9 @@ String mockSettingTitle(BuildContext context, String key) {
 }
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({this.framed = true, super.key});
+
+  final bool framed;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -160,7 +178,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   );
   CachedSettingsRepository? _repository;
   int? _scopeGeneration;
-  Timer? _refreshTimer;
+  final Set<SettingsGroup> _requested = {};
   bool _foreground = true;
   bool _active = false;
 
@@ -181,24 +199,33 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     }
     _repository = repository;
     _scopeGeneration = repository.scopeGeneration;
+    _requested.clear();
     _syncVisibility(force: true);
   }
 
-  void _refreshVisible(CachedSettingsRepository repository, {bool periodic = false}) {
+  Future<void> _refreshMissing(CachedSettingsRepository repository) async {
+    final scope = repository.scopeGeneration;
+    try {
+      await repository.waitForReadiness?.call();
+    } on Object {
+      return;
+    }
     if (!mounted ||
         !_foreground ||
         !_pageActivity.isCurrent ||
-        !identical(repository, _repository)) {
+        !identical(repository, _repository) ||
+        scope != repository.scopeGeneration) {
       return;
     }
     for (final group in [SettingsGroup.profile, SettingsGroup.studyProfile]) {
-      if (periodic &&
-          (repository.busy(group) ||
-              repository.status(group) == SettingsReadStatus.loading ||
-              repository.status(group) == SettingsReadStatus.refreshing)) {
+      if (_requested.contains(group) ||
+          repository.snapshot(group) != null ||
+          repository.status(group) == SettingsReadStatus.loading ||
+          repository.status(group) == SettingsReadStatus.refreshing) {
         continue;
       }
-      unawaited(repository.refresh(group, force: true));
+      _requested.add(group);
+      unawaited(repository.refresh(group));
     }
   }
 
@@ -206,16 +233,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     final visible = _pageActivity.isCurrent;
     if (!force && visible == _active) return;
     _active = visible;
-    _refreshTimer?.cancel();
-    _refreshTimer = null;
     if (!visible) return;
     final repository = _repository;
     if (repository == null) return;
-    scheduleMicrotask(() => _refreshVisible(repository));
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _refreshVisible(repository, periodic: true),
-    );
+    scheduleMicrotask(() => _refreshMissing(repository));
   }
 
   @override
@@ -226,17 +247,35 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _refreshTimer?.cancel();
     _pageActivity.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => PreviewPageFrame(
-    location: AppRoutes.mockSettings,
+  Widget build(BuildContext context) => settingsChrome(
+    context: context,
+    framed: widget.framed,
+    location: settingsHome(context),
     title: AppLocalizations.of(context).mockSettingMyTitle,
     mobile: const MobileSettingsView(),
     desktop: const DesktopSettingsView(),
+  );
+}
+
+Widget _settingsAvatar(BuildContext context, HarukaColors roles) {
+  final repository = SettingsRepositoryScope.of(context);
+  final auth = sessionAuth(context);
+  final source = repository.source;
+  if (!settingsUsePreviewAvatar(context) && auth != null && source is HttpSettingsSource) {
+    return OwnerAvatarRow(api: source.api, repository: repository, auth: auth, badgeOnly: true);
+  }
+  return CircleAvatar(
+    radius: 26,
+    backgroundColor: roles.signal,
+    child: Text(
+      AppLocalizations.of(context).mockSettingAvatarGlyph,
+      style: TextStyle(color: roles.onSignal),
+    ),
   );
 }
 
@@ -255,35 +294,34 @@ class MobileSettingsView extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 11),
-            leading: CircleAvatar(
-              radius: 23,
-              backgroundColor: roles.signal,
-              child: Text(
-                AppLocalizations.of(context).mockSettingAvatarGlyph,
-                style: TextStyle(color: roles.onSignal, fontWeight: FontWeight.w700),
-              ),
-            ),
+            leading: _settingsAvatar(context, roles),
             title: Text(
               displayNameOrFallback(context, profile?.fields['display_name'] as String? ?? ''),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(AppRoutes.mockSettingPath('profile')),
+            onTap: () => context.push(settingsSectionPath(context, 'profile')),
           ),
         ),
         const SizedBox(height: 18),
         for (final group in [
           (
             AppLocalizations.of(context).mockSettingLearningPreferencesGroup,
-            ['languages', 'appearance', 'readingPrefs', 'speech'],
+            settingsUsePreviewAvatar(context)
+                ? ['languages', 'appearance', 'readingPrefs', 'speech']
+                : ['languages', 'appearance', 'readingPrefs'],
           ),
           (
             AppLocalizations.of(context).mockSettingModelDataGroup,
-            ['queryPreferences', 'model', 'usage', 'cache'],
+            settingsUsePreviewAvatar(context)
+                ? ['queryPreferences', 'model', 'usage', 'cache']
+                : ['queryPreferences', 'cache'],
           ),
           (
             AppLocalizations.of(context).mockSettingAccountUpdatesGroup,
-            ['notifications', 'jobs', 'security'],
+            settingsUsePreviewAvatar(context)
+                ? ['notifications', 'jobs', 'security']
+                : ['security'],
           ),
           (AppLocalizations.of(context).mockSettingMoreGroup, ['connection']),
         ]) ...[
@@ -332,7 +370,7 @@ Widget _settingRow(BuildContext context, String key) {
           ? AppRoutes.mockNotifications
           : key == 'jobs'
           ? AppRoutes.mockJobs
-          : AppRoutes.mockSettingPath(key),
+          : settingsSectionPath(context, key),
     ),
   );
 }
@@ -360,14 +398,7 @@ class DesktopSettingsView extends StatelessWidget {
               padding: EdgeInsets.zero,
               child: ListTile(
                 contentPadding: const EdgeInsets.all(20),
-                leading: CircleAvatar(
-                  radius: 26,
-                  backgroundColor: roles.signal,
-                  child: Text(
-                    AppLocalizations.of(context).mockSettingAvatarGlyph,
-                    style: TextStyle(color: roles.onSignal),
-                  ),
-                ),
+                leading: _settingsAvatar(context, roles),
                 title: Text(
                   displayNameOrFallback(context, profile?.fields['display_name'] as String? ?? ''),
                   style: Theme.of(context).textTheme.titleMedium,
@@ -377,7 +408,7 @@ class DesktopSettingsView extends StatelessWidget {
                   null => null,
                 },
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(AppRoutes.mockSettingPath('profile')),
+                onTap: () => context.push(settingsSectionPath(context, 'profile')),
               ),
             ),
           ),
@@ -425,7 +456,7 @@ class DesktopSettingsView extends StatelessWidget {
                                       title: Text(group.value[i].$2),
                                       trailing: const Icon(Icons.chevron_right, size: 18),
                                       onTap: () => context.push(
-                                        AppRoutes.mockSettingPath(group.value[i].$1),
+                                        settingsSectionPath(context, group.value[i].$1),
                                       ),
                                     ),
                                   ),
@@ -448,8 +479,9 @@ class DesktopSettingsView extends StatelessWidget {
 }
 
 class SettingsDetailPage extends StatefulWidget {
-  const SettingsDetailPage({required this.section, super.key});
+  const SettingsDetailPage({required this.section, this.framed = true, super.key});
   final String section;
+  final bool framed;
 
   @override
   State<SettingsDetailPage> createState() => _SettingsDetailPageState();
@@ -479,15 +511,18 @@ class _SettingsDetailPageState extends State<SettingsDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.section == 'profile') return const ProfileDetailPage();
+    if (widget.section == 'profile') return ProfileDetailPage(framed: widget.framed);
     final known = mockSettingGroups(context).values
         .any((group) => group.any((item) => item.$1 == widget.section));
     if (!known) {
       final message = Center(child: Text(AppLocalizations.of(context).notFoundDescription));
-      return PreviewPageFrame(
-        location: AppRoutes.mockSettingPath(widget.section),
+      return settingsChrome(
+        context: context,
+        framed: widget.framed,
+        location: settingsSectionPath(context, widget.section),
         title: AppLocalizations.of(context).notFoundTitle,
         detail: true,
+        onBack: () => context.go(settingsHome(context)),
         mobile: message,
         desktop: message,
       );
@@ -520,15 +555,42 @@ class _SettingsDetailPageState extends State<SettingsDetailPage> {
         queryBudget.text = logic.draft.queryBudgetText;
         _budgetScopeGeneration = logic.settings.scopeGeneration;
       }
-      return PreviewPageFrame(
-        location: AppRoutes.mockSettingPath(widget.section),
+      final canWrite =
+          settingsUsePreviewAvatar(context) ||
+          (sessionAuth(context)?.access?.allows('client.profile.update') ?? false);
+      final canUseLanguage = widget.section != 'languages' || logic.languageDirectoryReady;
+      final editable = groups.isEmpty || (canWrite && canUseLanguage);
+      final notice = !canWrite ? '此账号仅可查看设置。' : '语言目录暂不可用。';
+      final retry =
+          canWrite &&
+              !canUseLanguage &&
+              (LanguageCapabilitiesScope.scopeOf(context)?.failed ?? false)
+          ? LanguageCapabilitiesScope.scopeOf(context)?.retry
+          : null;
+      return settingsChrome(
+        context: context,
+        framed: widget.framed,
+        location: settingsSectionPath(context, widget.section),
         title: title,
         detail: true,
         detailNotifications: false,
         desktopBackLabel: AppLocalizations.of(context).mockSettingMyTitle,
-        onBack: () => context.go(AppRoutes.mockSettings),
-        mobile: MobileSettingsDetail(section: widget.section, logic: logic),
-        desktop: DesktopSettingsDetail(section: widget.section, title: title, logic: logic),
+        onBack: () => context.go(settingsHome(context)),
+        mobile: MobileSettingsDetail(
+          section: widget.section,
+          logic: logic,
+          editable: editable,
+          notice: notice,
+          retry: retry,
+        ),
+        desktop: DesktopSettingsDetail(
+          section: widget.section,
+          title: title,
+          logic: logic,
+          editable: editable,
+          notice: notice,
+          retry: retry,
+        ),
       );
     }
 
@@ -537,14 +599,30 @@ class _SettingsDetailPageState extends State<SettingsDetailPage> {
 }
 
 class MobileSettingsDetail extends StatelessWidget {
-  const MobileSettingsDetail({required this.section, required this.logic, super.key});
+  const MobileSettingsDetail({
+    required this.section,
+    required this.logic,
+    this.editable = true,
+    this.notice = '',
+    this.retry,
+    super.key,
+  });
   final String section;
   final SettingsLogic logic;
+  final bool editable;
+  final String notice;
+  final VoidCallback? retry;
 
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 9, 20, 30),
-    children: [_MobileSettingsContent(section: section, logic: logic)],
+    children: [
+      if (!editable) _settingsEditNotice(context, notice, retry),
+      AbsorbPointer(
+        absorbing: !editable,
+        child: _MobileSettingsContent(section: section, logic: logic),
+      ),
+    ],
   );
 }
 
@@ -553,11 +631,17 @@ class DesktopSettingsDetail extends StatelessWidget {
     required this.section,
     required this.title,
     required this.logic,
+    this.editable = true,
+    this.notice = '',
+    this.retry,
     super.key,
   });
   final String section;
   final String title;
   final SettingsLogic logic;
+  final bool editable;
+  final String notice;
+  final VoidCallback? retry;
 
   @override
   Widget build(BuildContext context) {
@@ -585,7 +669,7 @@ class DesktopSettingsDetail extends StatelessWidget {
                   children: [
                     for (final item in items)
                       TextButton.icon(
-                        onPressed: () => context.go(AppRoutes.mockSettingPath(item.$1)),
+                        onPressed: () => context.go(settingsSectionPath(context, item.$1)),
                         icon: Icon(item.$3, size: 17),
                         label: Align(alignment: Alignment.centerLeft, child: Text(item.$2)),
                         style: TextButton.styleFrom(
@@ -610,7 +694,15 @@ class DesktopSettingsDetail extends StatelessWidget {
                   constraints: const BoxConstraints(maxWidth: HarukaLayout.formMaxWidth),
                   child: SizedBox(
                     width: HarukaLayout.formMaxWidth,
-                    child: _DesktopSettingsContent(section: section, logic: logic),
+                    child: Column(
+                      children: [
+                        if (!editable) _settingsEditNotice(context, notice, retry),
+                        AbsorbPointer(
+                          absorbing: !editable,
+                          child: _DesktopSettingsContent(section: section, logic: logic),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -621,6 +713,17 @@ class DesktopSettingsDetail extends StatelessWidget {
     );
   }
 }
+
+Widget _settingsEditNotice(BuildContext context, String notice, VoidCallback? retry) => Padding(
+  padding: const EdgeInsets.only(bottom: 12),
+  child: Row(
+    children: [
+      Expanded(child: Text(notice)),
+      if (retry != null)
+        TextButton(onPressed: retry, child: Text(AppLocalizations.of(context).referenceRetry)),
+    ],
+  ),
+);
 
 class SettingsLogic {
   SettingsLogic(
@@ -644,6 +747,18 @@ class SettingsLogic {
       settings.snapshot(SettingsGroup.preferences)?.fields['theme_mode'] as String? ?? 'system';
   bool get reducedMotion =>
       settings.snapshot(SettingsGroup.preferences)?.fields['reduce_motion'] == 'on';
+  LanguageCapabilities? get languageCapabilities => LanguageCapabilitiesScope.maybeOf(context);
+  bool get languageDirectoryReady =>
+      settingsUsePreviewAvatar(context) || languageCapabilities != null;
+  List<String> get nativeOptions => settingsUsePreviewAvatar(context)
+      ? const ['zh-Hans', 'ja', 'en']
+      : languageCapabilities?.codes((item) => item.native) ?? const [];
+  List<String> get explanationOptions => settingsUsePreviewAvatar(context)
+      ? const ['zh-Hans', 'ja', 'en']
+      : languageCapabilities?.codes((item) => item.explanation) ?? const [];
+  List<String> get learningOptions => settingsUsePreviewAvatar(context)
+      ? const ['ja', 'en']
+      : languageCapabilities?.codes((item) => item.learning) ?? const [];
 
   void edit(void Function(SettingsDraft) change) => store.editSettingsDraft(change);
 
@@ -673,14 +788,45 @@ class SettingsLogic {
     ),
   );
 
+  void openSessions() {
+    if (!settingsUsePreviewAvatar(context)) {
+      unawaited(context.push(AppRoutes.accountSessions));
+      return;
+    }
+    unawaited(viewSession());
+  }
+
+  Future<void> signOut() async {
+    if (settingsUsePreviewAvatar(context)) {
+      context.go(AppRoutes.mockLogin);
+      return;
+    }
+    final auth = sessionAuth(context);
+    if (auth == null) return;
+    await auth.signOut();
+    if (context.mounted) context.go(AppRoutes.login);
+  }
+
   Future<void> _save(SettingsGroup group, Map<String, Object?> fields) async {
+    if (!settingsUsePreviewAvatar(context) &&
+        !(sessionAuth(context)?.access?.allows('client.profile.update') ?? false)) {
+      return;
+    }
+    if (group == SettingsGroup.studyProfile && !languageDirectoryReady) return;
     if (settingsFormDraftHasConflict(store, group)) {
       _showRevisionConflict(group);
       return;
     }
     try {
       await settings.save(group, fields);
-      if (context.mounted) saved();
+      if (context.mounted) {
+        trackSettingsMutation(context, switch (group) {
+          SettingsGroup.profile => 'profile.updated',
+          SettingsGroup.studyProfile => 'study_profile.updated',
+          SettingsGroup.preferences => 'settings.updated',
+        });
+        saved();
+      }
     } on SettingsRevisionConflict {
       await settings.refresh(group, force: true);
       if (context.mounted) _showRevisionConflict(group);
@@ -699,7 +845,7 @@ class SettingsLogic {
           content: Text(l10n.apiRevisionConflict),
           action: SnackBarAction(
             label: l10n.referenceRetry,
-            onPressed: () => resetSettingsFormDraft(store, group),
+            onPressed: () => rebaseSettingsFormDraft(store, settings, group),
           ),
         ),
       );
@@ -922,6 +1068,10 @@ class SettingsLogic {
   }
 
   Future<void> changePassword() async {
+    if (!settingsUsePreviewAvatar(context)) {
+      unawaited(context.push(AppRoutes.accountPassword));
+      return;
+    }
     var current = '';
     var next = '';
     var confirm = '';
@@ -994,11 +1144,15 @@ class SettingsLogic {
     }
   }
 
-  String languageLabel(String value) => switch (value) {
-    'ja' => l10n.mockSettingJapanese,
-    'en' => l10n.mockSettingEnglish,
-    _ => l10n.mockSettingSimplifiedChinese,
-  };
+  String languageLabel(String value) => value.isEmpty
+      ? '未填写'
+      : (!settingsUsePreviewAvatar(context) && languageCapabilities != null)
+      ? languageCapabilities!.label(value)
+      : switch (value) {
+          'ja' => l10n.mockSettingJapanese,
+          'en' => l10n.mockSettingEnglish,
+          _ => l10n.mockSettingSimplifiedChinese,
+        };
 
   String themeLabel(String value) => switch (value) {
     'light' => l10n.mockSettingLightMode,
@@ -1310,7 +1464,7 @@ class _MobileSettingsContent extends StatelessWidget {
     ]),
     _settingCard(context, logic.l10n.mockSettingNativeLanguages, [
       _settingChecks(
-        ['zh-Hans', 'ja', 'en'],
+        logic.nativeOptions,
         logic.draft.nativeLanguages,
         logic.languageLabel,
         _toggleNative,
@@ -1320,14 +1474,14 @@ class _MobileSettingsContent extends StatelessWidget {
       _settingSelect(
         logic.l10n.mockSettingExplanationLanguage,
         logic.draft.explanationLanguage,
-        ['zh-Hans', 'ja', 'en'],
+        ['', ...logic.explanationOptions],
         logic.languageLabel,
         (value) => logic.edit((draft) => draft.explanationLanguage = value),
       ),
     ]),
     _settingCard(context, logic.l10n.mockSettingTargetLanguages, [
       _settingChecks(
-        ['ja', 'en'],
+        logic.learningOptions,
         logic.draft.learningLanguages,
         logic.languageLabel,
         _toggleTarget,
@@ -1336,7 +1490,7 @@ class _MobileSettingsContent extends StatelessWidget {
       _settingSelect(
         logic.l10n.mockSettingCurrentLearningLanguage,
         logic.draft.activeLanguage,
-        logic.draft.learningLanguages.toList(),
+        ['', ...logic.draft.learningLanguages],
         logic.languageLabel,
         logic.selectTargetLanguage,
       ),
@@ -1373,24 +1527,41 @@ class _MobileSettingsContent extends StatelessWidget {
   ]);
 
   Widget _appearance(BuildContext context) => _stack([
-    _settingCard(context, logic.l10n.mockSettingTheme, [
-      _settingSelect(
-        logic.l10n.mockSettingTheme,
-        logic.themeMode,
-        ['system', 'light', 'dark'],
-        logic.themeLabel,
-        (value) => logic.saveAppearance(value, logic.reducedMotion),
+    HarukaSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _settingSelect(
+            logic.l10n.mockSettingTheme,
+            logic.themeMode,
+            ['system', 'light', 'dark'],
+            logic.themeLabel,
+            (value) => logic.saveAppearance(value, logic.reducedMotion),
+          ),
+          const SizedBox(height: 18),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(logic.l10n.mockSettingReduceMotion),
+            subtitle: Text(logic.l10n.settingMotionHint),
+            value: logic.reducedMotion,
+            onChanged: (value) => logic.saveAppearance(logic.themeMode, value),
+          ),
+        ],
       ),
-    ]),
-    _settingCard(context, logic.l10n.mockSettingReduceMotion, [
-      SwitchListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(logic.l10n.mockSettingReduceMotion),
-        value: logic.reducedMotion,
-        onChanged: (value) => logic.saveAppearance(logic.themeMode, value),
+    ),
+    HarukaSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            logic.l10n.settingAppearancePreviewTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          Text(logic.l10n.settingAppearancePreviewBody),
+        ],
       ),
-    ]),
-    _settingCard(context, logic.l10n.mockSettingReadingPreview, [_readingPreview(context, logic)]),
+    ),
   ]);
 
   Widget _reading(BuildContext context) => _stack([
@@ -1443,11 +1614,30 @@ class _MobileSettingsContent extends StatelessWidget {
 
   Widget _query(BuildContext context) => _stack([
     _settingCard(context, logic.l10n.mockSettingQueryContext, [
+      Text(logic.l10n.settingContextIntro),
+      const SizedBox(height: 14),
       _queryInput(logic),
       const SizedBox(height: 12),
       _queryPresets(logic),
       const SizedBox(height: 16),
+      Text(logic.l10n.settingContextBudgetHint, style: Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height: 14),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          logic.l10n.settingContextBudgetSummary(logic.queryBudget.text.trim()),
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+      ),
+      const SizedBox(height: 16),
       _settingAction(logic.l10n.mockSettingSaveQuery, logic.saveQuery),
+      const SizedBox(height: 12),
+      Text(logic.l10n.settingContextAvailability, style: Theme.of(context).textTheme.bodySmall),
     ]),
   ]);
 
@@ -1593,63 +1783,94 @@ class _MobileSettingsContent extends StatelessWidget {
     ]);
   }
 
-  Widget _cache(BuildContext context) => _stack([
-    _settingCard(context, logic.l10n.mockSettingLocalAvailable, [
-      _localCacheCounts(logic),
-      const SizedBox(height: 14),
-      SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: logic.cache.ready && !logic.cache.busy ? logic.clearCache : null,
-          style: FilledButton.styleFrom(
-            backgroundColor: HarukaColors.of(context).bookPeach,
-            foregroundColor: HarukaColors.of(context).danger,
+  Widget _cache(BuildContext context) {
+    if (!settingsUsePreviewAvatar(context)) {
+      return _stack([
+        _settingCard(context, logic.l10n.mockSettingLocalAvailable, [
+          _localCacheCounts(logic),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            key: const ValueKey(UiTestIds.settingsCacheClear),
+            onPressed: logic.cache.ready && !logic.cache.busy ? logic.clearCache : null,
+            icon: const Icon(Icons.delete_outline),
+            label: Text(logic.l10n.mockSettingClearAccountLocalCache),
           ),
-          icon: const Icon(Icons.delete_outline),
-          label: Text(logic.l10n.mockSettingClearAccountLocalCache),
+        ]),
+      ]);
+    }
+    return _stack([
+      _settingCard(context, logic.l10n.mockSettingLocalAvailable, [
+        _localCacheCounts(logic),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: logic.cache.ready && !logic.cache.busy ? logic.clearCache : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: HarukaColors.of(context).bookPeach,
+              foregroundColor: HarukaColors.of(context).danger,
+            ),
+            icon: const Icon(Icons.delete_outline),
+            label: Text(logic.l10n.mockSettingClearAccountLocalCache),
+          ),
         ),
-      ),
-    ]),
-    _settingCard(context, logic.l10n.mockSettingSavedResults, [
-      Text(
-        logic.l10n.mockSettingCacheCounts(
-          logic.store.savedExplanationCount,
-          logic.store.savedAudioCount,
-        ),
-      ),
-    ]),
-    _settingCard(context, logic.l10n.mockSettingLocalSpace, [
-      _cacheLimits(logic),
-      const SizedBox(height: 15),
-      _settingAction(
-        logic.l10n.mockSettingSaveCacheLimits,
-        logic.cache.ready && !logic.cache.busy ? logic.saveCache : null,
-      ),
-    ]),
-  ]);
-
-  Widget _connection(BuildContext context) => _stack([
-    _settingCard(context, logic.l10n.mockSettingServiceConnection, [
-      TextField(
-        controller: logic.serviceAddress,
-        keyboardType: TextInputType.url,
-        decoration: InputDecoration(
-          labelText: logic.l10n.mockSettingServiceAddress,
-          border: const OutlineInputBorder(),
-        ),
-        onChanged: (value) => logic.edit((draft) => draft.serviceAddress = value),
-      ),
-      const SizedBox(height: 15),
-      _settingAction(logic.l10n.mockSettingProbeConnection, logic.probeAddress),
-      const SizedBox(height: 10),
-      if (logic.store.serviceProbeAttempted)
+      ]),
+      _settingCard(context, logic.l10n.mockSettingSavedResults, [
         Text(
-          logic.store.serviceAddressValidated
-              ? logic.l10n.mockSettingAddressValid
-              : logic.l10n.mockSettingAddressInvalid,
+          logic.l10n.mockSettingCacheCounts(
+            logic.store.savedExplanationCount,
+            logic.store.savedAudioCount,
+          ),
         ),
-    ]),
-  ]);
+      ]),
+      _settingCard(context, logic.l10n.mockSettingLocalSpace, [
+        _cacheLimits(logic),
+        const SizedBox(height: 15),
+        _settingAction(
+          logic.l10n.mockSettingSaveCacheLimits,
+          logic.cache.ready && !logic.cache.busy ? logic.saveCache : null,
+        ),
+      ]),
+    ]);
+  }
+
+  Widget _connection(BuildContext context) {
+    final live = ServiceEndpointScope.maybeOf(context);
+    if (live != null) {
+      return _stack([
+        _settingCard(context, logic.l10n.mockSettingServiceConnection, [
+          ServiceEndpointForm(
+            controller: live,
+            onAdopted: () {
+              if (context.mounted) context.go(AppRoutes.login);
+            },
+          ),
+        ]),
+      ]);
+    }
+    return _stack([
+      _settingCard(context, logic.l10n.mockSettingServiceConnection, [
+        TextField(
+          controller: logic.serviceAddress,
+          keyboardType: TextInputType.url,
+          decoration: InputDecoration(
+            labelText: logic.l10n.mockSettingServiceAddress,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: (value) => logic.edit((draft) => draft.serviceAddress = value),
+        ),
+        const SizedBox(height: 15),
+        _settingAction(logic.l10n.mockSettingProbeConnection, logic.probeAddress),
+        const SizedBox(height: 10),
+        if (logic.store.serviceProbeAttempted)
+          Text(
+            logic.store.serviceAddressValidated
+                ? logic.l10n.mockSettingAddressValid
+                : logic.l10n.mockSettingAddressInvalid,
+          ),
+      ]),
+    ]);
+  }
 
   Widget _security(BuildContext context) => _stack([
     _settingCard(context, logic.l10n.mockSettingProfile, [
@@ -1657,7 +1878,7 @@ class _MobileSettingsContent extends StatelessWidget {
         contentPadding: EdgeInsets.zero,
         title: Text(logic.l10n.mockSettingProfile),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push(AppRoutes.mockSettingPath('profile')),
+        onTap: () => context.push(settingsSectionPath(context, 'profile')),
       ),
     ]),
     _settingCard(context, logic.l10n.mockSettingChangePassword, [
@@ -1671,12 +1892,9 @@ class _MobileSettingsContent extends StatelessWidget {
     _settingCard(context, logic.l10n.mockSettingCurrentSession, [
       Text(logic.l10n.mockSettingSessionActive),
       const SizedBox(height: 13),
-      OutlinedButton(onPressed: logic.viewSession, child: Text(logic.l10n.mockSettingViewSession)),
+      OutlinedButton(onPressed: logic.openSessions, child: Text(logic.l10n.mockSettingViewSession)),
       const SizedBox(height: 8),
-      OutlinedButton(
-        onPressed: () => context.go(AppRoutes.mockLogin),
-        child: Text(logic.l10n.mockSettingLogout),
-      ),
+      OutlinedButton(onPressed: logic.signOut, child: Text(logic.l10n.mockSettingLogout)),
     ]),
   ]);
 }
@@ -1761,7 +1979,7 @@ class _DesktopSettingsContent extends StatelessWidget {
         Text(logic.l10n.mockSettingNativeLanguages, style: Theme.of(context).textTheme.titleMedium),
         _desktopChecks(
           context,
-          ['zh-Hans', 'en', 'ja'],
+          logic.nativeOptions,
           logic.draft.nativeLanguages,
           logic.languageLabel,
           (value) => logic.edit(
@@ -1774,31 +1992,35 @@ class _DesktopSettingsContent extends StatelessWidget {
         _settingSelect(
           logic.l10n.mockSettingExplanationLanguage,
           logic.draft.explanationLanguage,
-          ['zh-Hans', 'ja', 'en'],
+          ['', ...logic.explanationOptions],
           logic.languageLabel,
           (value) => logic.edit((draft) => draft.explanationLanguage = value),
         ),
         const SizedBox(height: 20),
         Text(logic.l10n.mockSettingTargetLanguages, style: Theme.of(context).textTheme.titleMedium),
-        _desktopChecks(context, ['ja', 'en'], logic.draft.learningLanguages, logic.languageLabel, (
-          value,
-        ) {
-          logic.edit((draft) {
-            if (draft.learningLanguages.contains(value)) {
-              if (draft.learningLanguages.length > 1) draft.learningLanguages.remove(value);
-            } else {
-              draft.learningLanguages.add(value);
+        _desktopChecks(
+          context,
+          logic.learningOptions,
+          logic.draft.learningLanguages,
+          logic.languageLabel,
+          (value) {
+            logic.edit((draft) {
+              if (draft.learningLanguages.contains(value)) {
+                if (draft.learningLanguages.length > 1) draft.learningLanguages.remove(value);
+              } else {
+                draft.learningLanguages.add(value);
+              }
+            });
+            if (!logic.draft.learningLanguages.contains(logic.draft.activeLanguage)) {
+              logic.selectTargetLanguage(logic.draft.learningLanguages.first);
             }
-          });
-          if (!logic.draft.learningLanguages.contains(logic.draft.activeLanguage)) {
-            logic.selectTargetLanguage(logic.draft.learningLanguages.first);
-          }
-        }),
+          },
+        ),
         const SizedBox(height: 12),
         _settingSelect(
           logic.l10n.mockSettingCurrentLearningLanguage,
           logic.draft.activeLanguage,
-          logic.draft.learningLanguages.toList(),
+          ['', ...logic.draft.learningLanguages],
           logic.languageLabel,
           logic.selectTargetLanguage,
         ),
@@ -2112,96 +2334,122 @@ class _DesktopSettingsContent extends StatelessWidget {
     ]);
   }
 
-  Widget _cache(BuildContext context) => _panel(context, logic.l10n.mockSettingLocalCache, [
-    Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                logic.l10n.mockSettingLocalAvailable,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 24),
-              _localCacheCounts(logic),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: logic.cache.ready && !logic.cache.busy ? logic.clearCache : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: HarukaColors.of(context).bookPeach,
-                    foregroundColor: HarukaColors.of(context).danger,
-                  ),
-                  icon: const Icon(Icons.delete_outline),
-                  label: Text(logic.l10n.mockSettingClearAccountLocalCache),
-                ),
-              ),
-            ],
-          ),
+  Widget _cache(BuildContext context) {
+    if (!settingsUsePreviewAvatar(context)) {
+      return _panel(context, logic.l10n.mockSettingLocalCache, [
+        _localCacheCounts(logic),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          key: const ValueKey(UiTestIds.settingsCacheClear),
+          onPressed: logic.cache.ready && !logic.cache.busy ? logic.clearCache : null,
+          icon: const Icon(Icons.delete_outline),
+          label: Text(logic.l10n.mockSettingClearAccountLocalCache),
         ),
-        const SizedBox(width: 50),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                logic.l10n.mockSettingSavedResults,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                logic.l10n.mockSettingCacheCounts(
-                  logic.store.savedExplanationCount,
-                  logic.store.savedAudioCount,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-    const SizedBox(height: 50),
-    Text(logic.l10n.mockSettingLocalSpace, style: Theme.of(context).textTheme.titleMedium),
-    const SizedBox(height: 13),
-    _cacheLimits(logic),
-    const SizedBox(height: 16),
-    _button(
-      logic.l10n.mockSettingSaveCacheLimits,
-      logic.cache.ready && !logic.cache.busy ? logic.saveCache : null,
-    ),
-  ]);
-
-  Widget _connection(BuildContext context) =>
-      _panel(context, logic.l10n.mockSettingServiceConnection, [
-        TextField(
-          controller: logic.serviceAddress,
-          keyboardType: TextInputType.url,
-          decoration: InputDecoration(
-            labelText: logic.l10n.mockSettingServiceAddress,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (value) => logic.edit((draft) => draft.serviceAddress = value),
-        ),
-        const SizedBox(height: 17),
-        _button(logic.l10n.mockSettingProbeConnection, logic.probeAddress),
-        const SizedBox(height: 13),
-        if (logic.store.serviceProbeAttempted)
-          Text(
-            logic.store.serviceAddressValidated
-                ? logic.l10n.mockSettingAddressValid
-                : logic.l10n.mockSettingAddressInvalid,
-          ),
       ]);
+    }
+    return _panel(context, logic.l10n.mockSettingLocalCache, [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  logic.l10n.mockSettingLocalAvailable,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 24),
+                _localCacheCounts(logic),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: logic.cache.ready && !logic.cache.busy ? logic.clearCache : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: HarukaColors.of(context).bookPeach,
+                      foregroundColor: HarukaColors.of(context).danger,
+                    ),
+                    icon: const Icon(Icons.delete_outline),
+                    label: Text(logic.l10n.mockSettingClearAccountLocalCache),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 50),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  logic.l10n.mockSettingSavedResults,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  logic.l10n.mockSettingCacheCounts(
+                    logic.store.savedExplanationCount,
+                    logic.store.savedAudioCount,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 50),
+      Text(logic.l10n.mockSettingLocalSpace, style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 13),
+      _cacheLimits(logic),
+      const SizedBox(height: 16),
+      _button(
+        logic.l10n.mockSettingSaveCacheLimits,
+        logic.cache.ready && !logic.cache.busy ? logic.saveCache : null,
+      ),
+    ]);
+  }
+
+  Widget _connection(BuildContext context) {
+    final live = ServiceEndpointScope.maybeOf(context);
+    if (live != null) {
+      return _panel(context, logic.l10n.mockSettingServiceConnection, [
+        ServiceEndpointForm(
+          controller: live,
+          onAdopted: () {
+            if (context.mounted) context.go(AppRoutes.login);
+          },
+        ),
+      ]);
+    }
+    return _panel(context, logic.l10n.mockSettingServiceConnection, [
+      TextField(
+        controller: logic.serviceAddress,
+        keyboardType: TextInputType.url,
+        decoration: InputDecoration(
+          labelText: logic.l10n.mockSettingServiceAddress,
+          border: const OutlineInputBorder(),
+        ),
+        onChanged: (value) => logic.edit((draft) => draft.serviceAddress = value),
+      ),
+      const SizedBox(height: 17),
+      _button(logic.l10n.mockSettingProbeConnection, logic.probeAddress),
+      const SizedBox(height: 13),
+      if (logic.store.serviceProbeAttempted)
+        Text(
+          logic.store.serviceAddressValidated
+              ? logic.l10n.mockSettingAddressValid
+              : logic.l10n.mockSettingAddressInvalid,
+        ),
+    ]);
+  }
 
   Widget _security(BuildContext context) => _panel(context, logic.l10n.mockSettingSecurityAccount, [
     ListTile(
       title: Text(logic.l10n.mockSettingProfile),
       leading: const Icon(Icons.person_outline),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => context.push(AppRoutes.mockSettingPath('profile')),
+      onTap: () => context.push(settingsSectionPath(context, 'profile')),
     ),
     const Divider(),
     ListTile(
@@ -2216,12 +2464,9 @@ class _DesktopSettingsContent extends StatelessWidget {
       subtitle: Text(logic.l10n.mockSettingSessionActive),
       leading: const Icon(Icons.devices_outlined),
       trailing: const Icon(Icons.chevron_right),
-      onTap: logic.viewSession,
+      onTap: logic.openSessions,
     ),
     const SizedBox(height: 17),
-    OutlinedButton(
-      onPressed: () => context.go(AppRoutes.mockLogin),
-      child: Text(logic.l10n.mockSettingLogout),
-    ),
+    OutlinedButton(onPressed: logic.signOut, child: Text(logic.l10n.mockSettingLogout)),
   ]);
 }

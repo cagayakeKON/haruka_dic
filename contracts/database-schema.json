@@ -2,10 +2,10 @@
   "excluded_internal_tables": [
     "alembic_version"
   ],
-  "migration_revision": "0004_learning_collections",
+  "migration_revision": "0006_avatar_assets",
   "schema_version": 1,
   "source": "backend/app/models",
-  "source_sha256": "c13059798e2b32b7c2f14202d832a9f7f19be618a2a45b3057e2cf3ca0ffce57",
+  "source_sha256": "f188b097bec15ea5bc584294101b05818f72886f4abbaa4745cfb2c5880f335c",
   "tables": [
     {
       "columns": [
@@ -1157,6 +1157,327 @@
         "scope_kind": "library_owned"
       },
       "name": "collection_items"
+    },
+    {
+      "columns": [
+        {
+          "comment": "当前账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "avatar service"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "发布此对象的本人上传意图",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "upload_intent_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "固定为avatar",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "purpose",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(40)"
+        },
+        {
+          "comment": "重编码后的image/jpeg",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "media_type",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(127)"
+        },
+        {
+          "comment": "重编码后的jpeg",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "format_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "重编码成品的字节数",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "size_bytes",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "重编码成品的SHA-256",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "sha256",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "头像解码与重编码规则",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "validation_profile",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(80)"
+        },
+        {
+          "comment": "头像处理器版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "processor_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(80)"
+        },
+        {
+          "comment": "成品验证完成时间，UTC",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "validated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "成品正方形边长",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "pixel_width",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "成品正方形边长，与宽度相等",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar image processor"
+          },
+          "name": "pixel_height",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "referenced或gc_pending",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "retention_state",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "解除引用后的最早回收时间，UTC",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "gc_not_before_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "去元数据后的正方形JPEG，不记录原始文件",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "avatar image processor"
+          },
+          "name": "content",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "已验证的本人头像成品；字节保存在本行，供每次鉴权后的私有读取",
+      "constraints": [
+        {
+          "definition": "octet_length(sha256) = 32 AND octet_length(content) = size_bytes AND size_bytes BETWEEN 1 AND 1048576",
+          "kind": "check",
+          "name": "ck_file_objects_content_digest"
+        },
+        {
+          "definition": "format_code = 'jpeg'",
+          "kind": "check",
+          "name": "ck_file_objects_format_code"
+        },
+        {
+          "definition": "media_type = 'image/jpeg'",
+          "kind": "check",
+          "name": "ck_file_objects_media_type"
+        },
+        {
+          "definition": "validation_profile = 'avatar-image-v1' AND processor_version = 'avatar-jpeg-square-v1'",
+          "kind": "check",
+          "name": "ck_file_objects_processor"
+        },
+        {
+          "definition": "purpose = 'avatar'",
+          "kind": "check",
+          "name": "ck_file_objects_purpose"
+        },
+        {
+          "definition": "(retention_state = 'referenced' AND gc_not_before_at IS NULL) OR (retention_state = 'gc_pending' AND gc_not_before_at IS NOT NULL)",
+          "kind": "check",
+          "name": "ck_file_objects_retention"
+        },
+        {
+          "definition": "pixel_width = pixel_height AND pixel_width BETWEEN 1 AND 512",
+          "kind": "check",
+          "name": "ck_file_objects_square_pixels"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_file_objects"
+        },
+        {
+          "definition": [
+            "upload_intent_id"
+          ],
+          "kind": "unique",
+          "name": "uq_file_objects_upload_intent_id"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "retention_state",
+            "gc_not_before_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "find avatar objects whose pointer was released"
+          },
+          "name": "ix_file_objects_retention_gc",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "avatar service"
+        ],
+        "deletion_policy": "mark gc_pending when the profile pointer moves; bytes stay until GC",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id, then user_extensions, then the avatar upload intent",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.avatar",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_profile_avatar.py"
+          },
+          {
+            "column": "upload_intent_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id, then user_extensions, then the avatar upload intent",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.avatar",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "upload_intents.id",
+            "tests": "tests/integration/test_profile_avatar.py"
+          }
+        ],
+        "module": "account",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "file_objects"
     },
     {
       "columns": [
@@ -4342,6 +4663,289 @@
     {
       "columns": [
         {
+          "comment": "当前账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "本切片只接受avatar",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "purpose",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(40)"
+        },
+        {
+          "comment": "头像目标固定为本人资料",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "target_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(40)"
+        },
+        {
+          "comment": "本人user_extensions.user_id",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "target_resource_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "客户端声明的jpeg、png或webp，以实际字节为准",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "declared_format",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "原始上传字节的声明大小",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "expected_size_bytes",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "原始上传字节的SHA-256",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "expected_sha256",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "pending、completed或failed",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "完成后的本人头像对象；完成前为空",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "file_object_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "意图截止时间，UTC",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "expires_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "失败时的稳定错误码，不含文件内容",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "failure_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(80)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人头像的临时上传声明；完成前没有可读取对象",
+      "constraints": [
+        {
+          "definition": "(status = 'completed' AND file_object_id IS NOT NULL AND failure_code IS NULL) OR (status IN ('pending', 'failed') AND file_object_id IS NULL)",
+          "kind": "check",
+          "name": "ck_upload_intents_completion"
+        },
+        {
+          "definition": "declared_format IN ('jpeg', 'png', 'webp')",
+          "kind": "check",
+          "name": "ck_upload_intents_declared_format"
+        },
+        {
+          "definition": "octet_length(expected_sha256) = 32",
+          "kind": "check",
+          "name": "ck_upload_intents_expected_sha256"
+        },
+        {
+          "definition": "expected_size_bytes BETWEEN 1 AND 5242880",
+          "kind": "check",
+          "name": "ck_upload_intents_expected_size"
+        },
+        {
+          "definition": "purpose = 'avatar'",
+          "kind": "check",
+          "name": "ck_upload_intents_purpose"
+        },
+        {
+          "definition": "status IN ('pending', 'completed', 'failed')",
+          "kind": "check",
+          "name": "ck_upload_intents_status"
+        },
+        {
+          "definition": "target_kind = 'user_extension'",
+          "kind": "check",
+          "name": "ck_upload_intents_target_kind"
+        },
+        {
+          "definition": "target_resource_id = user_id",
+          "kind": "check",
+          "name": "ck_upload_intents_target_owner"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_upload_intents"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "user_id",
+            "status",
+            "expires_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "scan one owner's expiring avatar intents"
+          },
+          "name": "ix_upload_intents_owner_status",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "avatar service"
+        ],
+        "deletion_policy": "expire unused intents; retain a completed intent with its file object",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id, then user_extensions, then the avatar upload intent",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.avatar",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "tests/integration/test_profile_avatar.py"
+          },
+          {
+            "column": "target_resource_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id, then user_extensions, then the avatar upload intent",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.avatar",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_extensions.user_id",
+            "tests": "tests/integration/test_profile_avatar.py"
+          },
+          {
+            "column": "file_object_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": true,
+            "parent_lock": "lock users.id, then user_extensions, then the avatar upload intent",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.avatar",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "file_objects.id",
+            "tests": "tests/integration/test_profile_avatar.py"
+          }
+        ],
+        "module": "account",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "upload_intents"
+    },
+    {
+      "columns": [
+        {
           "comment": "交付目标账号",
           "default": null,
           "metadata": {
@@ -5278,6 +5882,234 @@
           "type": "BIGINT"
         },
         {
+          "comment": "本人称呼；非唯一，不从邮箱推导",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "profile service"
+          },
+          "name": "display_name",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "可选出生年份；不保存整数年龄",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "profile service"
+          },
+          "name": "birth_year",
+          "nullable": true,
+          "primary_key": false,
+          "type": "SMALLINT"
+        },
+        {
+          "comment": "可选性别代码，可清除",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "profile service"
+          },
+          "name": "gender_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "仅self_described可填写的说明，不进入AI",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "profile service"
+          },
+          "name": "gender_self_description",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(200)"
+        },
+        {
+          "comment": "是否允许具体功能使用最小派生人口资料",
+          "default": "false",
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "profile service"
+          },
+          "name": "use_optional_demographics_for_ai",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "解释语言，和界面语言、母语分开",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "study service"
+          },
+          "name": "explanation_language",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "当前目标语，必须存在本人target语言行",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "study service"
+          },
+          "name": "active_target_language",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "P0界面语言，固定为简体中文",
+          "default": "'zh-Hans'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "ui_locale",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "用户确认的IANA时区；空表示未选择",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "timezone",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "system、light或dark",
+          "default": "'system'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "theme_mode",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(8)"
+        },
+        {
+          "comment": "system或on",
+          "default": "'system'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "reduce_motion",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(8)"
+        },
+        {
+          "comment": "已发布阅读字体类别；空为应用默认",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "reading_font_family",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "阅读逻辑字号",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "reading_font_size",
+          "nullable": true,
+          "primary_key": false,
+          "type": "NUMERIC(5, 2)"
+        },
+        {
+          "comment": "阅读行高倍率",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "reading_line_height",
+          "nullable": true,
+          "primary_key": false,
+          "type": "NUMERIC(4, 2)"
+        },
+        {
+          "comment": "阅读浅色、深色或sepia",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "reading_theme",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(8)"
+        },
+        {
+          "comment": "播放倍速，不改变合成键",
+          "default": "1.00",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "playback_speed",
+          "nullable": false,
+          "primary_key": false,
+          "type": "NUMERIC(3, 2)"
+        },
+        {
+          "comment": "本人查询补充前后文预算",
+          "default": "10000",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "settings service"
+          },
+          "name": "query_context_budget_tokens",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "当前已验证头像；空表示无头像",
+          "default": null,
+          "metadata": {
+            "sensitivity": "personal",
+            "source": "avatar service"
+          },
+          "name": "avatar_asset_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "头像指针版本，从0起",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "avatar service"
+          },
+          "name": "avatar_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
           "comment": "服务端生成的稳定标识",
           "default": null,
           "metadata": {
@@ -5314,12 +6146,72 @@
           "type": "TIMESTAMP WITH TIME ZONE"
         }
       ],
-      "comment": "每个账号唯一空资料/学习/设置扩展根；Identity不要求可选资料",
+      "comment": "每个账号唯一的资料、学习档案、设置和当前头像指针；可选字段缺失不阻止登录",
       "constraints": [
+        {
+          "definition": "avatar_revision >= 0",
+          "kind": "check",
+          "name": "ck_user_extensions_avatar_revision"
+        },
+        {
+          "definition": "birth_year IS NULL OR birth_year >= 1900",
+          "kind": "check",
+          "name": "ck_user_extensions_birth_year"
+        },
+        {
+          "definition": "gender_code IS NULL OR gender_code IN ('unspecified', 'female', 'male', 'non_binary', 'self_described', 'prefer_not_to_say')",
+          "kind": "check",
+          "name": "ck_user_extensions_gender_code"
+        },
+        {
+          "definition": "gender_self_description IS NULL OR gender_code = 'self_described'",
+          "kind": "check",
+          "name": "ck_user_extensions_gender_description"
+        },
         {
           "definition": "profile_revision >= 1 AND study_revision >= 1 AND settings_revision >= 1",
           "kind": "check",
           "name": "ck_user_extensions_group_revisions_positive"
+        },
+        {
+          "definition": "playback_speed >= 0.70 AND playback_speed <= 1.50",
+          "kind": "check",
+          "name": "ck_user_extensions_playback_speed"
+        },
+        {
+          "definition": "query_context_budget_tokens BETWEEN 1000 AND 64000",
+          "kind": "check",
+          "name": "ck_user_extensions_query_budget"
+        },
+        {
+          "definition": "reading_font_family IS NULL OR reading_font_family IN ('serif', 'sans')",
+          "kind": "check",
+          "name": "ck_user_extensions_reading_font_family"
+        },
+        {
+          "definition": "(reading_font_size IS NULL OR reading_font_size > 0) AND (reading_line_height IS NULL OR reading_line_height > 0)",
+          "kind": "check",
+          "name": "ck_user_extensions_reading_measures_positive"
+        },
+        {
+          "definition": "reading_theme IS NULL OR reading_theme IN ('light', 'dark', 'sepia')",
+          "kind": "check",
+          "name": "ck_user_extensions_reading_theme"
+        },
+        {
+          "definition": "reduce_motion IN ('system', 'on')",
+          "kind": "check",
+          "name": "ck_user_extensions_reduce_motion"
+        },
+        {
+          "definition": "theme_mode IN ('system', 'light', 'dark')",
+          "kind": "check",
+          "name": "ck_user_extensions_theme_mode"
+        },
+        {
+          "definition": "ui_locale = 'zh-Hans'",
+          "kind": "check",
+          "name": "ck_user_extensions_ui_locale"
         },
         {
           "definition": [
@@ -5340,7 +6232,8 @@
       "metadata": {
         "allowed_entrances": [
           "registration transaction",
-          "future profile service"
+          "profile settings service",
+          "avatar service"
         ],
         "deletion_policy": "retain while account exists; no Identity public deletion",
         "lifecycle": "mutable",
@@ -5355,6 +6248,17 @@
             "state_rule": "check active parent and matching owner inside the write transaction",
             "target": "users.id",
             "tests": "tests/integration/test_authentication_flow.py"
+          },
+          {
+            "column": "avatar_asset_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": true,
+            "parent_lock": "lock users.id then user_extensions before the avatar pointer",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.avatar",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "file_objects.id",
+            "tests": "tests/integration/test_profile_avatar.py"
           }
         ],
         "module": "account",
@@ -5362,6 +6266,196 @@
         "scope_kind": "user_owned"
       },
       "name": "user_extensions"
+    },
+    {
+      "columns": [
+        {
+          "comment": "当前账号归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "profile settings service"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "native或target",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "profile settings service"
+          },
+          "name": "language_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(8)"
+        },
+        {
+          "comment": "已发布语言能力目录中的BCP-47标签",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "profile settings service"
+          },
+          "name": "language_tag",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "同一类语言的有序位置",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "profile settings service"
+          },
+          "name": "sort_order",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "目标语自评水平；母语必须为空",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "profile settings service"
+          },
+          "name": "self_assessed_level",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "目标语受控学习目标；母语必须为空数组",
+          "default": "'{}'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "profile settings service"
+          },
+          "name": "learning_goals",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)[]"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人母语与目标语选择；删除偏好不删除学习历史",
+      "constraints": [
+        {
+          "definition": "cardinality(learning_goals) <= 8",
+          "kind": "check",
+          "name": "ck_user_languages_goal_count"
+        },
+        {
+          "definition": "(language_kind = 'native' AND self_assessed_level IS NULL AND cardinality(learning_goals) = 0) OR (language_kind = 'target' AND self_assessed_level IN ('unknown', 'beginner', 'elementary', 'intermediate', 'advanced'))",
+          "kind": "check",
+          "name": "ck_user_languages_kind_level"
+        },
+        {
+          "definition": "language_kind IN ('native', 'target')",
+          "kind": "check",
+          "name": "ck_user_languages_language_kind"
+        },
+        {
+          "definition": "learning_goals <@ ARRAY['reading', 'textbook', 'exam', 'listening', 'speaking', 'writing', 'vocabulary', 'grammar']::varchar[]",
+          "kind": "check",
+          "name": "ck_user_languages_learning_goals"
+        },
+        {
+          "definition": "sort_order >= 0",
+          "kind": "check",
+          "name": "ck_user_languages_sort_order"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_languages"
+        },
+        {
+          "definition": [
+            "user_id",
+            "language_kind",
+            "language_tag"
+          ],
+          "kind": "unique",
+          "name": "uq_user_languages_user_id_language_kind_language_tag"
+        },
+        {
+          "definition": [
+            "user_id",
+            "language_kind",
+            "sort_order"
+          ],
+          "kind": "unique",
+          "name": "uq_user_languages_user_id_language_kind_sort_order"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "profile settings service"
+        ],
+        "deletion_policy": "delete preference rows while replacing a language kind",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "lock users.id before writing this account-owned relation",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.profile_settings",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_extensions.user_id",
+            "tests": "tests/integration/test_profile_avatar.py"
+          }
+        ],
+        "module": "account",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_languages"
     },
     {
       "columns": [

@@ -29,6 +29,52 @@ final class _FileSecretStore implements SecretStore {
 }
 
 void main() {
+  test('refresh secrets are isolated by endpoint even with the same instance id', () async {
+    final directory = await Directory.systemTemp.createTemp('haruka-vault-scope-');
+    try {
+      final store = _FileSecretStore(directory);
+      const instanceId = 'haruka-test-0123456789abcdef0123456789abcdef';
+      final first = PlatformCredentialVault(
+        Uri.parse('https://first.example'),
+        instanceId,
+        'client',
+        store: store,
+        lockDirectory: directory,
+      );
+      final second = PlatformCredentialVault(
+        Uri.parse('https://second.example'),
+        instanceId,
+        'client',
+        store: store,
+        lockDirectory: directory,
+      );
+      const credential = RefreshCredential(
+        sessionRef: 'first',
+        generation: 1,
+        secret: 'first-secret',
+      );
+      expect(await first.replace(null, credential), isTrue);
+      expect(await second.read(), isNull);
+      expect(
+        await second.replace(
+          null,
+          const RefreshCredential(sessionRef: 'second', generation: 1, secret: 'second-secret'),
+        ),
+        isTrue,
+      );
+      expect((await first.read())?.secret, 'first-secret');
+      expect((await second.read())?.secret, 'second-secret');
+      await store.write(
+        'haruka.$instanceId.client.refresh',
+        '{"session_ref":"legacy","generation":1,"secret":"legacy-secret"}',
+      );
+      expect((await first.read())?.secret, 'first-secret');
+      expect(await store.read('haruka.$instanceId.client.refresh'), isNull);
+    } finally {
+      await directory.delete(recursive: true);
+    }
+  });
+
   test(
     'two vault objects share an OS lock; stale refresh cannot replace a newer generation',
     () async {
@@ -36,12 +82,14 @@ void main() {
       try {
         final store = _FileSecretStore(directory);
         final first = PlatformCredentialVault(
+          Uri.parse('https://first.example'),
           'haruka-test-0123456789abcdef0123456789abcdef',
           'client',
           store: store,
           lockDirectory: directory,
         );
         final second = PlatformCredentialVault(
+          Uri.parse('https://first.example'),
           'haruka-test-0123456789abcdef0123456789abcdef',
           'client',
           store: store,
@@ -73,12 +121,14 @@ void main() {
     try {
       final store = _FileSecretStore(directory);
       final first = PlatformCredentialVault(
+        Uri.parse('https://first.example'),
         'haruka-test-0123456789abcdef0123456789abcdef',
         'client',
         store: store,
         lockDirectory: directory,
       );
       final second = PlatformCredentialVault(
+        Uri.parse('https://first.example'),
         'haruka-test-0123456789abcdef0123456789abcdef',
         'client',
         store: store,

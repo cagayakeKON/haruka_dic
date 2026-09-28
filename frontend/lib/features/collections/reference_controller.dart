@@ -27,7 +27,7 @@ String referenceScope(AuthController auth, String page) {
   final access = auth.access;
   return [
     page,
-    auth.config.instanceId,
+    auth.boundInstanceId,
     access?.userId ?? '',
     access?.audience ?? '',
     access?.sessionRef ?? '',
@@ -162,7 +162,7 @@ final class ReferenceController extends ChangeNotifier {
     final source = material;
     if (busy || selection == null || source == null) return;
     final locator = selection.locator;
-    if (locator.instanceId != auth.config.instanceId ||
+    if (locator.instanceId != auth.boundInstanceId ||
         locator.materialId != source.id ||
         locator.materialRevisionId != source.revisionId ||
         locator.span.blockId != selection.block.id) {

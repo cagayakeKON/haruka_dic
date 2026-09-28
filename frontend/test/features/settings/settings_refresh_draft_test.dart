@@ -17,7 +17,9 @@ import 'package:mockito/mockito.dart';
 import 'cached_settings_repository_test.mocks.dart';
 
 void main() {
-  testWidgets('visible settings refresh on timer and return, but not while hidden', (tester) async {
+  testWidgets('unchanged settings keep the mounted draft without periodic or return reads', (
+    tester,
+  ) async {
     final cache = (await tester.runAsync(() async {
       final cache = CacheCoordinator(
         openBackend: (_) async => OpenedCacheBackend(
@@ -46,10 +48,8 @@ void main() {
       ),
     );
     var fetches = 0;
-    Completer<void>? delayed;
     when(source.fetch(any, any)).thenAnswer((_) async {
       fetches++;
-      await delayed?.future;
       return SettingsSnapshot(
         group: SettingsGroup.profile,
         revision: fetches,
@@ -81,15 +81,9 @@ void main() {
       final field = find.byKey(const ValueKey('draft'));
       final element = tester.element(field);
       await tester.enterText(field, '未提交');
-      delayed = Completer<void>();
       await tester.pump(const Duration(seconds: 30));
       await tester.pump();
-      expect(fetches, 2);
-      await tester.pump(const Duration(seconds: 30));
-      expect(fetches, 2);
-      delayed.complete();
-      delayed = null;
-      await tester.pump();
+      expect(fetches, 1);
       expect(tester.element(field), same(element));
       expect(find.text('未提交'), findsOneWidget);
 
@@ -98,36 +92,109 @@ void main() {
         builder: (_) => const AlertDialog(title: Text('弹层')),
       );
       await tester.pumpAndSettle();
-      expect(fetches, 2);
+      expect(fetches, 1);
       navigatorKey.currentState!.pop();
       await tester.pumpAndSettle();
       await dialog;
-      expect(fetches, 2);
+      expect(fetches, 1);
 
       final covered = navigatorKey.currentState!.push(
         MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('其他页面'))),
       );
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 30));
-      expect(fetches, 2);
+      expect(fetches, 1);
       navigatorKey.currentState!.pop();
       await tester.pumpAndSettle();
       await covered;
-      expect(fetches, 3);
+      expect(fetches, 1);
       expect(tester.element(field), same(element));
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       var inactive = true;
       try {
         await tester.pump(const Duration(seconds: 30));
-        expect(fetches, 3);
+        expect(fetches, 1);
         tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
         inactive = false;
         await tester.pump();
-        expect(fetches, 4);
+        expect(fetches, 1);
       } finally {
         if (inactive) tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       }
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      repository.dispose();
+      await tester.runAsync<void>(() => cache.closeScope().timeout(const Duration(seconds: 10)));
+    }
+  });
+
+  testWidgets('initial read waits for the attached account scope', (tester) async {
+    final cache = CacheCoordinator(
+      openBackend: (_) async => OpenedCacheBackend(
+        executor: NativeDatabase.memory(),
+        mode: CacheStorageMode.memoryOnly,
+        closeOwner: () async {},
+      ),
+    );
+    final ready = Completer<void>();
+    final source = MockSettingsSource();
+    provideDummy<SettingsSnapshot>(
+      SettingsSnapshot(
+        group: SettingsGroup.profile,
+        revision: 1,
+        fields: const {'display_name': '已确认'},
+      ),
+    );
+    var fetches = 0;
+    when(source.fetch(any, any)).thenAnswer((_) async {
+      fetches++;
+      return SettingsSnapshot(
+        group: SettingsGroup.profile,
+        revision: 1,
+        fields: const {'display_name': '已确认'},
+      );
+    });
+    final repository = CachedSettingsRepository(
+      cache: cache,
+      source: source,
+      waitForReadiness: () => ready.future,
+    );
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SettingsRepositoryScope(
+            repository: repository,
+            child: Scaffold(
+              body: SettingsSnapshotGate(
+                groups: const {SettingsGroup.profile},
+                builder: (_) => const Text('资料可用'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(fetches, 0);
+      await tester.runAsync<void>(
+        () => cache.attach(
+          CacheScope.confirmed(
+            endpoint: Uri.parse('https://cache.example'),
+            instanceId: 'settings-attach',
+            userId: 'reader',
+            audience: 'client',
+            sessionRef: 'session',
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(fetches, 0);
+      ready.complete();
+      await tester.pumpAndSettle();
+      expect(fetches, 1);
+      expect(find.text('资料可用'), findsOneWidget);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       repository.dispose();

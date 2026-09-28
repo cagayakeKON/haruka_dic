@@ -41,12 +41,21 @@ const _allowedAttributes = <String, Set<String>>{
   'cache.download': {'result'},
   'cache.evicted': {'result'},
   'schema.migration': {'result'},
+  'connection.probed': {'result', 'duration_ms'},
+  'account.scope.changed': {'reason', 'result'},
+  'profile.updated': {},
+  'study_profile.updated': {},
+  'settings.updated': {},
+  'profile.avatar.updated': {},
+  'profile.avatar.deleted': {},
 };
 const _anonymousEvents = {
   'app.started',
   'app.crash.capture',
   'auth.register.submitted',
   'auth.login.result',
+  'connection.probed',
+  'account.scope.changed',
 };
 const _enumAttributes = <String, Set<String>>{
   'screen_name': {
@@ -57,6 +66,7 @@ const _enumAttributes = <String, Set<String>>{
     'verify_email',
     'reset_password',
     'account',
+    'settings',
     'sessions',
     'materials',
     'chapter',
@@ -81,6 +91,7 @@ const _enumAttributes = <String, Set<String>>{
     'quota_exceeded',
     'audio_unavailable',
     'invalid_payload',
+    'instance_switch',
   },
   'error_category': {
     'authentication',

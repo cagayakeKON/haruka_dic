@@ -5,6 +5,9 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
+import 'browser_credentials_stub.dart'
+    if (dart.library.js_interop) 'browser_credentials_web.dart'
+    as browser_credentials;
 import 'auth_models.dart';
 import 'request_ids.dart';
 import 'responses.dart';
@@ -81,11 +84,12 @@ final class ApiClient {
           headers: const {'Accept': 'application/json', 'Accept-Language': 'zh-Hans'},
         ),
       ) {
-    if (adapter != null) _dio.httpClientAdapter = adapter;
+    final selectedAdapter = adapter ?? browser_credentials.credentialedAdapter();
+    if (selectedAdapter != null) _dio.httpClientAdapter = selectedAdapter;
   }
 
   final Dio _dio;
-  final String _instanceId;
+  String _instanceId;
   final bool requireSessionBinding;
   ApiSessionBinding? _binding;
   ApiSessionBinding? _retiredSignOutBinding;
@@ -146,6 +150,37 @@ final class ApiClient {
   }
 
   ApiSessionBinding? get sessionBinding => _binding;
+
+  String get instanceId => _instanceId;
+
+  Uri get endpoint => Uri.parse(_dio.options.baseUrl);
+
+  /// Points this client at a probed origin. An active session must already be cleared.
+  void retarget(Uri endpoint, String instanceId) {
+    if (_binding != null || _retiredSignOutBinding != null) {
+      throw StateError('Cannot retarget an active session');
+    }
+    if (!RegExp(r'^[a-z][a-z0-9-]{2,63}$').hasMatch(instanceId)) {
+      throw const FormatException('Invalid instance');
+    }
+    if (!endpoint.isAbsolute ||
+        !endpoint.hasAuthority ||
+        endpoint.host.isEmpty ||
+        endpoint.userInfo.isNotEmpty ||
+        endpoint.hasQuery ||
+        endpoint.hasFragment ||
+        (endpoint.path.isNotEmpty && endpoint.path != '/') ||
+        (endpoint.scheme != 'https' && endpoint.scheme != 'http')) {
+      throw const FormatException('Invalid endpoint');
+    }
+    _instanceId = instanceId;
+    _dio.options.baseUrl = Uri(
+      scheme: endpoint.scheme,
+      host: endpoint.host,
+      port: endpoint.hasPort ? endpoint.port : null,
+    ).toString();
+    ++_bindingGeneration;
+  }
 
   /// The caller must immediately hide private UI and rebind through access.
   /// The callback is never fired by a stale response from a prior generation.
@@ -277,6 +312,32 @@ final class ApiClient {
     }
   }
 
+  Future<SuccessResponse<T>> deleteJson<T>(
+    String path,
+    Object body,
+    T Function(Object?) decode, {
+    CancelToken? cancelToken,
+    Map<String, String>? headers,
+  }) async {
+    final bindingGeneration = _bindingGeneration;
+    final response = await _request(
+      path,
+      method: 'DELETE',
+      data: body,
+      contentType: 'application/json',
+      cancelToken: cancelToken,
+      headers: headers,
+    );
+    _ensureCurrentGeneration(path, bindingGeneration, method: 'DELETE');
+    try {
+      return SuccessResponse<T>.fromJson(response.data, decode);
+    } on FormatException {
+      throw const ApiFailure(code: 'INVALID_RESPONSE');
+    } finally {
+      _ensureCurrentGeneration(path, bindingGeneration, method: 'DELETE');
+    }
+  }
+
   /// Native transport semantics are explicit, never decoded as JSON envelopes.
   Future<void> deleteEmpty(String path, {CancelToken? cancelToken}) async {
     final bindingGeneration = _bindingGeneration;
@@ -287,12 +348,17 @@ final class ApiClient {
     }
   }
 
-  Future<Uint8List> download(String path, {CancelToken? cancelToken}) async {
+  Future<Uint8List> download(
+    String path, {
+    CancelToken? cancelToken,
+    Map<String, String>? headers,
+  }) async {
     final bindingGeneration = _bindingGeneration;
     final response = await _request(
       path,
       responseType: ResponseType.bytes,
       cancelToken: cancelToken,
+      headers: headers,
     );
     _ensureCurrentGeneration(path, bindingGeneration);
     final value = response.data;
@@ -392,6 +458,9 @@ final class ApiClient {
       observe?.call(true, response.statusCode, watch.elapsed, _serverRequestId(response));
       return response;
     } on DioException catch (error) {
+      if (bindingGeneration != _bindingGeneration) {
+        throw const ApiFailure(code: 'SESSION_INVALID');
+      }
       if (error.type == DioExceptionType.cancel) throw const ApiFailure(code: 'CANCELLED');
       final response = error.response;
       if (response != null) {
@@ -440,8 +509,7 @@ final class ApiClient {
   }
 
   void _ensureCurrentGeneration(String path, int generation, {String method = 'GET'}) {
-    final uri = Uri.parse(path);
-    if (!_unboundRequest(uri.path, method) && generation != _bindingGeneration) {
+    if (generation != _bindingGeneration) {
       throw const ApiFailure(code: 'SESSION_INVALID');
     }
   }
@@ -453,6 +521,9 @@ final class ApiClient {
     int issuedGeneration, {
     bool retiredSignOut = false,
   }) {
+    if (issuedGeneration != _bindingGeneration) {
+      throw const ApiFailure(code: 'SESSION_INVALID');
+    }
     if (!privateRequest) return;
     final instance = response.headers.value(_instanceResponseHeader);
     final session = response.headers.value(_sessionResponseHeader);

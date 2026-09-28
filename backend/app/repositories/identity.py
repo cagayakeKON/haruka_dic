@@ -184,18 +184,22 @@ async def scope_roots(
 ) -> tuple[User | None, AuthSession | None, AuthorizationRevision | None]:
     user_query = select(User).where(User.id == user_id)
     if lock_user:
-        user_query = user_query.with_for_update()
+        user_query = user_query.with_for_update().execution_options(populate_existing=True)
     return (
         await session.scalar(user_query),
-        await session.get(AuthSession, session_id),
-        await session.get(AuthorizationRevision, "global"),
+        await session.get(AuthSession, session_id, populate_existing=True),
+        await session.get(AuthorizationRevision, "global", populate_existing=True),
     )
 
 
 async def permission_catalog(
     session: AsyncSession, codes: tuple[str, ...]
 ) -> dict[str, PermissionCatalog]:
-    rows = await session.scalars(select(PermissionCatalog).where(PermissionCatalog.code.in_(codes)))
+    rows = await session.scalars(
+        select(PermissionCatalog)
+        .where(PermissionCatalog.code.in_(codes))
+        .execution_options(populate_existing=True)
+    )
     return {row.code: row for row in rows.all()}
 
 

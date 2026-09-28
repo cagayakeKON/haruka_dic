@@ -49,6 +49,116 @@ void main() {
     return cache;
   }
 
+  test(
+    'first scope attachment notifies settings consumers before any snapshot is loaded',
+    () async {
+      final cache = CacheCoordinator(
+        openBackend: (_) async {
+          final executor = NativeDatabase.memory();
+          return OpenedCacheBackend(
+            executor: executor,
+            mode: CacheStorageMode.memoryOnly,
+            closeOwner: executor.close,
+          );
+        },
+      );
+      final repository = CachedSettingsRepository(cache: cache, source: MockSettingsSource());
+      addTearDown(() async {
+        repository.dispose();
+        await cache.closeScope();
+      });
+      var notifications = 0;
+      repository.addListener(() => notifications++);
+      await cache.attach(
+        CacheScope.confirmed(
+          endpoint: Uri.parse('http://127.0.0.1/settings-test'),
+          instanceId: 'settings-test',
+          userId: 'account-a',
+          audience: 'client',
+          sessionRef: 'session-a',
+        ),
+      );
+      expect(notifications, greaterThan(0));
+      expect(repository.snapshot(SettingsGroup.profile), isNull);
+    },
+  );
+
+  test('external avatar commit invalidates only profile and refreshes its new revision', () async {
+    final cache = await attachedCache();
+    final source = MockSettingsSource();
+    final records = <SettingsGroup, SettingsSnapshot>{
+      for (final group in SettingsGroup.values)
+        group: SettingsSnapshot(group: group, revision: 1, fields: {'value': group.sourceId}),
+    };
+    final reads = <SettingsGroup, int>{};
+    when(source.fetch(any, any)).thenAnswer((invocation) async {
+      final group = invocation.positionalArguments.first as SettingsGroup;
+      reads[group] = (reads[group] ?? 0) + 1;
+      return records[group]!;
+    });
+    final repository = CachedSettingsRepository(cache: cache, source: source);
+    addTearDown(() async {
+      repository.dispose();
+      await cache.closeScope();
+    });
+    for (final group in SettingsGroup.values) {
+      await repository.refresh(group);
+    }
+    final untouched = {
+      for (final group in SettingsGroup.values.where((group) => group != SettingsGroup.profile))
+        group: repository.snapshot(group),
+    };
+    final priorReads = Map.of(reads);
+    final priorInvalidation = cache.invalidationGeneration;
+    records[SettingsGroup.profile] = SettingsSnapshot(
+      group: SettingsGroup.profile,
+      revision: 2,
+      fields: const {'avatar_asset_id': 'avatar-new'},
+    );
+
+    await repository.reconcileExternalCommit(
+      SettingsGroup.profile,
+      expectedScopeGeneration: repository.scopeGeneration,
+    );
+
+    expect(cache.invalidationGeneration, priorInvalidation + 1);
+    expect(cache.lastInvalidatedTags, {SettingsGroup.profile.dependency});
+    expect(repository.snapshot(SettingsGroup.profile)?.revision, 2);
+    expect(reads[SettingsGroup.profile], priorReads[SettingsGroup.profile]! + 1);
+    for (final entry in untouched.entries) {
+      expect(repository.snapshot(entry.key), same(entry.value));
+      expect(reads[entry.key], priorReads[entry.key]);
+    }
+  });
+
+  test('late avatar completion from an old scope cannot invalidate the new account', () async {
+    final cache = await attachedCache();
+    final source = MockSettingsSource();
+    final repository = CachedSettingsRepository(cache: cache, source: source);
+    addTearDown(() async {
+      repository.dispose();
+      await cache.closeScope();
+    });
+    final oldScope = repository.scopeGeneration;
+    await cache.closeScope();
+    await cache.attach(
+      CacheScope.confirmed(
+        endpoint: Uri.parse('http://127.0.0.1/settings-test'),
+        instanceId: 'settings-test',
+        userId: 'account-b',
+        audience: 'client',
+        sessionRef: 'session-b',
+      ),
+    );
+    final currentInvalidation = cache.invalidationGeneration;
+    await expectLater(
+      repository.reconcileExternalCommit(SettingsGroup.profile, expectedScopeGeneration: oldScope),
+      throwsA(isA<CacheBlocked>()),
+    );
+    expect(cache.invalidationGeneration, currentInvalidation);
+    verifyNever(source.fetch(any, any));
+  });
+
   test('persistent invalidation waiting for its lock retains the same account snapshot', () async {
     final cache = await attachedCache(persistent: true);
     final source = MockSettingsSource();

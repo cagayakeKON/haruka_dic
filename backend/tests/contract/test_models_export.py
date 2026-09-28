@@ -54,7 +54,7 @@ def test_export_is_offline_deterministic_and_contains_only_real_routes(
     assert "sentinel" not in first
     payload = json.loads(first)
     schema = payload["openapi.json"]
-    assert len(schema["paths"]) == 39
+    assert len(schema["paths"]) == 47
     assert {
         "/health/live",
         "/health/ready",
@@ -66,6 +66,8 @@ def test_export_is_offline_deterministic_and_contains_only_real_routes(
         "/api/v1/explanations/resolve",
         "/api/v1/collections",
         "/api/v1/frontend-logs",
+        "/api/v1/language-capabilities",
+        "/api/v1/me/cache/validate",
     } <= set(schema["paths"])
     assert all(path.startswith(("/health/", "/api/v1/")) for path in schema["paths"])
     operations = {
@@ -86,6 +88,18 @@ def test_export_is_offline_deterministic_and_contains_only_real_routes(
         "resolve_explanations",
         "create_collection",
         "receive_client_telemetry",
+        "get_my_profile",
+        "update_my_profile",
+        "get_my_study_profile",
+        "update_my_study_profile",
+        "get_my_settings",
+        "update_my_settings",
+        "create_avatar_upload_intent",
+        "complete_avatar_upload_intent",
+        "get_my_avatar",
+        "delete_my_avatar",
+        "get_language_capabilities",
+        "validate_client_cache",
     } <= operations
     assert "SuccessResponse_HealthRead_" in schema["components"]["schemas"]
     assert "ErrorResponse" in schema["components"]["schemas"]

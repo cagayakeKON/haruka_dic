@@ -2169,6 +2169,38 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mockSettingSaveProfile => '保存资料';
 
   @override
+  String get profileGuideTitle => '确认学习资料';
+
+  @override
+  String get profileGuideBody => '显示名、解释语言、学习语言和时区都可以稍后填写。跳过不会保存，也不会记成已完成。';
+
+  @override
+  String get profileGuideSkip => '跳过';
+
+  @override
+  String get serviceSwitchWebFixed => 'Web 使用当前部署，不能在应用内更换服务地址。';
+
+  @override
+  String get serviceSwitchConfirm => '退出并使用此服务';
+
+  @override
+  String get serviceSwitchWarning => '将退出当前服务并清理本机缓存。';
+
+  @override
+  String get serviceSwitchFailed => '未能连接新服务，当前已退出。';
+
+  @override
+  String get serviceSwitchProbeFailed => '未能连接该服务。';
+
+  @override
+  String get serviceSwitchRevokeFailed => '本机已退出。原服务上的会话可能尚未撤销。';
+
+  @override
+  String serviceSwitchIdentity(String instance, String version) {
+    return '实例 $instance，接口 $version';
+  }
+
+  @override
   String get mockSettingSavedResults => '已保存成果';
 
   @override
@@ -3986,10 +4018,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mockSettingReadingPreview => '阅读预览';
 
   @override
+  String get settingMotionHint => '降低位移与弹跳';
+
+  @override
+  String get settingAppearancePreviewTitle => '一页故事，一点新发现。';
+
+  @override
+  String get settingAppearancePreviewBody => '阅读、解释和作答会沿用同一套色彩与文字层级。';
+
+  @override
   String get mockSettingSaveReading => '保存阅读偏好';
 
   @override
   String get mockSettingContextRange => '取文范围';
+
+  @override
+  String get settingContextIntro => '查询会携带当前句和前后文，帮助理解词义与指代。';
+
+  @override
+  String get settingContextBudgetHint =>
+      '支持 1,000–64,000 tokens。Token 是模型计算文字的单位，当前完整句另计；内容不足时不会凑满。';
+
+  @override
+  String settingContextBudgetSummary(String budget) {
+    return '最多 $budget tokens 前后文';
+  }
+
+  @override
+  String get settingContextAvailability => '保存的偏好会在查询功能开放后使用，已有结果不会改变。';
 
   @override
   String get mockSettingSaveQuery => '保存查询偏好';

@@ -1,19 +1,24 @@
 """Identity private identity roots; references are checked by services, never database FKs."""
 
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Index,
     Integer,
     LargeBinary,
+    Numeric,
+    SmallInteger,
     String,
     UniqueConstraint,
     text,
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -31,7 +36,7 @@ _IDENTITY_TESTS = "tests/integration/test_authentication_flow.py"
 
 
 class UserExtension(IdentityMixin, TimestampMixin, Base):
-    """The empty profile/study/settings parent created with each registration."""
+    """Profile, study, settings and the current avatar pointer for one account."""
 
     __tablename__ = "user_extensions"
     __table_args__ = (
@@ -40,8 +45,43 @@ class UserExtension(IdentityMixin, TimestampMixin, Base):
             "profile_revision >= 1 AND study_revision >= 1 AND settings_revision >= 1",
             name="group_revisions_positive",
         ),
+        CheckConstraint("birth_year IS NULL OR birth_year >= 1900", name="birth_year"),
+        CheckConstraint(
+            "gender_code IS NULL OR gender_code IN "
+            "('unspecified', 'female', 'male', 'non_binary', 'self_described', 'prefer_not_to_say')",
+            name="gender_code",
+        ),
+        CheckConstraint(
+            "gender_self_description IS NULL OR gender_code = 'self_described'",
+            name="gender_description",
+        ),
+        CheckConstraint("ui_locale = 'zh-Hans'", name="ui_locale"),
+        CheckConstraint("theme_mode IN ('system', 'light', 'dark')", name="theme_mode"),
+        CheckConstraint("reduce_motion IN ('system', 'on')", name="reduce_motion"),
+        CheckConstraint(
+            "reading_font_family IS NULL OR reading_font_family IN ('serif', 'sans')",
+            name="reading_font_family",
+        ),
+        CheckConstraint(
+            "(reading_font_size IS NULL OR reading_font_size > 0) "
+            "AND (reading_line_height IS NULL OR reading_line_height > 0)",
+            name="reading_measures_positive",
+        ),
+        CheckConstraint(
+            "reading_theme IS NULL OR reading_theme IN ('light', 'dark', 'sepia')",
+            name="reading_theme",
+        ),
+        CheckConstraint(
+            "playback_speed >= 0.70 AND playback_speed <= 1.50",
+            name="playback_speed",
+        ),
+        CheckConstraint(
+            "query_context_budget_tokens BETWEEN 1000 AND 64000",
+            name="query_budget",
+        ),
+        CheckConstraint("avatar_revision >= 0", name="avatar_revision"),
         {
-            "comment": "每个账号唯一空资料/学习/设置扩展根；Identity不要求可选资料",
+            "comment": "每个账号唯一的资料、学习档案、设置和当前头像指针；可选字段缺失不阻止登录",
             "info": business_table_info(
                 "user_owned",
                 owner="user_id",
@@ -53,9 +93,21 @@ class UserExtension(IdentityMixin, TimestampMixin, Base):
                         service="app.services.registration",
                         tests=_IDENTITY_TESTS,
                     ),
+                    business_relation(
+                        "avatar_asset_id",
+                        "file_objects.id",
+                        nullable=True,
+                        parent_lock="lock users.id then user_extensions before the avatar pointer",
+                        service="app.services.avatar",
+                        tests="tests/integration/test_profile_avatar.py",
+                    ),
                 ),
                 module="account",
-                entrances=("registration transaction", "future profile service"),
+                entrances=(
+                    "registration transaction",
+                    "profile settings service",
+                    "avatar service",
+                ),
                 deletion="retain while account exists; no Identity public deletion",
             ),
         },
@@ -86,6 +138,208 @@ class UserExtension(IdentityMixin, TimestampMixin, Base):
         server_default=text("1"),
         comment="设置字段组版本",
         info=column_info("settings service"),
+    )
+    display_name: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="本人称呼；非唯一，不从邮箱推导",
+        info=column_info("profile service", "personal"),
+    )
+    birth_year: Mapped[int | None] = mapped_column(
+        SmallInteger,
+        nullable=True,
+        comment="可选出生年份；不保存整数年龄",
+        info=column_info("profile service", "personal"),
+    )
+    gender_code: Mapped[str | None] = mapped_column(
+        String(24),
+        nullable=True,
+        comment="可选性别代码，可清除",
+        info=column_info("profile service", "personal"),
+    )
+    gender_self_description: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        comment="仅self_described可填写的说明，不进入AI",
+        info=column_info("profile service", "personal"),
+    )
+    use_optional_demographics_for_ai: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+        comment="是否允许具体功能使用最小派生人口资料",
+        info=column_info("profile service", "personal"),
+    )
+    explanation_language: Mapped[str | None] = mapped_column(
+        String(35),
+        nullable=True,
+        comment="解释语言，和界面语言、母语分开",
+        info=column_info("study service"),
+    )
+    active_target_language: Mapped[str | None] = mapped_column(
+        String(35),
+        nullable=True,
+        comment="当前目标语，必须存在本人target语言行",
+        info=column_info("study service"),
+    )
+    ui_locale: Mapped[str] = mapped_column(
+        String(35),
+        nullable=False,
+        server_default=text("'zh-Hans'"),
+        comment="P0界面语言，固定为简体中文",
+        info=column_info("settings service"),
+    )
+    timezone: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="用户确认的IANA时区；空表示未选择",
+        info=column_info("settings service"),
+    )
+    theme_mode: Mapped[str] = mapped_column(
+        String(8),
+        nullable=False,
+        server_default=text("'system'"),
+        comment="system、light或dark",
+        info=column_info("settings service"),
+    )
+    reduce_motion: Mapped[str] = mapped_column(
+        String(8),
+        nullable=False,
+        server_default=text("'system'"),
+        comment="system或on",
+        info=column_info("settings service"),
+    )
+    reading_font_family: Mapped[str | None] = mapped_column(
+        String(16),
+        nullable=True,
+        comment="已发布阅读字体类别；空为应用默认",
+        info=column_info("settings service"),
+    )
+    reading_font_size: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2),
+        nullable=True,
+        comment="阅读逻辑字号",
+        info=column_info("settings service"),
+    )
+    reading_line_height: Mapped[Decimal | None] = mapped_column(
+        Numeric(4, 2),
+        nullable=True,
+        comment="阅读行高倍率",
+        info=column_info("settings service"),
+    )
+    reading_theme: Mapped[str | None] = mapped_column(
+        String(8),
+        nullable=True,
+        comment="阅读浅色、深色或sepia",
+        info=column_info("settings service"),
+    )
+    playback_speed: Mapped[Decimal] = mapped_column(
+        Numeric(3, 2),
+        nullable=False,
+        server_default=text("1.00"),
+        comment="播放倍速，不改变合成键",
+        info=column_info("settings service"),
+    )
+    query_context_budget_tokens: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("10000"),
+        comment="本人查询补充前后文预算",
+        info=column_info("settings service"),
+    )
+    avatar_asset_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="当前已验证头像；空表示无头像",
+        info=column_info("avatar service", "personal"),
+    )
+    avatar_revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("0"),
+        comment="头像指针版本，从0起",
+        info=column_info("avatar service"),
+    )
+
+
+class UserLanguage(IdentityMixin, TimestampMixin, Base):
+    """Native and target language rows protected by the parent study revision."""
+
+    __tablename__ = "user_languages"
+    __table_args__ = (
+        UniqueConstraint("user_id", "language_kind", "language_tag"),
+        UniqueConstraint("user_id", "language_kind", "sort_order"),
+        CheckConstraint("language_kind IN ('native', 'target')", name="language_kind"),
+        CheckConstraint("sort_order >= 0", name="sort_order"),
+        CheckConstraint("cardinality(learning_goals) <= 8", name="goal_count"),
+        CheckConstraint(
+            "learning_goals <@ ARRAY['reading', 'textbook', 'exam', 'listening', "
+            "'speaking', 'writing', 'vocabulary', 'grammar']::varchar[]",
+            name="learning_goals",
+        ),
+        CheckConstraint(
+            "(language_kind = 'native' AND self_assessed_level IS NULL "
+            "AND cardinality(learning_goals) = 0) OR "
+            "(language_kind = 'target' AND self_assessed_level IN "
+            "('unknown', 'beginner', 'elementary', 'intermediate', 'advanced'))",
+            name="kind_level",
+        ),
+        {
+            "comment": "本人母语与目标语选择；删除偏好不删除学习历史",
+            "info": business_table_info(
+                "user_owned",
+                owner="user_id",
+                relations=(
+                    business_relation(
+                        "user_id",
+                        "user_extensions.user_id",
+                        parent_lock=_USER_LOCK,
+                        service="app.services.profile_settings",
+                        tests="tests/integration/test_profile_avatar.py",
+                    ),
+                ),
+                module="account",
+                entrances=("profile settings service",),
+                deletion="delete preference rows while replacing a language kind",
+            ),
+        },
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="当前账号归属",
+        info=column_info("profile settings service"),
+    )
+    language_kind: Mapped[str] = mapped_column(
+        String(8),
+        nullable=False,
+        comment="native或target",
+        info=column_info("profile settings service"),
+    )
+    language_tag: Mapped[str] = mapped_column(
+        String(35),
+        nullable=False,
+        comment="已发布语言能力目录中的BCP-47标签",
+        info=column_info("profile settings service"),
+    )
+    sort_order: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        comment="同一类语言的有序位置",
+        info=column_info("profile settings service"),
+    )
+    self_assessed_level: Mapped[str | None] = mapped_column(
+        String(16),
+        nullable=True,
+        comment="目标语自评水平；母语必须为空",
+        info=column_info("profile settings service"),
+    )
+    learning_goals: Mapped[list[str]] = mapped_column(
+        ARRAY(String(24)),
+        nullable=False,
+        server_default=text("'{}'"),
+        comment="目标语受控学习目标；母语必须为空数组",
+        info=column_info("profile settings service"),
     )
 
 

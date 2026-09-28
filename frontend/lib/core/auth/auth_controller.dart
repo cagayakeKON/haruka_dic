@@ -25,7 +25,8 @@ enum AuthPhase { starting, anonymous, pendingEmail, authenticated, unavailable }
 /// Every async identity transition checks its account epoch before publishing state.
 final class AuthController extends ChangeNotifier {
   AuthController(this.repository, this.config, {CredentialVault? vault, AuthSync? sync})
-    : _vault = vault ?? CredentialVault(config.instanceId, 'client') {
+    : _boundInstanceId = config.instanceId,
+      _vault = vault ?? CredentialVault(config.apiBaseUrl, config.instanceId, 'client') {
     repository.api.onSessionBindingLost = () {
       if (_disposed) return;
       ++_epoch;
@@ -49,10 +50,38 @@ final class AuthController extends ChangeNotifier {
 
   final AuthRepository repository;
   final AppConfig config;
-  final CredentialVault _vault;
+  String _boundInstanceId;
+  CredentialVault _vault;
+
+  String get boundInstanceId => _boundInstanceId;
+
+  /// Swaps the credential partition after the old session is already cleared.
+  void adoptInstance(Uri endpoint, String instanceId) {
+    if (isAuthenticated || _access != null || _accessToken != null) {
+      throw StateError('Adopt requires a signed-out session');
+    }
+    if (!RegExp(r'^[a-z][a-z0-9-]{2,63}$').hasMatch(instanceId)) {
+      throw const FormatException('Invalid instance');
+    }
+    if (repository.api.endpoint != endpoint || repository.api.instanceId != instanceId) {
+      throw StateError('Transport must be retargeted before adopting credentials');
+    }
+    ++_epoch;
+    _clearMemory();
+    _policy = null;
+    _boundInstanceId = instanceId;
+    _vault = CredentialVault(endpoint, instanceId, 'client');
+    if (_phase != AuthPhase.anonymous) {
+      _setPhase(AuthPhase.anonymous);
+    } else {
+      notifyListeners();
+    }
+  }
+
   late final AuthSync _sync;
   bool _preferredAdmin = false;
   bool _disposed = false;
+  bool _switchingInstance = false;
   Future<void> _identityTail = Future<void>.value();
   int _epoch = 0;
   String? _accessToken;
@@ -80,6 +109,31 @@ final class AuthController extends ChangeNotifier {
   bool get isAuthenticated => _phase == AuthPhase.authenticated && _access != null;
   int get actionEpoch => _epoch;
 
+  /// Fence public and queued identity actions before the first await of a switch.
+  /// The current session is retained long enough for its explicit remote revoke.
+  void invalidateForInstanceSwitch() {
+    if (_disposed) return;
+    _switchingInstance = true;
+    ++_epoch;
+    _continuationToken = null;
+    _continuationExpiresAt = null;
+  }
+
+  void finishInstanceSwitch() {
+    if (_disposed) return;
+    _switchingInstance = false;
+  }
+
+  void _assertCurrent(int epoch, Uri endpoint) {
+    if (_disposed || _switchingInstance || epoch != _epoch || repository.api.endpoint != endpoint) {
+      throw const ApiFailure(code: 'SESSION_INVALID');
+    }
+  }
+
+  void _assertNotSwitching() {
+    if (_disposed || _switchingInstance) throw const ApiFailure(code: 'SESSION_INVALID');
+  }
+
   bool wasLocallySignedOutBy(int startedEpoch, String sessionRef) =>
       !_disposed &&
       _lastLocalSignOutEpoch == startedEpoch &&
@@ -88,6 +142,7 @@ final class AuthController extends ChangeNotifier {
       !isAuthenticated;
 
   Future<ActivationStatus> activationStatus() async {
+    if (_switchingInstance) throw const ApiFailure(code: 'SESSION_INVALID');
     final token = _continuationToken;
     final expiry = _continuationExpiresAt;
     if (token == null || expiry == null || !DateTime.now().toUtc().isBefore(expiry)) {
@@ -108,7 +163,11 @@ final class AuthController extends ChangeNotifier {
 
   Future<void> reloadPolicy() async {
     final current = _epoch;
+    final endpoint = repository.api.endpoint;
     await repository.verifyInstance();
+    if (_disposed || current != _epoch || repository.api.endpoint != endpoint) {
+      throw const ApiFailure(code: 'SESSION_INVALID');
+    }
     final policy = await repository.policy();
     if (current != _epoch || _disposed) return;
     _policy = policy;
@@ -116,42 +175,57 @@ final class AuthController extends ChangeNotifier {
   }
 
   Future<void> register(String email, String password, {String? operationId}) async {
+    _assertNotSwitching();
     final current = _epoch;
+    final endpoint = repository.api.endpoint;
     await repository.verifyInstance();
+    _assertCurrent(current, endpoint);
     final receipt = await repository.register(email, password, operationId: operationId);
     if (current != _epoch || _disposed) throw const ApiFailure(code: 'SESSION_INVALID');
     if (receipt.nextStep != 'verify_email') throw const ApiFailure(code: 'INVALID_RESPONSE');
   }
 
   Future<void> resend(String email) async {
+    _assertNotSwitching();
     final current = _epoch;
+    final endpoint = repository.api.endpoint;
     await repository.verifyInstance();
+    _assertCurrent(current, endpoint);
     final receipt = await repository.resend(email);
     if (current != _epoch || _disposed) throw const ApiFailure(code: 'SESSION_INVALID');
     if (receipt.nextStep != 'check_email') throw const ApiFailure(code: 'INVALID_RESPONSE');
   }
 
   Future<void> requestRecovery(String email) async {
+    _assertNotSwitching();
     final current = _epoch;
+    final endpoint = repository.api.endpoint;
     await repository.verifyInstance();
+    _assertCurrent(current, endpoint);
     final receipt = await repository.requestRecovery(email);
     if (current != _epoch || _disposed) throw const ApiFailure(code: 'SESSION_INVALID');
     if (receipt.nextStep != 'check_email') throw const ApiFailure(code: 'INVALID_RESPONSE');
   }
 
   Future<void> verifyEmail(String token) async {
+    _assertNotSwitching();
     final current = _epoch;
+    final endpoint = repository.api.endpoint;
     await repository.verifyInstance();
+    _assertCurrent(current, endpoint);
     await repository.verifyEmail(token);
     if (current != _epoch || _disposed) throw const ApiFailure(code: 'SESSION_INVALID');
     _sync.publishChanged();
   }
 
   Future<bool> completeRecovery(String token, String password) async {
+    _assertNotSwitching();
     final current = _epoch;
+    final endpoint = repository.api.endpoint;
     final session = _sessionRef;
     final admin = _admin;
     await repository.verifyInstance();
+    _assertCurrent(current, endpoint);
     try {
       await repository.completeRecovery(token, password);
     } on ApiFailure catch (error) {
@@ -316,7 +390,7 @@ final class AuthController extends ChangeNotifier {
   }.contains(error.code);
 
   void _acceptAccess(AccessRead access, {required bool admin}) {
-    if (access.instanceId != config.instanceId ||
+    if (access.instanceId != _boundInstanceId ||
         access.audience != (admin ? 'admin' : 'client') ||
         (_sessionRef != null && _sessionRef != access.sessionRef)) {
       throw const ApiFailure(code: 'INSTANCE_MISMATCH');
@@ -412,7 +486,7 @@ final class AuthController extends ChangeNotifier {
     bool admin = false,
     String? operationId,
   }) async {
-    if (_disposed) throw const ApiFailure(code: 'SESSION_INVALID');
+    if (_disposed || _switchingInstance) throw const ApiFailure(code: 'SESSION_INVALID');
     if (admin && config.platform != AppPlatform.web) {
       throw const ApiFailure(code: 'PERMISSION_DENIED');
     }
@@ -466,7 +540,13 @@ final class AuthController extends ChangeNotifier {
           if (current != _epoch || _disposed) return false;
           _accessToken = result.accessToken;
         }
-        final access = await repository.access(admin: admin, headers: _readHeaders());
+        late final AccessRead access;
+        try {
+          access = await repository.access(admin: admin, headers: _readHeaders());
+        } on ApiFailure catch (error) {
+          if (error.code == 'SESSION_INVALID' && current != _epoch) return false;
+          rethrow;
+        }
         if (current != _epoch || _disposed) return false;
         _sync.setLocallySignedOut(audience, false);
         _acceptAccess(access, admin: admin);
@@ -525,24 +605,32 @@ final class AuthController extends ChangeNotifier {
       _lastLocalSignOutSession = id;
     }
     if (requestBinding == null) throw const ApiFailure(code: 'SESSION_INVALID');
-    await repository.api.withRetiredSignOutBinding(
-      requestBinding,
-      () => _identityWrite(() async {
-        await repository.verifyInstance();
-        if (config.platform == AppPlatform.web) {
-          // A different tab may have signed in while this operation waited for
-          // the cross-tab lock. Never log out that newer cookie identity.
-          final current = await repository.access(admin: audienceAdmin, headers: const {});
-          if (current.sessionRef != id) {
-            _sync.setLocallySignedOut(audienceAdmin ? 'admin' : 'client', false);
-            return;
+    try {
+      await repository.api.withRetiredSignOutBinding(
+        requestBinding,
+        () => _identityWrite(() async {
+          await repository.verifyInstance();
+          if (config.platform == AppPlatform.web) {
+            // A different tab may have signed in while this operation waited for
+            // the cross-tab lock. Never log out that newer cookie identity.
+            final current = await repository.access(admin: audienceAdmin, headers: const {});
+            if (current.sessionRef != id) {
+              _sync.setLocallySignedOut(audienceAdmin ? 'admin' : 'client', false);
+              return;
+            }
+            await repository.logout(
+              admin: audienceAdmin,
+              headers: headers,
+              operationId: operationId,
+            );
+          } else {
+            await repository.revoke(id, admin: false, headers: headers, operationId: operationId);
           }
-          await repository.logout(admin: audienceAdmin, headers: headers, operationId: operationId);
-        } else {
-          await repository.revoke(id, admin: false, headers: headers, operationId: operationId);
-        }
-      }),
-    );
+        }),
+      );
+    } on ApiFailure catch (error) {
+      if (error.code != 'SESSION_INVALID' || captured + 1 == _epoch) rethrow;
+    }
   }
 
   void _clearMemory() {

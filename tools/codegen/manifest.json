@@ -83,9 +83,9 @@
     }
   ],
   "dart_api": {
-    "status": "centralized-handwritten-transition",
+    "status": "centralized-handwritten-contract",
     "evaluation": "tools/codegen/dart-api/transition.json",
-    "reason": "dart-dio 7.25.0 generates invalid unions; full Python/Dart compatibility samples required through B1; lock long-term generator before B2",
+    "reason": "dart-dio 7.25.0 generates invalid unions; the reviewed long-term contract is centralized handwritten DTOs, generated Python/Dart compatibility samples and an independently reviewed full-schema fingerprint",
     "source": [
       "backend/tests/support/api_compatibility.py",
       "backend/app/schemas/scalars.py"

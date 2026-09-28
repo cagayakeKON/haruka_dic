@@ -4,8 +4,10 @@
     "versions/0001_identity.py": "32a61198fdaf75fb357173f0b70a4c9230e8b61f516f26c06ee04b4c8fdc6467",
     "versions/0002_identity_alignment.py": "25ea14b747f2d55ea8b1b3b4e2d0a271b7bd9811de96498945a254d50a69e457",
     "versions/0003_account_security.py": "db171ab36235a3790cd0dfce1b432dede1f4c096a18e39daf3a277585d75294b",
-    "versions/0004_learning_collections.py": "5cf014bc884753809c8856a07704f98d4644719dc23435fbd2781978ab9498c1"
+    "versions/0004_learning_collections.py": "5cf014bc884753809c8856a07704f98d4644719dc23435fbd2781978ab9498c1",
+    "versions/0005_profile_settings.py": "7f65f0c48b09b9f29b0a083578b3fd011b9483e49af59ec810d2e2f31c3f403d",
+    "versions/0006_avatar_assets.py": "26b34f056bb00d4ac6930cec562e2ab5d5dded41b7a5fdbe332bd0bd727247fd"
   },
-  "head": "0004_learning_collections",
+  "head": "0006_avatar_assets",
   "schema_version": 1
 }

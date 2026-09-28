@@ -1460,6 +1460,12 @@ abstract class AppLocalizations {
   /// **'还没有材料'**
   String get mockLibraryNoMaterials;
 
+  /// No description provided for @mockLibraryEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'目前没有可阅读的小说。'**
+  String get mockLibraryEmptyHint;
+
   /// No description provided for @mockLibraryOpenMaterial.
   ///
   /// In zh, this message translates to:
@@ -1903,6 +1909,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'没有匹配的收藏'**
   String get mockNotebookEmptyTitle;
+
+  /// No description provided for @mockNotebookNoCollections.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有收藏'**
+  String get mockNotebookNoCollections;
+
+  /// No description provided for @mockNotebookNoCollectionsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这里暂时没有已收藏的内容。'**
+  String get mockNotebookNoCollectionsHint;
 
   /// No description provided for @mockNotebookEnglish.
   ///

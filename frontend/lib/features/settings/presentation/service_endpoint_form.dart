@@ -150,10 +150,16 @@ class ServiceEndpointScope extends InheritedNotifier<ServiceEndpointController> 
 }
 
 class ServiceEndpointForm extends StatefulWidget {
-  const ServiceEndpointForm({required this.controller, this.onAdopted, super.key});
+  const ServiceEndpointForm({
+    required this.controller,
+    this.onAdopted,
+    this.authPresentation = false,
+    super.key,
+  });
 
   final ServiceEndpointController controller;
   final VoidCallback? onAdopted;
+  final bool authPresentation;
 
   @override
   State<ServiceEndpointForm> createState() => _ServiceEndpointFormState();
@@ -197,21 +203,32 @@ class _ServiceEndpointFormState extends State<ServiceEndpointForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (widget.authPresentation) ...[
+          Text(l10n.mockAuthServiceField, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+        ],
         TextField(
           controller: _address,
           enabled: !controller.busy,
           onChanged: (_) => controller.addressChanged(),
           keyboardType: TextInputType.url,
           decoration: InputDecoration(
-            labelText: l10n.mockSettingServiceAddress,
+            labelText: widget.authPresentation ? null : l10n.mockSettingServiceAddress,
+            hintText: widget.authPresentation ? l10n.mockAuthServicePlaceholder : null,
             border: const OutlineInputBorder(),
           ),
         ),
+        if (widget.authPresentation) ...[
+          const SizedBox(height: 8),
+          Text(l10n.mockAuthServiceConstraint),
+        ],
         const SizedBox(height: 12),
         FilledButton(
           key: const ValueKey(UiTestIds.settingsServiceProbe),
           onPressed: controller.busy ? null : () => controller.probeAddress(_address.text),
-          child: Text(l10n.mockSettingProbeConnection),
+          child: Text(
+            widget.authPresentation ? l10n.mockAuthProbe : l10n.mockSettingProbeConnection,
+          ),
         ),
         if (!controller.busy &&
             controller.attempted &&

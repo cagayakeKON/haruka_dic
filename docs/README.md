@@ -2,7 +2,7 @@
 
 2026-09-26实施入口：[PLAN2路线图](delivery/roadmap.md)保留B0/B1并重排后续阶段；[原型功能清单](delivery/prototype-scope.md)覆盖当前手机/电脑全部产品操作，[站内消息契约](contracts/notifications.md)补齐已读与跳转，[走查及review记录](delivery/reviews/2026-09-26-prototype-implementation-plan.md)记录本轮证据。
 
-阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。[B1账号与收藏闭环](delivery/reviews/2026-09-26-b1-implementation.md)（含注册、邮箱激活和找回）已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。[B2a本人资料与设置](delivery/reviews/2026-09-28-profile-settings-acceptance.md)当期验收通过；B2b治理、B2c凭据与模型任务尚未实现。独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
+阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。[B1账号与收藏闭环](delivery/reviews/2026-09-26-b1-implementation.md)（含注册、邮箱激活和找回）已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。[B2a本人资料与设置](delivery/reviews/2026-09-28-profile-settings-acceptance.md)已按当期范围重新验收通过：旧正式界面偏离已确认Flutter mock的视觉通过结论曾撤回，同界面接线与重复展示删除后，正式Web/Android实操、后端和隔离PG证据支撑本次结论。B2b治理、B2c凭据与模型任务尚未实现。独立 [HTML原型](../prototype/README.md) 只提供早期流程与内存交互参考，不计入正式应用验收。
 
 FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + Dio + Drift/SQLite及平台音频存储，统一读取、更新、跨端刷新、离线与清理；[校验契约](contracts/client-cache.md)、[设计审查](delivery/reviews/2026-09-26-frontend-cache.md)、[前端缓存/UI测试用例](engineering/testing/frontend-cache-ui-cases.md)和[本轮手机/桌面实拍对照](delivery/reviews/2026-09-27-frontend-preview.md)记录实施边界。B2a已接入本人资料/设置的账号与实例作用域、写后定向更新、本机清理及空的服务端校验注册框架；材料、模型、音频和完整离线许可仍随所属切片交付，不能据此签收FCACHE全族。
 
@@ -25,7 +25,7 @@ FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + D
 | 现在要做什么 | 先读 | 再按需查 |
 | --- | --- | --- |
 | 了解产品 | [产品总览](product/overview.md) | [待决事项](decisions/pending.md) |
-| 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md) | [手机/电脑独立HTML原型](../prototype/README.md)、[Flutter适配](engineering/flutter.md)、对应模块；B0基础壳已对齐，业务页面按切片落地 |
+| 设计视觉、组件、动效与文案 | [产品设计语言：晴空频率](product/design-language.md)、[已确认Flutter界面基线](delivery/reviews/2026-09-27-frontend-visual-refinement.md#1-用户确认与分工) | [Flutter适配](engineering/flutter.md)、对应模块；[手机/电脑HTML原型](../prototype/README.md)仅作早期流程参考，正式页面沿同一Flutter UI接入真实功能 |
 | 开发一个功能 | 下方对应模块 | [功能与验收追踪](delivery/coverage.md)、该模块引用的公共契约 |
 | 实现日英NLP（SudachiPy B / spaCy）、AI结果标注与ruby存储 | [统一文本分析](architecture/text-analysis.md)、[文件提取/ruby](contracts/source-extraction.md) | [物理字段](architecture/database-materials.md#27-全应用派生语言标注)、[缓存](architecture/learning-cache.md)、[DESIGN23记录](delivery/reviews/2026-09-26-text-analysis-ruby.md) |
 | 实现OCR或拍照识词 | [统一视觉模型OCR](architecture/vision-recognition.md) | [三类材料](contracts/material-types.md)、[Agent运行层](architecture/agent-runtime.md)、对应功能模块 |

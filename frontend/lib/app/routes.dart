@@ -12,13 +12,12 @@ import '../core/auth/auth_controller.dart';
 import '../core/auth/email_action_link.dart';
 import '../core/telemetry/telemetry.dart';
 import '../features/auth/account_pages.dart';
+import '../features/auth/auth_pages.dart';
 import '../features/auth/auth_forms.dart';
 import '../features/auth/email_action_page.dart';
-import '../features/collections/reference_pages.dart';
 
 import 'package:haruka/features/ai_exercises/presentation/exercise_pages.dart';
 import 'package:haruka/features/admin/presentation/admin_pages.dart';
-import 'package:haruka/features/account/presentation/preview_auth_pages.dart';
 import 'package:haruka/features/library/presentation/library_pages.dart';
 import 'package:haruka/features/collections/presentation/word_detail_page.dart';
 import 'package:haruka/features/textbooks/presentation/textbook_practice_page.dart';
@@ -35,18 +34,17 @@ import 'package:haruka/features/settings/presentation/profile_guide_page.dart';
 import 'package:haruka/features/settings/presentation/settings_pages.dart';
 import 'package:haruka/features/settings/presentation/settings_repository_scope.dart';
 import 'package:haruka/features/settings/presentation/settings_snapshot_gate.dart';
+import 'package:haruka/features/settings/presentation/service_endpoint_form.dart';
 import 'package:haruka/features/settings/domain/settings_snapshot.dart';
 import 'package:haruka/features/ai_exercises/presentation/exercise_support_pages.dart';
 import 'package:haruka/features/notifications/presentation/notifications_page.dart';
 import 'package:haruka/features/jobs/presentation/jobs_page.dart';
 import 'package:haruka/features/exams/presentation/exam_session_page.dart';
 import 'package:haruka/app/preview_shell.dart';
+import 'package:haruka/shared/presentation/components.dart';
 
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
-import 'app_shell.dart';
-import 'environment_page.dart';
-import 'home_page.dart';
 import 'motion.dart';
 import 'query_prefill.dart';
 import 'status_page.dart';
@@ -66,22 +64,31 @@ abstract final class AppRoutes {
   static const verified = '/verified';
   static const resetPassword = '/reset-password';
   static const passwordChanged = '/password-changed';
+  static const passwordChangeUnknown = '/password-change-unknown';
   static const signedOutLocally = '/signed-out-locally';
   static const account = '/account';
   static const accountPassword = '/account/password';
   static const accountSessions = '/account/sessions';
   static const materials = '/reference/materials';
+  static const material = '/material/:id';
   static const collections = '/collections';
+  static const query = '/query';
+  static const exercise = '/exercise';
+  static const notifications = '/notifications';
   static const settings = '/settings';
   static const settingsSection = '/settings/:section';
   static const guide = '/guide';
   static const admin = '/admin';
+  static const adminSection = '/admin/:section';
   static const adminLogin = '/admin/login';
   static const adminPassword = '/admin/password';
   static const adminSessions = '/admin/sessions';
   static const mockLibrary = '/mock/library';
   static const mockLogin = '/mock/login';
   static const mockRegister = '/mock/register';
+  static const mockRecovery = '/mock/recovery';
+  static const mockRecoveryReceived = '/mock/recovery-received';
+  static const mockService = '/mock/service';
   static const mockImport = '/mock/import';
   static const mockMaterial = '/mock/material/:id';
   static const mockMaterialDetails = '/mock/material/:id/details';
@@ -110,12 +117,14 @@ abstract final class AppRoutes {
   static const mockAdmin = '/mock/admin/:section';
 
   static String mockMaterialPath(String id) => '/mock/material/$id';
+  static String materialPath(String id) => '/material/$id';
   static String mockMaterialDetailsPath(String id) => '/mock/material/$id/details';
   static String mockCollectionPath(String id) => '/mock/collection/$id';
   static String mockWordPath(String id) => '$mockWordPrefix$id';
   static String mockMistakePath(int index) => '/mock/mistakes/$index';
   static String mockSettingPath(String section) => '/mock/settings/$section';
   static String mockAdminPath(String section) => '/mock/admin/$section';
+  static String adminSectionPath(String section) => '/admin/$section';
 }
 
 /// Preview locations remain private to the mock build and never call the API.
@@ -155,11 +164,42 @@ GoRouter createPreviewRouter() {
     routes: [
       _previewRoute(
         path: AppRoutes.mockLogin,
-        builder: (context, state) => const PreviewLoginPage(),
+        builder: (context, state) => LoginPage(
+          registrationEnabled: true,
+          recoveryEnabled: true,
+          onOpenRecovery: () => context.go(AppRoutes.mockRecovery),
+          onOpenRegistration: () => context.go(AppRoutes.mockRegister),
+          onOpenService: () => context.go(AppRoutes.mockService),
+          onLogin: (email, password) async => context.go(AppRoutes.mockLibrary),
+        ),
       ),
       _previewRoute(
         path: AppRoutes.mockRegister,
-        builder: (context, state) => const PreviewRegisterPage(),
+        builder: (context, state) => RegistrationPage(
+          passwordMinLength: 8,
+          passwordMaxLength: 128,
+          onBackToLogin: () => context.go(AppRoutes.mockLogin),
+          onRegister: (email, password) async => context.go(AppRoutes.mockLogin),
+        ),
+      ),
+      _previewRoute(
+        path: AppRoutes.mockRecovery,
+        builder: (context, state) => RecoveryRequestPage(
+          onSubmit: (email) async => context.go(AppRoutes.mockRecoveryReceived),
+        ),
+      ),
+      _previewRoute(
+        path: AppRoutes.mockRecoveryReceived,
+        builder: (context, state) => AuthResultPage(
+          title: AppLocalizations.of(context).authRecoveryReceived,
+          message: AppLocalizations.of(context).authRecoveryReceivedHint,
+          backLocation: AppRoutes.mockLogin,
+        ),
+      ),
+      _previewRoute(
+        path: AppRoutes.mockService,
+        builder: (context, state) =>
+            ServiceConnectionPage.preview(onBack: () => context.go(AppRoutes.mockLogin)),
       ),
       _previewRoute(path: AppRoutes.mockLibrary, builder: (context, state) => const LibraryPage()),
       _previewRoute(path: AppRoutes.mockImport, builder: (context, state) => const ImportPage()),
@@ -292,6 +332,7 @@ List<RouteBase> _adminRoutes(
         _appRoute(path: AppRoutes.adminLogin, builder: adminBuilder),
         _appRoute(path: AppRoutes.adminPassword, builder: passwordBuilder),
         _appRoute(path: AppRoutes.adminSessions, builder: sessionsBuilder),
+        _appRoute(path: AppRoutes.adminSection, builder: adminBuilder),
       ]
     : const [];
 
@@ -313,6 +354,81 @@ ValueKey<String> _accountScope(AuthController auth, String page) {
 Widget _watchAuth(AuthController auth, Widget Function() build) =>
     ListenableBuilder(listenable: auth, builder: (context, child) => build());
 
+/// Existing security deep links open the same dialogs as the confirmed My UI.
+class _SecurityDialogEntry extends StatefulWidget {
+  const _SecurityDialogEntry({
+    required this.auth,
+    required this.admin,
+    required this.sessions,
+    super.key,
+  });
+
+  final AuthController auth;
+  final bool admin;
+  final bool sessions;
+
+  @override
+  State<_SecurityDialogEntry> createState() => _SecurityDialogEntryState();
+}
+
+class _SecurityDialogEntryState extends State<_SecurityDialogEntry> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _open());
+  }
+
+  Future<void> _open() async {
+    if (!mounted || !widget.auth.isAuthenticated || widget.auth.admin != widget.admin) return;
+    final epoch = widget.auth.actionEpoch;
+    if (widget.sessions) {
+      await showDeviceSessionsDialog(context, admin: widget.admin);
+    } else {
+      await showPasswordChangeDialog(context, admin: widget.admin);
+    }
+    if (!mounted || widget.auth.actionEpoch != epoch || !widget.auth.isAuthenticated) return;
+    GoRouter.of(context)
+        .go(widget.admin ? AppRoutes.adminSectionPath('security') : AppRoutes.account);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      widget.admin ? AdminPage(section: 'security', liveAuth: widget.auth) : const AccountPage();
+}
+
+class _UnavailableFeaturePage extends StatelessWidget {
+  const _UnavailableFeaturePage({required this.location, required this.title, required this.icon});
+
+  final String location;
+  final String title;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content() => Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: HarukaSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 16),
+              Text('此功能尚未开放。', style: Theme.of(context).textTheme.titleMedium),
+            ],
+          ),
+        ),
+      ),
+    );
+    return PreviewPageFrame(
+      location: location,
+      title: title,
+      mobile: content(),
+      desktop: content(),
+    );
+  }
+}
+
 Widget _settingsRoute(
   BuildContext context,
   AppConfig config,
@@ -321,16 +437,26 @@ Widget _settingsRoute(
   SettingsPageBuilder? settingsPage,
   String? section,
 ) => _watchAuth(auth, () {
-  final allowed =
-      auth.isAuthenticated && !auth.admin && (auth.access?.allows('client.profile.read') ?? false);
-  if (!allowed || settingsPage == null) {
+  final signedIn = auth.isAuthenticated && !auth.admin;
+  final canReadProfile = auth.access?.allows('client.profile.read') ?? false;
+  if (!signedIn || settingsPage == null) {
     return StatusPage(
       id: UiTestIds.notFoundPage,
       title: AppLocalizations.of(context).apiPermissionDenied,
       description: AppLocalizations.of(context).authBackToLogin,
     );
   }
-  return AppShell(config: config, location: location, child: settingsPage(context, section));
+  if (!canReadProfile && section == null) {
+    return AccountPage(key: _accountScope(auth, 'account'));
+  }
+  if (!canReadProfile && section != 'security' && section != 'connection') {
+    return StatusPage(
+      id: UiTestIds.notFoundPage,
+      title: AppLocalizations.of(context).apiPermissionDenied,
+      description: AppLocalizations.of(context).authBackToLogin,
+    );
+  }
+  return settingsPage(context, section);
 });
 
 typedef SettingsPageBuilder = Widget Function(BuildContext context, String? section);
@@ -349,17 +475,32 @@ GoRouter createRouter(
   initialLocation: initialLocation,
   refreshListenable: auth,
   routes: [
-    _appRoute(
+    GoRoute(
       path: AppRoutes.home,
-      builder: (context, state) =>
-          AppShell(config: config, location: state.uri.path, child: const HomePage()),
+      redirect: (context, state) => auth.isAuthenticated
+          ? auth.admin
+                ? AppRoutes.admin
+                : auth.access?.allows('client.material.list') == true
+                ? AppRoutes.materials
+                : auth.access?.allows('client.profile.read') == true
+                ? AppRoutes.settings
+                : AppRoutes.account
+          : AppRoutes.login,
     ),
     _appRoute(
       path: AppRoutes.environment,
-      builder: (context, state) => AppShell(
+      builder: (context, state) => ServiceConnectionPage(
         config: config,
-        location: state.uri.path,
-        child: EnvironmentPage(config: config, api: api),
+        api: api,
+        controller: ServiceEndpointScope.maybeOf(context),
+        onBack: () => context.go(
+          auth.isAuthenticated
+              ? auth.admin
+                    ? AppRoutes.adminSectionPath('security')
+                    : AppRoutes.settings
+              : AppRoutes.login,
+        ),
+        onAdopted: () => context.go(AppRoutes.login),
       ),
     ),
     _appRoute(
@@ -371,10 +512,13 @@ GoRouter createRouter(
                 loading: auth.phase == AuthPhase.starting,
                 onRetry: () => unawaited(auth.start()),
               )
-            : CredentialFormPage(
-                mode: CredentialMode.clientLogin,
+            : LoginPage(
                 registrationEnabled: auth.policy?.registrationEnabled ?? false,
-                onSubmit: (email, password) async {
+                recoveryEnabled: auth.policy?.recoveryEnabled ?? false,
+                onOpenRecovery: () => context.go(AppRoutes.recovery),
+                onOpenRegistration: () => context.go(AppRoutes.register),
+                onOpenService: () => context.go(AppRoutes.environment),
+                onLogin: (email, password) async {
                   final router = GoRouter.of(context);
                   final watch = Stopwatch()..start();
                   final operationId = newRequestId();
@@ -436,11 +580,11 @@ GoRouter createRouter(
                 onRetry: () => unawaited(auth.start()),
               )
             : auth.policy!.registrationEnabled
-            ? CredentialFormPage(
-                mode: CredentialMode.register,
+            ? RegistrationPage(
                 passwordMinLength: auth.policy!.passwordMinLength,
                 passwordMaxLength: auth.policy!.passwordMaxLength,
-                onSubmit: (email, password) async {
+                onBackToLogin: () => context.go(AppRoutes.login),
+                onRegister: (email, password) async {
                   final router = GoRouter.of(context);
                   final attemptEpoch = auth.actionEpoch;
                   final operationId = newRequestId();
@@ -580,6 +724,13 @@ GoRouter createRouter(
       ),
     ),
     _appRoute(
+      path: AppRoutes.passwordChangeUnknown,
+      builder: (context, state) => AuthResultPage(
+        title: AppLocalizations.of(context).authPasswordOutcomeUnknown,
+        message: AppLocalizations.of(context).authBackToLogin,
+      ),
+    ),
+    _appRoute(
       path: AppRoutes.signedOutLocally,
       builder: (context, state) => AuthResultPage(
         title: AppLocalizations.of(context).authSignOut,
@@ -596,7 +747,12 @@ GoRouter createRouter(
       builder: (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && !auth.admin
-            ? PasswordChangePage(key: _accountScope(auth, 'password'))
+            ? _SecurityDialogEntry(
+                key: _accountScope(auth, 'password'),
+                auth: auth,
+                admin: false,
+                sessions: false,
+              )
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,
@@ -609,7 +765,12 @@ GoRouter createRouter(
       builder: (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && !auth.admin
-            ? DeviceSessionsPage(key: _accountScope(auth, 'sessions'))
+            ? _SecurityDialogEntry(
+                key: _accountScope(auth, 'sessions'),
+                auth: auth,
+                admin: false,
+                sessions: true,
+              )
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,
@@ -622,10 +783,20 @@ GoRouter createRouter(
       builder: (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.material.list')
-            ? ReferenceMaterialsPage(
-                key: _accountScope(auth, 'reference-materials'),
-                scope: _accountScope(auth, 'reference-materials').value,
-              )
+            ? const LibraryPage()
+            : StatusPage(
+                id: UiTestIds.notFoundPage,
+                title: AppLocalizations.of(context).apiPermissionDenied,
+                description: AppLocalizations.of(context).authBackToLogin,
+              ),
+      ),
+    ),
+    _appRoute(
+      path: AppRoutes.material,
+      builder: (context, state) => _watchAuth(
+        auth,
+        () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.material.read')
+            ? MaterialEntryPage(materialId: state.pathParameters['id']!)
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiPermissionDenied,
@@ -648,57 +819,53 @@ GoRouter createRouter(
             description: AppLocalizations.of(context).authBackToLogin,
           );
         }
-        return AppShell(
-          config: config,
-          location: state.uri.path,
-          child: SettingsRepositoryScope(
-            repository: repository,
-            child: SettingsSnapshotGate(
-              groups: const {
-                SettingsGroup.profile,
-                SettingsGroup.studyProfile,
-                SettingsGroup.preferences,
+        return SettingsRepositoryScope(
+          repository: repository,
+          child: SettingsSnapshotGate(
+            groups: const {
+              SettingsGroup.profile,
+              SettingsGroup.studyProfile,
+              SettingsGroup.preferences,
+            },
+            builder: (context) => ProfileGuidePage(
+              key: _accountScope(auth, 'profile-guide'),
+              canSave: auth.access?.allows('client.profile.update') ?? false,
+              profile: repository.snapshot(SettingsGroup.profile)!,
+              study: repository.snapshot(SettingsGroup.studyProfile)!,
+              preferences: repository.snapshot(SettingsGroup.preferences)!,
+              onSkip: () => context.go(AppRoutes.settings),
+              onSave: (input) async {
+                final epoch = auth.actionEpoch;
+                final instance = auth.boundInstanceId;
+                final user = auth.access?.userId;
+                final scope = repository.scopeGeneration;
+                final profileBefore = repository.snapshot(SettingsGroup.profile);
+                final studyBefore = repository.snapshot(SettingsGroup.studyProfile);
+                final preferencesBefore = repository.snapshot(SettingsGroup.preferences);
+                bool stillOwned() =>
+                    auth.isAuthenticated &&
+                    !auth.admin &&
+                    auth.actionEpoch == epoch &&
+                    auth.boundInstanceId == instance &&
+                    auth.access?.userId == user &&
+                    repository.scopeGeneration == scope;
+                for (final entry in profileGuidePatches(
+                  input,
+                  profile: profileBefore,
+                  studyProfile: studyBefore,
+                  preferences: preferencesBefore,
+                ).entries) {
+                  if (!stillOwned()) return;
+                  await repository.save(entry.key, entry.value);
+                  if (!stillOwned()) return;
+                  telemetry?.track(switch (entry.key) {
+                    SettingsGroup.profile => 'profile.updated',
+                    SettingsGroup.studyProfile => 'study_profile.updated',
+                    SettingsGroup.preferences => 'settings.updated',
+                  });
+                }
+                if (context.mounted && stillOwned()) context.go(AppRoutes.settings);
               },
-              builder: (context) => ProfileGuidePage(
-                key: _accountScope(auth, 'profile-guide'),
-                canSave: auth.access?.allows('client.profile.update') ?? false,
-                profile: repository.snapshot(SettingsGroup.profile)!,
-                study: repository.snapshot(SettingsGroup.studyProfile)!,
-                preferences: repository.snapshot(SettingsGroup.preferences)!,
-                onSkip: () => context.go(AppRoutes.settings),
-                onSave: (input) async {
-                  final epoch = auth.actionEpoch;
-                  final instance = auth.boundInstanceId;
-                  final user = auth.access?.userId;
-                  final scope = repository.scopeGeneration;
-                  final profileBefore = repository.snapshot(SettingsGroup.profile);
-                  final studyBefore = repository.snapshot(SettingsGroup.studyProfile);
-                  final preferencesBefore = repository.snapshot(SettingsGroup.preferences);
-                  bool stillOwned() =>
-                      auth.isAuthenticated &&
-                      !auth.admin &&
-                      auth.actionEpoch == epoch &&
-                      auth.boundInstanceId == instance &&
-                      auth.access?.userId == user &&
-                      repository.scopeGeneration == scope;
-                  for (final entry in profileGuidePatches(
-                    input,
-                    profile: profileBefore,
-                    studyProfile: studyBefore,
-                    preferences: preferencesBefore,
-                  ).entries) {
-                    if (!stillOwned()) return;
-                    await repository.save(entry.key, entry.value);
-                    if (!stillOwned()) return;
-                    telemetry?.track(switch (entry.key) {
-                      SettingsGroup.profile => 'profile.updated',
-                      SettingsGroup.studyProfile => 'study_profile.updated',
-                      SettingsGroup.preferences => 'settings.updated',
-                    });
-                  }
-                  if (context.mounted && stillOwned()) context.go(AppRoutes.settings);
-                },
-              ),
             ),
           ),
         );
@@ -725,10 +892,7 @@ GoRouter createRouter(
       builder: (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.collection.read')
-            ? CollectionsPage(
-                key: _accountScope(auth, 'collections'),
-                scope: _accountScope(auth, 'collections').value,
-              )
+            ? const NotebooksPage()
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiPermissionDenied,
@@ -736,20 +900,51 @@ GoRouter createRouter(
               ),
       ),
     ),
+    for (final destination in <(String, String, IconData)>[
+      (AppRoutes.query, '查询', Icons.chat_bubble_outline),
+      (AppRoutes.exercise, '练习', Icons.auto_awesome_outlined),
+      (AppRoutes.notifications, '站内消息', Icons.notifications_none),
+    ])
+      _appRoute(
+        path: destination.$1,
+        builder: (context, state) => _watchAuth(
+          auth,
+          () => auth.isAuthenticated && !auth.admin
+              ? _UnavailableFeaturePage(
+                  location: destination.$1,
+                  title: destination.$2,
+                  icon: destination.$3,
+                )
+              : StatusPage(
+                  id: UiTestIds.notFoundPage,
+                  title: AppLocalizations.of(context).apiAuthRequired,
+                  description: AppLocalizations.of(context).authBackToLogin,
+                ),
+        ),
+      ),
     ..._adminRoutes(
       config.platform == AppPlatform.web,
       (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && auth.admin
-            ? AdminPolicyPage(key: _accountScope(auth, 'admin-policy'))
+            ? AdminPage(
+                key: _accountScope(auth, 'admin-${state.pathParameters['section'] ?? 'policy'}'),
+                section: state.pathParameters['section'] ?? 'policy',
+                liveAuth: auth,
+              )
             : auth.phase == AuthPhase.starting || auth.phase == AuthPhase.unavailable
             ? AuthUnavailablePage(
                 loading: auth.phase == AuthPhase.starting,
                 onRetry: () => unawaited(auth.start(admin: true)),
               )
-            : CredentialFormPage(
-                mode: CredentialMode.adminLogin,
-                onSubmit: (email, password) async {
+            : LoginPage(
+                admin: true,
+                registrationEnabled: false,
+                recoveryEnabled: auth.policy?.recoveryEnabled ?? false,
+                onOpenRecovery: () => context.go(AppRoutes.recoveryFromAdmin),
+                onOpenRegistration: () {},
+                onOpenService: () {},
+                onLogin: (email, password) async {
                   final router = GoRouter.of(context);
                   final watch = Stopwatch()..start();
                   final operationId = newRequestId();
@@ -789,7 +984,12 @@ GoRouter createRouter(
       (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && auth.admin
-            ? PasswordChangePage(key: _accountScope(auth, 'admin-password'), admin: true)
+            ? _SecurityDialogEntry(
+                key: _accountScope(auth, 'admin-password'),
+                auth: auth,
+                admin: true,
+                sessions: false,
+              )
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,
@@ -799,7 +999,12 @@ GoRouter createRouter(
       (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && auth.admin
-            ? DeviceSessionsPage(key: _accountScope(auth, 'admin-sessions'), admin: true)
+            ? _SecurityDialogEntry(
+                key: _accountScope(auth, 'admin-sessions'),
+                auth: auth,
+                admin: true,
+                sessions: true,
+              )
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiAuthRequired,

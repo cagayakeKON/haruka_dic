@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +11,11 @@ import 'package:haruka/shared/presentation/components.dart';
 import 'package:haruka/shared/domain/learning_records.dart';
 import 'package:haruka/features/collections/presentation/notebook_pages.dart';
 import 'package:haruka/app/preview_shell.dart';
+import 'package:haruka/core/api/learning_models.dart' as published;
+import 'package:haruka/features/collections/reference_controller.dart';
+import 'package:haruka/features/collections/reference_feature_scope.dart';
+import 'package:haruka/generated/ui_test_ids.dart';
+import 'package:haruka/shared/identified.dart';
 
 import 'collection_catalog_scope.dart';
 import 'collection_catalog_access.dart';
@@ -72,6 +79,13 @@ class _WordDetailPageState extends State<WordDetailPage> {
 
 /// Opens word detail in one centered dialog on both screen sizes.
 Future<void> showWordDetail(BuildContext context, String itemId) async {
+  final reference = ReferenceFeatureScope.maybeOf(context);
+  if (reference != null) {
+    final collection = reference.collections.where((item) => item.id == itemId).firstOrNull;
+    if (collection == null) return;
+    await _showPublishedWordDetail(context, reference, collection: collection);
+    return;
+  }
   final router = GoRouter.of(context);
   TransitionRoute<dynamic>? overlayRoute;
   Future<void> openAfterDismissal(String? destination) async {
@@ -114,10 +128,76 @@ Future<void> showWordDetail(BuildContext context, String itemId) async {
   await openAfterDismissal(destination);
 }
 
+Future<void> showResolvedWordDetail(BuildContext context, ReferenceController reference) =>
+    _showPublishedWordDetail(context, reference, allowSave: true);
+
+Future<void> _showPublishedWordDetail(
+  BuildContext context,
+  ReferenceController reference, {
+  published.CollectionRead? collection,
+  bool allowSave = false,
+}) async {
+  final openingScope = referenceScope(reference.auth, 'reference');
+  final router = GoRouter.of(context);
+  TransitionRoute<dynamic>? overlayRoute;
+  final destination = await showHarukaDialog<String>(
+    context: context,
+    animationStyle: HarukaMotion.dialogStyle(context),
+    builder: (dialogContext) {
+      overlayRoute = ModalRoute.of(dialogContext) as TransitionRoute<dynamic>?;
+      return ReferenceDialogGuard(
+        controller: reference,
+        openingScope: openingScope,
+        allowed: () => collection == null || reference.canListCollections,
+        child: Identified(
+          id: UiTestIds.referenceWordDialog,
+          child: Dialog(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 560,
+                maxHeight:
+                    (MediaQuery.sizeOf(dialogContext).height -
+                        MediaQuery.viewInsetsOf(dialogContext).bottom) *
+                    .85,
+              ),
+              child: WordDetailDialog.published(
+                reference: reference,
+                publishedCollection: collection,
+                allowSave: allowSave,
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+  await overlayRoute?.completed;
+  if (context.mounted &&
+      destination != null &&
+      reference.auth.isAuthenticated &&
+      referenceScope(reference.auth, 'reference') == openingScope) {
+    router.go(destination);
+  }
+}
+
 /// Can also be embedded by a caller that owns the modal route itself.
 class WordDetailDialog extends StatefulWidget {
-  const WordDetailDialog({required this.itemId, super.key});
-  final String itemId;
+  const WordDetailDialog({required this.itemId, super.key})
+    : reference = null,
+      publishedCollection = null,
+      allowSave = false;
+
+  const WordDetailDialog.published({
+    required this.reference,
+    this.publishedCollection,
+    this.allowSave = false,
+    super.key,
+  }) : itemId = null;
+
+  final String? itemId;
+  final ReferenceController? reference;
+  final published.CollectionRead? publishedCollection;
+  final bool allowSave;
 
   @override
   State<WordDetailDialog> createState() => _WordDetailDialogState();
@@ -178,7 +258,13 @@ class _WordDetailDialogState extends State<WordDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final item = CollectionCatalogScope.of(context).findCollection(widget.itemId);
+    if (widget.reference != null) {
+      return ListenableBuilder(
+        listenable: widget.reference!,
+        builder: (context, _) => _buildPublished(context, widget.reference!),
+      );
+    }
+    final item = CollectionCatalogScope.of(context).findCollection(widget.itemId!);
     if (item == null) {
       return Center(child: Text(AppLocalizations.of(context).mockSupportCollectionDeleted));
     }
@@ -275,6 +361,84 @@ class _WordDetailDialogState extends State<WordDetailDialog> {
               ],
             ),
           },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPublished(BuildContext context, ReferenceController reference) {
+    final strings = AppLocalizations.of(context);
+    final collection = widget.publishedCollection;
+    final card = widget.allowSave ? reference.resolved?.card : null;
+    if (collection == null && card == null) return const SizedBox.shrink();
+    final sourceId = (collection?.sourceRefs ?? card!.sourceRefs)
+        .where((source) => source.instanceId == reference.auth.boundInstanceId)
+        .firstOrNull
+        ?.materialId;
+    final sourceAvailable =
+        sourceId != null &&
+        reference.auth.access?.allows('client.material.list') == true &&
+        reference.auth.access?.allows('client.material.read') == true;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 8, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  strings.mockLearningWordTitle,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+        ),
+        Flexible(
+          fit: FlexFit.loose,
+          child: ListView(
+            controller: _detailScroll,
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
+            children: [
+              _WordContent(publishedCollection: collection, publishedCard: card, onSpeak: null),
+              if (widget.allowSave) ...[
+                const SizedBox(height: 20),
+                if (reference.error != null)
+                  Text(
+                    strings.authUnavailableShort,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                Identified(
+                  id: reference.saved == null
+                      ? UiTestIds.referenceSave
+                      : UiTestIds.referenceSavedState,
+                  child: FilledButton.icon(
+                    onPressed: reference.busy || reference.saved != null || !reference.canSave
+                        ? null
+                        : () => unawaited(reference.save()),
+                    icon: Icon(reference.saved == null ? Icons.bookmark_add_outlined : Icons.check),
+                    label: Text(
+                      reference.saved == null ? strings.referenceSave : strings.referenceSaved,
+                    ),
+                  ),
+                ),
+              ],
+              if (collection != null && sourceAvailable) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, AppRoutes.materialPath(sourceId)),
+                  child: Text(strings.mockLearningWordBackToSource),
+                ),
+              ],
+            ],
+          ),
         ),
       ],
     );
@@ -472,102 +636,161 @@ class DesktopWordDetailView extends StatelessWidget {
 }
 
 class _WordContent extends StatelessWidget {
-  const _WordContent({required this.item, required this.onSpeak});
-  final CollectionEntry item;
-  final VoidCallback onSpeak;
+  const _WordContent({
+    this.item,
+    this.publishedCollection,
+    this.publishedCard,
+    required this.onSpeak,
+  });
+  final CollectionEntry? item;
+  final published.CollectionRead? publishedCollection;
+  final published.WordCard? publishedCard;
+  final VoidCallback? onSpeak;
 
   @override
   Widget build(BuildContext context) {
-    final catalog = CollectionCatalogScope.of(context);
+    final catalog = item == null ? null : CollectionCatalogScope.of(context);
     final l10n = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
     final roles = HarukaColors.of(context);
-    final date = item.createdAt.toLocal();
-    final dateText =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final payload = publishedCollection?.payload ?? publishedCard?.payload;
+    final refs =
+        publishedCollection?.sourceRefs ??
+        publishedCard?.sourceRefs ??
+        const <published.NovelContentLocator>[];
+    final title = item?.displayText ?? publishedCollection?.displayText ?? payload!.term;
+    final language =
+        item?.targetLanguage ??
+        publishedCollection?.targetLanguage ??
+        publishedCard!.targetLanguage;
+    final meaning = item?.meaning ?? payload!.contextMeaning;
+    final reading = item?.reading ?? payload?.reading;
+    final date = (item?.createdAt ?? publishedCollection?.createdAt)?.toLocal();
+    final dateText = date == null
+        ? null
+        : '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final sourceTitle = item?.sourceTitle ?? refs.firstOrNull?.sourceTitle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           l10n.mockSupportKindLanguage(
-            collectionKindLabel(context, item.kind),
-            collectionLanguageLabel(context, item.targetLanguage),
+            collectionKindLabel(context, item?.kind ?? CollectionKind.word),
+            collectionLanguageLabel(context, language),
           ),
           style: TextStyle(color: colors.primary),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: Text(item.displayText, style: Theme.of(context).textTheme.headlineMedium),
-            ),
+            Expanded(child: Text(title, style: Theme.of(context).textTheme.headlineMedium)),
             IconButton(
-              tooltip: l10n.mockSupportSpeakWord(item.displayText),
+              tooltip: l10n.mockSupportSpeakWord(title),
               onPressed: onSpeak,
               icon: const Icon(Icons.volume_up_outlined),
             ),
           ],
         ),
-        if (item.reading != null)
-          Text(item.reading!, style: TextStyle(color: colors.onSurfaceVariant)),
+        if (reading != null) Text(reading, style: TextStyle(color: colors.onSurfaceVariant)),
+        if (payload != null)
+          Text(payload.partOfSpeech, style: TextStyle(color: colors.onSurfaceVariant)),
         const SizedBox(height: 18),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: roles.selected, borderRadius: BorderRadius.circular(12)),
-          child: Text(item.meaning, style: Theme.of(context).textTheme.titleMedium),
+          child: Text(meaning, style: Theme.of(context).textTheme.titleMedium),
         ),
-        if (item.context != null) ...[
+        if (payload != null && payload.otherMeanings.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          for (final other in payload.otherMeanings) Text(other),
+        ],
+        if (item?.context != null || payload != null && payload.examples.isNotEmpty) ...[
           const Divider(height: 39),
           Text(
             l10n.mockSupportCollectionContextExamples,
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 11),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('01', style: TextStyle(color: colors.primary)),
-              const SizedBox(width: 10),
-              Expanded(child: Text(item.context!)),
+          if (item?.context != null)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('01', style: TextStyle(color: colors.primary)),
+                const SizedBox(width: 10),
+                Expanded(child: Text(item!.context!)),
+              ],
+            ),
+          if (payload != null)
+            for (var index = 0; index < payload.examples.length; index++) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${index + 1}'.padLeft(2, '0'), style: TextStyle(color: colors.primary)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(payload.examples[index].text),
+                        Text(
+                          payload.examples[index].meaning,
+                          style: TextStyle(color: colors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 9),
             ],
-          ),
         ],
-        if (item.sourceTitle != null) ...[
+        if (sourceTitle != null) ...[
           const SizedBox(height: 22),
           Text(
-            l10n.mockLearningWordSourceDate(item.sourceTitle!, dateText),
+            dateText == null ? sourceTitle : l10n.mockLearningWordSourceDate(sourceTitle, dateText),
             style: TextStyle(color: colors.onSurfaceVariant),
           ),
         ],
-        const SizedBox(height: 15),
-        Wrap(
-          spacing: 7,
-          runSpacing: 7,
-          children: [
-            Chip(
-              label: Text(l10n.mockLearningWordMastery),
-              backgroundColor: roles.selected,
-              labelStyle: TextStyle(color: colors.primary),
-              side: BorderSide.none,
-              visualDensity: VisualDensity.compact,
+        if (refs.isNotEmpty)
+          for (final ref in refs)
+            Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text(
+                [ref.nodeTitle, ref.quote].whereType<String>().join(' · '),
+                style: TextStyle(color: colors.onSurfaceVariant),
+              ),
             ),
-            for (final book in catalog.notebooks.where(
-              (book) => item.notebookIds.contains(book.id),
-            ))
+        if (item != null) ...[
+          const SizedBox(height: 15),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: [
               Chip(
-                label: Text(book.name),
+                label: Text(l10n.mockLearningWordMastery),
                 backgroundColor: roles.selected,
                 labelStyle: TextStyle(color: colors.primary),
                 side: BorderSide.none,
                 visualDensity: VisualDensity.compact,
               ),
-          ],
-        ),
-        if (item.notes.isNotEmpty) ...[
+              for (final book in catalog!.notebooks.where(
+                (book) => item!.notebookIds.contains(book.id),
+              ))
+                Chip(
+                  label: Text(book.name),
+                  backgroundColor: roles.selected,
+                  labelStyle: TextStyle(color: colors.primary),
+                  side: BorderSide.none,
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+        ],
+        if (item != null && item!.notes.isNotEmpty) ...[
           const SizedBox(height: 15),
           Text(l10n.mockSupportPersonalNotes, style: Theme.of(context).textTheme.titleSmall),
-          Text(item.notes),
+          Text(item!.notes),
         ],
       ],
     );

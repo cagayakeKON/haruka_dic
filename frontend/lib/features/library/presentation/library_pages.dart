@@ -12,6 +12,11 @@ import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/shared/presentation/components.dart';
 import 'package:haruka/shared/domain/learning_records.dart';
 import 'package:haruka/app/preview_shell.dart';
+import 'package:haruka/core/api/learning_models.dart' as published;
+import 'package:haruka/features/collections/reference_controller.dart';
+import 'package:haruka/features/collections/reference_feature_scope.dart';
+import 'package:haruka/generated/ui_test_ids.dart';
+import 'package:haruka/shared/identified.dart';
 
 import '../data/material_catalog.dart';
 import 'material_catalog_scope.dart';
@@ -74,11 +79,28 @@ class _LibraryPageState extends State<LibraryPage> {
   final desktopSearchFocusNode = FocusNode();
   final _mobileViewportAnchor = MaterialViewportAnchor();
   final _desktopViewportAnchor = MaterialViewportAnchor();
+  final _publishedMobileScroll = ScrollController();
+  final _publishedDesktopScroll = ScrollController();
+  ReferenceController? _reference;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reference = ReferenceFeatureScope.maybeOf(context);
+    if (reference != null && !identical(reference, _reference)) {
+      _reference = reference;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && identical(_reference, reference)) unawaited(reference.ensureMaterials());
+      });
+    }
+  }
 
   @override
   void dispose() {
     searchController.dispose();
     desktopSearchFocusNode.dispose();
+    _publishedMobileScroll.dispose();
+    _publishedDesktopScroll.dispose();
     super.dispose();
   }
 
@@ -117,11 +139,91 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final reference = ReferenceFeatureScope.maybeOf(context);
+    if (reference != null) return _buildPublishedFrame(context, reference);
     final listQuery = MaterialCatalogQuery(type: type, search: query);
     return MaterialCatalogAccess(
       query: listQuery,
       loadingBuilder: (context) => _buildFrame(context, null),
       builder: (context, catalog) => _buildFrame(context, catalog.filterMaterials(listQuery)),
+    );
+  }
+
+  Widget _buildPublishedFrame(BuildContext context, ReferenceController reference) {
+    final l10n = AppLocalizations.of(context);
+    final term = query.trim().toLowerCase();
+    final rows = [
+      for (final item in reference.materials)
+        if ((type == null || type == LearningMaterialType.novel) &&
+            (term.isEmpty ||
+                item.title.toLowerCase().contains(term) ||
+                item.language.toLowerCase().contains(term)))
+          item,
+    ];
+    Widget results(bool compact) => _PublishedMaterialResults(
+      reference: reference,
+      items: rows,
+      loading: !reference.materialsLoaded && reference.materialError == null,
+      hasMore: reference.materialCursor != null,
+      error: reference.materialError != null,
+      emptyCatalog: reference.materials.isEmpty,
+      compact: compact,
+      scrollController: compact ? _publishedMobileScroll : _publishedDesktopScroll,
+      onMore: () => unawaited(reference.loadMaterials(more: true)),
+      onRetry: () => unawaited(reference.loadMaterials()),
+      onOpen: (item) => unawaited(context.push(AppRoutes.materialPath(item.id))),
+    );
+    return Identified(
+      id: UiTestIds.referenceMaterialsPage,
+      child: PreviewPageFrame(
+        location: AppRoutes.materials,
+        title: l10n.mockLibraryTitle,
+        mobileHeader: searchOpen
+            ? Row(
+                children: [
+                  IconButton(
+                    tooltip: l10n.mockLibraryCloseSearch,
+                    onPressed: closeSearch,
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      autofocus: true,
+                      onChanged: _setQuery,
+                      decoration: InputDecoration(hintText: l10n.mockLibrarySearchMaterials),
+                    ),
+                  ),
+                ],
+              )
+            : null,
+        mobileActions: [
+          if (!searchOpen)
+            IconButton(
+              tooltip: l10n.mockLibrarySearchMaterials,
+              onPressed: () => setState(() => searchOpen = true),
+              icon: const Icon(Icons.search),
+            ),
+        ],
+        mobile: MobileLibraryView(
+          type: type,
+          searchOpen: searchOpen,
+          onType: _setType,
+          allowImport: false,
+          availableTypes: const [LearningMaterialType.novel],
+          results: results(true),
+        ),
+        desktop: DesktopLibraryView(
+          type: type,
+          searchController: searchController,
+          searchFocusNode: desktopSearchFocusNode,
+          onType: _setType,
+          onQuery: _setQuery,
+          allowImport: false,
+          availableTypes: const [LearningMaterialType.novel],
+          results: results(false),
+        ),
+      ),
     );
   }
 
@@ -207,6 +309,186 @@ class _LibraryPageState extends State<LibraryPage> {
       ),
     );
   }
+}
+
+class _PublishedMaterialResults extends StatelessWidget {
+  const _PublishedMaterialResults({
+    required this.reference,
+    required this.items,
+    required this.loading,
+    required this.hasMore,
+    required this.error,
+    required this.emptyCatalog,
+    required this.compact,
+    required this.scrollController,
+    required this.onMore,
+    required this.onRetry,
+    required this.onOpen,
+  });
+
+  final ReferenceController reference;
+
+  final List<published.MaterialSummary> items;
+  final bool loading;
+  final bool hasMore;
+  final bool error;
+  final bool emptyCatalog;
+  final bool compact;
+  final ScrollController scrollController;
+  final VoidCallback onMore;
+  final VoidCallback onRetry;
+  final ValueChanged<published.MaterialSummary> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final roles = HarukaColors.of(context);
+    return ListView(
+      controller: scrollController,
+      key: PageStorageKey(compact ? 'published-materials-mobile' : 'published-materials-desktop'),
+      padding: EdgeInsets.fromLTRB(compact ? 20 : 0, 0, compact ? 20 : 0, 28),
+      children: [
+        if (loading) const Center(child: CircularProgressIndicator()),
+        if (error)
+          HarukaEmpty(
+            title: l10n.mockMaterialUnavailableTitle,
+            message: l10n.mockMaterialUnavailableMessage,
+            action: TextButton(onPressed: onRetry, child: Text(l10n.referenceRetry)),
+          ),
+        if (!loading && !error && items.isEmpty)
+          HarukaEmpty(
+            title: emptyCatalog ? l10n.mockLibraryNoMaterials : l10n.mockLibraryNoMatches,
+            message: emptyCatalog ? l10n.mockLibraryEmptyHint : l10n.mockLibraryTryAnotherSearch,
+          ),
+        for (final item in items) ...[
+          Identified(
+            id: UiTestIds.referenceMaterialRow(item.id),
+            merge: true,
+            child: Card.outlined(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              color: scheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: BorderSide(color: scheme.outline.withValues(alpha: .7)),
+              ),
+              child: InkWell(
+                onTap: () => onOpen(item),
+                child: Padding(
+                  padding: EdgeInsets.all(compact ? 12 : 16),
+                  child: Row(
+                    children: [
+                      _MaterialCover(
+                        label: item.title.isEmpty
+                            ? ''
+                            : String.fromCharCodes([item.title.runes.first]),
+                        color: roles.bookBlue,
+                        width: compact ? 58 : 64,
+                        height: compact ? 76 : 72,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.title, style: Theme.of(context).textTheme.titleMedium),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${item.language == 'ja' ? l10n.mockLibraryJapanese : l10n.mockLibraryEnglish} · ${l10n.mockLibraryNovel}',
+                              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                            ),
+                            if (reference.auth.access?.allows('client.material.read') == true) ...[
+                              const SizedBox(height: 9),
+                              Text(
+                                l10n.mockLibraryReadable,
+                                style: TextStyle(color: roles.positive, fontSize: 12),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (compact)
+                        _MobileMaterialMenu(
+                          title: item.title,
+                          onOpen: () {},
+                          onDetails: () =>
+                              _showPublishedMaterialDetails(context, reference, item, onOpen),
+                        )
+                      else ...[
+                        PopupMenuButton<String>(
+                          tooltip: l10n.mockLibraryMoreActions(item.title),
+                          onSelected: (_) =>
+                              _showPublishedMaterialDetails(context, reference, item, onOpen),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'detail',
+                              child: Text(l10n.mockLibraryViewDetails),
+                            ),
+                          ],
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (hasMore)
+          Center(
+            child: TextButton(
+              onPressed: reference.materialsLoading ? null : onMore,
+              child: Text(l10n.referenceLoadMore),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+Future<void> _showPublishedMaterialDetails(
+  BuildContext context,
+  ReferenceController reference,
+  published.MaterialSummary item,
+  ValueChanged<published.MaterialSummary> onOpen,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final openingScope = referenceScope(reference.auth, 'reference');
+  await showHarukaDialog<void>(
+    context: context,
+    builder: (dialogContext) => ReferenceDialogGuard(
+      controller: reference,
+      openingScope: openingScope,
+      allowed: () =>
+          reference.auth.access?.allows('client.material.list') == true &&
+          reference.materials.any((row) => row.id == item.id && row.revisionId == item.revisionId),
+      child: HarukaDialogSurface(
+        title: l10n.mockMaterialDetailsTitle,
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              onOpen(item);
+            },
+            child: Text(l10n.mockLibraryViewMaterial(item.title)),
+          ),
+        ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Text(l10n.mockLibraryNovel),
+            Text(item.language == 'ja' ? l10n.mockLibraryJapanese : l10n.mockLibraryEnglish),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 /// Keeps the opened material at the same viewport position after a gated
@@ -377,6 +659,8 @@ class MobileLibraryView extends StatelessWidget {
     required this.searchOpen,
     required this.onType,
     required this.results,
+    this.allowImport = true,
+    this.availableTypes,
     super.key,
   });
 
@@ -384,13 +668,15 @@ class MobileLibraryView extends StatelessWidget {
   final bool searchOpen;
   final ValueChanged<LearningMaterialType?> onType;
   final Widget results;
+  final bool allowImport;
+  final List<LearningMaterialType>? availableTypes;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final reduceMotion = HarukaMotion.reduced(
       context,
-      reducedMotion: PreviewStoreScope.of(context).reducedMotion,
+      reducedMotion: _libraryReducedMotion(context),
     );
     return Stack(
       children: [
@@ -411,7 +697,7 @@ class MobileLibraryView extends StatelessWidget {
                       reduceMotion: reduceMotion,
                       onTap: () => onType(null),
                     ),
-                    for (final value in LearningMaterialType.values)
+                    for (final value in availableTypes ?? LearningMaterialType.values)
                       _MobileMaterialTypeTab(
                         label: materialTypeLabel(context, value),
                         icon: switch (value) {
@@ -430,7 +716,7 @@ class MobileLibraryView extends StatelessWidget {
             Expanded(child: results),
           ],
         ),
-        if (!searchOpen)
+        if (!searchOpen && allowImport)
           Positioned(
             right: 22,
             bottom: 22,
@@ -668,13 +954,13 @@ class _MobileMaterialMenu extends StatefulWidget {
     required this.title,
     required this.onOpen,
     required this.onDetails,
-    required this.onDelete,
+    this.onDelete,
   });
 
   final String title;
   final VoidCallback onOpen;
   final VoidCallback onDetails;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   @override
   State<_MobileMaterialMenu> createState() => _MobileMaterialMenuState();
@@ -697,10 +983,7 @@ class _MobileMaterialMenuState extends State<_MobileMaterialMenu> {
         controller: _controller,
         alignmentOffset: const Offset(0, 4),
         consumeOutsideTap: true,
-        animated: !HarukaMotion.reduced(
-          context,
-          reducedMotion: PreviewStoreScope.of(context).reducedMotion,
-        ),
+        animated: !HarukaMotion.reduced(context, reducedMotion: _libraryReducedMotion(context)),
         style: MenuStyle(
           alignment: AlignmentDirectional.bottomEnd,
           backgroundColor: WidgetStatePropertyAll(scheme.surface),
@@ -721,14 +1004,15 @@ class _MobileMaterialMenuState extends State<_MobileMaterialMenu> {
             onPressed: widget.onDetails,
             child: SizedBox(width: 138, child: Text(l10n.mockLibraryViewDetails)),
           ),
-          MenuItemButton(
-            leadingIcon: Icon(Icons.delete_outline, size: 20, color: scheme.error),
-            onPressed: widget.onDelete,
-            child: SizedBox(
-              width: 138,
-              child: Text(l10n.mockLibraryDeleteMaterial, style: TextStyle(color: scheme.error)),
+          if (widget.onDelete != null)
+            MenuItemButton(
+              leadingIcon: Icon(Icons.delete_outline, size: 20, color: scheme.error),
+              onPressed: widget.onDelete,
+              child: SizedBox(
+                width: 138,
+                child: Text(l10n.mockLibraryDeleteMaterial, style: TextStyle(color: scheme.error)),
+              ),
             ),
-          ),
         ],
         builder: (context, controller, child) => IconButton(
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
@@ -817,6 +1101,8 @@ class DesktopLibraryView extends StatelessWidget {
     required this.onType,
     required this.onQuery,
     required this.results,
+    this.allowImport = true,
+    this.availableTypes,
     super.key,
   });
   final LearningMaterialType? type;
@@ -825,6 +1111,8 @@ class DesktopLibraryView extends StatelessWidget {
   final ValueChanged<LearningMaterialType?> onType;
   final ValueChanged<String> onQuery;
   final Widget results;
+  final bool allowImport;
+  final List<LearningMaterialType>? availableTypes;
 
   @override
   Widget build(BuildContext context) {
@@ -838,11 +1126,12 @@ class DesktopLibraryView extends StatelessWidget {
             Expanded(
               child: Text(l10n.mockLibraryTitle, style: Theme.of(context).textTheme.headlineMedium),
             ),
-            FilledButton.icon(
-              onPressed: () => context.push(AppRoutes.mockImport),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.mockLibraryImport),
-            ),
+            if (allowImport)
+              FilledButton.icon(
+                onPressed: () => context.push(AppRoutes.mockImport),
+                icon: const Icon(Icons.add),
+                label: Text(l10n.mockLibraryImport),
+              ),
           ],
         ),
         const SizedBox(height: 18),
@@ -854,7 +1143,7 @@ class DesktopLibraryView extends StatelessWidget {
                 selected: type == null,
                 onTap: () => onType(null),
               ),
-              for (final value in LearningMaterialType.values)
+              for (final value in availableTypes ?? LearningMaterialType.values)
                 HarukaPill(
                   label: materialTypeLabel(context, value),
                   selected: type == value,
@@ -1780,3 +2069,8 @@ class DesktopImportView extends StatelessWidget {
     );
   }
 }
+
+bool _libraryReducedMotion(BuildContext context) =>
+    ShellPresentationScope.maybeOf(context)?.reducedMotion ??
+    PreviewStoreScope.maybeOf(context)?.reducedMotion ??
+    false;

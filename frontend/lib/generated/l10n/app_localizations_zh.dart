@@ -718,6 +718,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mockLibraryNoMaterials => '还没有材料';
 
   @override
+  String get mockLibraryEmptyHint => '目前没有可阅读的小说。';
+
+  @override
   String get mockLibraryOpenMaterial => '打开材料';
 
   @override
@@ -958,6 +961,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mockNotebookEmptyTitle => '没有匹配的收藏';
+
+  @override
+  String get mockNotebookNoCollections => '还没有收藏';
+
+  @override
+  String get mockNotebookNoCollectionsHint => '这里暂时没有已收藏的内容。';
 
   @override
   String get mockNotebookEnglish => '英语';

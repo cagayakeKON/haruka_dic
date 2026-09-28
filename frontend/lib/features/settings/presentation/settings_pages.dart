@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:haruka/app/routes.dart';
@@ -26,6 +27,9 @@ import 'package:haruka/app/preview_shell.dart';
 import 'package:haruka/app/page_route_activity.dart';
 import 'package:haruka/app/lifecycle_visibility.dart';
 import 'package:haruka/dev/preview/fixture_store.dart';
+import 'package:haruka/features/auth/account_pages.dart';
+import 'package:haruka/core/api/request_ids.dart';
+import 'package:haruka/core/telemetry/telemetry.dart';
 
 String mockLanguageOptionsSummary(BuildContext context) {
   final l10n = AppLocalizations.of(context);
@@ -790,7 +794,7 @@ class SettingsLogic {
 
   void openSessions() {
     if (!settingsUsePreviewAvatar(context)) {
-      unawaited(context.push(AppRoutes.accountSessions));
+      unawaited(showDeviceSessionsDialog(context));
       return;
     }
     unawaited(viewSession());
@@ -801,10 +805,24 @@ class SettingsLogic {
       context.go(AppRoutes.mockLogin);
       return;
     }
+    final router = GoRouter.of(context);
     final auth = sessionAuth(context);
     if (auth == null) return;
-    await auth.signOut();
-    if (context.mounted) context.go(AppRoutes.login);
+    final epoch = auth.actionEpoch;
+    final sessionRef = auth.access?.sessionRef;
+    final operationId = newRequestId();
+    var confirmed = true;
+    try {
+      final telemetry = ProviderScope.containerOf(context, listen: false).read(telemetryProvider);
+      telemetry?.track('auth.logout.requested', operationId: operationId);
+      if (telemetry != null) unawaited(telemetry.flush());
+      await auth.signOut(operationId: operationId);
+    } on Object {
+      confirmed = false;
+    }
+    if (sessionRef != null && auth.wasLocallySignedOutBy(epoch, sessionRef)) {
+      router.go(confirmed ? AppRoutes.login : AppRoutes.signedOutLocally);
+    }
   }
 
   Future<void> _save(SettingsGroup group, Map<String, Object?> fields) async {
@@ -1069,7 +1087,7 @@ class SettingsLogic {
 
   Future<void> changePassword() async {
     if (!settingsUsePreviewAvatar(context)) {
-      unawaited(context.push(AppRoutes.accountPassword));
+      await showPasswordChangeDialog(context);
       return;
     }
     var current = '';
@@ -1527,41 +1545,24 @@ class _MobileSettingsContent extends StatelessWidget {
   ]);
 
   Widget _appearance(BuildContext context) => _stack([
-    HarukaSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _settingSelect(
-            logic.l10n.mockSettingTheme,
-            logic.themeMode,
-            ['system', 'light', 'dark'],
-            logic.themeLabel,
-            (value) => logic.saveAppearance(value, logic.reducedMotion),
-          ),
-          const SizedBox(height: 18),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(logic.l10n.mockSettingReduceMotion),
-            subtitle: Text(logic.l10n.settingMotionHint),
-            value: logic.reducedMotion,
-            onChanged: (value) => logic.saveAppearance(logic.themeMode, value),
-          ),
-        ],
+    _settingCard(context, logic.l10n.mockSettingTheme, [
+      _settingSelect(
+        logic.l10n.mockSettingTheme,
+        logic.themeMode,
+        ['system', 'light', 'dark'],
+        logic.themeLabel,
+        (value) => logic.saveAppearance(value, logic.reducedMotion),
       ),
-    ),
-    HarukaSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            logic.l10n.settingAppearancePreviewTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          Text(logic.l10n.settingAppearancePreviewBody),
-        ],
+    ]),
+    _settingCard(context, logic.l10n.mockSettingReduceMotion, [
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(logic.l10n.mockSettingReduceMotion),
+        value: logic.reducedMotion,
+        onChanged: (value) => logic.saveAppearance(logic.themeMode, value),
       ),
-    ),
+    ]),
+    _settingCard(context, logic.l10n.mockSettingReadingPreview, [_readingPreview(context, logic)]),
   ]);
 
   Widget _reading(BuildContext context) => _stack([
@@ -1614,30 +1615,11 @@ class _MobileSettingsContent extends StatelessWidget {
 
   Widget _query(BuildContext context) => _stack([
     _settingCard(context, logic.l10n.mockSettingQueryContext, [
-      Text(logic.l10n.settingContextIntro),
-      const SizedBox(height: 14),
       _queryInput(logic),
       const SizedBox(height: 12),
       _queryPresets(logic),
       const SizedBox(height: 16),
-      Text(logic.l10n.settingContextBudgetHint, style: Theme.of(context).textTheme.bodySmall),
-      const SizedBox(height: 14),
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          logic.l10n.settingContextBudgetSummary(logic.queryBudget.text.trim()),
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-      ),
-      const SizedBox(height: 16),
       _settingAction(logic.l10n.mockSettingSaveQuery, logic.saveQuery),
-      const SizedBox(height: 12),
-      Text(logic.l10n.settingContextAvailability, style: Theme.of(context).textTheme.bodySmall),
     ]),
   ]);
 
@@ -1873,6 +1855,10 @@ class _MobileSettingsContent extends StatelessWidget {
   }
 
   Widget _security(BuildContext context) => _stack([
+    if (!settingsUsePreviewAvatar(context))
+      _settingCard(context, logic.l10n.mockSettingSecurityAccount, [
+        const AccountIdentitySummary(),
+      ]),
     _settingCard(context, logic.l10n.mockSettingProfile, [
       ListTile(
         contentPadding: EdgeInsets.zero,
@@ -2445,6 +2431,11 @@ class _DesktopSettingsContent extends StatelessWidget {
   }
 
   Widget _security(BuildContext context) => _panel(context, logic.l10n.mockSettingSecurityAccount, [
+    if (!settingsUsePreviewAvatar(context)) ...[
+      const AccountIdentitySummary(),
+      const SizedBox(height: 16),
+      const Divider(),
+    ],
     ListTile(
       title: Text(logic.l10n.mockSettingProfile),
       leading: const Icon(Icons.person_outline),

@@ -477,27 +477,12 @@
         "backend-foundation"
       ]
     },
-    "frontend/lib/app/app_shell.dart": {
-      "language": "flutter",
-      "kind": "ordinary",
-      "groups": []
-    },
-    "frontend/lib/app/environment_page.dart": {
-      "language": "flutter",
-      "kind": "ordinary",
-      "groups": []
-    },
     "frontend/lib/app/haruka_app.dart": {
       "language": "flutter",
       "kind": "core",
       "groups": [
         "frontend-foundation"
       ]
-    },
-    "frontend/lib/app/home_page.dart": {
-      "language": "flutter",
-      "kind": "ordinary",
-      "groups": []
     },
     "frontend/lib/app/platform_routes.dart": {
       "language": "flutter",
@@ -707,6 +692,11 @@
       "kind": "ordinary",
       "groups": []
     },
+    "frontend/lib/features/auth/auth_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
     "frontend/lib/features/auth/email_action_page.dart": {
       "language": "flutter",
       "kind": "ordinary",
@@ -717,12 +707,17 @@
       "kind": "ordinary",
       "groups": []
     },
-    "frontend/lib/features/collections/reference_pages.dart": {
+    "frontend/lib/features/collections/reference_feature_scope.dart": {
       "language": "flutter",
       "kind": "ordinary",
       "groups": []
     },
     "frontend/lib/features/collections/reference_repository.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/presentation/published_novel_reader.dart": {
       "language": "flutter",
       "kind": "ordinary",
       "groups": []

@@ -14,10 +14,17 @@ import 'package:haruka/core/auth/auth_sync.dart';
 import 'package:haruka/core/auth/credential_vault.dart';
 import 'package:haruka/core/auth/email_action_link.dart';
 import 'package:haruka/core/config/app_config.dart';
+import 'package:haruka/core/cache/cache_coordinator.dart';
+import 'package:haruka/dev/preview/fixture_store.dart';
+import 'package:haruka/dev/preview/settings_cache_adapter.dart';
+import 'package:haruka/features/settings/data/cached_settings_repository.dart';
+import 'package:haruka/features/settings/presentation/settings_chrome.dart';
+import 'package:haruka/features/settings/presentation/settings_pages.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 
 import '../test_support/sample_adapter.dart';
+import 'features/settings/cached_settings_repository_test.mocks.dart';
 
 final class _EmptyVault implements CredentialVault {
   @override
@@ -415,6 +422,7 @@ void main() {
     expect(auth.phase, AuthPhase.authenticated);
     expect(router.routeInformationProvider.value.uri.path, '/account');
     expect(find.byKey(const ValueKey<String>(UiTestIds.accountPage)), findsOneWidget);
+    auth.pauseAccessDeadline();
   });
 
   for (final logoutFails in [false, true]) {
@@ -564,4 +572,143 @@ void main() {
       },
     );
   }
+
+  testWidgets('settings security logout reaches login after its page is removed', (tester) async {
+    final samples = jsonDecode(
+      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final config = AppConfig.parse(
+      platform: AppPlatform.web,
+      environment: 'dev',
+      instanceId: 'haruka-test-0123456789abcdef0123456789abcdef',
+      apiBaseUrl: 'https://localhost:18443',
+    );
+    const requestId = '018f1234-1234-7123-8123-123456789abc';
+    const sessionId = '018f1234-0000-7000-8000-000000000002';
+    final finishLogout = Completer<ResponseBody>();
+    var signedIn = false;
+    final access =
+        jsonDecode(jsonEncode(samples['auth_client_access_login_only'])) as Map<String, dynamic>;
+    final permissions = (access['data'] as Map<String, dynamic>)['permissions'] as List<dynamic>;
+    permissions.add({'code': 'client.profile.read', 'data_scope': 'self'});
+    ResponseBody jsonBody(Object value, [int status = 200]) => ResponseBody.fromString(
+      jsonEncode(value),
+      status,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+    final adapter = SampleAdapter((options, _) async {
+      switch (options.path) {
+        case '/api/v1/meta':
+          return jsonBody({
+            'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+            'meta': {'request_id': requestId},
+          });
+        case '/api/v1/auth/policy':
+          return jsonBody({
+            'data': {
+              'registration_enabled': false,
+              'approval_required': false,
+              'email_verification_required': true,
+              'recovery_enabled': true,
+              'recovery_mode': 'email',
+              'action_link_base_url': 'https://localhost:18443',
+              'password_min_length': 15,
+              'password_max_length': 128,
+            },
+            'meta': {'request_id': requestId},
+          });
+        case '/api/v1/auth/login':
+          signedIn = true;
+          return jsonBody(samples['auth_web_authenticated'] as Object);
+        case '/api/v1/auth/csrf':
+          return jsonBody({
+            'data': {
+              'session_ref': sessionId,
+              'csrf_token': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            },
+            'meta': {'request_id': requestId},
+          });
+        case '/api/v1/me/access':
+          return signedIn
+              ? jsonBody(access)
+              : jsonBody({
+                  'error': {
+                    'code': 'AUTH_REQUIRED',
+                    'message': 'required',
+                    'field_errors': <Object?>[],
+                  },
+                  'meta': {'request_id': requestId},
+                }, 401);
+        case '/api/v1/users/me/account':
+          return jsonBody(samples['auth_account_legacy_unverified'] as Object);
+        case '/api/v1/auth/logout':
+          return finishLogout.future;
+      }
+      throw StateError('Unexpected endpoint ${options.path}');
+    });
+    final api = ApiClient(config, adapter: adapter);
+    final auth = AuthController(
+      AuthRepository(api, config),
+      config,
+      vault: _EmptyVault(),
+      sync: _NoSync(),
+    );
+    final providers = ProviderContainer(
+      overrides: [authControllerProvider.overrideWith((ref) => auth)],
+    );
+    final cache = CacheCoordinator();
+    final settings = CachedSettingsRepository(cache: cache, source: MockSettingsSource());
+    final store = PreviewFixtureStore();
+    final cacheAdapter = PreviewSettingsCacheAdapter(coordinator: cache, ownsScope: false);
+    final router = createRouter(
+      config,
+      api,
+      auth,
+      initialLocation: '/settings/security',
+      settingsPage: (context, section) => AccountSettingsHost(
+        store: store,
+        cache: cacheAdapter,
+        repository: settings,
+        child: SettingsDetailPage(section: section!, framed: false),
+      ),
+    );
+    addTearDown(() {
+      router.dispose();
+      providers.dispose();
+      settings.dispose();
+      cacheAdapter.dispose();
+      store.dispose();
+      api.close();
+    });
+    await tester.runAsync(auth.start);
+    expect(
+      await tester.runAsync(() => auth.login('a@example.test', 'valid-test-password')),
+      isTrue,
+    );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: providers,
+        child: MaterialApp.router(
+          locale: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings/security');
+    final logout = find.text('退出登录');
+    expect(logout, findsOneWidget);
+    await tester.tap(logout);
+    await tester.pump();
+    expect(auth.isAuthenticated, isFalse);
+    expect(find.text('退出登录'), findsNothing);
+    finishLogout.complete(ResponseBody.fromString('', 204));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 30)));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/login');
+  });
 }

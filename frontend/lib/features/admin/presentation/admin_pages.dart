@@ -3,13 +3,20 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:haruka/core/auth/auth_controller.dart';
+import 'package:haruka/core/api/request_ids.dart';
+import 'package:haruka/core/telemetry/telemetry.dart';
+import 'package:haruka/features/auth/account_pages.dart';
 
 import 'package:haruka/app/motion.dart';
 import 'package:haruka/app/preview_shell.dart';
 import 'package:haruka/app/routes.dart';
 import 'package:haruka/app/theme.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
+import 'package:haruka/generated/ui_test_ids.dart';
+import 'package:haruka/shared/identified.dart';
 
 /// In-memory state for the management interface.
 final class AdminPreviewState extends ChangeNotifier {
@@ -244,13 +251,22 @@ bool _adminReducedMotion(BuildContext context) =>
 
 /// The admin route is Web only. Each section is a distinct presentation widget.
 class AdminPage extends StatelessWidget {
-  const AdminPage({required this.section, this.previewState, super.key});
+  const AdminPage({required this.section, this.previewState, this.liveAuth, super.key});
 
   final String section;
   final AdminPreviewState? previewState;
+  final AuthController? liveAuth;
 
   @override
   Widget build(BuildContext context) {
+    if (liveAuth case final auth?) {
+      return ListenableBuilder(
+        listenable: auth,
+        builder: (context, _) => auth.isAuthenticated && auth.admin
+            ? _AdminShell(section: section, liveAuth: auth)
+            : const SizedBox.shrink(),
+      );
+    }
     final state = previewState ?? AdminPreviewScope.of(context);
     return AnimatedBuilder(
       animation: state,
@@ -430,9 +446,10 @@ class _AdminLoginState extends State<_AdminLogin> {
 }
 
 class _AdminShell extends StatelessWidget {
-  const _AdminShell({required this.section, required this.state});
+  const _AdminShell({required this.section, this.state, this.liveAuth});
   final String section;
-  final AdminPreviewState state;
+  final AdminPreviewState? state;
+  final AuthController? liveAuth;
 
   static const sections = <(String, IconData)>[
     ('overview', Icons.grid_view_outlined),
@@ -454,7 +471,12 @@ class _AdminShell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, bounds) {
         final narrow = bounds.maxWidth < 960;
-        final rail = _AdminSidebar(section: section, state: state);
+        final rail = _AdminSidebar(section: section, state: state, liveAuth: liveAuth);
+        final permitted = liveAuth == null
+            ? state!.canSection(section)
+            : section == 'policy'
+            ? liveAuth!.access?.allows('admin.auth_policy.read') == true
+            : section == 'security';
         return Scaffold(
           backgroundColor: roles.canvas,
           drawer: narrow && !hosted ? Drawer(child: rail) : null,
@@ -503,14 +525,14 @@ class _AdminShell extends StatelessWidget {
                               ),
                               children: [
                                 Text(
-                                  state.canSection(section)
+                                  permitted || liveAuth != null
                                       ? _sectionLabel(strings, section)
                                       : strings.authNoAdminPermission,
                                   style: Theme.of(context).textTheme.headlineLarge
                                       ?.copyWith(fontWeight: FontWeight.w800),
                                 ),
                                 const SizedBox(height: 25),
-                                if (!state.canSection(section))
+                                if (!permitted && liveAuth == null)
                                   _AdminCard(child: Text(strings.authNoAdminPermission))
                                 else
                                   AnimatedSwitcher(
@@ -527,18 +549,29 @@ class _AdminShell extends StatelessWidget {
                                         : const Duration(milliseconds: 230),
                                     child: KeyedSubtree(
                                       key: ValueKey(section),
-                                      child: switch (section) {
-                                        'overview' => _AdminOverview(state: state),
-                                        'users' => _AdminUsers(state: state),
-                                        'roles' => _AdminRoles(state: state),
-                                        'menus' => const _AdminMenus(),
-                                        'policy' => _AdminPolicy(state: state),
-                                        'jobs' => _AdminJobs(state: state),
-                                        'audit' => const _AdminAudit(),
-                                        'usage' => const _AdminUsage(),
-                                        'security' => _AdminSecurity(state: state),
-                                        _ => _AdminCard(child: Text(strings.authNoAdminPermission)),
-                                      },
+                                      child: liveAuth != null
+                                          ? switch (section) {
+                                              'policy' when permitted => const _AdminLivePolicy(),
+                                              'policy' => _AdminCard(
+                                                child: Text(strings.authNoAdminPermission),
+                                              ),
+                                              'security' => _AdminLiveSecurity(auth: liveAuth!),
+                                              _ => const _AdminCard(child: Text('此功能尚未开放。')),
+                                            }
+                                          : switch (section) {
+                                              'overview' => _AdminOverview(state: state!),
+                                              'users' => _AdminUsers(state: state!),
+                                              'roles' => _AdminRoles(state: state!),
+                                              'menus' => const _AdminMenus(),
+                                              'policy' => _AdminPolicy(state: state!),
+                                              'jobs' => _AdminJobs(state: state!),
+                                              'audit' => const _AdminAudit(),
+                                              'usage' => const _AdminUsage(),
+                                              'security' => _AdminSecurity(state: state!),
+                                              _ => _AdminCard(
+                                                child: Text(strings.authNoAdminPermission),
+                                              ),
+                                            },
                                     ),
                                   ),
                               ],
@@ -559,9 +592,10 @@ class _AdminShell extends StatelessWidget {
 }
 
 class _AdminSidebar extends StatelessWidget {
-  const _AdminSidebar({required this.section, required this.state, this.onNavigate});
+  const _AdminSidebar({required this.section, this.state, this.liveAuth, this.onNavigate});
   final String section;
-  final AdminPreviewState state;
+  final AdminPreviewState? state;
+  final AuthController? liveAuth;
   final ValueChanged<String>? onNavigate;
 
   @override
@@ -597,7 +631,7 @@ class _AdminSidebar extends StatelessWidget {
               child: ListView(
                 children: [
                   for (final (id, icon) in _AdminShell.sections)
-                    if (state.canSection(id))
+                    if (liveAuth != null || state!.canSection(id))
                       Padding(
                         padding: const EdgeInsets.only(bottom: 7),
                         child: Material(
@@ -612,7 +646,11 @@ class _AdminSidebar extends StatelessWidget {
                             selectedColor: scheme.primary,
                             textColor: scheme.onSurfaceVariant,
                             iconColor: scheme.onSurfaceVariant,
-                            onTap: () => navigate(AppRoutes.mockAdminPath(id)),
+                            onTap: () => navigate(
+                              liveAuth == null
+                                  ? AppRoutes.mockAdminPath(id)
+                                  : AppRoutes.adminSectionPath(id),
+                            ),
                             leading: Icon(icon, size: 19),
                             title: Text(
                               _sectionLabel(strings, id),
@@ -634,12 +672,21 @@ class _AdminSidebar extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
                 backgroundColor: roles.signal,
-                child: Text(strings.mockAdminAvatar, style: TextStyle(color: roles.onSignal)),
+                child: Text(
+                  liveAuth == null ? strings.mockAdminAvatar : '管',
+                  style: TextStyle(color: roles.onSignal),
+                ),
               ),
-              title: Text(strings.mockAdminAccountName),
-              subtitle: Text(strings.mockAdminAccountLabel),
+              title: Text(
+                liveAuth == null ? strings.mockAdminAccountName : strings.mockAdminAudience,
+              ),
+              subtitle: liveAuth == null ? Text(strings.mockAdminAccountLabel) : null,
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => navigate(AppRoutes.mockAdminPath('security')),
+              onTap: () => navigate(
+                liveAuth == null
+                    ? AppRoutes.mockAdminPath('security')
+                    : AppRoutes.adminSectionPath('security'),
+              ),
             ),
           ],
         ),
@@ -1538,6 +1585,144 @@ class _AdminUsage extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _AdminLivePolicy extends StatelessWidget {
+  const _AdminLivePolicy();
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 900),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final editor = _AdminCard(child: const AdminPolicyEditor());
+          final scope = _AdminCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(strings.mockAdminCurrentPolicy, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 18),
+                const Text('当前仅开放注册开关。邮箱验证与找回策略由服务端配置。'),
+              ],
+            ),
+          );
+          if (constraints.maxWidth < 700) {
+            return Column(children: [editor, const SizedBox(height: 16), scope]);
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 3, child: editor),
+              const SizedBox(width: 22),
+              Expanded(flex: 2, child: scope),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AdminLiveSecurity extends ConsumerWidget {
+  const _AdminLiveSecurity({required this.auth});
+
+  final AuthController auth;
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref, {required bool toClient}) async {
+    final router = GoRouter.of(context);
+    final epoch = auth.actionEpoch;
+    final sessionRef = auth.access?.sessionRef;
+    var confirmed = true;
+    try {
+      final telemetry = ref.read(telemetryProvider);
+      final operationId = newRequestId();
+      telemetry?.track('auth.logout.requested', operationId: operationId);
+      if (telemetry != null) unawaited(telemetry.flush());
+      await auth.signOut(operationId: operationId);
+    } on Object {
+      confirmed = false;
+    }
+    if (sessionRef != null && auth.wasLocallySignedOutBy(epoch, sessionRef)) {
+      router.go(
+        confirmed
+            ? toClient
+                  ? AppRoutes.login
+                  : AppRoutes.adminLogin
+            : AppRoutes.signedOutLocally,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppLocalizations.of(context);
+    final session = _AdminCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(strings.mockAdminCurrentSession, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 16),
+          Identified(
+            id: UiTestIds.adminSecuritySessions,
+            merge: true,
+            child: OutlinedButton(
+              onPressed: () => unawaited(showDeviceSessionsDialog(context, admin: true)),
+              child: Text(strings.mockSettingViewSession),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            children: [
+              Identified(
+                id: UiTestIds.adminSecurityPassword,
+                merge: true,
+                child: OutlinedButton(
+                  onPressed: () => unawaited(showPasswordChangeDialog(context, admin: true)),
+                  child: Text(strings.mockAdminChangePassword),
+                ),
+              ),
+              Identified(
+                id: UiTestIds.adminSignOut,
+                merge: true,
+                child: TextButton(
+                  onPressed: () => unawaited(_signOut(context, ref, toClient: false)),
+                  style: TextButton.styleFrom(foregroundColor: HarukaColors.of(context).danger),
+                  child: Text(strings.mockAdminLogout),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    final client = _AdminCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(strings.mockAdminSwitchToClient, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 20),
+          OutlinedButton(
+            onPressed: () => unawaited(_signOut(context, ref, toClient: true)),
+            child: Text(strings.mockAdminClientLogin),
+          ),
+        ],
+      ),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) => constraints.maxWidth < 760
+          ? Column(children: [session, const SizedBox(height: 16), client])
+          : Row(
+              children: [
+                Expanded(flex: 3, child: session),
+                const SizedBox(width: 22),
+                Expanded(flex: 2, child: client),
+              ],
+            ),
     );
   }
 }

@@ -86,6 +86,8 @@
     "referenceCollectionsPage": "client.reference.collections.page",
     "referenceMaterialsNav": "client.shell.reference.materials",
     "referenceCollectionsNav": "client.shell.reference.collections",
+    "referenceReaderBack": "client.reference.reader.back",
+    "referenceWordDialog": "client.reference.word.dialog",
     "activationResendPage": "client.auth.activation_resend.page",
     "activationResendEmail": "client.auth.activation_resend.email",
     "activationResendSubmit": "client.auth.activation_resend.submit"

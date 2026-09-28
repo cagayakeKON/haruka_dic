@@ -1,6 +1,6 @@
 # 实施计划与验收
 
-状态：2026-09-28，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)当期验收通过；B2b/c及后续业务尚未实现。
+状态：2026-09-29，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在撤回旧错误视觉结论、改用已确认Flutter mock为唯一主界面并完成Web/Android复核后，按当期范围重新验收通过。B2b/c及后续业务尚未实现，阶段1未完成。
 
 用户确认当前手机/电脑原型所有功能均纳入当前v0.1。逐项操作、首交付、跨阶段收口由[原型功能清单UI-01～35](prototype-scope.md)维护；现有文档全部P0继续由[覆盖索引](coverage.md)维护。两份清单取并集，不能用原型没画、只有模拟或待决方案排除已承诺功能。实际原型走查、独立review和本次文档证据见[PLAN2记录](reviews/2026-09-26-prototype-implementation-plan.md)。
 
@@ -33,7 +33,7 @@ Flutter用户端覆盖Windows、Web、Android，管理端为Web；Python后端�
 
 - [x] B0：锁定工具/构建依赖、统一命令、可安装包与仓库外启动、三端壳、受控迁移/种子、代码生成和质量门禁通过。
 - [x] B1：Windows/Web/Android均提供正式注册、邮箱激活、登录/access、邮件找回/重置、本人改密/会话管理、合法选区收藏新增/列表；按用户最终决定验收通过，证据与未运行边界见[实施及验收记录](reviews/2026-09-26-b1-implementation.md)。找回完整闭环只验Web，Windows原生完整矩阵和Android找回完整闭环不补测；已有局部操作保留。前端日志只验Web，开放注册开关默认关闭，本地隔离SMTP闭环获接受，外部SMTP不实测。
-- [x] B2a（当期验收通过）：完整资料/头像/可跳过引导、母语/解释语/日英目标语/当前语/水平目标/时区、显示偏好、阅读与查询预算偏好、原生服务实例切换；头像专用验证发布与private/no-store读取，分组revision冲突、人口资料默认不进AI；交付FCACHE三端存储/策略注册/版本代次/写后刷新/跨标签/清理升级基础及validate注册框架，未实现业务不伪签离线许可。实际联调、定点测试、最终视觉/制品及适用边界见[B2a验收记录](reviews/2026-09-28-profile-settings-acceptance.md)。
+- [x] B2a（当期重新验收通过）：完整资料/头像/可跳过引导、母语/解释语/日英目标语/当前语/水平目标/时区、显示偏好、阅读与查询预算偏好、原生服务实例切换；头像专用验证发布与private/no-store读取，分组revision冲突、人口资料默认不进AI；交付FCACHE三端存储/策略注册/版本代次/写后刷新/跨标签/清理升级基础及validate注册框架，未实现业务不伪签离线许可。旧以HTML比较平行正式界面的视觉通过结论已撤回；真实功能已迁入已确认Flutter mock，重复页面/壳/导航移除，正式Web/Android实操及定点复核见[B2a验收记录](reviews/2026-09-28-profile-settings-acceptance.md)。FCACHE仅签当期分支，不代表全族或阶段1完成。
 - [ ] B2b：完整管理Web用户/会话、角色/继承/allow/deny、成员/授予边界、两端菜单、注册/恢复策略（含原型审批注册与人工恢复）、安全初始化/最后管理员保护、审计；原型“预览”之后必须支持合法真实提交与失效反馈，不允许私有内容旁路。B1仍是已选邮箱验证/邮件找回路径；审批的待审批/拒绝/激活进度、人工恢复的申请/受理/受控核验/一次性安全交付/旧会话撤销一并在B2b实现，不能只做管理开关；默认策略不自动切换，邀请不因此进入范围。
 - [ ] B2c：本人凭据保存/单能力测试/轮换/撤销、能力目录/技术限额、ModelFactory、Job/Outbox/Kafka/Worker、attempt用量/本人及管理视图、有权任务进度。使用正式凭据测试路径证明持久闭环，见[B2验收](milestones/scaffold.md)。
 

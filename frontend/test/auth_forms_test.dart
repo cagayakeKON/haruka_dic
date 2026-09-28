@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:haruka/app/haruka_app.dart';
 import 'package:haruka/features/auth/auth_forms.dart';
+import 'package:haruka/features/auth/auth_pages.dart';
 import 'package:haruka/features/auth/email_action_page.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
@@ -24,10 +25,14 @@ void main() {
       routes: [
         GoRoute(
           path: '/admin/login',
-          builder: (_, _) => CredentialFormPage(
-            mode: CredentialMode.adminLogin,
+          builder: (context, _) => LoginPage(
+            admin: true,
             registrationEnabled: true,
-            onSubmit: (_, _) async {},
+            recoveryEnabled: true,
+            onLogin: (_, _) async {},
+            onOpenRecovery: () => context.go('/recovery?from=admin'),
+            onOpenRegistration: () {},
+            onOpenService: () {},
           ),
         ),
         GoRoute(
@@ -49,21 +54,15 @@ void main() {
       ),
     );
     expect(
-      find.text(
-        AppLocalizations.of(tester.element(find.byType(CredentialFormPage))).authForgotPassword,
-      ),
+      find.text(AppLocalizations.of(tester.element(find.byType(LoginPage))).authForgotPassword),
       findsOneWidget,
     );
     expect(
-      find.text(
-        AppLocalizations.of(tester.element(find.byType(CredentialFormPage))).authCreateAccount,
-      ),
+      find.text(AppLocalizations.of(tester.element(find.byType(LoginPage))).authCreateAccount),
       findsNothing,
     );
     await tester.tap(
-      find.text(
-        AppLocalizations.of(tester.element(find.byType(CredentialFormPage))).authForgotPassword,
-      ),
+      find.text(AppLocalizations.of(tester.element(find.byType(LoginPage))).authForgotPassword),
     );
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.toString(), '/recovery?from=admin');
@@ -79,8 +78,14 @@ void main() {
       routes: [
         GoRoute(
           path: '/login',
-          builder: (_, _) =>
-              CredentialFormPage(mode: CredentialMode.clientLogin, onSubmit: (_, _) async {}),
+          builder: (context, _) => LoginPage(
+            registrationEnabled: true,
+            recoveryEnabled: true,
+            onLogin: (_, _) async {},
+            onOpenRecovery: () => context.go('/recovery'),
+            onOpenRegistration: () {},
+            onOpenService: () {},
+          ),
         ),
         GoRoute(
           path: '/recovery',
@@ -128,7 +133,14 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: appTheme().copyWith(visualDensity: VisualDensity.compact),
-          home: CredentialFormPage(mode: CredentialMode.clientLogin, onSubmit: (_, _) async {}),
+          home: LoginPage(
+            registrationEnabled: true,
+            recoveryEnabled: true,
+            onLogin: (_, _) async {},
+            onOpenRecovery: () {},
+            onOpenRegistration: () {},
+            onOpenService: () {},
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -145,11 +157,11 @@ void main() {
     String? accepted;
     await tester.pumpWidget(
       _host(
-        CredentialFormPage(
-          mode: CredentialMode.register,
+        RegistrationPage(
           passwordMinLength: 2,
           passwordMaxLength: 2,
-          onSubmit: (_, password) async => accepted = password,
+          onBackToLogin: () {},
+          onRegister: (_, password) async => accepted = password,
         ),
       ),
     );
@@ -180,9 +192,11 @@ void main() {
     String? password;
     await tester.pumpWidget(
       _host(
-        CredentialFormPage(
-          mode: CredentialMode.register,
-          onSubmit: (value, secret) async {
+        RegistrationPage(
+          passwordMinLength: 15,
+          passwordMaxLength: 128,
+          onBackToLogin: () {},
+          onRegister: (value, secret) async {
             email = value;
             password = secret;
           },

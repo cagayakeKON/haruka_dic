@@ -1,4 +1,4 @@
-// GENERATED from config/ui_test_ids.json; sha256:7119b6237c1db03bca5943666d90eeda5c37a6cf777497575c63b8539893f2a5. Do not edit.
+// GENERATED from config/ui_test_ids.json; sha256:ec1af47f609188ab93ae1f3853f419cbe551b1d5e200982e70918b06315ab669. Do not edit.
 abstract final class UiTestIds {
   static const accountChangePassword = "client.account.password.submit";
   static const accountConfirmPassword = "client.account.password.confirm";
@@ -68,8 +68,10 @@ abstract final class UiTestIds {
   static const referenceMaterialsPage = "client.reference.materials.page";
   static const referenceOpenCollections = "client.reference.collections.open";
   static const referenceQuery = "client.reference.selection.query";
+  static const referenceReaderBack = "client.reference.reader.back";
   static const referenceSave = "client.reference.collection.save";
   static const referenceSavedState = "client.reference.collection.saved_state";
+  static const referenceWordDialog = "client.reference.word.dialog";
   static const registerConfirm = "client.auth.register.confirm";
   static const registerEmail = "client.auth.register.email";
   static const registerPage = "client.auth.register.page";

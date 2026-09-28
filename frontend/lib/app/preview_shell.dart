@@ -6,6 +6,8 @@ import 'package:haruka/app/routes.dart';
 import 'package:haruka/app/motion.dart';
 import 'package:haruka/app/theme.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
+import 'package:haruka/generated/ui_test_ids.dart';
+import 'package:haruka/shared/identified.dart';
 import 'package:haruka/shared/presentation/components.dart';
 import 'package:haruka/dev/preview/fixture_store.dart';
 
@@ -15,7 +17,104 @@ class PreviewStoreScope extends InheritedNotifier<PreviewFixtureStore> {
 
   static PreviewFixtureStore of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<PreviewStoreScope>()!.notifier!;
+
+  static PreviewFixtureStore? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PreviewStoreScope>()?.notifier;
 }
+
+/// Presentation values for the signed-in app shell. Preview pages continue to
+/// read their fixture store; the live shell never presents fixture identity.
+class ShellPresentationScope extends InheritedWidget {
+  const ShellPresentationScope({
+    required this.displayName,
+    required this.activeLanguage,
+    required this.reducedMotion,
+    required this.canReadMaterials,
+    required this.canReadCollections,
+    required super.child,
+    super.key,
+  });
+
+  final String displayName;
+  final String activeLanguage;
+  final bool reducedMotion;
+  final bool canReadMaterials;
+  final bool canReadCollections;
+
+  static ShellPresentationScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ShellPresentationScope>();
+
+  @override
+  bool updateShouldNotify(ShellPresentationScope oldWidget) =>
+      displayName != oldWidget.displayName ||
+      activeLanguage != oldWidget.activeLanguage ||
+      reducedMotion != oldWidget.reducedMotion ||
+      canReadMaterials != oldWidget.canReadMaterials ||
+      canReadCollections != oldWidget.canReadCollections;
+}
+
+bool _sectionAvailable(BuildContext context, PreviewSection section) {
+  final live = ShellPresentationScope.maybeOf(context);
+  if (live == null) return true;
+  return switch (section) {
+    PreviewSection.library => live.canReadMaterials,
+    PreviewSection.notebooks => live.canReadCollections,
+    _ => true,
+  };
+}
+
+void _navigateOrExplain(BuildContext context, PreviewSection section, VoidCallback navigate) {
+  if (_sectionAvailable(context, section)) {
+    navigate();
+    return;
+  }
+  ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).apiPermissionDenied)));
+}
+
+String _shellDisplayName(BuildContext context) {
+  final value =
+      ShellPresentationScope.maybeOf(context)?.displayName ??
+      PreviewStoreScope.maybeOf(context)?.displayName ??
+      '';
+  return displayNameOrFallback(context, value.trim());
+}
+
+String _shellActiveLanguage(BuildContext context) =>
+    ShellPresentationScope.maybeOf(context)?.activeLanguage ??
+    PreviewStoreScope.maybeOf(context)?.activeLanguage ??
+    '';
+
+bool _shellReducedMotion(BuildContext context) =>
+    ShellPresentationScope.maybeOf(context)?.reducedMotion ??
+    PreviewStoreScope.maybeOf(context)?.reducedMotion ??
+    false;
+
+int _shellUnreadCount(BuildContext context) => ShellPresentationScope.maybeOf(context) == null
+    ? PreviewStoreScope.maybeOf(context)?.unreadCount ?? 0
+    : 0;
+
+bool _formalShell(BuildContext context) =>
+    ShellPresentationScope.maybeOf(context) != null || PreviewStoreScope.maybeOf(context) == null;
+
+String? _referenceNavId(BuildContext context, PreviewSection section) {
+  if (!_formalShell(context)) return null;
+  return switch (section) {
+    PreviewSection.library => UiTestIds.referenceMaterialsNav,
+    PreviewSection.notebooks => UiTestIds.referenceCollectionsNav,
+    _ => null,
+  };
+}
+
+Widget _identifyReferenceNav(BuildContext context, PreviewSection section, Widget child) {
+  final id = _referenceNavId(context, section);
+  return id == null ? child : Identified(id: id, merge: true, child: child);
+}
+
+Widget _identifyReaderBack(BuildContext context, String location, Widget child) =>
+    _formalShell(context) && location.startsWith('/material/')
+        ? Identified(id: UiTestIds.referenceReaderBack, merge: true, child: child)
+        : child;
 
 /// Marks routed pages whose navigation is owned by the persistent app shell.
 class PreviewShellHost extends InheritedWidget {
@@ -96,19 +195,33 @@ class PreviewPersistentShell extends StatelessWidget {
         builder: (context, constraints) {
           final width = constraints.maxWidth;
           final mobile = width < 600;
-          final previewContent =
-              !path.startsWith('/mock/admin') &&
-              path != AppRoutes.mockLogin &&
-              path != AppRoutes.mockRegister;
+          final formal = _formalShell(context);
+          final previewContent = formal
+              ? !path.startsWith(AppRoutes.admin) &&
+                    path != AppRoutes.login &&
+                    path != AppRoutes.register &&
+                    path != AppRoutes.recovery
+              : !path.startsWith('/mock/admin') &&
+                    path != AppRoutes.mockLogin &&
+                    path != AppRoutes.mockRegister;
           final showBottom =
               mobile &&
-              const {
-                AppRoutes.mockLibrary,
-                AppRoutes.mockNotebooks,
-                AppRoutes.mockQuery,
-                AppRoutes.mockExercise,
-                AppRoutes.mockSettings,
-              }.contains(path);
+              (formal
+                  ? const {
+                      AppRoutes.materials,
+                      AppRoutes.collections,
+                      AppRoutes.query,
+                      AppRoutes.exercise,
+                      AppRoutes.settings,
+                      AppRoutes.account,
+                    }.contains(path)
+                  : const {
+                      AppRoutes.mockLibrary,
+                      AppRoutes.mockNotebooks,
+                      AppRoutes.mockQuery,
+                      AppRoutes.mockExercise,
+                      AppRoutes.mockSettings,
+                    }.contains(path));
           final sideWidth = mobile || !previewContent
               ? 0.0
               : width >= 1280
@@ -160,7 +273,9 @@ class PreviewPersistentShell extends StatelessWidget {
                           showNotifications: actions.location != path || actions.showNotifications,
                           onOpenNotifications: () {
                             if (actions.location == path && actions.onNavigate != null) {
-                              actions.onNavigate!(AppRoutes.mockNotifications);
+                              actions.onNavigate!(
+                                formal ? AppRoutes.notifications : AppRoutes.mockNotifications,
+                              );
                             } else {
                               onOpenNotifications();
                             }
@@ -206,14 +321,22 @@ class _PersistentDesktopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final store = PreviewStoreScope.of(context);
-    final root = const {
-      AppRoutes.mockLibrary,
-      AppRoutes.mockNotebooks,
-      AppRoutes.mockQuery,
-      AppRoutes.mockExercise,
-      AppRoutes.mockSettings,
-    }.contains(location);
+    final root = _formalShell(context)
+        ? const {
+            AppRoutes.materials,
+            AppRoutes.collections,
+            AppRoutes.query,
+            AppRoutes.exercise,
+            AppRoutes.settings,
+            AppRoutes.account,
+          }.contains(location)
+        : const {
+            AppRoutes.mockLibrary,
+            AppRoutes.mockNotebooks,
+            AppRoutes.mockQuery,
+            AppRoutes.mockExercise,
+            AppRoutes.mockSettings,
+          }.contains(location);
     return SafeArea(
       bottom: false,
       child: SizedBox(
@@ -224,14 +347,18 @@ class _PersistentDesktopHeader extends StatelessWidget {
             children: [
               if (root)
                 Text(
-                  _activeLanguageLabel(l10n, store.activeLanguage),
+                  _activeLanguageLabel(l10n, _shellActiveLanguage(context)),
                   style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
                 )
               else
-                TextButton.icon(
-                  onPressed: onBack,
-                  icon: const Icon(Icons.chevron_left, size: 19),
-                  label: Text(backLabel ?? l10n.mockShellBack),
+                _identifyReaderBack(
+                  context,
+                  location,
+                  TextButton.icon(
+                    onPressed: onBack,
+                    icon: const Icon(Icons.chevron_left, size: 19),
+                    label: Text(backLabel ?? l10n.mockShellBack),
+                  ),
                 ),
               const Spacer(),
               if (showNotifications)
@@ -239,7 +366,7 @@ class _PersistentDesktopHeader extends StatelessWidget {
                   tooltip: l10n.mockShellNotifications,
                   onPressed: onOpenNotifications,
                   icon: Badge(
-                    isLabelVisible: store.unreadCount > 0,
+                    isLabelVisible: _shellUnreadCount(context) > 0,
                     child: const Icon(Icons.notifications_none),
                   ),
                 ),
@@ -269,7 +396,6 @@ class PreviewSideNavigation extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final roles = HarukaColors.of(context);
     final selected = sectionFor(location);
-    final store = PreviewStoreScope.of(context);
     final rail = width <= 80;
     return Container(
       width: width,
@@ -316,57 +442,78 @@ class PreviewSideNavigation extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.fromLTRB(rail ? 8 : 14, 2, rail ? 8 : 14, 2),
                 child: Tooltip(
-                  message: _sectionLabel(l10n, section),
+                  message: _sectionAvailable(context, section)
+                      ? _sectionLabel(l10n, section)
+                      : '${_sectionLabel(l10n, section)} · ${l10n.apiPermissionDenied}',
                   excludeFromSemantics: !rail,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(11),
-                    onTap: () => navigateSection(context, section, onNavigate: onNavigate),
-                    child: AnimatedContainer(
-                      duration: HarukaMotion.reduced(context, reducedMotion: store.reducedMotion)
-                          ? Duration.zero
-                          : HarukaMotion.selection,
-                      height: 48,
-                      padding: EdgeInsets.symmetric(horizontal: rail ? 0 : 14),
-                      decoration: BoxDecoration(
-                        color: section == selected ? roles.selected : Colors.transparent,
+                  child: _identifyReferenceNav(
+                    context,
+                    section,
+                    Opacity(
+                      opacity: _sectionAvailable(context, section) ? 1 : .45,
+                      child: InkWell(
+                        key: switch (_referenceNavId(context, section)) {
+                          final id? => ValueKey(id),
+                          null => null,
+                        },
                         borderRadius: BorderRadius.circular(11),
-                      ),
-                      child: rail
-                          ? Center(
-                              child: Icon(
-                                previewSectionIcons[section.index],
-                                size: 22,
-                                color: section == selected
-                                    ? scheme.primary
-                                    : scheme.onSurfaceVariant,
-                              ),
-                            )
-                          : Row(
-                              children: [
-                                Icon(
-                                  previewSectionIcons[section.index],
-                                  size: 22,
-                                  color: section == selected
-                                      ? scheme.primary
-                                      : scheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 13),
-                                Expanded(
-                                  child: Text(
-                                    _sectionLabel(l10n, section),
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: section == selected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
+                        onTap: () => _navigateOrExplain(
+                          context,
+                          section,
+                          () => navigateSection(context, section, onNavigate: onNavigate),
+                        ),
+                        child: AnimatedContainer(
+                          duration:
+                              HarukaMotion.reduced(
+                                context,
+                                reducedMotion: _shellReducedMotion(context),
+                              )
+                              ? Duration.zero
+                              : HarukaMotion.selection,
+                          height: 48,
+                          padding: EdgeInsets.symmetric(horizontal: rail ? 0 : 14),
+                          decoration: BoxDecoration(
+                            color: section == selected ? roles.selected : Colors.transparent,
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                          child: rail
+                              ? Center(
+                                  child: Icon(
+                                    previewSectionIcons[section.index],
+                                    size: 22,
+                                    color: section == selected
+                                        ? scheme.primary
+                                        : scheme.onSurfaceVariant,
+                                  ),
+                                )
+                              : Row(
+                                  children: [
+                                    Icon(
+                                      previewSectionIcons[section.index],
+                                      size: 22,
                                       color: section == selected
                                           ? scheme.primary
                                           : scheme.onSurfaceVariant,
                                     ),
-                                  ),
+                                    const SizedBox(width: 13),
+                                    Expanded(
+                                      child: Text(
+                                        _sectionLabel(l10n, section),
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: section == selected
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          color: section == selected
+                                              ? scheme.primary
+                                              : scheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -377,14 +524,14 @@ class PreviewSideNavigation extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 14),
                 child: IconButton(
                   tooltip: l10n.mockShellSettings,
-                  onPressed: () => onNavigate(AppRoutes.mockSettings),
+                  onPressed: () => onNavigate(
+                    _formalShell(context) ? AppRoutes.settings : AppRoutes.mockSettings,
+                  ),
                   icon: CircleAvatar(
                     radius: 17,
                     backgroundColor: roles.signal,
                     child: Text(
-                      String.fromCharCode(
-                        displayNameOrFallback(context, store.displayName).runes.first,
-                      ),
+                      String.fromCharCode(_shellDisplayName(context).runes.first),
                       style: TextStyle(color: roles.onSignal),
                     ),
                   ),
@@ -398,19 +545,19 @@ class PreviewSideNavigation extends StatelessWidget {
                   leading: CircleAvatar(
                     backgroundColor: roles.signal,
                     child: Text(
-                      String.fromCharCode(
-                        displayNameOrFallback(context, store.displayName).runes.first,
-                      ),
+                      String.fromCharCode(_shellDisplayName(context).runes.first),
                       style: TextStyle(color: roles.onSignal),
                     ),
                   ),
                   title: Text(
-                    displayNameOrFallback(context, store.displayName),
+                    _shellDisplayName(context),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Text(_activeLanguageLabel(l10n, store.activeLanguage)),
-                  onTap: () => onNavigate(AppRoutes.mockSettings),
+                  subtitle: Text(_activeLanguageLabel(l10n, _shellActiveLanguage(context))),
+                  onTap: () => onNavigate(
+                    _formalShell(context) ? AppRoutes.settings : AppRoutes.mockSettings,
+                  ),
                 ),
               ),
           ],
@@ -449,6 +596,22 @@ String _activeLanguageLabel(AppLocalizations l10n, String language) => switch (l
 };
 
 PreviewSection sectionFor(String location) {
+  if (location == AppRoutes.collections || location.startsWith('${AppRoutes.collections}/')) {
+    return PreviewSection.notebooks;
+  }
+  if (location == AppRoutes.query || location.startsWith('${AppRoutes.query}/')) {
+    return PreviewSection.query;
+  }
+  if (location == AppRoutes.exercise || location.startsWith('${AppRoutes.exercise}/')) {
+    return PreviewSection.exercise;
+  }
+  if (location == AppRoutes.settings ||
+      location.startsWith('${AppRoutes.settings}/') ||
+      location == AppRoutes.account ||
+      location.startsWith('${AppRoutes.account}/') ||
+      location == AppRoutes.notifications) {
+    return PreviewSection.settings;
+  }
   if (location.startsWith(AppRoutes.mockNotebooks) ||
       location.startsWith(AppRoutes.mockCollection) ||
       location.startsWith(AppRoutes.mockWordPrefix) ||
@@ -474,13 +637,21 @@ void navigateSection(
   PreviewSection section, {
   ValueChanged<String>? onNavigate,
 }) {
-  final path = switch (section) {
-    PreviewSection.library => AppRoutes.mockLibrary,
-    PreviewSection.notebooks => AppRoutes.mockNotebooks,
-    PreviewSection.query => AppRoutes.mockQuery,
-    PreviewSection.exercise => AppRoutes.mockExercise,
-    PreviewSection.settings => AppRoutes.mockSettings,
-  };
+  final path = _formalShell(context)
+      ? switch (section) {
+          PreviewSection.library => AppRoutes.materials,
+          PreviewSection.notebooks => AppRoutes.collections,
+          PreviewSection.query => AppRoutes.query,
+          PreviewSection.exercise => AppRoutes.exercise,
+          PreviewSection.settings => AppRoutes.settings,
+        }
+      : switch (section) {
+          PreviewSection.library => AppRoutes.mockLibrary,
+          PreviewSection.notebooks => AppRoutes.mockNotebooks,
+          PreviewSection.query => AppRoutes.mockQuery,
+          PreviewSection.exercise => AppRoutes.mockExercise,
+          PreviewSection.settings => AppRoutes.mockSettings,
+        };
   if (onNavigate != null) {
     onNavigate(path);
   } else {
@@ -596,13 +767,18 @@ class MobilePreviewShell extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(14, 4, 16, 4),
                 child: Row(
                   children: [
-                    IconButton(
-                      tooltip: l10n.mockShellBack,
-                      onPressed:
-                          onBack ??
-                          () =>
-                              context.canPop() ? context.pop() : navigateSection(context, section),
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 19),
+                    _identifyReaderBack(
+                      context,
+                      location,
+                      IconButton(
+                        tooltip: l10n.mockShellBack,
+                        onPressed:
+                            onBack ??
+                            () => context.canPop()
+                                ? context.pop()
+                                : navigateSection(context, section),
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 19),
+                      ),
                     ),
                     Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
                   ],
@@ -661,19 +837,36 @@ class PreviewBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
-    final reducedMotion = PreviewStoreScope.of(context).reducedMotion;
+    final reducedMotion = _shellReducedMotion(context);
     return NavigationBar(
       height: 68,
       animationDuration: HarukaMotion.reduced(context, reducedMotion: reducedMotion)
           ? Duration.zero
           : HarukaMotion.selection,
       selectedIndex: sectionFor(location).index,
-      onDestinationSelected: (index) => onSelected(PreviewSection.values[index]),
+      onDestinationSelected: (index) {
+        final section = PreviewSection.values[index];
+        _navigateOrExplain(context, section, () => onSelected(section));
+      },
       destinations: [
         for (var index = 0; index < PreviewSection.values.length; index++)
           NavigationDestination(
-            icon: Icon(previewSectionIcons[index]),
-            selectedIcon: Icon(previewSectionIcons[index], color: colors.primary),
+            key: switch (_referenceNavId(context, PreviewSection.values[index])) {
+              final id? => ValueKey(id),
+              null => null,
+            },
+            icon: switch (_referenceNavId(context, PreviewSection.values[index])) {
+              final id? => Identified(id: id, merge: true, child: Icon(previewSectionIcons[index])),
+              null => Icon(previewSectionIcons[index]),
+            },
+            selectedIcon: switch (_referenceNavId(context, PreviewSection.values[index])) {
+              final id? => Identified(
+                id: id,
+                merge: true,
+                child: Icon(previewSectionIcons[index], color: colors.primary),
+              ),
+              null => Icon(previewSectionIcons[index], color: colors.primary),
+            },
             label: _mobileNavLabel(l10n, PreviewSection.values[index]),
           ),
       ],
@@ -704,7 +897,6 @@ class DesktopPreviewShell extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
     final roles = HarukaColors.of(context);
-    final store = PreviewStoreScope.of(context);
     final section = sectionFor(location);
     final hosted = PreviewShellHost.of(context);
     if (hosted) {
@@ -763,10 +955,14 @@ class DesktopPreviewShell extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 9),
-                            Text(
-                              'haruka',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            Flexible(
+                              child: Text(
+                                'haruka',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
                             ),
                           ],
                         ),
@@ -802,18 +998,20 @@ class DesktopPreviewShell extends StatelessWidget {
                         leading: CircleAvatar(
                           backgroundColor: roles.signal,
                           child: Text(
-                            String.fromCharCode(
-                              displayNameOrFallback(context, store.displayName).runes.first,
-                            ),
+                            String.fromCharCode(_shellDisplayName(context).runes.first),
                             style: TextStyle(color: roles.onSignal),
                           ),
                         ),
-                        title: Text(displayNameOrFallback(context, store.displayName)),
-                        subtitle: Text(_activeLanguageLabel(l10n, store.activeLanguage)),
+                        title: Text(_shellDisplayName(context)),
+                        subtitle: Text(_activeLanguageLabel(l10n, _shellActiveLanguage(context))),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => onNavigate == null
-                            ? context.go(AppRoutes.mockSettings)
-                            : onNavigate!(AppRoutes.mockSettings),
+                            ? context.go(
+                                _formalShell(context) ? AppRoutes.settings : AppRoutes.mockSettings,
+                              )
+                            : onNavigate!(
+                                _formalShell(context) ? AppRoutes.settings : AppRoutes.mockSettings,
+                              ),
                       ),
                     ],
                   ),
@@ -830,28 +1028,40 @@ class DesktopPreviewShell extends StatelessWidget {
                       children: [
                         if (backLabel == null)
                           Text(
-                            _activeLanguageLabel(l10n, store.activeLanguage),
+                            _activeLanguageLabel(l10n, _shellActiveLanguage(context)),
                             style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
                           )
                         else
-                          TextButton.icon(
-                            onPressed: onBack,
-                            icon: const Icon(Icons.chevron_left, size: 18),
-                            label: Text(backLabel!),
-                            style: TextButton.styleFrom(
-                              foregroundColor: colors.onSurfaceVariant,
-                              textStyle: const TextStyle(fontSize: 12),
-                              padding: EdgeInsets.zero,
+                          _identifyReaderBack(
+                            context,
+                            location,
+                            TextButton.icon(
+                              onPressed: onBack,
+                              icon: const Icon(Icons.chevron_left, size: 18),
+                              label: Text(backLabel!),
+                              style: TextButton.styleFrom(
+                                foregroundColor: colors.onSurfaceVariant,
+                                textStyle: const TextStyle(fontSize: 12),
+                                padding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                         const Spacer(),
                         IconButton(
                           tooltip: l10n.mockShellNotifications,
                           onPressed: () => onNavigate == null
-                              ? context.push(AppRoutes.mockNotifications)
-                              : onNavigate!(AppRoutes.mockNotifications),
+                              ? context.push(
+                                  _formalShell(context)
+                                      ? AppRoutes.notifications
+                                      : AppRoutes.mockNotifications,
+                                )
+                              : onNavigate!(
+                                  _formalShell(context)
+                                      ? AppRoutes.notifications
+                                      : AppRoutes.mockNotifications,
+                                ),
                           icon: Badge(
-                            isLabelVisible: store.unreadCount > 0,
+                            isLabelVisible: _shellUnreadCount(context) > 0,
                             child: const Icon(Icons.notifications_none),
                           ),
                         ),

@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/auth/auth_controller.dart';
@@ -13,11 +12,8 @@ import 'package:haruka/core/auth/auth_sync.dart';
 import 'package:haruka/core/auth/credential_vault.dart';
 import 'package:haruka/core/config/app_config.dart';
 import 'package:haruka/features/collections/reference_controller.dart';
-import 'package:haruka/features/collections/reference_pages.dart';
 import 'package:haruka/features/collections/reference_repository.dart';
 import 'package:haruka/features/collections/reference_selection.dart';
-import 'package:haruka/generated/l10n/app_localizations.dart';
-import 'package:haruka/generated/ui_test_ids.dart';
 
 import '../test_support/sample_adapter.dart';
 
@@ -84,6 +80,9 @@ void main() {
         final keys = <String>[];
         final firstResolve = Completer<ResponseBody>();
         final firstResolveReached = Completer<void>();
+        final staleCollectionRead = Completer<ResponseBody>();
+        final collectionReadReached = Completer<void>();
+        var collectionReads = 0;
         Map<String, Object?>? selectedLocator;
         var resolveCalls = 0;
         final adapter = SampleAdapter((options, _) async {
@@ -182,8 +181,13 @@ void main() {
             }
           }
           if (options.path.startsWith('/api/v1/collections?')) {
+            collectionReads++;
+            if (collectionReads == 1) {
+              collectionReadReached.complete();
+              return staleCollectionRead.future;
+            }
             return body({
-              'data': [(samples['learning_collection'] as Map<String, dynamic>)['data']],
+              'data': <Object>[],
               'meta': {'request_id': requestId, 'next_cursor': null, 'has_more': false},
             });
           }
@@ -196,13 +200,13 @@ void main() {
           vault: _Vault(),
           sync: _Sync(),
         );
+        expect(await auth.login('user@example.test', 'valid-test-password'), isTrue);
         final reference = ReferenceController(auth, ReferenceRepository(api));
         addTearDown(() {
           reference.dispose();
           auth.dispose();
           api.close();
         });
-        expect(await auth.login('user@example.test', 'valid-test-password'), isTrue);
         await reference.loadMaterials();
         expect(reference.materials, hasLength(1));
         await reference.openMaterial(reference.materials.single);
@@ -232,254 +236,33 @@ void main() {
         await stale;
         expect(reference.resolved?.card?.id, card['card_id']);
         expect(reference.busy, isFalse);
+        final pendingList = reference.loadCollections();
+        await collectionReadReached.future;
         await reference.save();
         expect(reference.saved, isNull);
         await reference.save();
         expect(reference.saved?.cardId, card['card_id']);
         expect(keys, hasLength(2));
         expect(keys[0], keys[1]);
+        staleCollectionRead.complete(
+          body({
+            'data': <Object>[],
+            'meta': {'request_id': requestId, 'next_cursor': null, 'has_more': false},
+          }),
+        );
+        await pendingList;
+        expect(
+          reference.collections.single.id,
+          reference.saved!.id,
+          reason: 'a stale in-flight list must not erase a confirmed save',
+        );
         await reference.loadCollections();
-        expect(reference.collections.single.id, reference.saved!.id);
+        expect(
+          reference.collections,
+          isEmpty,
+          reason: 'a later explicit refresh is authoritative, not overlaid forever',
+        );
       },
     );
   }
-
-  testWidgets('collection dialog removes private content when account scope ends', (tester) async {
-    tester.view.physicalSize = const Size(1440, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final adapter = SampleAdapter((options, _) async {
-      if (options.path == '/api/v1/meta') {
-        return body({
-          'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
-          'meta': {'request_id': requestId},
-        });
-      }
-      if (options.path == '/api/v1/auth/native/login') {
-        return body(samples['auth_native_authenticated'] as Object);
-      }
-      if (options.path == '/api/v1/me/access') {
-        final access = jsonDecode(
-          jsonEncode(samples['auth_client_access_login_only']),
-        ) as Map<String, dynamic>;
-        (access['data'] as Map<String, dynamic>)['permissions'] = [
-          {'code': 'client.login', 'data_scope': 'self'},
-          {'code': 'client.collection.read', 'data_scope': 'self'},
-        ];
-        return body(access);
-      }
-      if (options.path.startsWith('/api/v1/collections?')) {
-        return body({
-          'data': [(samples['learning_collection'] as Map<String, dynamic>)['data']],
-          'meta': {'request_id': requestId, 'next_cursor': null, 'has_more': false},
-        });
-      }
-      throw StateError('Unexpected ${options.path}');
-    });
-    final api = ApiClient(config, adapter: adapter);
-    final auth = AuthController(
-      AuthRepository(api, config),
-      config,
-      vault: _Vault(),
-      sync: _Sync(),
-    );
-    addTearDown(() {
-      api.close();
-    });
-    expect(
-      await tester.runAsync(() => auth.login('user@example.test', 'valid-test-password')),
-      isTrue,
-    );
-    final scope = referenceScope(auth, 'collections');
-    final providers = ProviderContainer(
-      overrides: [
-        authControllerProvider.overrideWith((ref) => auth),
-        referenceRepositoryProvider.overrideWithValue(ReferenceRepository(api)),
-      ],
-    );
-    addTearDown(providers.dispose);
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: providers,
-        child: MaterialApp(
-          locale: const Locale('zh'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: CollectionsPage(scope: scope),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final collection =
-        (samples['learning_collection'] as Map<String, dynamic>)['data'] as Map<String, dynamic>;
-    await tester.tap(find.text(collection['display_text'] as String));
-    await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
-    await auth.logout();
-    await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsNothing);
-  });
-
-  testWidgets('collection detail uses a compact sheet and closes on account scope change', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final adapter = SampleAdapter((options, _) async {
-      if (options.path == '/api/v1/meta') {
-        return body({
-          'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
-          'meta': {'request_id': requestId},
-        });
-      }
-      if (options.path == '/api/v1/auth/native/login') {
-        return body(samples['auth_native_authenticated'] as Object);
-      }
-      if (options.path == '/api/v1/me/access') {
-        final access = jsonDecode(
-          jsonEncode(samples['auth_client_access_login_only']),
-        ) as Map<String, dynamic>;
-        (access['data'] as Map<String, dynamic>)['permissions'] = [
-          {'code': 'client.login', 'data_scope': 'self'},
-          {'code': 'client.collection.read', 'data_scope': 'self'},
-        ];
-        return body(access);
-      }
-      if (options.path.startsWith('/api/v1/collections?')) {
-        return body({
-          'data': [(samples['learning_collection'] as Map<String, dynamic>)['data']],
-          'meta': {'request_id': requestId, 'next_cursor': null, 'has_more': false},
-        });
-      }
-      throw StateError('Unexpected ${options.path}');
-    });
-    final api = ApiClient(config, adapter: adapter);
-    final auth = AuthController(
-      AuthRepository(api, config),
-      config,
-      vault: _Vault(),
-      sync: _Sync(),
-    );
-    addTearDown(api.close);
-    expect(
-      await tester.runAsync(() => auth.login('user@example.test', 'valid-test-password')),
-      isTrue,
-    );
-    final providers = ProviderContainer(
-      overrides: [
-        authControllerProvider.overrideWith((ref) => auth),
-        referenceRepositoryProvider.overrideWithValue(ReferenceRepository(api)),
-      ],
-    );
-    addTearDown(providers.dispose);
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: providers,
-        child: MaterialApp(
-          locale: const Locale('zh'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: CollectionsPage(scope: referenceScope(auth, 'collections')),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final collection =
-        (samples['learning_collection'] as Map<String, dynamic>)['data'] as Map<String, dynamic>;
-    await tester.tap(find.text(collection['display_text'] as String));
-    await tester.pumpAndSettle();
-    expect(find.byType(BottomSheet), findsOneWidget);
-    await auth.logout();
-    await tester.pumpAndSettle();
-    expect(find.byType(BottomSheet), findsNothing);
-  });
-
-  testWidgets('material list without read access keeps the list when a row is opened', (
-    tester,
-  ) async {
-    var novelRequests = 0;
-    final adapter = SampleAdapter((options, _) async {
-      if (options.path.startsWith('/api/v1/novels/')) novelRequests++;
-      if (options.path == '/api/v1/meta') {
-        return body({
-          'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
-          'meta': {'request_id': requestId},
-        });
-      }
-      if (options.path == '/api/v1/auth/native/login') {
-        return body(samples['auth_native_authenticated'] as Object);
-      }
-      if (options.path == '/api/v1/me/access') {
-        final access = jsonDecode(
-          jsonEncode(samples['auth_client_access_login_only']),
-        ) as Map<String, dynamic>;
-        (access['data'] as Map<String, dynamic>)['permissions'] = [
-          {'code': 'client.login', 'data_scope': 'self'},
-          {'code': 'client.material.list', 'data_scope': 'self'},
-        ];
-        return body(access);
-      }
-      if (options.path.startsWith('/api/v1/materials?')) {
-        return body({
-          'data': [
-            {
-              'id': locator['material_id'],
-              'library_id': locator['library_id'],
-              'revision_id': locator['material_revision_id'],
-              'first_chapter_id': locator['novel_chapter_id'],
-              'material_type': 'novel',
-              'title': locator['source_title'],
-              'language': 'ja',
-              'created_at': '2026-09-26T01:02:03Z',
-            },
-          ],
-          'meta': {'request_id': requestId, 'next_cursor': null, 'has_more': false},
-        });
-      }
-      throw StateError('Unexpected protected request');
-    });
-    final api = ApiClient(config, adapter: adapter);
-    final auth = AuthController(
-      AuthRepository(api, config),
-      config,
-      vault: _Vault(),
-      sync: _Sync(),
-    );
-    addTearDown(api.close);
-    expect(
-      await tester.runAsync(() => auth.login('user@example.test', 'valid-test-password')),
-      isTrue,
-    );
-    final scope = referenceScope(auth, 'materials');
-    final providers = ProviderContainer(
-      overrides: [
-        authControllerProvider.overrideWith((ref) => auth),
-        referenceRepositoryProvider.overrideWithValue(ReferenceRepository(api)),
-      ],
-    );
-    addTearDown(providers.dispose);
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: providers,
-        child: MaterialApp(
-          locale: const Locale('zh'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: ReferenceMaterialsPage(scope: scope),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final rowId = UiTestIds.referenceMaterialRow(locator['material_id'] as String);
-    expect(find.byKey(ValueKey(rowId)), findsOneWidget);
-    await tester.tap(find.byKey(ValueKey(rowId)));
-    await tester.pumpAndSettle();
-    expect(find.byKey(ValueKey(rowId)), findsOneWidget);
-    expect(find.byKey(const ValueKey(UiTestIds.referenceErrorState)), findsOneWidget);
-    expect(find.byType(SelectableText), findsNothing);
-    expect(novelRequests, 0);
-  });
 }

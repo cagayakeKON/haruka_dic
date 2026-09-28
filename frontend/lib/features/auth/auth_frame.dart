@@ -19,6 +19,7 @@ class AuthFrame extends StatelessWidget {
     this.heroTitle,
     this.showServiceLink = false,
     this.showMobileDescription = true,
+    this.showDesktopDescription = true,
     super.key,
   });
 
@@ -31,11 +32,13 @@ class AuthFrame extends StatelessWidget {
   final String? heroTitle;
   final bool showServiceLink;
   final bool showMobileDescription;
+  final bool showDesktopDescription;
 
   @override
   Widget build(BuildContext context) => Identified(
     id: id,
     child: Scaffold(
+      backgroundColor: HarukaColors.of(context).canvas,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, viewport) => viewport.maxWidth >= 760
@@ -45,6 +48,7 @@ class AuthFrame extends StatelessWidget {
                   backLocation: backLocation,
                   admin: admin,
                   heroTitle: heroTitle,
+                  showDescription: showDesktopDescription,
                   child: child,
                 )
               : _MobileAuthFrame(
@@ -82,7 +86,7 @@ class _BrandMark extends StatelessWidget {
                   .15,
                 )!
               : Theme.of(context).colorScheme.primary,
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(9),
         ),
         child: Text(
           'h',
@@ -100,7 +104,7 @@ class _BrandMark extends StatelessWidget {
         child: Text(
           'haruka',
           style: TextStyle(
-            fontSize: 23,
+            fontSize: 20,
             letterSpacing: -0.9,
             fontWeight: FontWeight.w800,
             color: onBlue
@@ -123,8 +127,8 @@ class _Signal extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
-        width: 23,
-        height: 6,
+        width: 28,
+        height: 5,
         decoration: BoxDecoration(
           color: HarukaColors.of(context).signal,
           borderRadius: BorderRadius.circular(4),
@@ -157,15 +161,15 @@ class _MobileAuthFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-    padding: const EdgeInsets.fromLTRB(23, 23, 23, 40),
+    padding: const EdgeInsets.fromLTRB(28, 32, 28, 40),
     child: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 460),
+        constraints: const BoxConstraints(maxWidth: 480),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Align(alignment: Alignment.centerLeft, child: _BrandMark(onBlue: false)),
-            const SizedBox(height: 35),
+            const SizedBox(height: 34),
             const Align(alignment: Alignment.centerLeft, child: _Signal()),
             const SizedBox(height: 17),
             _AuthHeading(title: title, description: description, showDescription: showDescription),
@@ -198,6 +202,7 @@ class _DesktopAuthFrame extends StatelessWidget {
     required this.backLocation,
     required this.admin,
     required this.heroTitle,
+    required this.showDescription,
     required this.child,
   });
 
@@ -206,6 +211,7 @@ class _DesktopAuthFrame extends StatelessWidget {
   final String? backLocation;
   final bool admin;
   final String? heroTitle;
+  final bool showDescription;
   final Widget child;
 
   @override
@@ -219,7 +225,7 @@ class _DesktopAuthFrame extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: size.maxHeight),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(86, 84, 48, 84),
+                  padding: const EdgeInsets.fromLTRB(72, 72, 72, 72),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -232,7 +238,7 @@ class _DesktopAuthFrame extends StatelessWidget {
                             style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
                             child: _Signal(label: admin ? 'ADMIN / HARUKA' : 'CLEAR SIGNAL'),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
                           Text(
                             heroTitle ??
                                 (admin
@@ -240,13 +246,13 @@ class _DesktopAuthFrame extends StatelessWidget {
                                     : AppLocalizations.of(context).authLoginTitle),
                             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               color: Theme.of(context).colorScheme.onPrimary,
-                              fontSize: 54,
+                              fontSize: 58,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            AppLocalizations.of(context).authBrandLine,
+                            AppLocalizations.of(context).mockAuthHeroDescription,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onPrimary,
                               fontSize: 16,
@@ -280,11 +286,17 @@ class _DesktopAuthFrame extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: _Signal(
-                            label: admin ? AppLocalizations.of(context).authAdminEntry : null,
+                            label: admin
+                                ? AppLocalizations.of(context).authAdminEntry
+                                : AppLocalizations.of(context).mockAuthPersonalWorkspace,
                           ),
                         ),
                         const SizedBox(height: 17),
-                        _AuthHeading(title: title, description: description),
+                        _AuthHeading(
+                          title: title,
+                          description: description,
+                          showDescription: showDescription,
+                        ),
                         const SizedBox(height: 28),
                         child,
                         if (backLocation != null) _BackToLogin(backLocation: backLocation!),

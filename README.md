@@ -10,7 +10,7 @@ DESIGN23补齐全应用NLP标注、AI成品存储、EPUB直接提取及扫描/�
 
 ## 当前状态
 
-阶段1的 **B0 可重复工程基础已验收**：包含 [Flutter三端应用壳](frontend/README.md)、[可安装Python后端](backend/README.md)、[本地基础设施](dev/README.md)、受控数据库初始化、前端契约、开发编排和质量门禁。Windows/Linux干净检出、仓库外正式入口、三端交互及完整B0证据矩阵已通过，详见 [B0验收记录](docs/delivery/reviews/2026-09-22-b0-acceptance.md)。[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。[B2a本人资料与设置](docs/delivery/reviews/2026-09-28-profile-settings-acceptance.md)当期验收通过，正式Web/Android、隔离PG及最终视觉对照证据见记录；B2b完整治理、B2c凭据与模型任务未实现，阶段1仍在进行。
+阶段1的 **B0 可重复工程基础已验收**：包含 [Flutter三端应用壳](frontend/README.md)、[可安装Python后端](backend/README.md)、[本地基础设施](dev/README.md)、受控数据库初始化、前端契约、开发编排和质量门禁。Windows/Linux干净检出、仓库外正式入口、三端交互及完整B0证据矩阵已通过，详见 [B0验收记录](docs/delivery/reviews/2026-09-22-b0-acceptance.md)。[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。[B2a本人资料与设置](docs/delivery/reviews/2026-09-28-profile-settings-acceptance.md)已按当期范围重新验收通过：用户指出旧正式界面偏离已确认Flutter mock，旧视觉通过结论被撤回；真实功能随后迁入同一Flutter主界面、重复页面/壳/导航已删除，正式Web与Android实操和隔离PG定点证据见验收记录。B2b完整治理、B2c凭据与模型任务未实现，阶段1仍在进行。
 
 2026-09-26 的 [B0设计对齐](docs/delivery/reviews/2026-09-26-b0-design-alignment.md)补充增量迁移、账号安全字段、授权范围和权限目录，并将Flutter基础壳对齐「晴空频率」。仍为12张基础表；业务页面、NLP、AI/TTS和学习缓存继续按后续切片实施。本次局部验证不替换原B0完整验收矩阵。
 

@@ -18,6 +18,7 @@ import '../core/telemetry/telemetry.dart';
 import '../dev/preview/fixture_store.dart';
 import '../dev/preview/settings_cache_adapter.dart';
 import '../features/collections/reference_controller.dart';
+import '../features/collections/reference_feature_scope.dart';
 import '../features/collections/reference_repository.dart';
 import '../features/settings/data/cached_settings_repository.dart';
 import '../features/settings/data/http_settings_source.dart';
@@ -31,6 +32,7 @@ import '../features/settings/presentation/settings_pages.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
 import '../shared/identified.dart';
+import 'preview_shell.dart';
 import 'routes.dart';
 import 'theme.dart';
 import 'cache_blocked_screen.dart';
@@ -81,6 +83,10 @@ class _HarukaAppState extends State<HarukaApp> {
   int? _languagesRequestedScope;
   LanguageCapabilities? _languages;
   bool _languageReadFailed = false;
+  final ValueNotifier<String> _activeLocation = ValueNotifier<String>(AppRoutes.home);
+  final PreviewShellActionRegistry _shellActions = PreviewShellActionRegistry();
+  ReferenceController? _referenceController;
+  String? _referenceScopeKey;
 
   @override
   void initState() {
@@ -94,7 +100,6 @@ class _HarukaAppState extends State<HarukaApp> {
         appConfigProvider.overrideWithValue(widget.config),
         cacheCoordinatorProvider.overrideWithValue(_cache),
         authRepositoryProvider.overrideWithValue(AuthRepository(_api, widget.config)),
-        referenceRepositoryProvider.overrideWithValue(ReferenceRepository(_api)),
         telemetryProvider.overrideWith((ref) => _telemetry),
       ],
     );
@@ -157,6 +162,7 @@ class _HarukaAppState extends State<HarukaApp> {
       if (mounted) setState(() {});
     });
     _telemetry = Telemetry(widget.config, _api, _auth);
+    _updateReferenceScope();
     _api.beginRequestObservation = _telemetry.beginHttpObservation;
     _router = createRouter(
       widget.config,
@@ -169,9 +175,7 @@ class _HarukaAppState extends State<HarukaApp> {
         store: _settingsDraft,
         cache: _settingsCache,
         repository: _settingsRepository,
-        child: section == null
-            ? const SettingsPage(framed: false)
-            : SettingsDetailPage(section: section, framed: false),
+        child: section == null ? const SettingsPage() : SettingsDetailPage(section: section),
       ),
       settingsSource: _settingsRepository.source,
       settingsRepository: _settingsRepository,
@@ -209,6 +213,9 @@ class _HarukaAppState extends State<HarukaApp> {
     _settingsDraft.dispose();
     _router.routeInformationProvider.removeListener(_observeRoute);
     _router.dispose();
+    _activeLocation.dispose();
+    _shellActions.dispose();
+    _referenceController?.dispose();
     _api.beginRequestObservation = null;
     unawaited(_cacheChanges?.cancel());
     unawaited(_cacheBinding.dispose());
@@ -236,9 +243,20 @@ class _HarukaAppState extends State<HarukaApp> {
   }
 
   void _onAuthChanged() {
+    _updateReferenceScope();
     _requestPreferencesForScope();
     _requestLanguagesForScope();
     if (mounted) setState(() {});
+  }
+
+  void _updateReferenceScope() {
+    final key = _auth.isAuthenticated && !_auth.admin ? referenceScope(_auth, 'reference') : null;
+    if (key == _referenceScopeKey) return;
+    _referenceController?.dispose();
+    _referenceScopeKey = key;
+    _referenceController = key == null
+        ? null
+        : ReferenceController(_auth, ReferenceRepository(_api), telemetry: _telemetry);
   }
 
   void _requestLanguagesForScope() {
@@ -298,6 +316,7 @@ class _HarukaAppState extends State<HarukaApp> {
     final path = _router.routeInformationProvider.value.uri.path;
     if (path == _lastRoute) return;
     _lastRoute = path;
+    _activeLocation.value = path;
     final screen = switch (path) {
       AppRoutes.home => 'welcome',
       AppRoutes.login => 'login',
@@ -320,6 +339,12 @@ class _HarukaAppState extends State<HarukaApp> {
   Widget build(BuildContext context) {
     final preferences = _auth.isAuthenticated
         ? _settingsRepository.snapshot(SettingsGroup.preferences)
+        : null;
+    final profile = _auth.isAuthenticated
+        ? _settingsRepository.snapshot(SettingsGroup.profile)
+        : null;
+    final studyProfile = _auth.isAuthenticated
+        ? _settingsRepository.snapshot(SettingsGroup.studyProfile)
         : null;
     final themeMode = switch (preferences?.fields['theme_mode']) {
       'dark' => ThemeMode.dark,
@@ -347,39 +372,63 @@ class _HarukaAppState extends State<HarukaApp> {
               data: MediaQuery.of(context).copyWith(
                 disableAnimations: MediaQuery.disableAnimationsOf(context) || reduceMotion,
               ),
-              child: AnimatedBuilder(
-                animation: _cacheBinding.foregroundRevalidating,
-                builder: (context, _) {
-                  final revalidating = _cacheBinding.foregroundRevalidating.value;
-                  return AnnotatedRegion<SystemUiOverlayStyle>(
-                    value: HarukaTheme.systemUiOverlayStyle(context),
-                    child: switch (_cache.terminalReason) {
-                      'cache_update_required' || 'cache_writer_unavailable' => CacheBlockedScreen(
-                        reason: _cache.terminalReason!,
-                      ),
-                      _ => Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Offstage(
-                              offstage: revalidating,
-                              child: ExcludeFocus(
-                                excluding: revalidating,
-                                child: IgnorePointer(
-                                  ignoring: revalidating,
-                                  child: child ?? const SizedBox.shrink(),
+              child: ShellPresentationScope(
+                displayName: (profile?.fields['display_name'] as String?)?.trim().isNotEmpty == true
+                    ? (profile!.fields['display_name'] as String).trim()
+                    : AppLocalizations.of(context).mockSettingMyTitle,
+                activeLanguage: studyProfile?.fields['active_target_language'] as String? ?? '',
+                reducedMotion: reduceMotion,
+                canReadMaterials: _auth.access?.allows('client.material.list') ?? false,
+                canReadCollections: _auth.access?.allows('client.collection.read') ?? false,
+                child: AnimatedBuilder(
+                  animation: _cacheBinding.foregroundRevalidating,
+                  builder: (context, _) {
+                    final revalidating = _cacheBinding.foregroundRevalidating.value;
+                    return AnnotatedRegion<SystemUiOverlayStyle>(
+                      value: HarukaTheme.systemUiOverlayStyle(context),
+                      child: switch (_cache.terminalReason) {
+                        'cache_update_required' || 'cache_writer_unavailable' => CacheBlockedScreen(
+                          reason: _cache.terminalReason!,
+                        ),
+                        _ => Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Offstage(
+                                offstage: revalidating,
+                                child: ExcludeFocus(
+                                  excluding: revalidating,
+                                  child: IgnorePointer(
+                                    ignoring: revalidating,
+                                    child: _auth.isAuthenticated && !_auth.admin
+                                        ? ReferenceFeatureScope(
+                                            controller: _referenceController!,
+                                            child: PreviewPersistentShell(
+                                              location: _activeLocation,
+                                              onNavigate: _router.go,
+                                              onBack: () => _router.canPop()
+                                                  ? _router.pop()
+                                                  : _router.go(AppRoutes.materials),
+                                              onOpenNotifications: () =>
+                                                  _router.go(AppRoutes.notifications),
+                                              actions: _shellActions,
+                                              child: child,
+                                            ),
+                                          )
+                                        : child ?? const SizedBox.shrink(),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          if (revalidating)
-                            const Positioned.fill(
-                              child: CacheBlockedScreen(reason: 'revalidating'),
-                            ),
-                        ],
-                      ),
-                    },
-                  );
-                },
+                            if (revalidating)
+                              const Positioned.fill(
+                                child: CacheBlockedScreen(reason: 'revalidating'),
+                              ),
+                          ],
+                        ),
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ),

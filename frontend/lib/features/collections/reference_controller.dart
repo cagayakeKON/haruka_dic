@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import '../../core/api/learning_models.dart';
 import '../../core/api/responses.dart';
@@ -9,19 +7,6 @@ import '../../core/auth/auth_repository.dart';
 import '../../core/telemetry/telemetry.dart';
 import 'reference_repository.dart';
 import 'reference_selection.dart';
-
-final referenceRepositoryProvider = Provider<ReferenceRepository>(
-  (ref) => throw StateError('Reference repository missing'),
-);
-
-final referenceControllerProvider = ChangeNotifierProvider.autoDispose
-    .family<ReferenceController, String>(
-      (ref, scope) => ReferenceController(
-        ref.read(authControllerProvider),
-        ref.read(referenceRepositoryProvider),
-        telemetry: ref.read(telemetryProvider),
-      ),
-    );
 
 String referenceScope(AuthController auth, String page) {
   final access = auth.access;
@@ -39,16 +24,26 @@ String referenceScope(AuthController auth, String page) {
 /// Reference flow. All reads and writes pass the current account use case;
 /// a disposed scope never publishes a late result into another account.
 final class ReferenceController extends ChangeNotifier {
-  ReferenceController(this.auth, this.repository, {this.telemetry});
+  ReferenceController(this.auth, this.repository, {this.telemetry})
+    : _openingScope = referenceScope(auth, 'reference');
 
   final AuthController auth;
+  final String _openingScope;
   final ReferenceRepository repository;
   final Telemetry? telemetry;
   bool _disposed = false;
-  bool loading = false;
+  bool get _active =>
+      !_disposed && auth.isAuthenticated && referenceScope(auth, 'reference') == _openingScope;
+  bool materialsLoading = false;
+  Future<void>? _materialsRequest;
+  bool collectionsLoading = false;
+  bool get loading => materialsLoading || collectionsLoading;
   bool busy = false;
   ApiFailure? error;
+  ApiFailure? materialError;
+  ApiFailure? collectionError;
   final List<MaterialSummary> materials = [];
+  bool materialsLoaded = false;
   String? materialCursor;
   MaterialSummary? material;
   NovelChapter? chapter;
@@ -58,20 +53,24 @@ final class ReferenceController extends ChangeNotifier {
   CollectionRead? saved;
   String? _saveKey;
   final List<CollectionRead> collections = [];
+  final Map<String, (int, CollectionRead)> _confirmedCollections = {};
+  int _collectionMutationSerial = 0;
   bool collectionsLoaded = false;
   String? collectionCursor;
   int _selectionGeneration = 0;
 
   bool get canResolve =>
+      _active &&
       auth.access?.allows('client.ai.explain') == true &&
       auth.access?.allows('client.material.read') == true;
   bool get canSave =>
+      _active &&
       auth.access?.allows('client.collection.create') == true &&
       auth.access?.allows('client.material.read') == true;
-  bool get canListCollections => auth.access?.allows('client.collection.read') == true;
+  bool get canListCollections => _active && auth.access?.allows('client.collection.read') == true;
 
   void _publish() {
-    if (!_disposed) notifyListeners();
+    if (_active) notifyListeners();
   }
 
   void _failure(Object failure) {
@@ -79,36 +78,93 @@ final class ReferenceController extends ChangeNotifier {
     _publish();
   }
 
-  Future<void> loadMaterials({bool more = false}) async {
-    if (loading || !auth.isAuthenticated) return;
+  Future<void> ensureMaterials() async {
+    if (_active && !materialsLoaded) await loadMaterials();
+  }
+
+  /// A source link is an explicit navigation request. Find its published
+  /// summary in the authorized list without turning every detail open into a
+  /// full-library refresh.
+  Future<MaterialSummary?> ensureMaterial(String id) async {
+    if (!_active ||
+        auth.access?.allows('client.material.list') != true ||
+        auth.access?.allows('client.material.read') != true) {
+      if (_active) _failure(const ApiFailure(code: 'PERMISSION_DENIED'));
+      return null;
+    }
+    final retryingError = materialError != null;
+    if (_materialsRequest != null) await _materialsRequest;
+    if (retryingError) {
+      await loadMaterials(more: materialsLoaded && materialCursor != null);
+    } else {
+      await ensureMaterials();
+    }
+    final seenCursors = <String>{};
+    while (_active && materialError == null) {
+      final found = materials.where((item) => item.id == id).firstOrNull;
+      if (found != null) return found;
+      final cursor = materialCursor;
+      if (cursor == null || !seenCursors.add(cursor)) break;
+      await loadMaterials(more: true);
+    }
+    return null;
+  }
+
+  Future<void> ensureCollections() async {
+    if (_active && !collectionsLoaded) await loadCollections();
+  }
+
+  Future<void> loadMaterials({bool more = false}) {
+    if (!_active) return Future<void>.value();
+    final inFlight = _materialsRequest;
+    if (inFlight != null) return inFlight;
+    final request = _loadMaterials(more: more);
+    _materialsRequest = request;
+    return request.whenComplete(() {
+      if (identical(_materialsRequest, request)) _materialsRequest = null;
+    });
+  }
+
+  Future<void> _loadMaterials({required bool more}) async {
     if (!auth.access!.allows('client.material.list')) {
+      materialError = const ApiFailure(code: 'PERMISSION_DENIED');
       _failure(const ApiFailure(code: 'PERMISSION_DENIED'));
       return;
     }
     if (more && materialCursor == null) return;
-    loading = true;
+    materialsLoading = true;
     error = null;
-    if (!more) {
-      materials.clear();
-      materialCursor = null;
-    }
+    materialError = null;
     _publish();
     try {
       final page = await auth.authorizedRead(
         (headers) => repository.materials(headers, cursor: more ? materialCursor : null),
       );
-      if (_disposed) return;
-      materials.addAll(page.data);
+      if (!_active) return;
+      if (!more) {
+        materials
+          ..clear()
+          ..addAll(page.data);
+      } else {
+        final seen = materials.map((item) => item.id).toSet();
+        materials.addAll(page.data.where((item) => seen.add(item.id)));
+      }
       materialCursor = page.nextCursor;
+      materialsLoaded = true;
     } on Object catch (failure) {
+      materialError = failure is ApiFailure ? failure : const ApiFailure(code: 'INVALID_RESPONSE');
       _failure(failure);
     } finally {
-      loading = false;
+      materialsLoading = false;
       _publish();
     }
   }
 
   Future<void> openMaterial(MaterialSummary next) async {
+    if (!_active) return;
+    if (material?.id == next.id && material?.revisionId == next.revisionId && chapter != null) {
+      return;
+    }
     if (busy || auth.access?.allows('client.material.read') != true) {
       _failure(const ApiFailure(code: 'PERMISSION_DENIED'));
       return;
@@ -125,13 +181,13 @@ final class ReferenceController extends ChangeNotifier {
     _publish();
     try {
       final result = await auth.authorizedRead((headers) => repository.chapter(next, headers));
-      if (_disposed || generation != _selectionGeneration) return;
+      if (!_active || generation != _selectionGeneration) return;
       chapter = result;
       telemetry?.track('reading.chapter.opened', attributes: {'material_type': 'novel'});
     } on Object catch (failure) {
-      if (!_disposed && generation == _selectionGeneration) _failure(failure);
+      if (_active && generation == _selectionGeneration) _failure(failure);
     } finally {
-      if (!_disposed && generation == _selectionGeneration) {
+      if (_active && generation == _selectionGeneration) {
         busy = false;
         _publish();
       }
@@ -141,6 +197,7 @@ final class ReferenceController extends ChangeNotifier {
   /// The range comes from a real text selection; the service revalidates it
   /// against the published source and current account permissions.
   void select(ReferenceSelection? selection) {
+    if (!_active) return;
     final previous = selectedSelection;
     if (previous?.block.id == selection?.block.id &&
         previous?.locator.span.start == selection?.locator.span.start &&
@@ -158,6 +215,7 @@ final class ReferenceController extends ChangeNotifier {
   }
 
   Future<void> resolve() async {
+    if (!_active) return;
     final selection = selectedSelection;
     final source = material;
     if (busy || selection == null || source == null) return;
@@ -183,12 +241,12 @@ final class ReferenceController extends ChangeNotifier {
       final result = await auth.authorizedRead(
         (headers) => repository.resolve(locator, source.language, headers),
       );
-      if (_disposed || generation != _selectionGeneration) return;
+      if (!_active || generation != _selectionGeneration) return;
       resolved = result;
     } on Object catch (failure) {
-      if (!_disposed && generation == _selectionGeneration) _failure(failure);
+      if (_active && generation == _selectionGeneration) _failure(failure);
     } finally {
-      if (!_disposed && generation == _selectionGeneration) {
+      if (_active && generation == _selectionGeneration) {
         busy = false;
         _publish();
       }
@@ -196,6 +254,7 @@ final class ReferenceController extends ChangeNotifier {
   }
 
   Future<void> save() async {
+    if (!_active) return;
     final card = resolved?.card;
     if (busy || card == null) return;
     if (!canSave) {
@@ -210,16 +269,19 @@ final class ReferenceController extends ChangeNotifier {
     _publish();
     try {
       final result = await auth.authorizedWrite((headers) => repository.create(card, key, headers));
-      if (_disposed || generation != _selectionGeneration) return;
+      if (!_active || generation != _selectionGeneration) return;
       saved = result;
       _saveKey = null;
+      _confirmedCollections[result.id] = (++_collectionMutationSerial, result);
+      collections.removeWhere((item) => item.id == result.id);
+      collections.insert(0, result);
       telemetry?.track(
         'collection.saved',
         attributes: {'card_type': 'word', 'result': 'success'},
         operationId: key,
       );
     } on Object catch (failure) {
-      if (!_disposed && generation == _selectionGeneration) {
+      if (_active && generation == _selectionGeneration) {
         telemetry?.track(
           'collection.saved',
           attributes: {'card_type': 'word', 'result': 'failure'},
@@ -228,7 +290,7 @@ final class ReferenceController extends ChangeNotifier {
         _failure(failure);
       }
     } finally {
-      if (!_disposed && generation == _selectionGeneration) {
+      if (_active && generation == _selectionGeneration) {
         busy = false;
         _publish();
       }
@@ -236,32 +298,46 @@ final class ReferenceController extends ChangeNotifier {
   }
 
   Future<void> loadCollections({bool more = false}) async {
-    if (loading || !auth.isAuthenticated) return;
+    if (collectionsLoading || !_active) return;
     if (!auth.access!.allows('client.collection.read')) {
       _failure(const ApiFailure(code: 'PERMISSION_DENIED'));
       return;
     }
     if (more && collectionCursor == null) return;
-    loading = true;
+    collectionsLoading = true;
+    final readStartedAtMutation = _collectionMutationSerial;
     error = null;
-    if (!more) {
-      collections.clear();
-      collectionCursor = null;
-      collectionsLoaded = false;
-    }
+    collectionError = null;
     _publish();
     try {
       final page = await auth.authorizedRead(
         (headers) => repository.collections(headers, cursor: more ? collectionCursor : null),
       );
-      if (_disposed) return;
-      collections.addAll(page.data);
+      if (!_active) return;
+      if (!more) {
+        final newerWrites = [
+          for (final entry in _confirmedCollections.values)
+            if (entry.$1 > readStartedAtMutation) entry.$2,
+        ];
+        final newerIds = newerWrites.map((item) => item.id).toSet();
+        collections
+          ..clear()
+          ..addAll(newerWrites)
+          ..addAll(page.data.where((item) => !newerIds.contains(item.id)));
+        _confirmedCollections.removeWhere((_, entry) => entry.$1 <= readStartedAtMutation);
+      } else {
+        final seen = collections.map((item) => item.id).toSet();
+        collections.addAll(page.data.where((item) => seen.add(item.id)));
+      }
       collectionCursor = page.nextCursor;
       collectionsLoaded = true;
     } on Object catch (failure) {
+      collectionError = failure is ApiFailure
+          ? failure
+          : const ApiFailure(code: 'INVALID_RESPONSE');
       _failure(failure);
     } finally {
-      loading = false;
+      collectionsLoading = false;
       _publish();
     }
   }

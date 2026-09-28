@@ -1,13 +1,13 @@
 # 功能与验收追踪
 
-状态：2026-09-28，PLAN2实施映射；B1账号与最小收藏已按[用户最终决定](reviews/2026-09-26-b1-implementation.md)验收通过，[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)当期验收通过；B2b/c和后续业务未实现。产品范围由[产品总览](../product/overview.md)维护，阶段/状态见[路线图](roadmap.md)，当前手机/电脑所有操作见[UI-01～35清单](prototype-scope.md)。两份覆盖取并集；原型未画出的既有P0也必须实现。
+状态：2026-09-29，PLAN2实施映射；B1账号与最小收藏已按[用户最终决定](reviews/2026-09-26-b1-implementation.md)验收通过，[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在旧错误视觉结论撤回、同一Flutter mock主界面完成接线与双端复核后按当期范围重新验收通过；B2b/c和后续业务未实现，阶段1未完成。产品范围由[产品总览](../product/overview.md)维护，阶段/状态见[路线图](roadmap.md)，当前手机/电脑所有操作见[UI-01～35清单](prototype-scope.md)。两份覆盖取并集；原型未画出的既有P0也必须实现。
 
 ## 1. 功能与阶段
 
 | 功能入口 | 权威正文/契约 | 验收族 | 实施节点与完整收口 |
 | --- | --- | --- | --- |
-| 注册/激活/登录/恢复/本人安全 | [账号](../modules/accounts.md)、[认证](../architecture/authentication.md) | SCF-B1/ACC | B1保持原范围与SCF-B1-01～08；完整引导/资料ACC-11/12的B2a适用分支已验收通过；B2b补审批/人工恢复策略及用户流程，B1已选路径保持 |
-| 个人资料/头像/语言/实例/显示 | [设置](../modules/settings.md)、[API](../contracts/api.md) | PROFILE/SET/CACHE | B2a适用分支已验收通过；阅读/查询偏好先保存，M2/L2接消费；声音/两类缓存L4，CSV入口L3 |
+| 注册/激活/登录/恢复/本人安全 | [账号](../modules/accounts.md)、[认证](../architecture/authentication.md) | SCF-B1/ACC | B1保持原范围与SCF-B1-01～08；完整引导/资料ACC-11/12的B2a当期分支已重新验收通过；B2b补审批/人工恢复策略及用户流程，B1已选路径保持 |
+| 个人资料/头像/语言/实例/显示 | [设置](../modules/settings.md)、[API](../contracts/api.md) | PROFILE/SET/CACHE | B2a当期资料/设置/头像/语言/实例与对应缓存分支已重新验收通过；阅读/查询偏好先保存，M2/L2接消费；声音/两类缓存L4，CSV入口L3 |
 | 完整后台与RBAC | [后台](../modules/admin.md)、[授权](../architecture/authorization.md)、[权限](../contracts/permissions.md) | ADM/PERM | B2b身份治理；B2c任务/用量/能力；随M/L/P/E增加运维资源，R2完整候选联验 |
 | 本人Key、能力测试与模型用量 | [设置](../modules/settings.md)、[用量](../contracts/model-usage.md)、[任务](../architecture/data-jobs.md) | SCF-B2/SET/USAGE-01～09 | B2c正式单能力测试与attempt；各调用入口增量验证真实协议/unknown/null/缓存/聚合，R2汇总 |
 | 材料公共能力 | [材料](../modules/materials-reading.md)、[三类](../contracts/material-types.md)、[结构](../contracts/material-structures.md)、[出处](../contracts/content-locator.md) | MAT/READ/TYPE/MSTR | M1导入/书库/不可变源/删除；M2～M4专用流程，E2补冻结考试引用/GC |
@@ -25,7 +25,7 @@
 | 试卷 | [考试](../modules/exams.md)、[结构](../contracts/material-structures.md)、[展示](../contracts/learning-presentation.md) | 考试清单/MSTR/PRES/DAT | M4格式/校对/文字稿候选；L5私有音频/ready；E1场次/次数/锁卷，E2评分/重评/复盘/交卷门槛 |
 | 站内消息与任务进度 | [消息](../contracts/notifications.md)、[进度](../contracts/job-progress.md) | NTF-01～05/WSP-01～05 | B2c任务基础；M1持久消息/未读/已读/跳转及材料进度，后续任务类型随功能接入 |
 | 日志与业务埋点 | [观测](../operations/observability.md)、[MyHome](../operations/myhome-integration.md) | LOG及原观测清单 | B1/B2基础；各阶段覆盖正常/失败、脱敏/关联/补传/隔离，R2全部来源、正式制品与采集故障 |
-| 前端统一缓存与更新 | [机制](../architecture/frontend-cache.md)、[校验协议](../contracts/client-cache.md) | FCACHE-01～14，关联CACHE/LC/SET/FLT | B2a本人资料/设置作用域、写后更新、本机清理与空校验注册框架的当期分支已验收通过；B2b/c授权/任务，M材料/消息，L收藏/解释/音频，P/E证据与可见性仍未交付；R1/R2汇总全部分支，不先关闭FCACHE全族 |
+| 前端统一缓存与更新 | [机制](../architecture/frontend-cache.md)、[校验协议](../contracts/client-cache.md) | FCACHE-01～14，关联CACHE/LC/SET/FLT | B2a本人资料/设置作用域、写后更新、本机清理与空校验注册框架的当期分支已重新验收通过；B2b/c授权/任务，M材料/消息，L收藏/解释/音频，P/E证据与可见性仍未交付；R1/R2汇总全部分支，不先关闭FCACHE全族 |
 
 ### 跨入口验收
 
@@ -44,7 +44,7 @@
 
 | 范围 | 唯一方法/规则 | 实施验收 |
 | --- | --- | --- |
-| 产品视觉、组件、动效与文案 | [产品设计语言：晴空频率](../product/design-language.md)、[手机/电脑HTML原型](../../prototype/README.md)、[Flutter适配](../engineering/flutter.md) | DESIGN-01～DESIGN-06为正式页面检查项，随各页面切片验证；HTML原型已按新视觉重建，DESIGN11的导航/收藏/空态局部证据见[体验优化](reviews/2026-09-25-prototype-experience.md)；DESIGN12的查询/习题流程局部证据见[任务流优化](reviews/2026-09-25-task-flow-refinement.md)。B2a正式资料/设置页的视觉实测与当期通过边界见[验收记录](reviews/2026-09-28-profile-settings-acceptance.md)；其他业务页面仍按所属切片交付，不替代FLT/UIE或业务验收 |
+| 产品视觉、组件、动效与文案 | [产品设计语言：晴空频率](../product/design-language.md)、[已确认Flutter主界面](reviews/2026-09-27-frontend-visual-refinement.md#1-用户确认与分工)、[Flutter适配](../engineering/flutter.md) | DESIGN-01～DESIGN-06为正式页面检查项，随各页面切片验证；[HTML原型](../../prototype/README.md)保留早期流程参考，DESIGN11/12的历史局部证据见[体验优化](reviews/2026-09-25-prototype-experience.md)与[任务流优化](reviews/2026-09-25-task-flow-refinement.md)，不能反向覆盖已确认Flutter界面。B2a旧平行正式页面的视觉通过结论已撤回；以同一Flutter mock为唯一主界面完成迁移、正式Web/Android复测后，当期适用视觉与交互重新验收通过，历史与修订见[验收记录](reviews/2026-09-28-profile-settings-acceptance.md)；其他业务页面仍按所属切片交付，不替代FLT/UIE或业务验收 |
 | 目录、依赖与公共服务 | [项目结构](../architecture/project-structure.md)、[架构](../architecture/overview.md) | STR/API/DAT，依赖方向与真实事务/隔离 |
 | 后端模块、统一返回/异常和多语言边界 | [后端手册](../engineering/backend.md)、[返回契约](../contracts/api-responses.md) | STR/SCF与API-07～API-10；真实路由/生成模型一致、框架异常/流式例外、语言和安全参数 |
 | 建表、时间字段与无外键隔离 | [数据库规范](../engineering/database.md)、[数据库设计书](../architecture/database-design.md)、[Redis字段](../architecture/redis-design.md) | DB-01～DB-12；结构/字典、时间写入、双账号与逻辑关联竞争、迁移证据，按已交付范围执行；DBDESIGN1/2/3及[DBDESIGN4修订](reviews/2026-09-26-database-audit-fixes.md)仅交付设计、[158→142全表收敛](../architecture/database-convergence.md)、[142表命名与关系](../architecture/database-relations.md)及文档审查，不计业务实现；本轮对应根级Lesson/听力kind、COL-005/006及LC-10的待实施验收 |

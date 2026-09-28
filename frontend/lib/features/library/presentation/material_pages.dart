@@ -19,6 +19,17 @@ import 'package:haruka/features/library/presentation/material_catalog_scope.dart
 import 'package:haruka/features/library/data/material_catalog.dart';
 import 'package:haruka/dev/preview/fixture_store.dart';
 import 'package:haruka/dev/preview/settings_cache_adapter.dart';
+import 'package:haruka/features/collections/reference_feature_scope.dart';
+import 'package:haruka/generated/ui_test_ids.dart';
+import 'package:haruka/shared/identified.dart';
+
+import 'published_novel_reader.dart';
+
+void _unused() {}
+void _unusedBool(bool _) {}
+void _unusedInt(int _) {}
+void _unusedDouble(double _) {}
+void _unusedCard(LearningCard _) {}
 
 List<String> _mockChapters(BuildContext context) => [
   AppLocalizations.of(context).mockMaterialChapterSeasideMailbox,
@@ -146,6 +157,7 @@ class _MaterialEntryPageState extends State<MaterialEntryPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (ReferenceFeatureScope.maybeOf(context) != null) return;
     final coordinator = PreviewSettingsCacheScope.of(context).coordinator;
     final scope = coordinator.scope;
     final identity = (
@@ -179,39 +191,49 @@ class _MaterialEntryPageState extends State<MaterialEntryPage> {
   }
 
   @override
-  Widget build(BuildContext context) => MaterialCatalogAccess(
-    builder: (context, catalog) {
-      final item = catalog.findById(widget.materialId);
-      if (item == null) {
+  Widget build(BuildContext context) {
+    final reference = ReferenceFeatureScope.maybeOf(context);
+    if (reference != null) {
+      return PublishedNovelReader(materialId: widget.materialId, reference: reference);
+    }
+    return MaterialCatalogAccess(
+      builder: (context, catalog) {
+        final item = catalog.findById(widget.materialId);
+        if (item == null) {
+          _materialIdentity = null;
+          _novelLocation = null;
+          return PreviewPageFrame(
+            location: AppRoutes.mockLibrary,
+            title: AppLocalizations.of(context).mockMaterialUnavailableTitle,
+            detail: true,
+            desktopBackLabel: AppLocalizations.of(context).mockLibraryTitle,
+            onBack: () => _returnToLibrary(context),
+            mobile: Center(
+              child: Text(AppLocalizations.of(context).mockMaterialUnavailableMessage),
+            ),
+            desktop: Center(
+              child: Text(AppLocalizations.of(context).mockMaterialUnavailableMessage),
+            ),
+          );
+        }
+        if (item.type == LearningMaterialType.novel) {
+          final identity = (item.id, item.revision, item.status);
+          if (_materialIdentity != identity) {
+            _materialIdentity = identity;
+            _novelLocation = NovelReadingLocation();
+          }
+          return NovelPage(item: item, location: _novelLocation!);
+        }
         _materialIdentity = null;
         _novelLocation = null;
-        return PreviewPageFrame(
-          location: AppRoutes.mockLibrary,
-          title: AppLocalizations.of(context).mockMaterialUnavailableTitle,
-          detail: true,
-          desktopBackLabel: AppLocalizations.of(context).mockLibraryTitle,
-          onBack: () => _returnToLibrary(context),
-          mobile: Center(child: Text(AppLocalizations.of(context).mockMaterialUnavailableMessage)),
-          desktop: Center(child: Text(AppLocalizations.of(context).mockMaterialUnavailableMessage)),
-        );
-      }
-      if (item.type == LearningMaterialType.novel) {
-        final identity = (item.id, item.revision, item.status);
-        if (_materialIdentity != identity) {
-          _materialIdentity = identity;
-          _novelLocation = NovelReadingLocation();
-        }
-        return NovelPage(item: item, location: _novelLocation!);
-      }
-      _materialIdentity = null;
-      _novelLocation = null;
-      return switch (item.type) {
-        LearningMaterialType.novel => throw StateError('Novel material is handled above'),
-        LearningMaterialType.textbook => TextbookPage(item: item),
-        LearningMaterialType.exam => ExamPrepPage(item: item),
-      };
-    },
-  );
+        return switch (item.type) {
+          LearningMaterialType.novel => throw StateError('Novel material is handled above'),
+          LearningMaterialType.textbook => TextbookPage(item: item),
+          LearningMaterialType.exam => ExamPrepPage(item: item),
+        };
+      },
+    );
+  }
 }
 
 class MaterialDetailsPage extends StatelessWidget {
@@ -1321,9 +1343,46 @@ class MobileNovelView extends StatelessWidget {
     required this.onSpeed,
     required this.onStopPlayback,
     required this.onFont,
+    this.publishedData,
     super.key,
   });
-  final MaterialSummary item;
+  MobileNovelView.published({required PublishedNovelViewData data, super.key})
+    : publishedData = data,
+      item = null,
+      chapter = 0,
+      analysis = false,
+      analysisReady = 0,
+      audioReady = 0,
+      bookmark = false,
+      playing = false,
+      playback = null,
+      selectedRangeSentence = data.selectedIndex,
+      nativeSelectionText = data.selectedText,
+      selectedTokens = const {},
+      selectionWords = const [],
+      rangeStart = 0,
+      rangeEnd = 0,
+      fontSize = data.fontSize,
+      onMode = _unusedBool,
+      onSentence = _unusedInt,
+      onLongSentence = data.onWholeBlock,
+      onKeyboardSentence = data.onNativeSelection,
+      onToken = _unusedInt,
+      onRangeStart = _unusedInt,
+      onRangeEnd = _unusedInt,
+      onQuerySelection = data.onQuery,
+      onReadSelection = null,
+      onCloseSelection = data.onClear,
+      onPrepare = _unused,
+      onChapter = _unusedInt,
+      onBookmark = _unused,
+      onPlayback = _unused,
+      onPauseResume = _unused,
+      onSpeed = _unusedDouble,
+      onStopPlayback = _unused,
+      onFont = data.onFont;
+  final MaterialSummary? item;
+  final PublishedNovelViewData? publishedData;
   final int chapter;
   final bool analysis;
   final int analysisReady;
@@ -1346,7 +1405,7 @@ class MobileNovelView extends StatelessWidget {
   final ValueChanged<int> onRangeStart;
   final ValueChanged<int> onRangeEnd;
   final VoidCallback onQuerySelection;
-  final VoidCallback onReadSelection;
+  final VoidCallback? onReadSelection;
   final VoidCallback onCloseSelection;
   final VoidCallback onPrepare;
   final ValueChanged<int> onChapter;
@@ -1359,13 +1418,19 @@ class MobileNovelView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final published = publishedData;
+    final item = this.item;
     final scheme = Theme.of(context).colorScheme;
     final roles = HarukaColors.of(context);
-    final sentences = _mockNovelSentences(context);
+    final sentences =
+        published?.blocks.map((block) => block.text).toList() ?? _mockNovelSentences(context);
+    final chapters = published == null ? _mockChapters(context) : [published.chapter.title];
+    final currentChapter = published == null ? chapter : 0;
     Widget selectionToolbar() => Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: NovelSelectionToolbar(
         compact: true,
+        showTokenControls: published == null,
         nativeSelectionText: nativeSelectionText,
         tokens: selectionWords,
         selectedTokens: selectedTokens,
@@ -1377,21 +1442,45 @@ class MobileNovelView extends StatelessWidget {
         onRead: onReadSelection,
         onQuery: onQuerySelection,
         onClose: onCloseSelection,
+        queryTestId: published == null ? null : UiTestIds.referenceQuery,
       ),
     );
+    Widget readingParagraph(int start) {
+      final content = NovelReadingParagraph(
+        first: sentences[start],
+        second: published == null && start + 1 < sentences.length ? sentences[start + 1] : null,
+        firstIndex: start,
+        fontSize: fontSize,
+        lineHeight: 1.8,
+        highlightedIndex: playback?.position == null ? null : playback!.position - 1,
+        selectedIndex: selectedRangeSentence,
+        onLongSentence: onLongSentence,
+        onKeyboardSentence: onKeyboardSentence,
+        onNativeSelectionChanged: published == null ? null : onKeyboardSentence,
+        nativeSelectionOnly: published != null,
+      );
+      return published == null
+          ? content
+          : Identified(id: UiTestIds.referenceBlock(published.blocks[start].id), child: content);
+    }
+
     return Column(
       children: [
         Expanded(
           child: ListView(
-            key: _novelScrollKey(context, item, chapter, true),
+            key: published == null
+                ? _novelScrollKey(context, item!, chapter, true)
+                : PageStorageKey(
+                    'published-novel:${published.openingScope}:${published.item.id}:${published.item.revisionId}:mobile',
+                  ),
             padding: const EdgeInsets.fromLTRB(21, 12, 21, 25),
             children: [
               Row(
                 children: [
-                  _ReadingModeSelector(analysis: analysis, onMode: onMode),
+                  if (published == null) _ReadingModeSelector(analysis: analysis, onMode: onMode),
                   const Spacer(),
                   TextButton(
-                    onPressed: onPrepare,
+                    onPressed: published == null ? onPrepare : null,
                     child: Text(AppLocalizations.of(context).mockMaterialPrepareChapter),
                   ),
                 ],
@@ -1403,19 +1492,21 @@ class MobileNovelView extends StatelessWidget {
                     : AppLocalizations.of(context).mockMaterialReadingModeHint,
                 style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
-              Text(
-                AppLocalizations.of(context)
-                    .mockMaterialChapterProgress(analysisReady, audioReady, 5),
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-              ),
+              if (published == null)
+                Text(
+                  AppLocalizations.of(context)
+                      .mockMaterialChapterProgress(analysisReady, audioReady, 5),
+                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                ),
               const SizedBox(height: 26),
-              Text(
-                AppLocalizations.of(context).mockMaterialChapterCountOf(chapter + 1, 12),
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-              ),
+              if (published == null)
+                Text(
+                  AppLocalizations.of(context).mockMaterialChapterCountOf(chapter + 1, 12),
+                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                ),
               const SizedBox(height: 9),
               Text(
-                _mockChapters(context)[chapter],
+                chapters[currentChapter],
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: 'serif'),
               ),
               const SizedBox(height: 28),
@@ -1447,22 +1538,17 @@ class MobileNovelView extends StatelessWidget {
                   if (selectedRangeSentence == sentence.key) selectionToolbar(),
                 ]
               else
-                for (final start in const [0, 2, 4]) ...[
+                for (
+                  var start = 0;
+                  start < sentences.length;
+                  start += published == null ? 2 : 1
+                ) ...[
                   Padding(
                     padding: const EdgeInsets.only(bottom: 26),
-                    child: NovelReadingParagraph(
-                      first: sentences[start],
-                      second: start + 1 < sentences.length ? sentences[start + 1] : null,
-                      firstIndex: start,
-                      fontSize: fontSize,
-                      lineHeight: 1.8,
-                      highlightedIndex: playback?.position == null ? null : playback!.position - 1,
-                      selectedIndex: selectedRangeSentence,
-                      onLongSentence: onLongSentence,
-                      onKeyboardSentence: onKeyboardSentence,
-                    ),
+                    child: readingParagraph(start),
                   ),
-                  if (selectedRangeSentence == start || selectedRangeSentence == start + 1)
+                  if (selectedRangeSentence == start ||
+                      (published == null && selectedRangeSentence == start + 1))
                     selectionToolbar(),
                 ],
               const SizedBox(height: 20),
@@ -1472,14 +1558,15 @@ class MobileNovelView extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      _mockChapters(context)[chapter],
+                      chapters[currentChapter],
                       style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
                     ),
                     const Spacer(),
-                    Text(
-                      AppLocalizations.of(context).mockMaterialChapterFooter(chapter + 1, 12),
-                      style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-                    ),
+                    if (published == null)
+                      Text(
+                        AppLocalizations.of(context).mockMaterialChapterFooter(chapter + 1, 12),
+                        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                      ),
                   ],
                 ),
               ),
@@ -1512,17 +1599,21 @@ class MobileNovelView extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _MobileReaderAction(
+              MobileReaderAction(
                 tooltip: playing
                     ? AppLocalizations.of(context).mockMaterialPauseContinuousPlayback
                     : AppLocalizations.of(context).mockMaterialContinuousPlayback,
-                onPressed: onPlayback,
+                onPressed: published == null ? onPlayback : null,
                 icon: Icon(playing ? Icons.pause_circle_outline : Icons.play_circle_outline),
               ),
-              _MobileReaderAction(
+              MobileReaderAction(
                 tooltip: AppLocalizations.of(context).mockMaterialContentsTooltip,
                 onPressed: () {
-                  final access = _NovelSheetAccess.capture(context, item);
+                  if (published != null) {
+                    showPublishedContents(context, published);
+                    return;
+                  }
+                  final access = _NovelSheetAccess.capture(context, item!);
                   unawaited(
                     showModalBottomSheet<void>(
                       context: context,
@@ -1557,10 +1648,14 @@ class MobileNovelView extends StatelessWidget {
                 },
                 icon: const Icon(Icons.list_alt_outlined),
               ),
-              _MobileReaderAction(
+              MobileReaderAction(
                 tooltip: AppLocalizations.of(context).mockMaterialTypographyTooltip,
                 onPressed: () {
-                  final access = _NovelSheetAccess.capture(context, item);
+                  if (published != null) {
+                    showPublishedFont(context, published);
+                    return;
+                  }
+                  final access = _NovelSheetAccess.capture(context, item!);
                   var selectedSize = fontSize;
                   unawaited(
                     showModalBottomSheet<void>(
@@ -1575,7 +1670,7 @@ class MobileNovelView extends StatelessWidget {
                         (sheetContext) => StatefulBuilder(
                           builder: (sheetContext, update) => Padding(
                             padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-                            child: _ReaderFontControl(
+                            child: ReaderFontControl(
                               value: selectedSize,
                               preview: item.title,
                               onChanged: (value) {
@@ -1593,12 +1688,12 @@ class MobileNovelView extends StatelessWidget {
                 },
                 icon: const Icon(Icons.text_fields),
               ),
-              _MobileReaderAction(
+              MobileReaderAction(
                 tooltip: bookmark
                     ? AppLocalizations.of(context).mockMaterialRemoveBookmark
                     : AppLocalizations.of(context).mockMaterialAddBookmark,
                 label: AppLocalizations.of(context).mockMaterialBookmarkLabel,
-                onPressed: onBookmark,
+                onPressed: published == null ? onBookmark : null,
                 icon: Icon(bookmark ? Icons.bookmark : Icons.bookmark_border),
               ),
             ],
@@ -1609,8 +1704,13 @@ class MobileNovelView extends StatelessWidget {
   }
 }
 
-class _ReaderFontControl extends StatelessWidget {
-  const _ReaderFontControl({required this.value, required this.preview, required this.onChanged});
+class ReaderFontControl extends StatelessWidget {
+  const ReaderFontControl({
+    required this.value,
+    required this.preview,
+    required this.onChanged,
+    super.key,
+  });
 
   final double value;
   final String preview;
@@ -1659,17 +1759,18 @@ class _ReaderFontControl extends StatelessWidget {
   }
 }
 
-class _MobileReaderAction extends StatelessWidget {
-  const _MobileReaderAction({
+class MobileReaderAction extends StatelessWidget {
+  const MobileReaderAction({
     required this.tooltip,
     required this.onPressed,
     required this.icon,
     this.label,
+    super.key,
   });
 
   final String tooltip;
   final String? label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Widget icon;
 
   @override
@@ -1701,8 +1802,8 @@ class _MobileReaderAction extends StatelessWidget {
   );
 }
 
-class _DesktopReaderAction extends StatelessWidget {
-  const _DesktopReaderAction({required this.icon, required this.label});
+class DesktopReaderAction extends StatelessWidget {
+  const DesktopReaderAction({required this.icon, required this.label, super.key});
 
   final IconData icon;
   final String label;
@@ -1765,9 +1866,52 @@ class DesktopNovelView extends StatelessWidget {
     required this.onSpeed,
     required this.onStopPlayback,
     required this.onFont,
+    this.publishedData,
     super.key,
   });
-  final MaterialSummary item;
+  DesktopNovelView.published({required PublishedNovelViewData data, super.key})
+    : publishedData = data,
+      item = null,
+      chapter = 0,
+      analysis = false,
+      analysisReady = 0,
+      audioReady = 0,
+      selectedSentence = data.selectedIndex,
+      bookmark = false,
+      playing = false,
+      playback = null,
+      selectedRangeSentence = data.selectedIndex,
+      nativeSelectionText = data.selectedText,
+      selectedTokens = const {},
+      selectionWords = const [],
+      rangeStart = 0,
+      rangeEnd = 0,
+      selectedQueryText = null,
+      selectedQueryCard = null,
+      onSaveQueryCard = _unusedCard,
+      fontSize = data.fontSize,
+      onMode = _unusedBool,
+      onSentence = _unusedInt,
+      onQuerySentence = _unusedInt,
+      onLongSentence = data.onWholeBlock,
+      onKeyboardSentence = data.onNativeSelection,
+      onToken = _unusedInt,
+      onRangeStart = _unusedInt,
+      onRangeEnd = _unusedInt,
+      onQuerySelection = data.onQuery,
+      onReadSelection = null,
+      onCloseSelection = data.onClear,
+      onCloseSentence = data.onClear,
+      onPrepare = _unused,
+      onChapter = _unusedInt,
+      onBookmark = _unused,
+      onPlayback = _unused,
+      onPauseResume = _unused,
+      onSpeed = _unusedDouble,
+      onStopPlayback = _unused,
+      onFont = data.onFont;
+  final MaterialSummary? item;
+  final PublishedNovelViewData? publishedData;
   final int chapter;
   final bool analysis;
   final int analysisReady;
@@ -1795,7 +1939,7 @@ class DesktopNovelView extends StatelessWidget {
   final ValueChanged<int> onRangeStart;
   final ValueChanged<int> onRangeEnd;
   final VoidCallback onQuerySelection;
-  final VoidCallback onReadSelection;
+  final VoidCallback? onReadSelection;
   final VoidCallback onCloseSelection;
   final VoidCallback onCloseSentence;
   final VoidCallback onPrepare;
@@ -1809,12 +1953,20 @@ class DesktopNovelView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final published = publishedData;
+    final item = this.item;
     final scheme = Theme.of(context).colorScheme;
     final roles = HarukaColors.of(context);
-    final sentences = _mockNovelSentences(context);
-    final access = _NovelSheetAccess.capture(context, item);
+    final sentences =
+        published?.blocks.map((block) => block.text).toList() ?? _mockNovelSentences(context);
+    final chapters = published == null ? _mockChapters(context) : [published.chapter.title];
+    final currentChapter = published == null ? chapter : 0;
+    final title = published?.item.title ?? item!.title;
+    final access = published == null ? _NovelSheetAccess.capture(context, item!) : null;
     Widget selectionToolbar() => NovelSelectionToolbar(
       compact: false,
+      showTokenControls: published == null,
+      queryTestId: published == null ? null : UiTestIds.referenceQuery,
       nativeSelectionText: nativeSelectionText,
       tokens: selectionWords,
       selectedTokens: selectedTokens,
@@ -1827,6 +1979,25 @@ class DesktopNovelView extends StatelessWidget {
       onQuery: onQuerySelection,
       onClose: onCloseSelection,
     );
+    Widget readingParagraph(int start) {
+      final content = NovelReadingParagraph(
+        first: sentences[start],
+        second: published == null && start + 1 < sentences.length ? sentences[start + 1] : null,
+        firstIndex: start,
+        fontSize: fontSize,
+        lineHeight: 1.9,
+        highlightedIndex: playback?.position == null ? null : playback!.position - 1,
+        selectedIndex: selectedRangeSentence,
+        onLongSentence: onLongSentence,
+        onKeyboardSentence: onKeyboardSentence,
+        onNativeSelectionChanged: published == null ? null : onKeyboardSentence,
+        nativeSelectionOnly: published != null,
+      );
+      return published == null
+          ? content
+          : Identified(id: UiTestIds.referenceBlock(published.blocks[start].id), child: content);
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1836,14 +2007,18 @@ class DesktopNovelView extends StatelessWidget {
               children: [
                 Expanded(
                   child: ListView(
-                    key: _novelScrollKey(context, item, chapter, false),
+                    key: published == null
+                        ? _novelScrollKey(context, item!, chapter, false)
+                        : PageStorageKey(
+                            'published-novel:${published.openingScope}:${published.item.id}:${published.item.revisionId}:desktop',
+                          ),
                     children: [
                       Row(
                         children: [
-                          Text(item.title, style: Theme.of(context).textTheme.headlineMedium),
+                          Text(title, style: Theme.of(context).textTheme.headlineMedium),
                           const Spacer(),
                           OutlinedButton.icon(
-                            onPressed: onPlayback,
+                            onPressed: published == null ? onPlayback : null,
                             icon: Icon(playing ? Icons.pause_outlined : Icons.headphones_outlined),
                             label: Text(
                               playing
@@ -1852,37 +2027,46 @@ class DesktopNovelView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          PopupMenuButton<int>(
-                            useRootNavigator: true,
-                            tooltip: AppLocalizations.of(context).mockMaterialContentsTooltip,
-                            onSelected: (chapterIndex) {
-                              if (context.mounted && access.isReadable(context)) {
-                                onChapter(chapterIndex);
-                              }
-                            },
-                            itemBuilder: (menuContext) => [
-                              for (var i = 0; i < _mockChapters(context).length; i++)
-                                PopupMenuItem(
-                                  value: i,
-                                  child: access.gate(
-                                    (menuContext) => Text(
-                                      AppLocalizations.of(menuContext).mockMaterialChapterTitle(
-                                        i + 1,
-                                        _mockChapters(menuContext)[i],
+                          if (published != null)
+                            TextButton.icon(
+                              onPressed: () => showPublishedContents(context, published),
+                              icon: const Icon(Icons.library_books_outlined),
+                              label: Text(AppLocalizations.of(context).mockMaterialContentsTooltip),
+                            )
+                          else
+                            PopupMenuButton<int>(
+                              useRootNavigator: true,
+                              tooltip: AppLocalizations.of(context).mockMaterialContentsTooltip,
+                              onSelected: (chapterIndex) {
+                                if (context.mounted && access!.isReadable(context)) {
+                                  onChapter(chapterIndex);
+                                }
+                              },
+                              itemBuilder: (menuContext) => [
+                                for (var i = 0; i < chapters.length; i++)
+                                  PopupMenuItem(
+                                    value: i,
+                                    child: access!.gate(
+                                      (menuContext) => Text(
+                                        AppLocalizations.of(menuContext)
+                                            .mockMaterialChapterTitle(i + 1, chapters[i]),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
-                            child: _DesktopReaderAction(
-                              icon: Icons.library_books_outlined,
-                              label: AppLocalizations.of(context).mockMaterialContentsTooltip,
+                              ],
+                              child: DesktopReaderAction(
+                                icon: Icons.library_books_outlined,
+                                label: AppLocalizations.of(context).mockMaterialContentsTooltip,
+                              ),
                             ),
-                          ),
                           const SizedBox(width: 8),
                           IconButton(
                             tooltip: AppLocalizations.of(context).mockMaterialTypographyTooltip,
                             onPressed: () {
+                              if (published != null) {
+                                showPublishedFont(context, published);
+                                return;
+                              }
                               var selectedSize = fontSize;
                               unawaited(
                                 showHarukaDialog<void>(
@@ -1891,15 +2075,15 @@ class DesktopNovelView extends StatelessWidget {
                                     context,
                                     reducedMotion: PreviewStoreScope.of(context).reducedMotion,
                                   ),
-                                  builder: (dialogContext) => access.gate(
+                                  builder: (dialogContext) => access!.gate(
                                     (dialogContext) => HarukaDialogSurface(
                                       title: AppLocalizations.of(dialogContext)
                                           .mockMaterialReadingFontSize,
                                       size: HarukaDialogSize.compact,
                                       child: StatefulBuilder(
-                                        builder: (dialogContext, update) => _ReaderFontControl(
+                                        builder: (dialogContext, update) => ReaderFontControl(
                                           value: selectedSize,
-                                          preview: item.title,
+                                          preview: title,
                                           onChanged: (value) {
                                             if (!context.mounted || !access.isReadable()) return;
                                             update(() => selectedSize = value);
@@ -1919,7 +2103,7 @@ class DesktopNovelView extends StatelessWidget {
                             tooltip: bookmark
                                 ? AppLocalizations.of(context).mockMaterialRemoveBookmark
                                 : AppLocalizations.of(context).mockMaterialAddBookmark,
-                            onPressed: onBookmark,
+                            onPressed: published == null ? onBookmark : null,
                             icon: Icon(bookmark ? Icons.bookmark : Icons.bookmark_border),
                           ),
                         ],
@@ -1927,11 +2111,12 @@ class DesktopNovelView extends StatelessWidget {
                       const SizedBox(height: 20),
                       Row(
                         children: [
-                          _ReadingModeSelector(analysis: analysis, onMode: onMode),
+                          if (published == null)
+                            _ReadingModeSelector(analysis: analysis, onMode: onMode),
                           const SizedBox(width: 12),
                           const Spacer(),
                           TextButton(
-                            onPressed: onPrepare,
+                            onPressed: published == null ? onPrepare : null,
                             child: Text(AppLocalizations.of(context).mockMaterialPrepareChapter),
                           ),
                         ],
@@ -1943,11 +2128,12 @@ class DesktopNovelView extends StatelessWidget {
                             : AppLocalizations.of(context).mockMaterialReadingModeHint,
                         style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
                       ),
-                      Text(
-                        AppLocalizations.of(context)
-                            .mockMaterialChapterProgress(analysisReady, audioReady, 5),
-                        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-                      ),
+                      if (published == null)
+                        Text(
+                          AppLocalizations.of(context)
+                              .mockMaterialChapterProgress(analysisReady, audioReady, 5),
+                          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                        ),
                       const SizedBox(height: 20),
                       LayoutBuilder(
                         builder: (context, constraints) => HarukaSurface(
@@ -1960,14 +2146,15 @@ class DesktopNovelView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                AppLocalizations.of(context)
-                                    .mockMaterialChapterCountOf(chapter + 1, 12),
-                                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-                              ),
+                              if (published == null)
+                                Text(
+                                  AppLocalizations.of(context)
+                                      .mockMaterialChapterCountOf(chapter + 1, 12),
+                                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                                ),
                               const SizedBox(height: 12),
                               Text(
-                                _mockChapters(context)[chapter],
+                                chapters[currentChapter],
                                 style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(fontFamily: 'serif'),
                               ),
@@ -2008,29 +2195,19 @@ class DesktopNovelView extends StatelessWidget {
                                   ),
                                 ]
                               else
-                                for (final start in const [0, 2, 4]) ...[
+                                for (
+                                  var start = 0;
+                                  start < sentences.length;
+                                  start += published == null ? 2 : 1
+                                ) ...[
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 28),
                                     child: NovelSelectionAnchor(
                                       selected:
                                           selectedRangeSentence == start ||
-                                          selectedRangeSentence == start + 1,
+                                          (published == null && selectedRangeSentence == start + 1),
                                       toolbar: selectionToolbar(),
-                                      child: NovelReadingParagraph(
-                                        first: sentences[start],
-                                        second: start + 1 < sentences.length
-                                            ? sentences[start + 1]
-                                            : null,
-                                        firstIndex: start,
-                                        fontSize: fontSize,
-                                        lineHeight: 1.9,
-                                        highlightedIndex: playback?.position == null
-                                            ? null
-                                            : playback!.position - 1,
-                                        selectedIndex: selectedRangeSentence,
-                                        onLongSentence: onLongSentence,
-                                        onKeyboardSentence: onKeyboardSentence,
-                                      ),
+                                      child: readingParagraph(start),
                                     ),
                                   ),
                                 ],
@@ -2039,15 +2216,19 @@ class DesktopNovelView extends StatelessWidget {
                               Row(
                                 children: [
                                   Text(
-                                    _mockChapters(context)[chapter],
+                                    chapters[currentChapter],
                                     style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
                                   ),
                                   const Spacer(),
-                                  Text(
-                                    AppLocalizations.of(context)
-                                        .mockMaterialChapterFooter(chapter + 1, 12),
-                                    style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-                                  ),
+                                  if (published == null)
+                                    Text(
+                                      AppLocalizations.of(context)
+                                          .mockMaterialChapterFooter(chapter + 1, 12),
+                                      style: TextStyle(
+                                        color: scheme.onSurfaceVariant,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                 ],
                               ),
                             ],
@@ -2092,15 +2273,12 @@ class DesktopNovelView extends StatelessWidget {
                     const SizedBox(height: 14),
                     NovelSelectionResultBody(
                       selectedText: selectedQueryText!,
-                      source: AppLocalizations.of(context).mockMaterialSentenceSource(
-                        item.title,
-                        chapter + 1,
-                        _mockChapters(context)[chapter],
-                      ),
+                      source: AppLocalizations.of(context)
+                          .mockMaterialSentenceSource(title, chapter + 1, chapters[currentChapter]),
                       card: selectedQueryCard,
                       onSave: () {
                         final card = selectedQueryCard;
-                        if (card != null && access.isReadable()) onSaveQueryCard(card);
+                        if (card != null && access!.isReadable()) onSaveQueryCard(card);
                       },
                     ),
                   ],
@@ -2126,77 +2304,90 @@ class DesktopNovelView extends StatelessWidget {
                         IconButton(onPressed: onCloseSentence, icon: const Icon(Icons.close)),
                       ],
                     ),
-                    Text(
-                      AppLocalizations.of(context)
-                          .mockMaterialSentencePosition(selectedSentence! + 1, 5),
-                      style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-                    ),
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: selectedSentence == 0
-                              ? null
-                              : () => onSentence(selectedSentence! - 1),
-                          child: Text(AppLocalizations.of(context).mockMaterialPreviousSentence),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: selectedSentence == 4
-                              ? null
-                              : () => onSentence(selectedSentence! + 1),
-                          child: Text(AppLocalizations.of(context).mockMaterialNextSentence),
-                        ),
-                      ],
-                    ),
+                    if (published == null)
+                      Text(
+                        AppLocalizations.of(context)
+                            .mockMaterialSentencePosition(selectedSentence! + 1, 5),
+                        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                      ),
+                    if (published == null)
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: selectedSentence == 0
+                                ? null
+                                : () => onSentence(selectedSentence! - 1),
+                            child: Text(AppLocalizations.of(context).mockMaterialPreviousSentence),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: selectedSentence == 4
+                                ? null
+                                : () => onSentence(selectedSentence! + 1),
+                            child: Text(AppLocalizations.of(context).mockMaterialNextSentence),
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: 10),
                     Text(
-                      _mockNovelSentences(context)[selectedSentence!],
+                      sentences[selectedSentence!],
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 15),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: roles.selected,
-                        borderRadius: BorderRadius.circular(10),
+                    if (published == null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: roles.selected,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context).mockMaterialTranslation,
+                              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(_mockNovelTranslations(context)[selectedSentence!]),
+                          ],
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).mockMaterialTranslation,
-                            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(_mockNovelTranslations(context)[selectedSentence!]),
-                        ],
-                      ),
-                    ),
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed:
-                          _isSentenceCollected(
-                            context,
-                            _mockNovelSentences(context)[selectedSentence!],
-                          )
-                          ? null
-                          : () => _collectSentence(context, item, selectedSentence!),
-                      icon: const Icon(Icons.bookmark_add_outlined),
-                      label: Text(
-                        _isSentenceCollected(
+                    if (published == null)
+                      OutlinedButton.icon(
+                        onPressed:
+                            _isSentenceCollected(
                               context,
                               _mockNovelSentences(context)[selectedSentence!],
                             )
-                            ? AppLocalizations.of(context).mockMaterialCollectedSentence
-                            : AppLocalizations.of(context).mockMaterialCollectSentence,
+                            ? null
+                            : () => _collectSentence(context, item!, selectedSentence!),
+                        icon: const Icon(Icons.bookmark_add_outlined),
+                        label: Text(
+                          _isSentenceCollected(
+                                context,
+                                _mockNovelSentences(context)[selectedSentence!],
+                              )
+                              ? AppLocalizations.of(context).mockMaterialCollectedSentence
+                              : AppLocalizations.of(context).mockMaterialCollectSentence,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 8),
                     FilledButton(
-                      onPressed: () => onQuerySentence(selectedSentence!),
+                      onPressed: published == null
+                          ? () => onQuerySentence(selectedSentence!)
+                          : published.reference.busy || !published.reference.canResolve
+                          ? null
+                          : published.onQuery,
                       child: Text(AppLocalizations.of(context).mockMaterialQuerySelection),
                     ),
+                    if (published?.reference.error != null)
+                      Text(
+                        AppLocalizations.of(context).authUnavailableShort,
+                        style: TextStyle(color: scheme.error),
+                      ),
                   ],
                 ),
               ),
@@ -2215,41 +2406,43 @@ class DesktopNovelView extends StatelessWidget {
                       : 720,
                 ),
                 child: HarukaSurface(
-                padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        AppLocalizations.of(context).mockMaterialContentsTooltip,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _mockChapters(context).length,
-                        itemBuilder: (context, index) => ListTile(
-                          dense: true,
-                          selected: index == chapter,
-                          title: Text(
-                            AppLocalizations.of(context)
-                                .mockMaterialChapterTitle(index + 1, _mockChapters(context)[index]),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () {
-                            if (access.isReadable(context)) onChapter(index);
-                          },
+                  padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          AppLocalizations.of(context).mockMaterialContentsTooltip,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 10),
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: chapters.length,
+                          itemBuilder: (context, index) => ListTile(
+                            dense: true,
+                            selected: index == currentChapter,
+                            title: Text(
+                              AppLocalizations.of(context)
+                                  .mockMaterialChapterTitle(index + 1, chapters[index]),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onTap: () {
+                              if (published == null && access!.isReadable(context)) {
+                                onChapter(index);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

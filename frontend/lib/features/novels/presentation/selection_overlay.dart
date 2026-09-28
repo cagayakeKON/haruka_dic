@@ -7,6 +7,7 @@ import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/shared/presentation/components.dart';
 import 'package:haruka/shared/domain/learning_records.dart';
 import 'package:haruka/app/preview_shell.dart';
+import 'package:haruka/shared/identified.dart';
 
 class NovelPlaybackSnapshot {
   const NovelPlaybackSnapshot({
@@ -54,12 +55,14 @@ class NovelKeyboardSentence extends StatefulWidget {
     required this.onOpenSelection,
     required this.child,
     this.onSelectionChanged,
+    this.onLiveSelection,
     super.key,
   });
 
   final ValueChanged<NovelNativeSelection?> onOpenSelection;
   final Widget child;
   final ValueChanged<SelectedContent?>? onSelectionChanged;
+  final ValueChanged<NovelNativeSelection?>? onLiveSelection;
 
   @override
   State<NovelKeyboardSentence> createState() => _NovelKeyboardSentenceState();
@@ -137,6 +140,11 @@ class _NovelKeyboardSentenceState extends State<NovelKeyboardSentence> {
         onSelectionChanged: (content) {
           _selectedContent = content;
           widget.onSelectionChanged?.call(content);
+          if (widget.onLiveSelection != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) widget.onLiveSelection?.call(_nativeSelection());
+            });
+          }
         },
         child: SelectionListener(selectionNotifier: _selectionNotifier, child: widget.child),
       ),
@@ -154,6 +162,8 @@ class NovelReadingParagraph extends StatefulWidget {
     required this.selectedIndex,
     required this.onLongSentence,
     this.onKeyboardSentence,
+    this.onNativeSelectionChanged,
+    this.nativeSelectionOnly = false,
     this.second,
     super.key,
   });
@@ -167,6 +177,8 @@ class NovelReadingParagraph extends StatefulWidget {
   final int? selectedIndex;
   final ValueChanged<int> onLongSentence;
   final NovelKeyboardSelectionCallback? onKeyboardSentence;
+  final NovelKeyboardSelectionCallback? onNativeSelectionChanged;
+  final bool nativeSelectionOnly;
 
   @override
   State<NovelReadingParagraph> createState() => _NovelReadingParagraphState();
@@ -308,15 +320,22 @@ class _NovelReadingParagraphState extends State<NovelReadingParagraph> {
     );
     return NovelKeyboardSentence(
       onOpenSelection: _openKeyboardSelection,
+      onLiveSelection: widget.onNativeSelectionChanged == null
+          ? null
+          : (selection) {
+              if (selection != null) _openKeyboardSelection(selection);
+            },
       child: Builder(
         builder: (selectionContext) => GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapDown: (details) => _keyboardSentenceIndex = _indexAt(details.localPosition),
-          onLongPressStart: (details) {
-            final index = _indexAt(details.localPosition);
-            _keyboardSentenceIndex = index;
-            widget.onLongSentence(index);
-          },
+          onLongPressStart: widget.nativeSelectionOnly
+              ? null
+              : (details) {
+                  final index = _indexAt(details.localPosition);
+                  _keyboardSentenceIndex = index;
+                  widget.onLongSentence(index);
+                },
           child: RichText(
             key: paragraphKey,
             selectionRegistrar: SelectionContainer.maybeOf(selectionContext),
@@ -357,6 +376,8 @@ class NovelSelectionToolbar extends StatelessWidget {
     required this.onQuery,
     required this.onClose,
     this.nativeSelectionText,
+    this.showTokenControls = true,
+    this.queryTestId,
     super.key,
   });
 
@@ -368,10 +389,12 @@ class NovelSelectionToolbar extends StatelessWidget {
   final ValueChanged<int> onToken;
   final ValueChanged<int> onStart;
   final ValueChanged<int> onEnd;
-  final VoidCallback onRead;
+  final VoidCallback? onRead;
   final VoidCallback onQuery;
   final VoidCallback onClose;
   final String? nativeSelectionText;
+  final bool showTokenControls;
+  final String? queryTestId;
 
   @override
   Widget build(BuildContext context) {
@@ -419,30 +442,31 @@ class NovelSelectionToolbar extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                runSpacing: 7,
-                children: [
-                  for (var index = rangeStart; index <= rangeEnd; index++)
-                    if (RegExp(r'^[、。！？,.!?]+$').hasMatch(tokens[index]))
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                        child: Text(tokens[index]),
-                      )
-                    else
-                      FilterChip(
-                        label: Text(tokens[index]),
-                        selected: selectedTokens.contains(index),
-                        onSelected: (_) => onToken(index),
-                        showCheckmark: false,
-                        visualDensity: VisualDensity.compact,
-                        backgroundColor: scheme.primaryContainer.withValues(alpha: .38),
-                        selectedColor: roles.selected,
-                        side: BorderSide(color: scheme.primary.withValues(alpha: .08)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                ],
-              ),
+              if (showTokenControls)
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 7,
+                  children: [
+                    for (var index = rangeStart; index <= rangeEnd; index++)
+                      if (RegExp(r'^[、。！？,.!?]+$').hasMatch(tokens[index]))
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                          child: Text(tokens[index]),
+                        )
+                      else
+                        FilterChip(
+                          label: Text(tokens[index]),
+                          selected: selectedTokens.contains(index),
+                          onSelected: (_) => onToken(index),
+                          showCheckmark: false,
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: scheme.primaryContainer.withValues(alpha: .38),
+                          selectedColor: roles.selected,
+                          side: BorderSide(color: scheme.primary.withValues(alpha: .08)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                  ],
+                ),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -453,73 +477,90 @@ class NovelSelectionToolbar extends StatelessWidget {
                       style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: onQuery,
-                    icon: const Icon(Icons.search, size: 18),
-                    label: Text(l10n.mockMaterialQuery),
-                    style: TextButton.styleFrom(
-                      backgroundColor: scheme.primaryContainer.withValues(alpha: .55),
-                      foregroundColor: scheme.primary,
+                  if (queryTestId case final id?)
+                    Identified(
+                      id: id,
+                      child: TextButton.icon(
+                        onPressed: onQuery,
+                        icon: const Icon(Icons.search, size: 18),
+                        label: Text(l10n.mockMaterialQuery),
+                        style: TextButton.styleFrom(
+                          backgroundColor: scheme.primaryContainer.withValues(alpha: .55),
+                          foregroundColor: scheme.primary,
+                        ),
+                      ),
+                    )
+                  else
+                    TextButton.icon(
+                      onPressed: onQuery,
+                      icon: const Icon(Icons.search, size: 18),
+                      label: Text(l10n.mockMaterialQuery),
+                      style: TextButton.styleFrom(
+                        backgroundColor: scheme.primaryContainer.withValues(alpha: .55),
+                        foregroundColor: scheme.primary,
+                      ),
                     ),
-                  ),
                 ],
               ),
-              ExpansionTile(
-                key: const PageStorageKey('novel-selection-range'),
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: EdgeInsets.zero,
-                title: Text(
-                  l10n.mockMaterialNovelAdjustRange,
-                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+              if (showTokenControls)
+                ExpansionTile(
+                  key: const PageStorageKey('novel-selection-range'),
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.mockMaterialNovelAdjustRange,
+                    style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                  ),
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            isExpanded: true,
+                            key: ValueKey('novel-range-start-$rangeStart'),
+                            initialValue: rangeStart,
+                            decoration: InputDecoration(
+                              labelText: l10n.mockMaterialNovelRangeStart,
+                            ),
+                            items: [
+                              for (var index = 0; index <= rangeEnd; index++)
+                                DropdownMenuItem(
+                                  value: index,
+                                  child: Text(
+                                    l10n.mockMaterialNovelBoundaryOption(index + 1, tokens[index]),
+                                  ),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) onStart(value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            isExpanded: true,
+                            key: ValueKey('novel-range-end-$rangeEnd'),
+                            initialValue: rangeEnd,
+                            decoration: InputDecoration(labelText: l10n.mockMaterialNovelRangeEnd),
+                            items: [
+                              for (var index = rangeStart; index < tokens.length; index++)
+                                DropdownMenuItem(
+                                  value: index,
+                                  child: Text(
+                                    l10n.mockMaterialNovelBoundaryOption(index + 1, tokens[index]),
+                                  ),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) onEnd(value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<int>(
-                          isExpanded: true,
-                          key: ValueKey('novel-range-start-$rangeStart'),
-                          initialValue: rangeStart,
-                          decoration: InputDecoration(labelText: l10n.mockMaterialNovelRangeStart),
-                          items: [
-                            for (var index = 0; index <= rangeEnd; index++)
-                              DropdownMenuItem(
-                                value: index,
-                                child: Text(
-                                  l10n.mockMaterialNovelBoundaryOption(index + 1, tokens[index]),
-                                ),
-                              ),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) onStart(value);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: DropdownButtonFormField<int>(
-                          isExpanded: true,
-                          key: ValueKey('novel-range-end-$rangeEnd'),
-                          initialValue: rangeEnd,
-                          decoration: InputDecoration(labelText: l10n.mockMaterialNovelRangeEnd),
-                          items: [
-                            for (var index = rangeStart; index < tokens.length; index++)
-                              DropdownMenuItem(
-                                value: index,
-                                child: Text(
-                                  l10n.mockMaterialNovelBoundaryOption(index + 1, tokens[index]),
-                                ),
-                              ),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) onEnd(value);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             ],
           ),
         ),

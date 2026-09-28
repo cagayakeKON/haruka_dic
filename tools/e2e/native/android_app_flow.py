@@ -653,7 +653,7 @@ def run_flow(
         device.wait_node(ids["accountPage"], timeout=60)
         stage = "learning"
         asyncio.run(seed_source(run_id, email))
-        device.tap(ids["accountMaterials"])
+        device.tap(ids["referenceMaterialsNav"])
         device.wait_node(ids["referenceMaterialsPage"])
         material_id = device.wait_dynamic(templates["referenceMaterialRow"], timeout=60)
         device.tap(material_id)
@@ -661,13 +661,12 @@ def run_flow(
         report.step("ui_reference_block_visible")
         report.document["material_id"] = material_id.rsplit(".", 1)[-1]
         report.document["chapter_block_id"] = block_id.rsplit(".", 1)[-1]
-        report.document["selection_scalar_span"] = {"start": 2, "end": 3}
         report.write()
         _select_published_word(device, block_id, ids["referenceQuery"])
         report.step("ui_reference_selection_query_visible")
         device.tap(ids["referenceQuery"])
         _visible_after_scroll(
-            device, ids["referenceMaterialsPage"], ids["referenceSave"]
+            device, ids["referenceWordDialog"], ids["referenceSave"]
         )
         report.step("ui_reference_result_save_visible")
         if collection_drop_once:
@@ -701,17 +700,14 @@ def run_flow(
                 raise FlowError("android_collection_unknown_result_false_success")
             device.tap(ids["referenceSave"])
         _visible_after_scroll(
-            device, ids["referenceMaterialsPage"], ids["referenceSavedState"]
+            device, ids["referenceWordDialog"], ids["referenceSavedState"]
         )
         report.step("ui_collection_saved_state_visible")
-        _visible_after_scroll(
-            device,
-            ids["referenceMaterialsPage"],
-            ids["referenceOpenCollections"],
-            toward_start=True,
-        )
+        device.command("shell", "input", "keyevent", "4")
+        device.tap(ids["referenceReaderBack"])
+        device.wait_node(ids["referenceMaterialsPage"], timeout=60)
         report.step("ui_collections_navigation_visible")
-        device.tap(ids["referenceOpenCollections"])
+        device.tap(ids["referenceCollectionsNav"])
         device.wait_node(ids["referenceCollectionsPage"], timeout=60)
         collection_id = device.wait_dynamic(
             templates["referenceCollectionRow"], timeout=60
@@ -735,12 +731,9 @@ def run_flow(
             current = device.wait_any((ids["accountPage"], ids["loginPage"]))
         if current != ids["accountPage"]:
             raise FlowError("android_collection_session_not_restored")
-        device.tap(ids["accountMaterials"])
+        device.tap(ids["referenceMaterialsNav"])
         device.wait_node(ids["referenceMaterialsPage"])
-        _visible_after_scroll(
-            device, ids["referenceMaterialsPage"], ids["referenceOpenCollections"]
-        )
-        device.tap(ids["referenceOpenCollections"])
+        device.tap(ids["referenceCollectionsNav"])
         device.wait_node(ids["referenceCollectionsPage"], timeout=60)
         if (
             device.wait_dynamic(templates["referenceCollectionRow"], timeout=60)
@@ -862,12 +855,14 @@ def main() -> int:
         "accountConfirmPassword",
         "accountSessions",
         "sessionRevokeAll",
-        "accountMaterials",
+        "referenceMaterialsNav",
+        "referenceCollectionsNav",
+        "referenceReaderBack",
+        "referenceWordDialog",
         "referenceMaterialsPage",
         "referenceQuery",
         "referenceSave",
         "referenceSavedState",
-        "referenceOpenCollections",
         "referenceCollectionsPage",
         "loginRecoveryLink",
         "recoveryRequestPage",

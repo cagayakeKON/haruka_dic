@@ -12,6 +12,10 @@ import 'package:haruka/features/collections/presentation/word_detail_page.dart';
 import 'package:haruka/features/collections/presentation/collection_detail_page.dart';
 import 'package:haruka/shared/domain/learning_records.dart';
 import 'package:haruka/app/preview_shell.dart';
+import 'package:haruka/features/collections/reference_controller.dart';
+import 'package:haruka/features/collections/reference_feature_scope.dart';
+import 'package:haruka/generated/ui_test_ids.dart';
+import 'package:haruka/shared/identified.dart';
 
 import '../data/collection_catalog.dart';
 import 'collection_catalog_access.dart';
@@ -46,6 +50,19 @@ class _NotebooksPageState extends State<NotebooksPage> {
   bool searchOpen = false;
   final searchController = TextEditingController();
   final searchFocusNode = FocusNode();
+  ReferenceController? _reference;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reference = ReferenceFeatureScope.maybeOf(context);
+    if (reference != null && !identical(reference, _reference)) {
+      _reference = reference;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && identical(_reference, reference)) unawaited(reference.ensureCollections());
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -56,11 +73,103 @@ class _NotebooksPageState extends State<NotebooksPage> {
 
   @override
   Widget build(BuildContext context) {
+    final reference = ReferenceFeatureScope.maybeOf(context);
+    if (reference != null) return _buildPublishedFrame(context, reference);
     final listQuery = CollectionListQuery(kind: kind, search: query, notebookId: notebookId);
     return CollectionCatalogAccess(
       query: listQuery,
       loadingBuilder: (context, _) => _buildFrame(context, null),
       builder: (context, catalog) => _buildFrame(context, catalog),
+    );
+  }
+
+  Widget _buildPublishedFrame(BuildContext context, ReferenceController reference) {
+    final strings = AppLocalizations.of(context);
+    final term = query.trim().toLowerCase();
+    final items = [
+      for (final row in reference.collections)
+        if ((kind == null || kind == CollectionKind.word) &&
+            (term.isEmpty ||
+                row.displayText.toLowerCase().contains(term) ||
+                row.payload.contextMeaning.toLowerCase().contains(term)))
+          CollectionEntry(
+            id: row.id,
+            kind: CollectionKind.word,
+            displayText: row.displayText,
+            targetLanguage: row.targetLanguage,
+            meaning: row.payload.contextMeaning,
+            createdAt: row.createdAt,
+            reading: row.payload.reading,
+            context: row.payload.examples.firstOrNull?.text,
+            sourceTitle: row.sourceRefs.firstOrNull?.sourceTitle,
+            sourceMaterialId: row.sourceRefs.firstOrNull?.materialId,
+            revision: row.revision,
+            learningCardId: row.cardId,
+            learningCardRevision: row.cardRevision,
+          ),
+    ];
+    return Identified(
+      id: UiTestIds.referenceCollectionsPage,
+      child: PreviewPageFrame(
+        location: AppRoutes.collections,
+        title: strings.mockNotebookTitle,
+        mobileActions: [
+          IconButton(
+            tooltip: strings.mockNotebookSearchHint,
+            onPressed: () => setState(() {
+              searchOpen = !searchOpen;
+              if (!searchOpen) {
+                query = '';
+                searchController.clear();
+              }
+            }),
+            icon: Icon(searchOpen ? Icons.close : Icons.search),
+          ),
+        ],
+        mobile: Column(
+          children: [
+            Expanded(
+              child: MobileNotebooksView(
+                items: items,
+                kind: kind,
+                selectedName: strings.mockNotebookAllCollections,
+                searchOpen: searchOpen,
+                searchController: searchController,
+                searchFocusNode: searchFocusNode,
+                onType: (value) => setState(() => kind = value),
+                onQuery: (value) => setState(() => query = value),
+                onNotebook: (_) {},
+                loading: !reference.collectionsLoaded && reference.collectionError == null,
+                publishedMode: true,
+                emptyCatalog: reference.collections.isEmpty,
+                showEmpty: reference.collectionError == null,
+              ),
+            ),
+            _PublishedCollectionPaging(reference: reference),
+          ],
+        ),
+        desktop: Column(
+          children: [
+            Expanded(
+              child: DesktopNotebooksView(
+                items: items,
+                kind: kind,
+                selectedName: strings.mockNotebookAllCollections,
+                searchController: searchController,
+                searchFocusNode: searchFocusNode,
+                onType: (value) => setState(() => kind = value),
+                onQuery: (value) => setState(() => query = value),
+                onNotebook: (_) {},
+                loading: !reference.collectionsLoaded && reference.collectionError == null,
+                publishedMode: true,
+                emptyCatalog: reference.collections.isEmpty,
+                showEmpty: reference.collectionError == null,
+              ),
+            ),
+            _PublishedCollectionPaging(reference: reference),
+          ],
+        ),
+      ),
     );
   }
 
@@ -127,6 +236,47 @@ class _NotebooksPageState extends State<NotebooksPage> {
       if (mounted && notebookId != null) setState(() => notebookId = null);
     });
     return strings.mockNotebookAllCollections;
+  }
+}
+
+class _PublishedCollectionPaging extends StatelessWidget {
+  const _PublishedCollectionPaging({required this.reference});
+
+  final ReferenceController reference;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    if (reference.collectionCursor == null && reference.collectionError == null) {
+      return const SizedBox.shrink();
+    }
+    return SafeArea(
+      top: false,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (reference.collectionError != null)
+            Text(
+              strings.authUnavailableShort,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          TextButton(
+            onPressed: reference.collectionsLoading
+                ? null
+                : () => unawaited(
+                    reference.collectionCursor == null
+                        ? reference.loadCollections()
+                        : reference.loadCollections(more: true),
+                  ),
+            child: Text(
+              reference.collectionError == null
+                  ? strings.referenceLoadMore
+                  : strings.referenceRetry,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -414,6 +564,9 @@ class MobileNotebooksView extends StatelessWidget {
     required this.onQuery,
     required this.onNotebook,
     this.loading = false,
+    this.publishedMode = false,
+    this.emptyCatalog = false,
+    this.showEmpty = true,
     super.key,
   });
   final List<CollectionEntry> items;
@@ -426,6 +579,9 @@ class MobileNotebooksView extends StatelessWidget {
   final ValueChanged<String> onQuery;
   final ValueChanged<String?> onNotebook;
   final bool loading;
+  final bool publishedMode;
+  final bool emptyCatalog;
+  final bool showEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -441,7 +597,9 @@ class MobileNotebooksView extends StatelessWidget {
               child: SizedBox(
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: loading ? null : () => showNotebookChooser(context, onNotebook),
+                  onPressed: loading || publishedMode
+                      ? null
+                      : () => showNotebookChooser(context, onNotebook),
                   icon: const Icon(Icons.bookmarks_outlined),
                   label: Row(
                     children: [
@@ -457,7 +615,9 @@ class MobileNotebooksView extends StatelessWidget {
               child: SizedBox(
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: loading ? null : () => context.push(AppRoutes.mockDailyWords),
+                  onPressed: loading || publishedMode
+                      ? null
+                      : () => context.push(AppRoutes.mockDailyWords),
                   icon: const Icon(Icons.schedule),
                   label: Text(strings.mockNotebookDailyWords),
                   style: OutlinedButton.styleFrom(
@@ -503,17 +663,19 @@ class MobileNotebooksView extends StatelessWidget {
                       CollectionKind.exercise,
                       CollectionKind.excerpt,
                     ]) ...[
-                      SizedBox(
-                        height: 48,
-                        child: HarukaPill(
-                          label: value == null
-                              ? strings.mockNotebookAll
-                              : collectionKindLabel(context, value),
-                          selected: kind == value,
-                          onTap: () => onType(value),
+                      if (!publishedMode || value == null || value == CollectionKind.word) ...[
+                        SizedBox(
+                          height: 48,
+                          child: HarukaPill(
+                            label: value == null
+                                ? strings.mockNotebookAll
+                                : collectionKindLabel(context, value),
+                            selected: kind == value,
+                            onTap: () => onType(value),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 5),
+                        const SizedBox(width: 5),
+                      ],
                     ],
                   ],
                 ),
@@ -548,29 +710,34 @@ class MobileNotebooksView extends StatelessWidget {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () => context.push(AppRoutes.mockExerciseBuilder),
+                onPressed: publishedMode ? null : () => context.push(AppRoutes.mockExerciseBuilder),
                 child: Text(strings.mockNotebookGenerateExercise),
               ),
-              PopupMenuButton<String>(
-                tooltip: strings.mockNotebookCsv,
-                position: PopupMenuPosition.under,
-                onSelected: (value) {
-                  if (value == 'csv') unawaited(context.push<void>(AppRoutes.mockCsv));
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(value: 'csv', child: Text(strings.mockNotebookCsv)),
-                ],
-                icon: const Icon(Icons.more_horiz),
-              ),
+              if (!publishedMode)
+                PopupMenuButton<String>(
+                  tooltip: strings.mockNotebookCsv,
+                  position: PopupMenuPosition.under,
+                  onSelected: (value) {
+                    if (value == 'csv') unawaited(context.push<void>(AppRoutes.mockCsv));
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(value: 'csv', child: Text(strings.mockNotebookCsv)),
+                  ],
+                  icon: const Icon(Icons.more_horiz),
+                ),
             ],
           ),
         const SizedBox(height: 8),
         if (loading)
           const Center(child: CircularProgressIndicator())
-        else if (items.isEmpty)
+        else if (items.isEmpty && showEmpty)
           HarukaEmpty(
-            title: strings.mockNotebookEmptyTitle,
-            message: strings.mockNotebookEmptyHint,
+            title: publishedMode && emptyCatalog
+                ? strings.mockNotebookNoCollections
+                : strings.mockNotebookEmptyTitle,
+            message: publishedMode && emptyCatalog
+                ? strings.mockNotebookNoCollectionsHint
+                : strings.mockNotebookEmptyHint,
           ),
         if (!loading && items.isNotEmpty)
           HarukaSurface(
@@ -651,7 +818,7 @@ class MobileCollectionRow extends StatelessWidget {
           ),
         ),
         if (grouped) const Icon(Icons.chevron_right, size: 18),
-        if (item.kind == CollectionKind.word)
+        if (item.kind == CollectionKind.word && ReferenceFeatureScope.maybeOf(context) == null)
           IconButton(
             tooltip: AppLocalizations.of(context).mockNotebookReadNamed(item.displayText),
             onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -671,7 +838,10 @@ class MobileCollectionRow extends StatelessWidget {
         child: row,
       ),
     );
-    return grouped ? content : HarukaSurface(padding: EdgeInsets.zero, child: content);
+    final tile = grouped ? content : HarukaSurface(padding: EdgeInsets.zero, child: content);
+    return ReferenceFeatureScope.maybeOf(context) == null
+        ? tile
+        : Identified(id: UiTestIds.referenceCollectionRow(item.id), merge: true, child: tile);
   }
 }
 
@@ -686,6 +856,9 @@ class DesktopNotebooksView extends StatelessWidget {
     required this.onQuery,
     required this.onNotebook,
     this.loading = false,
+    this.publishedMode = false,
+    this.emptyCatalog = false,
+    this.showEmpty = true,
     super.key,
   });
   final List<CollectionEntry> items;
@@ -697,6 +870,9 @@ class DesktopNotebooksView extends StatelessWidget {
   final ValueChanged<String> onQuery;
   final ValueChanged<String?> onNotebook;
   final bool loading;
+  final bool publishedMode;
+  final bool emptyCatalog;
+  final bool showEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -709,7 +885,9 @@ class DesktopNotebooksView extends StatelessWidget {
           child: SizedBox(
             height: 48,
             child: OutlinedButton.icon(
-              onPressed: loading ? null : () => showNotebookChooser(context, onNotebook),
+              onPressed: loading || publishedMode
+                  ? null
+                  : () => showNotebookChooser(context, onNotebook),
               icon: const Icon(Icons.bookmarks_outlined),
               label: Row(
                 children: [
@@ -725,7 +903,9 @@ class DesktopNotebooksView extends StatelessWidget {
           child: SizedBox(
             height: 48,
             child: OutlinedButton.icon(
-              onPressed: loading ? null : () => context.push(AppRoutes.mockDailyWords),
+              onPressed: loading || publishedMode
+                  ? null
+                  : () => context.push(AppRoutes.mockDailyWords),
               icon: const Icon(Icons.schedule),
               label: Text(strings.mockNotebookDailyWords),
               style: OutlinedButton.styleFrom(
@@ -756,7 +936,7 @@ class DesktopNotebooksView extends StatelessWidget {
           selected: kind == null,
           onTap: () => onType(null),
         ),
-        for (final value in CollectionKind.values)
+        for (final value in publishedMode ? const [CollectionKind.word] : CollectionKind.values)
           HarukaPill(
             label: collectionKindLabel(context, value),
             selected: kind == value,
@@ -774,21 +954,24 @@ class DesktopNotebooksView extends StatelessWidget {
           ),
         const SizedBox(width: 9),
         TextButton.icon(
-          onPressed: loading ? null : () => context.push(AppRoutes.mockExerciseBuilder),
+          onPressed: loading || publishedMode
+              ? null
+              : () => context.push(AppRoutes.mockExerciseBuilder),
           icon: const Icon(Icons.auto_awesome_outlined),
           label: Text(strings.mockNotebookGenerateExercise),
         ),
-        PopupMenuButton<String>(
-          tooltip: strings.mockNotebookCsv,
-          position: PopupMenuPosition.under,
-          onSelected: (value) {
-            if (value == 'csv') unawaited(context.push<void>(AppRoutes.mockCsv));
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(value: 'csv', child: Text(strings.mockNotebookCsv)),
-          ],
-          icon: const Icon(Icons.more_horiz),
-        ),
+        if (!publishedMode)
+          PopupMenuButton<String>(
+            tooltip: strings.mockNotebookCsv,
+            position: PopupMenuPosition.under,
+            onSelected: (value) {
+              if (value == 'csv') unawaited(context.push<void>(AppRoutes.mockCsv));
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'csv', child: Text(strings.mockNotebookCsv)),
+            ],
+            icon: const Icon(Icons.more_horiz),
+          ),
       ],
     );
     return ListView(
@@ -802,7 +985,9 @@ class DesktopNotebooksView extends StatelessWidget {
               ),
             ),
             OutlinedButton.icon(
-              onPressed: loading ? null : () => context.push(AppRoutes.mockCollectionNew),
+              onPressed: loading || publishedMode
+                  ? null
+                  : () => context.push(AppRoutes.mockCollectionNew),
               icon: const Icon(Icons.add),
               label: Text(strings.mockNotebookAdd),
             ),
@@ -852,10 +1037,14 @@ class DesktopNotebooksView extends StatelessWidget {
         const SizedBox(height: 8),
         if (loading)
           const Center(child: CircularProgressIndicator())
-        else if (items.isEmpty)
+        else if (items.isEmpty && showEmpty)
           HarukaEmpty(
-            title: strings.mockNotebookEmptyTitle,
-            message: strings.mockNotebookEmptyHint,
+            title: publishedMode && emptyCatalog
+                ? strings.mockNotebookNoCollections
+                : strings.mockNotebookEmptyTitle,
+            message: publishedMode && emptyCatalog
+                ? strings.mockNotebookNoCollectionsHint
+                : strings.mockNotebookEmptyHint,
           ),
         if (!loading)
           HarukaSurface(
@@ -881,7 +1070,7 @@ class DesktopCollectionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return InkWell(
+    final tile = InkWell(
       onTap: () => item.kind == CollectionKind.word
           ? showWordDetail(context, item.id)
           : showCollectionDetail(context, item.id),
@@ -948,7 +1137,8 @@ class DesktopCollectionRow extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             const Icon(Icons.chevron_right, size: 17),
-            if (item.kind == CollectionKind.word) ...[
+            if (item.kind == CollectionKind.word &&
+                ReferenceFeatureScope.maybeOf(context) == null) ...[
               const SizedBox(width: 12),
               IconButton(
                 tooltip: AppLocalizations.of(context).mockNotebookReadNamed(item.displayText),
@@ -964,5 +1154,8 @@ class DesktopCollectionRow extends StatelessWidget {
         ),
       ),
     );
+    return ReferenceFeatureScope.maybeOf(context) == null
+        ? tile
+        : Identified(id: UiTestIds.referenceCollectionRow(item.id), merge: true, child: tile);
   }
 }

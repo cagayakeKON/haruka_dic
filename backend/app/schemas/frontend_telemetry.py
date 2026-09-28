@@ -42,6 +42,16 @@ CLIENT_EVENTS = frozenset(
         "http.completed",
         "http.failed",
         "telemetry.delivery.recovered",
+        "cache.read.hit",
+        "cache.read.miss",
+        "cache.validation",
+        "cache.invalidated",
+        "cache.cleared",
+        "cache.storage.degraded",
+        "cache.stale_response.discarded",
+        "cache.download",
+        "cache.evicted",
+        "schema.migration",
     }
 )
 ANONYMOUS_EVENTS = frozenset(
@@ -64,6 +74,16 @@ CLIENT_EVENT_ATTRIBUTES: dict[str, frozenset[str]] = {
     "http.completed": frozenset({"status_code", "duration_ms", "retry_count"}),
     "http.failed": frozenset({"status_code", "duration_ms", "retry_count", "error_category"}),
     "telemetry.delivery.recovered": frozenset({"dropped_count", "drop_reason"}),
+    "cache.read.hit": frozenset({"source"}),
+    "cache.read.miss": frozenset({"source"}),
+    "cache.validation": frozenset({"result"}),
+    "cache.invalidated": frozenset({"result"}),
+    "cache.cleared": frozenset({"result"}),
+    "cache.storage.degraded": frozenset({"reason"}),
+    "cache.stale_response.discarded": frozenset({"result"}),
+    "cache.download": frozenset({"result"}),
+    "cache.evicted": frozenset({"result"}),
+    "schema.migration": frozenset({"result"}),
 }
 
 
@@ -87,7 +107,31 @@ class TelemetryAttributes(ApiModel):
         ]
         | None
     ) = None
-    result: Literal["success", "failure", "cancelled", "denied", "hit", "miss"] | None = None
+    result: (
+        Literal[
+            "success",
+            "failure",
+            "cancelled",
+            "denied",
+            "hit",
+            "miss",
+            "same",
+            "changed",
+            "unavailable",
+        ]
+        | None
+    ) = None
+    source: Literal["network", "memory", "disk"] | None = None
+    reason: (
+        Literal[
+            "writer_unavailable",
+            "browser_storage_unsafe",
+            "quota_exceeded",
+            "audio_unavailable",
+            "invalid_payload",
+        ]
+        | None
+    ) = None
     error_category: (
         Literal[
             "authentication",

@@ -25,6 +25,22 @@
       "retryable": false
     },
     {
+      "code": "AUTH_SCOPE_CHANGED",
+      "details_kind": null,
+      "http_status": 409,
+      "message": "登录身份已变化，请重新确认",
+      "message_args": {},
+      "retryable": false
+    },
+    {
+      "code": "AUTH_SCOPE_REQUIRED",
+      "details_kind": null,
+      "http_status": 409,
+      "message": "请更新应用后重新登录",
+      "message_args": {},
+      "retryable": false
+    },
+    {
       "code": "BAD_REQUEST",
       "details_kind": null,
       "http_status": 400,

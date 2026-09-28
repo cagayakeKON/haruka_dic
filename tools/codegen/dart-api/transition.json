@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "reviewed-handwritten-transition",
-  "reviewed_schemas_sha256": "337658e2dec3edac8004f284eb6da0e8bf32762a3630147477533f3ce3ed4dcd",
+  "reviewed_schemas_sha256": "c3a0f594d0e7d3c95dc3d6e031947f52f7cfc7c35255ded6d4880037d3a48505",
   "consumer": "frontend/lib/core/api",
   "compatibility_fixture": "tools/codegen/dart-api/fixtures",
   "expires_before": "B2"

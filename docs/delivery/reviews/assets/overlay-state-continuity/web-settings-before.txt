@@ -1,0 +1,13 @@
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/settings/security".
+1 AXWebArea Haruka, URL: 127.0.0.1:8772/mock/settings/security
+	2 container
+		3 container flt-semantic-node-342
+			4 button 返回, ID: flt-semantic-node-343
+			5 text 安全与账号
+			6 container Description: 个人资料 修改密码 当前设备会话 本机 · 已登录, ID: flt-semantic-node-346
+				7 button 个人资料, ID: flt-semantic-node-347
+				8 button 修改密码, ID: flt-semantic-node-348
+				9 button 查看会话, ID: flt-semantic-node-349
+				10 button 退出登录, ID: flt-semantic-node-350
+
+The focused UI element is 4 button 返回, ID: flt-semantic-node-343

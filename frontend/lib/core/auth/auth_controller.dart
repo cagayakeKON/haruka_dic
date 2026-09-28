@@ -26,6 +26,13 @@ enum AuthPhase { starting, anonymous, pendingEmail, authenticated, unavailable }
 final class AuthController extends ChangeNotifier {
   AuthController(this.repository, this.config, {CredentialVault? vault, AuthSync? sync})
     : _vault = vault ?? CredentialVault(config.instanceId, 'client') {
+    repository.api.onSessionBindingLost = () {
+      if (_disposed) return;
+      ++_epoch;
+      _clearMemory();
+      _setPhase(AuthPhase.starting);
+      unawaited(start(admin: _preferredAdmin));
+    };
     _sync =
         sync ??
         AuthSync(config.instanceId, (event) {
@@ -67,6 +74,8 @@ final class AuthController extends ChangeNotifier {
   AuthPhase get phase => _phase;
   AuthPolicy? get policy => _policy;
   AccessRead? get access => _access;
+  Stopwatch? _accessValidationAge;
+  Timer? _accessDeadline;
   bool get admin => _admin;
   bool get isAuthenticated => _phase == AuthPhase.authenticated && _access != null;
   int get actionEpoch => _epoch;
@@ -313,9 +322,88 @@ final class AuthController extends ChangeNotifier {
       throw const ApiFailure(code: 'INSTANCE_MISMATCH');
     }
     _access = access;
+    _accessValidationAge = Stopwatch()..start();
+    _accessDeadline?.cancel();
+    _accessDeadline = Timer(const Duration(seconds: 30), () {
+      if (!_disposed && _access != null) _setPhase(AuthPhase.unavailable);
+    });
     _sessionRef = access.sessionRef;
     _admin = admin;
+    repository.api.bindConfirmedAccess(access);
     _setPhase(AuthPhase.authenticated);
+  }
+
+  /// Periodic foreground identity check. A missing successful check for thirty
+  /// seconds closes private UI; a later successful access may reopen it.
+  Future<bool> verifyCurrentAccess() async {
+    final prior = _access;
+    final session = _sessionRef;
+    final captured = _epoch;
+    if (prior == null || session == null || _disposed) return false;
+    try {
+      late AccessRead active;
+      try {
+        active = await repository.access(admin: _admin, headers: _readHeaders());
+      } on ApiFailure catch (error) {
+        if (error.code != 'ACCESS_EXPIRED' || config.platform == AppPlatform.web) rethrow;
+        await _refreshNativeSingleFlight();
+        if (_disposed || captured != _epoch) return false;
+        active = await repository.access(admin: _admin, headers: _readHeaders());
+      }
+      if (_disposed || captured != _epoch) return false;
+      if (active.sessionRef != session || active.userId != prior.userId) {
+        final wasAdmin = _admin;
+        _clearMemory();
+        _setPhase(AuthPhase.unavailable);
+        unawaited(start(admin: wasAdmin));
+        return false;
+      }
+      _acceptAccess(active, admin: _admin);
+      return true;
+    } on ApiFailure catch (error) {
+      if (!_disposed &&
+          captured == _epoch &&
+          const {
+            'AUTH_REQUIRED',
+            'ACCESS_EXPIRED',
+            'SESSION_REVOKED',
+            'SESSION_INVALID',
+            'AUTH_SCOPE_CHANGED',
+            'PERMISSION_DENIED',
+          }.contains(error.code)) {
+        _setPhase(AuthPhase.unavailable);
+        if (error.code == 'AUTH_SCOPE_CHANGED' || error.code == 'SESSION_INVALID') {
+          final wasAdmin = _admin;
+          _clearMemory();
+          unawaited(start(admin: wasAdmin));
+        }
+      }
+      return false;
+    } on Object {
+      if (!_disposed &&
+          captured == _epoch &&
+          (_accessValidationAge?.elapsed ?? Duration.zero) >= const Duration(seconds: 30)) {
+        _setPhase(AuthPhase.unavailable);
+      }
+      return false;
+    }
+  }
+
+  void pauseAccessDeadline() => _accessDeadline?.cancel();
+
+  void resumeAccessDeadline() {
+    if (_disposed || _access == null) return;
+    _accessDeadline?.cancel();
+    final remaining =
+        const Duration(seconds: 30) -
+        (_accessValidationAge?.elapsed ?? const Duration(seconds: 30));
+    if (remaining <= Duration.zero) {
+      _setPhase(AuthPhase.unavailable);
+    } else {
+      _accessDeadline = Timer(remaining, () {
+        if (!_disposed && _access != null) _setPhase(AuthPhase.unavailable);
+      });
+    }
   }
 
   Future<bool> login(
@@ -413,7 +501,10 @@ final class AuthController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _accessDeadline?.cancel();
     ++_epoch;
+    repository.api.onSessionBindingLost = null;
+    repository.api.clearSessionBinding();
     _sync.dispose();
     super.dispose();
   }
@@ -423,6 +514,7 @@ final class AuthController extends ChangeNotifier {
     final audienceAdmin = _admin;
     final headers = _writeHeaders();
     final captured = _epoch;
+    final requestBinding = repository.api.sessionBinding;
     if (!isAuthenticated || id == null) {
       await logout();
       return;
@@ -432,24 +524,31 @@ final class AuthController extends ChangeNotifier {
       _lastLocalSignOutEpoch = captured;
       _lastLocalSignOutSession = id;
     }
-    await _identityWrite(() async {
-      await repository.verifyInstance();
-      if (config.platform == AppPlatform.web) {
-        // A different tab may have signed in while this operation waited for
-        // the cross-tab lock. Never log out that newer cookie identity.
-        final current = await repository.access(admin: audienceAdmin, headers: const {});
-        if (current.sessionRef != id) {
-          _sync.setLocallySignedOut(audienceAdmin ? 'admin' : 'client', false);
-          return;
+    if (requestBinding == null) throw const ApiFailure(code: 'SESSION_INVALID');
+    await repository.api.withRetiredSignOutBinding(
+      requestBinding,
+      () => _identityWrite(() async {
+        await repository.verifyInstance();
+        if (config.platform == AppPlatform.web) {
+          // A different tab may have signed in while this operation waited for
+          // the cross-tab lock. Never log out that newer cookie identity.
+          final current = await repository.access(admin: audienceAdmin, headers: const {});
+          if (current.sessionRef != id) {
+            _sync.setLocallySignedOut(audienceAdmin ? 'admin' : 'client', false);
+            return;
+          }
+          await repository.logout(admin: audienceAdmin, headers: headers, operationId: operationId);
+        } else {
+          await repository.revoke(id, admin: false, headers: headers, operationId: operationId);
         }
-        await repository.logout(admin: audienceAdmin, headers: headers, operationId: operationId);
-      } else {
-        await repository.revoke(id, admin: false, headers: headers, operationId: operationId);
-      }
-    });
+      }),
+    );
   }
 
   void _clearMemory() {
+    _accessDeadline?.cancel();
+    _accessValidationAge = null;
+    repository.api.clearSessionBinding();
     _accessToken = null;
     _continuationToken = null;
     _continuationExpiresAt = null;

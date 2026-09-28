@@ -1,0 +1,46 @@
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/notebooks".
+1 AXWebArea Haruka, URL: 127.0.0.1:8772/mock/notebooks
+	2 container
+		3 container flt-semantic-node-2
+			4 container h
+				12 text h
+			13 text haruka
+			14 text 日语
+			5 button 站内消息, ID: flt-semantic-node-12
+			6 button 材料库, ID: flt-semantic-node-5
+			7 button 单词本, ID: flt-semantic-node-6
+			8 button 查询, ID: flt-semantic-node-7
+			9 button 练习, ID: flt-semantic-node-8
+			10 button 我的, ID: flt-semantic-node-9
+			11 button 小 小遥 日语, ID: flt-semantic-node-10
+			15 container flt-semantic-node-119
+				16 container Description: 单词本, ID: flt-semantic-node-86
+					17 button 添加, ID: flt-semantic-node-87
+				18 container flt-semantic-node-89
+					19 button 全部收藏, ID: flt-semantic-node-90
+					20 button 每日单词, ID: flt-semantic-node-91
+				21 text field (settable) 搜索收藏内容
+				22 container flt-semantic-node-95
+					23 button 全部, ID: flt-semantic-node-96
+					24 button 单词, ID: flt-semantic-node-97
+					25 button 短语, ID: flt-semantic-node-98
+					26 button 语法, ID: flt-semantic-node-99
+					27 button 句子, ID: flt-semantic-node-100
+					28 button 摘录, ID: flt-semantic-node-101
+					29 button 习题, ID: flt-semantic-node-102
+				30 container Description: 6 条收藏, ID: flt-semantic-node-104
+					31 button 生成 AI 习题, ID: flt-semantic-node-105
+					32 button 单词 CSV, ID: flt-semantic-node-106
+				33 container flt-semantic-node-108
+					34 container Description: そっと sotto 轻轻地；悄悄地 单词, ID: flt-semantic-node-109
+						35 button 朗读そっと, ID: flt-semantic-node-110
+					36 container Description: 微笑む ほほえむ 微笑 单词, ID: flt-semantic-node-111
+						37 button 朗读微笑む, ID: flt-semantic-node-112
+					38 container Description: 穏やか おだやか 平静的；温和的 单词, ID: flt-semantic-node-113
+						39 button 朗读穏やか, ID: flt-semantic-node-114
+					40 container Description: glimmer /ˈɡlɪmər/ 微光；一丝希望 单词, ID: flt-semantic-node-115
+						41 button 朗读glimmer, ID: flt-semantic-node-116
+					42 button に / へ 目的地与移动方向 语法, ID: flt-semantic-node-117
+					43 button 夏の風がそっと頬に触れた。 夏风轻轻拂过脸颊。 句子, ID: flt-semantic-node-118
+
+The focused UI element is 4 container h

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/routes.dart';
 import '../../core/api/responses.dart';
 import '../../core/auth/email_action_link.dart';
 import '../../generated/api_catalog.dart';
@@ -65,7 +66,9 @@ class _EmailActionPageState extends State<EmailActionPage> {
         tokenFromPastedActionLink(
           pasted: _link.text,
           trustedBase: widget.trustedActionBase,
-          actionPath: widget.kind == EmailActionKind.verify ? '/verify-email' : '/reset-password',
+          actionPath: widget.kind == EmailActionKind.verify
+              ? AppRoutes.verifyEmail
+              : AppRoutes.resetPassword,
         );
     if (token == null) {
       setState(() => _error = strings.authInvalidActionLink);
@@ -108,7 +111,7 @@ class _EmailActionPageState extends State<EmailActionPage> {
       id: reset ? UiTestIds.recoveryCompletePage : UiTestIds.verificationPage,
       title: reset ? strings.authResetTitle : strings.authVerifyTitle,
       description: reset ? strings.authResetHint : strings.authVerifyHint,
-      backLocation: '/login',
+      backLocation: AppRoutes.login,
       child: AutofillGroup(
         child: Form(
           key: _form,

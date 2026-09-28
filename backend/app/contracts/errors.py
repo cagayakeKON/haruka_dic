@@ -13,6 +13,8 @@ class ErrorCode(StrEnum):
     ACCESS_EXPIRED = "ACCESS_EXPIRED"
     SESSION_REVOKED = "SESSION_REVOKED"
     SESSION_INVALID = "SESSION_INVALID"
+    AUTH_SCOPE_REQUIRED = "AUTH_SCOPE_REQUIRED"
+    AUTH_SCOPE_CHANGED = "AUTH_SCOPE_CHANGED"
     PERMISSION_DENIED = "PERMISSION_DENIED"
     CSRF_FAILED = "CSRF_FAILED"
     RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
@@ -50,6 +52,8 @@ ERRORS = MappingProxyType(
         ErrorCode.ACCESS_EXPIRED: ErrorDefinition(401, "登录凭据已过期"),
         ErrorCode.SESSION_REVOKED: ErrorDefinition(401, "登录已失效"),
         ErrorCode.SESSION_INVALID: ErrorDefinition(401, "登录已失效"),
+        ErrorCode.AUTH_SCOPE_REQUIRED: ErrorDefinition(409, "请更新应用后重新登录"),
+        ErrorCode.AUTH_SCOPE_CHANGED: ErrorDefinition(409, "登录身份已变化，请重新确认"),
         ErrorCode.PERMISSION_DENIED: ErrorDefinition(403, "没有操作权限"),
         ErrorCode.CSRF_FAILED: ErrorDefinition(403, "请求验证失败"),
         ErrorCode.RESOURCE_NOT_FOUND: ErrorDefinition(404, "未找到资源"),

@@ -7,8 +7,11 @@ import 'app/platform_routes.dart';
 import 'core/config/app_config.dart';
 import 'core/auth/email_action_link.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
   // Remove a one-time mail secret before the router, telemetry, or error UI starts.
   final emailAction = captureEmailActionLink();
   configureUrlStrategy();

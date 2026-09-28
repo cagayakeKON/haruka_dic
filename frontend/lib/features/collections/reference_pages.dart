@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/routes.dart';
+import '../../app/motion.dart';
 import '../../core/api/learning_models.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../generated/api_catalog.dart';
@@ -13,11 +15,11 @@ import '../../shared/identified.dart';
 import 'reference_controller.dart';
 import 'reference_selection.dart';
 
-const _ink = Color(0xff152b42);
-const _muted = Color(0xff58697b);
-const _blue = Color(0xff2457ed);
-const _softBlue = Color(0xffe8efff);
-const _line = Color(0xffdde5ee);
+Color _inkColor(BuildContext context) => Theme.of(context).colorScheme.onSurface;
+Color _mutedColor(BuildContext context) => Theme.of(context).colorScheme.onSurfaceVariant;
+Color _blueColor(BuildContext context) => Theme.of(context).colorScheme.primary;
+Color _softBlueColor(BuildContext context) => Theme.of(context).colorScheme.primaryContainer;
+Color _lineColor(BuildContext context) => Theme.of(context).colorScheme.outline;
 bool _compact(BuildContext context) => MediaQuery.sizeOf(context).width < 900;
 
 class ReferenceMaterialsPage extends ConsumerStatefulWidget {
@@ -69,7 +71,7 @@ class _ReferenceMaterialsPageState extends ConsumerState<ReferenceMaterialsPage>
           if (_reading) {
             setState(() => _reading = false);
           } else {
-            context.go('/account');
+            context.go(AppRoutes.account);
           }
         },
         maxWidth: _reading ? 1840 : 1000,
@@ -102,8 +104,8 @@ class _MaterialList extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              '小说 · ${state.materials.length} 份已发布材料',
-              style: const TextStyle(color: _muted, fontSize: 13),
+              strings.referencePublishedNovelCount(state.materials.length),
+              style: TextStyle(color: _mutedColor(context), fontSize: 13),
             ),
           ),
           if (state.canListCollections) _CollectionsLink(strings: strings),
@@ -150,12 +152,14 @@ class _MaterialRow extends StatelessWidget {
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
-    final initial = material.title.isEmpty ? '文' : String.fromCharCode(material.title.runes.first);
+    final initial = material.title.isEmpty
+        ? AppLocalizations.of(context).referenceCoverFallback
+        : String.fromCharCode(material.title.runes.first);
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: _line),
+        side: BorderSide(color: _lineColor(context)),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -168,10 +172,13 @@ class _MaterialRow extends StatelessWidget {
                 width: 58,
                 height: 76,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: _softBlue, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(
+                  color: _softBlueColor(context),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: Text(
                   initial,
-                  style: const TextStyle(color: _blue, fontFamily: 'serif', fontSize: 27),
+                  style: TextStyle(color: _blueColor(context), fontFamily: 'serif', fontSize: 27),
                 ),
               ),
               const SizedBox(width: 16),
@@ -183,20 +190,26 @@ class _MaterialRow extends StatelessWidget {
                       material.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _ink,
+                      style: TextStyle(
+                        color: _inkColor(context),
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Text('小说 · $language', style: const TextStyle(color: _muted, fontSize: 13)),
+                    Text(
+                      AppLocalizations.of(context).referenceNovelLanguage(language),
+                      style: TextStyle(color: _mutedColor(context), fontSize: 13),
+                    ),
                     const SizedBox(height: 8),
-                    const Text('可阅读', style: TextStyle(color: _muted, fontSize: 12)),
+                    Text(
+                      AppLocalizations.of(context).referenceReadable,
+                      style: TextStyle(color: _mutedColor(context), fontSize: 12),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: _muted),
+              Icon(Icons.chevron_right, color: _mutedColor(context)),
             ],
           ),
         ),
@@ -222,7 +235,9 @@ class _ReaderView extends StatelessWidget {
     final result = state.resolved == null
         ? null
         : AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
+            duration: HarukaMotion.reduced(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 280),
             transitionBuilder: (child, animation) => FadeTransition(
               opacity: animation,
               child: SlideTransition(
@@ -252,7 +267,7 @@ class _ReaderView extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 16),
             child: Row(
               children: [
-                const _Pill(label: '阅读', icon: Icons.menu_book_outlined),
+                _Pill(label: strings.referenceReading, icon: Icons.menu_book_outlined),
                 const Spacer(),
                 if (state.canListCollections) _CollectionsLink(strings: strings),
               ],
@@ -291,31 +306,38 @@ class _ReaderView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _Pill(label: '小说', icon: Icons.menu_book_outlined),
+                _Pill(label: strings.referenceNovel, icon: Icons.menu_book_outlined),
                 const SizedBox(height: 20),
                 Text(
                   material.title,
-                  style: const TextStyle(color: _ink, fontSize: 18, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: _inkColor(context),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   material.language == 'ja' ? strings.referenceJapanese : strings.referenceEnglish,
-                  style: const TextStyle(color: _muted, fontSize: 13),
+                  style: TextStyle(color: _mutedColor(context), fontSize: 13),
                 ),
                 const SizedBox(height: 28),
-                const Text('已发布章节', style: TextStyle(color: _muted, fontSize: 12)),
+                Text(
+                  strings.referencePublishedChapters,
+                  style: TextStyle(color: _mutedColor(context), fontSize: 12),
+                ),
                 const SizedBox(height: 10),
                 if (chapter != null)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _softBlue,
+                      color: _softBlueColor(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       chapter.title,
-                      style: const TextStyle(color: _ink, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: _inkColor(context), fontWeight: FontWeight.w600),
                     ),
                   ),
                 const SizedBox(height: 20),
@@ -347,26 +369,32 @@ class _ReadingPaper extends StatelessWidget {
       decoration: compact
           ? null
           : BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: _line),
+              border: Border.all(color: _lineColor(context)),
             ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('已发布章节', style: TextStyle(color: _muted, fontSize: 12)),
+          Text(
+            strings.referencePublishedChapters,
+            style: TextStyle(color: _mutedColor(context), fontSize: 12),
+          ),
           const SizedBox(height: 10),
           Text(
             chapter.title,
             style: TextStyle(
-              color: _ink,
+              color: _inkColor(context),
               fontFamily: 'serif',
               fontSize: compact ? 25 : 30,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 14),
-          Text(strings.referenceSelectHint, style: const TextStyle(color: _muted, fontSize: 13)),
+          Text(
+            strings.referenceSelectHint,
+            style: TextStyle(color: _mutedColor(context), fontSize: 13),
+          ),
           const SizedBox(height: 22),
           for (final block in chapter.blocks)
             Padding(
@@ -377,7 +405,7 @@ class _ReadingPaper extends StatelessWidget {
                   block.text,
                   key: ValueKey(block.id),
                   style: TextStyle(
-                    color: _ink,
+                    color: _inkColor(context),
                     fontFamily: 'serif',
                     fontSize: compact ? 19 : 20,
                     height: 1.95,
@@ -394,27 +422,32 @@ class _ReadingPaper extends StatelessWidget {
                 ),
               ),
             ),
-          const Divider(color: _line),
+          Divider(color: _lineColor(context)),
           const SizedBox(height: 12),
           if (state.selectedSelection != null)
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: _softBlue, borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                color: _softBlueColor(context),
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Text(
                 state.selectedSelection!.locator.quote,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: _ink, fontWeight: FontWeight.w600),
+                style: TextStyle(color: _inkColor(context), fontWeight: FontWeight.w600),
               ),
             ),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  state.selectedSelection == null ? strings.referenceSelectHint : '已选原文',
-                  style: const TextStyle(color: _muted, fontSize: 12),
+                  state.selectedSelection == null
+                      ? strings.referenceSelectHint
+                      : strings.referenceSelectedSource,
+                  style: TextStyle(color: _mutedColor(context), fontSize: 12),
                 ),
               ),
               const SizedBox(width: 12),
@@ -425,7 +458,7 @@ class _ReadingPaper extends StatelessWidget {
                   onPressed: state.selectedBlock == null || state.busy || !state.canResolve
                       ? null
                       : state.resolve,
-                  icon: const Icon(Icons.search, size: 18),
+                  icon: Icon(Icons.search, size: 18),
                   label: Text(strings.referenceQuery),
                 ),
               ),
@@ -460,7 +493,7 @@ class _WordCardPanel extends StatelessWidget {
                 id: UiTestIds.referenceSavedState,
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, size: 18, color: _blue),
+                    Icon(Icons.check_circle, size: 18, color: _blueColor(context)),
                     const SizedBox(width: 8),
                     Expanded(child: Text(strings.referenceSaved)),
                   ],
@@ -520,9 +553,11 @@ class _CollectionsPageState extends ConsumerState<CollectionsPage> {
       unawaited(
         showModalBottomSheet<void>(
           context: context,
+          useRootNavigator: true,
+          sheetAnimationStyle: HarukaMotion.sheetStyle(context),
           isScrollControlled: true,
           showDragHandle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           constraints: const BoxConstraints(maxWidth: 560),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -537,11 +572,12 @@ class _CollectionsPageState extends ConsumerState<CollectionsPage> {
       );
     } else {
       unawaited(
-        showDialog<void>(
+        showHarukaDialog<void>(
           context: context,
+          animationStyle: HarukaMotion.dialogStyle(context),
           builder: (dialogContext) => AlertDialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            surfaceTintColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
             contentPadding: const EdgeInsets.all(28),
             content: SizedBox(
@@ -563,7 +599,7 @@ class _CollectionsPageState extends ConsumerState<CollectionsPage> {
       child: _ReferenceScaffold(
         title: strings.referenceCollectionsTitle,
         backTooltip: strings.authBackToAccount,
-        onBack: () => context.go('/account'),
+        onBack: () => context.go(AppRoutes.account),
         maxWidth: 1020,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -577,12 +613,12 @@ class _CollectionsPageState extends ConsumerState<CollectionsPage> {
             ],
             Row(
               children: [
-                const _Pill(label: '全部收藏', icon: Icons.bookmarks_outlined),
+                _Pill(label: strings.referenceAllCollections, icon: Icons.bookmarks_outlined),
                 const Spacer(),
                 if (state.collectionsLoaded)
                   Text(
-                    '${state.collections.length} 条收藏',
-                    style: const TextStyle(color: _muted, fontSize: 13),
+                    strings.referenceCollectionCount(state.collections.length),
+                    style: TextStyle(color: _mutedColor(context), fontSize: 13),
                   ),
               ],
             ),
@@ -595,15 +631,15 @@ class _CollectionsPageState extends ConsumerState<CollectionsPage> {
                 id: UiTestIds.referenceCollectionsLoaded,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: _line),
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border.all(color: _lineColor(context)),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
                       for (var index = 0; index < state.collections.length; index++) ...[
-                        if (index > 0) const Divider(height: 1, color: _line),
+                        if (index > 0) Divider(height: 1, color: _lineColor(context)),
                         Identified(
                           id: UiTestIds.referenceCollectionRow(state.collections[index].id),
                           merge: true,
@@ -618,7 +654,7 @@ class _CollectionsPageState extends ConsumerState<CollectionsPage> {
                           padding: const EdgeInsets.all(28),
                           child: Text(
                             strings.referenceNoCollections,
-                            style: const TextStyle(color: _muted),
+                            style: TextStyle(color: _mutedColor(context)),
                           ),
                         ),
                     ],
@@ -648,7 +684,7 @@ class _CollectionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = _compact(context);
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -659,8 +695,11 @@ class _CollectionRow extends StatelessWidget {
                 width: 34,
                 height: 34,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: _softBlue, borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.menu_book_outlined, size: 18, color: _blue),
+                decoration: BoxDecoration(
+                  color: _softBlueColor(context),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.menu_book_outlined, size: 18, color: _blueColor(context)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -674,12 +713,12 @@ class _CollectionRow extends StatelessWidget {
                       children: [
                         Text(
                           collection.displayText,
-                          style: const TextStyle(color: _ink, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: _inkColor(context), fontWeight: FontWeight.w700),
                         ),
                         if (collection.payload.reading != null)
                           Text(
                             collection.payload.reading!,
-                            style: const TextStyle(color: _muted, fontSize: 12),
+                            style: TextStyle(color: _mutedColor(context), fontSize: 12),
                           ),
                       ],
                     ),
@@ -688,7 +727,7 @@ class _CollectionRow extends StatelessWidget {
                         collection.payload.contextMeaning,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: _muted, fontSize: 12),
+                        style: TextStyle(color: _mutedColor(context), fontSize: 12),
                       ),
                   ],
                 ),
@@ -700,13 +739,16 @@ class _CollectionRow extends StatelessWidget {
                     collection.payload.contextMeaning,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: _muted, fontSize: 13),
+                    style: TextStyle(color: _mutedColor(context), fontSize: 13),
                   ),
                 ),
               const SizedBox(width: 10),
-              const Text('单词', style: TextStyle(color: _muted, fontSize: 11)),
+              Text(
+                AppLocalizations.of(context).referenceWord,
+                style: TextStyle(color: _mutedColor(context), fontSize: 11),
+              ),
               const SizedBox(width: 6),
-              const Icon(Icons.chevron_right, size: 20, color: _blue),
+              Icon(Icons.chevron_right, size: 20, color: _blueColor(context)),
             ],
           ),
         ),
@@ -728,14 +770,14 @@ class _CollectionDetail extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              '收藏详情',
+              strings.referenceCollectionDetail,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
             tooltip: strings.referenceClose,
-            icon: const Icon(Icons.close),
+            icon: Icon(Icons.close),
           ),
         ],
       ),
@@ -774,19 +816,19 @@ class _LearningCard extends StatelessWidget {
       children: [
         Container(
           padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 22, vertical: 13),
-          color: _softBlue,
+          color: _softBlueColor(context),
           child: Row(
             children: [
-              const Icon(Icons.menu_book_outlined, size: 19, color: _blue),
+              Icon(Icons.menu_book_outlined, size: 19, color: _blueColor(context)),
               const SizedBox(width: 8),
-              const Text(
-                '单词',
-                style: TextStyle(color: _blue, fontWeight: FontWeight.w700),
+              Text(
+                strings.referenceWord,
+                style: TextStyle(color: _blueColor(context), fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               Text(
                 language == 'ja' ? strings.referenceJapanese : strings.referenceEnglish,
-                style: const TextStyle(color: _muted, fontSize: 12),
+                style: TextStyle(color: _mutedColor(context), fontSize: 12),
               ),
             ],
           ),
@@ -799,7 +841,7 @@ class _LearningCard extends StatelessWidget {
               Text(
                 payload.term,
                 style: TextStyle(
-                  color: _ink,
+                  color: _inkColor(context),
                   fontSize: compact ? 27 : 30,
                   fontWeight: FontWeight.w700,
                 ),
@@ -811,7 +853,10 @@ class _LearningCard extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (payload.reading != null)
-                      Text(payload.reading!, style: const TextStyle(color: _muted, fontSize: 14)),
+                      Text(
+                        payload.reading!,
+                        style: TextStyle(color: _mutedColor(context), fontSize: 14),
+                      ),
                     if (payload.partOfSpeech.isNotEmpty) _Pill(label: payload.partOfSpeech),
                   ],
                 ),
@@ -820,23 +865,26 @@ class _LearningCard extends StatelessWidget {
               Container(
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: _softBlue,
+                  color: _softBlueColor(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                  decoration: const BoxDecoration(
-                    border: Border(left: BorderSide(color: _blue, width: 3)),
+                  decoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: _blueColor(context), width: 3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('释义', style: TextStyle(color: _muted, fontSize: 12)),
+                      Text(
+                        strings.referenceMeaning,
+                        style: TextStyle(color: _mutedColor(context), fontSize: 12),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         payload.contextMeaning,
-                        style: const TextStyle(
-                          color: _ink,
+                        style: TextStyle(
+                          color: _inkColor(context),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -849,13 +897,16 @@ class _LearningCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   '${strings.referenceOtherMeanings}：${payload.otherMeanings.join('；')}',
-                  style: const TextStyle(color: _muted, fontSize: 13),
+                  style: TextStyle(color: _mutedColor(context), fontSize: 13),
                 ),
               ],
               const SizedBox(height: 22),
-              const Divider(height: 1, color: _line),
+              Divider(height: 1, color: _lineColor(context)),
               const SizedBox(height: 18),
-              Text(strings.referenceExamples, style: const TextStyle(color: _muted, fontSize: 12)),
+              Text(
+                strings.referenceExamples,
+                style: TextStyle(color: _mutedColor(context), fontSize: 12),
+              ),
               const SizedBox(height: 10),
               for (var index = 0; index < payload.examples.length; index++)
                 Padding(
@@ -865,7 +916,7 @@ class _LearningCard extends StatelessWidget {
                     children: [
                       Text(
                         (index + 1).toString().padLeft(2, '0'),
-                        style: const TextStyle(color: _blue, fontSize: 12),
+                        style: TextStyle(color: _blueColor(context), fontSize: 12),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -874,12 +925,12 @@ class _LearningCard extends StatelessWidget {
                           children: [
                             Text(
                               payload.examples[index].text,
-                              style: const TextStyle(color: _ink, height: 1.5),
+                              style: TextStyle(color: _inkColor(context), height: 1.5),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               payload.examples[index].meaning,
-                              style: const TextStyle(color: _muted, fontSize: 12),
+                              style: TextStyle(color: _mutedColor(context), fontSize: 12),
                             ),
                           ],
                         ),
@@ -889,9 +940,12 @@ class _LearningCard extends StatelessWidget {
                 ),
               if (sources.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const Divider(height: 1, color: _line),
+                Divider(height: 1, color: _lineColor(context)),
                 const SizedBox(height: 14),
-                Text(strings.referenceSource, style: const TextStyle(color: _muted, fontSize: 12)),
+                Text(
+                  strings.referenceSource,
+                  style: TextStyle(color: _mutedColor(context), fontSize: 12),
+                ),
                 const SizedBox(height: 6),
                 for (final source in sources)
                   Padding(
@@ -902,7 +956,7 @@ class _LearningCard extends StatelessWidget {
                         if (source.nodeTitle != null) source.nodeTitle!,
                         source.quote,
                       ].join(' · '),
-                      style: const TextStyle(color: _muted, fontSize: 13),
+                      style: TextStyle(color: _mutedColor(context), fontSize: 13),
                     ),
                   ),
               ],
@@ -912,9 +966,9 @@ class _LearningCard extends StatelessWidget {
         if (footer != null)
           Container(
             padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 24, vertical: 14),
-            decoration: const BoxDecoration(
-              color: Color(0xfff8faff),
-              border: Border(top: BorderSide(color: _line)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              border: Border(top: BorderSide(color: _lineColor(context))),
             ),
             child: footer,
           ),
@@ -923,11 +977,15 @@ class _LearningCard extends StatelessWidget {
     if (!framed) return ClipRRect(borderRadius: BorderRadius.circular(16), child: content);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xffc8d7ff)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25)),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(color: Color(0x12152b42), blurRadius: 22, offset: Offset(0, 10)),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: .07),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
@@ -943,14 +1001,20 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(color: _softBlue, borderRadius: BorderRadius.circular(8)),
+    decoration: BoxDecoration(
+      color: _softBlueColor(context),
+      borderRadius: BorderRadius.circular(8),
+    ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (icon != null) ...[Icon(icon, size: 16, color: _blue), const SizedBox(width: 6)],
+        if (icon != null) ...[
+          Icon(icon, size: 16, color: _blueColor(context)),
+          const SizedBox(width: 6),
+        ],
         Text(
           label,
-          style: const TextStyle(color: _blue, fontSize: 12, fontWeight: FontWeight.w600),
+          style: TextStyle(color: _blueColor(context), fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ],
     ),
@@ -965,8 +1029,8 @@ class _CollectionsLink extends StatelessWidget {
     id: UiTestIds.referenceOpenCollections,
     merge: true,
     child: TextButton.icon(
-      onPressed: () => context.go('/collections'),
-      icon: const Icon(Icons.bookmark_border, size: 18),
+      onPressed: () => context.go(AppRoutes.collections),
+      icon: Icon(Icons.bookmark_border, size: 18),
       label: Text(strings.referenceOpenCollections),
     ),
   );
@@ -985,13 +1049,13 @@ class _ErrorPanel extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xfffff4f1),
-          border: Border.all(color: const Color(0xfff1c5b9)),
+          color: Theme.of(context).colorScheme.errorContainer,
+          border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: .3)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, color: Color(0xffa74431)),
+            Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
             const SizedBox(width: 10),
             Expanded(child: Text(ApiCatalog.message(strings, state.error!.code))),
             if (retry != null)
@@ -1014,18 +1078,18 @@ class _EmptyPanel extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: _line),
+      border: Border.all(color: _lineColor(context)),
     ),
     child: Column(
       children: [
-        const Icon(Icons.menu_book_outlined, size: 28, color: _muted),
+        Icon(Icons.menu_book_outlined, size: 28, color: _mutedColor(context)),
         const SizedBox(height: 12),
         Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: _muted),
+          style: TextStyle(color: _mutedColor(context)),
         ),
       ],
     ),
@@ -1052,9 +1116,11 @@ class _ReferenceScaffold extends StatelessWidget {
     final compact = _compact(context);
     final plainReader = compact && plainCompactReader;
     return Scaffold(
-      backgroundColor: plainReader ? Colors.white : const Color(0xfff4f7fb),
+      backgroundColor: plainReader
+          ? Theme.of(context).colorScheme.surface
+          : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: plainReader ? Colors.white : null,
+        backgroundColor: plainReader ? Theme.of(context).colorScheme.surface : null,
         title: Text(
           title,
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: compact ? 19 : 17),
@@ -1062,11 +1128,7 @@ class _ReferenceScaffold extends StatelessWidget {
         leading: Identified(
           id: UiTestIds.referenceBackAccount,
           merge: true,
-          child: IconButton(
-            onPressed: onBack,
-            tooltip: backTooltip,
-            icon: const Icon(Icons.arrow_back),
-          ),
+          child: IconButton(onPressed: onBack, tooltip: backTooltip, icon: Icon(Icons.arrow_back)),
         ),
       ),
       body: SafeArea(

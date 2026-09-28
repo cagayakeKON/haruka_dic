@@ -4,7 +4,21 @@
 
 阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。[B1账号与收藏闭环](delivery/reviews/2026-09-26-b1-implementation.md)（含注册、邮箱激活和找回）已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。B2持久模型任务未实现。独立 [HTML原型](../prototype/README.md) 只提供视觉和内存交互示例，不计入正式应用验收。
 
-FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + Dio + Drift/SQLite及平台音频存储，统一读取、更新、跨端刷新、离线与清理；[校验契约](contracts/client-cache.md)和[设计审查](delivery/reviews/2026-09-26-frontend-cache.md)记录实施边界，尚未实现。
+FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + Dio + Drift/SQLite及平台音频存储，统一读取、更新、跨端刷新、离线与清理；[校验契约](contracts/client-cache.md)、[设计审查](delivery/reviews/2026-09-26-frontend-cache.md)、[前端缓存/UI测试用例](engineering/testing/frontend-cache-ui-cases.md)和[本轮手机/桌面实拍对照](delivery/reviews/2026-09-27-frontend-preview.md)记录实施边界。前端框架正在实现，不能据此认定服务端或完整闭环已交付。
+
+[缓存恢复修复记录](delivery/reviews/2026-09-27-cache-recovery-fixes.md)记录持久许可与代次恢复、设置草稿、通知刷新、音频配额和会话栅栏的局部修复；正式离线协议与音频页面接入仍按所属切片推进。
+
+[缓存完整审查与故障复现](delivery/reviews/2026-09-27-cache-comprehensive-review.md)保留修复前的判断及13项故障诊断证据；后续[现有缓存缺陷修复](delivery/reviews/2026-09-27-cache-defect-fixes.md)记录已修复行为、定点回归及浏览器检查。正式离线业务另行建设。
+
+[文本清理与音频收尾修复](delivery/reviews/2026-09-27-cache-audio-text-recovery.md)单独记录共享存储代次、音频预约与清退、恢复锁范围，以及在线正文补存的后续修复和实际验证。
+
+[精确版本、清理并发与休眠租期修复](delivery/reviews/2026-09-27-cache-version-lifecycle-fixes.md)记录精确读取隔离、清理收尾代次、同步快照及前后台离线许可的后续修复和相关验证。
+
+[当前前端预览的局部视觉整理](delivery/reviews/2026-09-27-frontend-visual-polish.md)记录以实际 Flutter Web/Android 画面为基线的材料库与单词本优化、定点测试及独立复核；这是预览界面检查，不代表正式业务验收。
+
+[手机材料库与 Android 本地消息摘要](delivery/reviews/2026-09-27-mobile-material-dialogs.md)记录当前预览材料列表、居中对话框和通知栏入口的局部改动、实拍与定点复核；后台推送及正式 M1 消息业务仍未交付。
+
+[弹层进出时的页面状态连续性](delivery/reviews/2026-09-27-overlay-state-continuity.md)记录材料、收藏、消息与查询页区分真实页面返回和对话框/菜单/底部弹层的局部修复、权限边界及 Web/Android 定点证据。
 
 ## 1. 按任务阅读
 
@@ -27,7 +41,7 @@ FCACHE1：[前端缓存机制](architecture/frontend-cache.md)选定Riverpod + D
 | 实现多单词本与自动掌握 | [单词本](modules/vocabulary-notebooks.md) | [学习证据](architecture/vocabulary-learning.md)、[AI习题](modules/ai-exercises.md)、[CSV](contracts/vocabulary-csv.md) |
 | 实现AI习题与错题库 | [AI习题与错题库](modules/ai-exercises.md) | [公共作答/评分](modules/vocabulary-practice.md)、[数据与任务](architecture/data-jobs.md)、[Agent运行层](architecture/agent-runtime.md) |
 | 初始化工程 | [脚手架](engineering/scaffold.md) | [项目结构](architecture/project-structure.md)、[B0/B1/B2](delivery/milestones/scaffold.md)、[开发指南](engineering/development.md) |
-| 编写代码与测试 | [代码规范](engineering/coding.md)、[Lint](engineering/lint.md) | [测试策略](engineering/testing/strategy.md)、[前端E2E](engineering/testing/frontend-e2e.md)、[测试数据](engineering/testing/data.md) |
+| 编写代码与测试 | [代码规范](engineering/coding.md)、[Lint](engineering/lint.md) | [测试策略](engineering/testing/strategy.md)、[前端缓存/UI测试用例](engineering/testing/frontend-cache-ui-cases.md)、[前端E2E](engineering/testing/frontend-e2e.md)、[测试数据](engineering/testing/data.md) |
 | 开发Flutter页面或移动端适配 | [Flutter开发与适配规范](engineering/flutter.md) | [项目结构](architecture/project-structure.md)、[前端测试与适配矩阵](engineering/testing/frontend-e2e.md) |
 | 开发后端模块或统一接口返回 | [后端开发手册](engineering/backend.md)、[统一返回/异常/多语言](contracts/api-responses.md) | [API总则](contracts/api.md)、[项目结构](architecture/project-structure.md)、[后端测试写法](engineering/testing/strategy.md) |
 | 设计表、隔离查询或修改数据库 | [数据库设计书](architecture/database-design.md)、[表名与关系清单](architecture/database-relations.md)、[全表收敛清单](architecture/database-convergence.md)、[数据库规范](engineering/database.md) | [Redis字段](architecture/redis-design.md)、[数据与任务](architecture/data-jobs.md)、[认证隔离](architecture/authentication.md)、[迁移操作](operations/deployment-recovery.md) |
@@ -72,6 +86,7 @@ Agent先读根 [AGENTS.md](../AGENTS.md)。开始一项功能无需从头阅读�
 
 ## 4. 决策、进度与历史
 
+- [当前 Flutter 双端视觉优化](delivery/reviews/2026-09-27-frontend-visual-refinement.md)：以实际前端为基线，覆盖五个主页面、业务流程、弹层、稳定导航外壳及内容转场；实施和验证状态在记录内单独标注。
 - [当前决策](decisions/README.md)：区分用户已确认、推荐设计与待原型验证的选择。
 - [待决事项](decisions/pending.md)：只在这里维护问题状态、影响及最晚锁定点，模块通过OPEN编号引用。
 - [路线图](delivery/roadmap.md) 与 [脚手架里程碑](delivery/milestones/scaffold.md)：只按实际工程证据更新状态。

@@ -80,8 +80,9 @@ def create_app(settings: Settings | None = None, *, schema_only: bool = False) -
             "Idempotency-Key",
             "X-Client-Request-ID",
             "X-Operation-ID",
+            "X-Haruka-Expected-Session",
         ],
-        expose_headers=["X-Request-ID"],
+        expose_headers=["X-Request-ID", "X-Haruka-Instance-ID", "X-Haruka-Session-Ref"],
     )
     application.add_middleware(NativePreflightGuard)
     # Outer correlation covers CORS preflight and refusal as well as API requests.

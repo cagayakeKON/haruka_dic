@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/routes.dart';
 import '../../core/api/responses.dart';
 import '../../core/api/request_ids.dart';
 import '../../core/api/auth_models.dart';
@@ -41,7 +42,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
       confirmed = false;
     }
     if (sessionRef != null && controller.wasLocallySignedOutBy(epoch, sessionRef)) {
-      router.go(confirmed ? '/login' : '/signed-out-locally');
+      router.go(confirmed ? AppRoutes.login : AppRoutes.signedOutLocally);
     }
   }
 
@@ -89,7 +90,10 @@ class _AccountIdentity extends StatelessWidget {
       future: account,
       builder: (context, snapshot) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Row(
           children: [
             Container(
@@ -97,10 +101,14 @@ class _AccountIdentity extends StatelessWidget {
               height: 55,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xffe8efff),
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Icon(Icons.person_outline, color: Color(0xff2457ed), size: 29),
+              child: Icon(
+                Icons.person_outline,
+                color: Theme.of(context).colorScheme.primary,
+                size: 29,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -153,7 +161,7 @@ class _AccountActionTile extends StatelessWidget {
     merge: true,
     child: ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
-      leading: Icon(icon, color: const Color(0xff2457ed)),
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
       trailing: const Icon(Icons.chevron_right, size: 19),
       onTap: onTap,
@@ -187,12 +195,15 @@ class _MobileAccountHome extends StatelessWidget {
               height: 32,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xff2457ed),
+                color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Text(
+              child: Text(
                 'h',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -220,7 +231,7 @@ class _MobileAccountHome extends StatelessWidget {
                           id: UiTestIds.accountMaterials,
                           icon: Icons.auto_stories_outlined,
                           label: strings.referenceMaterialsTitle,
-                          onTap: () => context.go('/reference/materials'),
+                          onTap: () => context.go(AppRoutes.materials),
                         ),
                       if (canReadMaterials && canReadCollections)
                         const Divider(height: 1, indent: 18, endIndent: 18),
@@ -229,7 +240,7 @@ class _MobileAccountHome extends StatelessWidget {
                           id: UiTestIds.referenceCollectionsNav,
                           icon: Icons.bookmark_outline,
                           label: strings.referenceCollectionsTitle,
-                          onTap: () => context.go('/collections'),
+                          onTap: () => context.go(AppRoutes.collections),
                         ),
                     ],
                   ),
@@ -246,14 +257,14 @@ class _MobileAccountHome extends StatelessWidget {
                       id: UiTestIds.accountChangePassword,
                       icon: Icons.lock_outline,
                       label: strings.authChangePassword,
-                      onTap: () => context.go('/account/password'),
+                      onTap: () => context.go(AppRoutes.accountPassword),
                     ),
                     const Divider(height: 1, indent: 18, endIndent: 18),
                     _AccountActionTile(
                       id: UiTestIds.accountSessions,
                       icon: Icons.devices_outlined,
                       label: strings.authDeviceSessions,
-                      onTap: () => context.go('/account/sessions'),
+                      onTap: () => context.go(AppRoutes.accountSessions),
                     ),
                     const Divider(height: 1, indent: 18, endIndent: 18),
                     _AccountActionTile(
@@ -296,7 +307,7 @@ class _DesktopAccountHome extends StatelessWidget {
             SizedBox(
               width: 224,
               child: ColoredBox(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
                   child: Column(
@@ -312,13 +323,13 @@ class _DesktopAccountHome extends StatelessWidget {
                         ListTile(
                           leading: const Icon(Icons.auto_stories_outlined),
                           title: Text(strings.referenceMaterialsTitle),
-                          onTap: () => context.go('/reference/materials'),
+                          onTap: () => context.go(AppRoutes.materials),
                         ),
                       if (canReadCollections)
                         ListTile(
                           leading: const Icon(Icons.bookmark_outline),
                           title: Text(strings.referenceCollectionsTitle),
-                          onTap: () => context.go('/collections'),
+                          onTap: () => context.go(AppRoutes.collections),
                         ),
                       ListTile(
                         leading: const Icon(Icons.person_outline),
@@ -362,14 +373,14 @@ class _DesktopAccountHome extends StatelessWidget {
                                         id: UiTestIds.accountMaterials,
                                         icon: Icons.auto_stories_outlined,
                                         label: strings.referenceMaterialsTitle,
-                                        onTap: () => context.go('/reference/materials'),
+                                        onTap: () => context.go(AppRoutes.materials),
                                       ),
                                     if (canReadCollections)
                                       _AccountActionTile(
                                         id: UiTestIds.referenceCollectionsNav,
                                         icon: Icons.bookmark_outline,
                                         label: strings.referenceCollectionsTitle,
-                                        onTap: () => context.go('/collections'),
+                                        onTap: () => context.go(AppRoutes.collections),
                                       ),
                                   ],
                                 ),
@@ -383,13 +394,13 @@ class _DesktopAccountHome extends StatelessWidget {
                                     id: UiTestIds.accountChangePassword,
                                     icon: Icons.lock_outline,
                                     label: strings.authChangePassword,
-                                    onTap: () => context.go('/account/password'),
+                                    onTap: () => context.go(AppRoutes.accountPassword),
                                   ),
                                   _AccountActionTile(
                                     id: UiTestIds.accountSessions,
                                     icon: Icons.devices_outlined,
                                     label: strings.authDeviceSessions,
-                                    onTap: () => context.go('/account/sessions'),
+                                    onTap: () => context.go(AppRoutes.accountSessions),
                                   ),
                                   _AccountActionTile(
                                     id: UiTestIds.accountSignOut,
@@ -482,7 +493,7 @@ class _PasswordChangePageState extends ConsumerState<PasswordChangePage> {
       await ref
           .read(authControllerProvider)
           .changePassword(_current.text, _next.text, operationId: operationId);
-      if (mounted) context.go('/password-changed');
+      if (mounted) context.go(AppRoutes.passwordChanged);
     } on ApiFailure catch (error) {
       if (mounted) {
         setState(
@@ -633,7 +644,7 @@ class _DeviceSessionsPageState extends ConsumerState<DeviceSessionsPage> {
       final operationId = newRequestId();
       await auth.revoke(id, operationId: operationId);
       if (auth.wasLocallySignedOutBy(epoch, sessionRef)) {
-        router.go(widget.admin ? '/admin/login' : '/login');
+        router.go(widget.admin ? AppRoutes.adminLogin : AppRoutes.login);
         return;
       }
       if (epoch == auth.actionEpoch && auth.isAuthenticated) {
@@ -647,7 +658,7 @@ class _DeviceSessionsPageState extends ConsumerState<DeviceSessionsPage> {
       if (epoch == auth.actionEpoch && auth.access?.sessionRef == sessionRef) _reload();
     } on ApiFailure catch (error) {
       if (auth.wasLocallySignedOutBy(epoch, sessionRef)) {
-        router.go('/signed-out-locally');
+        router.go(AppRoutes.signedOutLocally);
         return;
       }
       if (mounted) {
@@ -730,7 +741,7 @@ class _DeviceSessionsPageState extends ConsumerState<DeviceSessionsPage> {
                         auth.actionEpoch == epoch + 1 &&
                         !auth.isAuthenticated &&
                         sessionRef != null) {
-                      router.go(widget.admin ? '/admin/login' : '/login');
+                      router.go(widget.admin ? AppRoutes.adminLogin : AppRoutes.login);
                     }
                   } on ApiFailure catch (error) {
                     if (mounted) setState(() => _error = ApiCatalog.message(strings, error.code));
@@ -809,13 +820,16 @@ class _AdminPolicyPageState extends ConsumerState<AdminPolicyPage> {
       confirmed = false;
     }
     if (sessionRef != null && auth.wasLocallySignedOutBy(epoch, sessionRef)) {
-      router.go(confirmed ? '/admin/login' : '/signed-out-locally');
+      router.go(confirmed ? AppRoutes.adminLogin : AppRoutes.signedOutLocally);
     }
   }
 
   Widget _policyEditor(AuthController auth, AppLocalizations strings) => Container(
     padding: const EdgeInsets.all(28),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(22),
+    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -892,7 +906,7 @@ class _AdminPolicyPageState extends ConsumerState<AdminPolicyPage> {
         merge: true,
         child: TextButton.icon(
           style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-          onPressed: auth.isAuthenticated ? () => context.go('/admin/password') : null,
+          onPressed: auth.isAuthenticated ? () => context.go(AppRoutes.adminPassword) : null,
           icon: const Icon(Icons.lock_outline),
           label: Text(strings.authChangePassword),
         ),
@@ -902,7 +916,7 @@ class _AdminPolicyPageState extends ConsumerState<AdminPolicyPage> {
         merge: true,
         child: TextButton.icon(
           style: TextButton.styleFrom(alignment: Alignment.centerLeft),
-          onPressed: auth.isAuthenticated ? () => context.go('/admin/sessions') : null,
+          onPressed: auth.isAuthenticated ? () => context.go(AppRoutes.adminSessions) : null,
           icon: const Icon(Icons.devices_outlined),
           label: Text(strings.authDeviceSessions),
         ),
@@ -953,7 +967,7 @@ class _AdminPolicyPageState extends ConsumerState<AdminPolicyPage> {
                 children: [
                   Container(
                     width: 224,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -965,13 +979,13 @@ class _AdminPolicyPageState extends ConsumerState<AdminPolicyPage> {
                               height: 36,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: const Color(0xff2457ed),
+                                color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'h',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -987,23 +1001,26 @@ class _AdminPolicyPageState extends ConsumerState<AdminPolicyPage> {
                         const SizedBox(height: 10),
                         Text(
                           strings.authAdminWorkspace,
-                          style: const TextStyle(color: Color(0xff2457ed)),
+                          style: TextStyle(color: Theme.of(context).colorScheme.primary),
                         ),
                         const SizedBox(height: 36),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                           decoration: BoxDecoration(
-                            color: const Color(0xffe8efff),
+                            color: Theme.of(context).colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(13),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.settings_outlined, color: Color(0xff2457ed)),
+                              Icon(
+                                Icons.settings_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                               const SizedBox(width: 12),
                               Text(
                                 strings.authAdminPolicy,
-                                style: const TextStyle(
-                                  color: Color(0xff2457ed),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -1029,30 +1046,7 @@ class _AdminPolicyPageState extends ConsumerState<AdminPolicyPage> {
                                 ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                           const SizedBox(height: 30),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(flex: 3, child: _policyEditor(auth, strings)),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffffefe7),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Icon(Icons.info_outline, color: Color(0xffb45330)),
-                                      const SizedBox(width: 10),
-                                      Expanded(child: Text(strings.authAdminPublishedNotice)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          _policyEditor(auth, strings),
                         ],
                       ),
                     ),

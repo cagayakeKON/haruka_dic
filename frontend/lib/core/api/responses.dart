@@ -75,9 +75,11 @@ final class ApiFailure implements Exception {
     this.fields = const [],
     this.currentRevision,
     this.retryAfter,
+    this.statusCode,
+    this.retryableTransport = false,
   });
 
-  factory ApiFailure.fromJson(Object? value, {Duration? retryAfter}) {
+  factory ApiFailure.fromJson(Object? value, {Duration? retryAfter, int? statusCode}) {
     final json = wireObject(value);
     final error = wireObject(json['error']);
     final fields = error['field_errors'] ?? const <Object?>[];
@@ -101,6 +103,7 @@ final class ApiFailure implements Exception {
       meta: ResponseMeta.fromJson(json['meta']),
       fields: List<FieldFailure>.unmodifiable(fields.map(FieldFailure.fromJson)),
       currentRevision: revision,
+      statusCode: statusCode,
     );
   }
 
@@ -109,6 +112,22 @@ final class ApiFailure implements Exception {
   final ResponseMeta? meta;
   final List<FieldFailure> fields;
   final int? currentRevision;
+
+  /// Populated by ApiClient from the HTTP response, never from its JSON body.
+  final int? statusCode;
+
+  /// Set locally from a transport category, never accepted from response JSON.
+  final bool retryableTransport;
+
+  ApiFailure withStatusCode(int? statusCode) => ApiFailure(
+    code: code,
+    meta: meta,
+    fields: fields,
+    currentRevision: currentRevision,
+    retryAfter: retryAfter,
+    statusCode: statusCode,
+    retryableTransport: retryableTransport,
+  );
 
   // Never retain or render remote message/body/request/URL, including proxy HTML.
   @override

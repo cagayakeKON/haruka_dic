@@ -1,0 +1,33 @@
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/material/11111111-1111-4111-8111-111111111111".
+1 AXWebArea Haruka, URL: 127.0.0.1:8772/mock/material/11111111-1111-4111-8111-111111111111
+	2 container
+		3 container flt-semantic-node-106
+			4 text h
+			5 text haruka
+			6 text 日语
+			7 button 站内消息, ID: flt-semantic-node-117
+			8 button 材料库, ID: flt-semantic-node-110
+			9 button 单词本, ID: flt-semantic-node-111
+			10 button 查询, ID: flt-semantic-node-112
+			11 button 练习, ID: flt-semantic-node-113
+			12 button 我的, ID: flt-semantic-node-114
+			13 button 小 小遥 日语, ID: flt-semantic-node-115
+			14 container flt-semantic-node-138
+				15 container Description: 目录 夏の手紙 目录, ID: flt-semantic-node-119
+					16 button 连续朗读, ID: flt-semantic-node-120
+					17 button 排版, ID: flt-semantic-node-121
+					18 button 添加书签, ID: flt-semantic-node-122
+				19 container flt-semantic-node-124
+					20 button 阅读, ID: flt-semantic-node-125
+					21 button 解析, ID: flt-semantic-node-126
+					22 button 准备本章, ID: flt-semantic-node-127
+				23 text 点击句子看解析，长按可选词查询。
+				24 text 解析 0/5 · 朗读 0/5
+				25 container Description: 第 3 章 / 12 章 窓の向こう 窓の向こう 3 / 12, ID: flt-semantic-node-132
+					26 button あさ 朝 の ひかり 光 が、 しろい 白い カーテンを とおして 通して へや 部屋 に ひろがった 広がった 。, ID: flt-semantic-node-133
+					27 button まど 窓 を あける 開ける と、 なつ 夏 の かぜ 風 がそっと ほほ 頬 に ふれた 触れた 。, ID: flt-semantic-node-134
+					28 button つくえ 机 の うえ 上 には、 いっつう 一通 の てがみ 手紙 が おかれていた 置かれていた 。, ID: flt-semantic-node-135
+					29 button みおぼえ 見覚え のある もじ 文字 を みて 見て 、 わたし 私 は おもわず 思わず ほほえんだ 微笑んだ 。, ID: flt-semantic-node-136
+					30 button まだ しらない 知らない ことば 言葉 にも、どこか なつかしい 懐かしい ひびき 響き がある。, ID: flt-semantic-node-137
+
+The focused UI element is 17 button 排版, ID: flt-semantic-node-121

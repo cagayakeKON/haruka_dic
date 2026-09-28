@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/routes.dart';
 import '../../core/api/responses.dart';
 import '../../core/api/auth_models.dart';
 import '../../generated/api_catalog.dart';
@@ -95,7 +96,7 @@ class _CredentialFormPageState extends State<CredentialFormPage> {
           : strings.authHeroLogin,
       showServiceLink: !admin && !register,
       showMobileDescription: false,
-      backLocation: register ? '/login' : null,
+      backLocation: register ? AppRoutes.login : null,
       title: admin
           ? strings.authAdminLoginTitle
           : register
@@ -128,6 +129,7 @@ class _CredentialFormPageState extends State<CredentialFormPage> {
                     textInputAction: TextInputAction.next,
                     autofillHints: const [AutofillHints.username, AutofillHints.email],
                     decoration: authInputDecoration(
+                      context: context,
                       hint: 'name@example.com',
                       icon: Icons.person_outline,
                     ),
@@ -158,6 +160,7 @@ class _CredentialFormPageState extends State<CredentialFormPage> {
                     textInputAction: register ? TextInputAction.next : TextInputAction.done,
                     autofillHints: [register ? AutofillHints.newPassword : AutofillHints.password],
                     decoration: authInputDecoration(
+                      context: context,
                       hint: strings.authPassword,
                       icon: Icons.lock_outline,
                       suffix: IconButton(
@@ -212,6 +215,7 @@ class _CredentialFormPageState extends State<CredentialFormPage> {
                       textInputAction: TextInputAction.done,
                       autofillHints: const [AutofillHints.newPassword],
                       decoration: authInputDecoration(
+                        context: context,
                         hint: strings.authConfirmPassword,
                         icon: Icons.lock_outline,
                         suffix: IconButton(
@@ -278,7 +282,7 @@ class _CredentialFormPageState extends State<CredentialFormPage> {
                           id: UiTestIds.loginRegisterLink,
                           merge: true,
                           child: TextButton(
-                            onPressed: _busy ? null : () => context.go('/register'),
+                            onPressed: _busy ? null : () => context.go(AppRoutes.register),
                             child: Text(strings.authCreateAccount),
                           ),
                         ),
@@ -292,7 +296,7 @@ class _CredentialFormPageState extends State<CredentialFormPage> {
                         id: UiTestIds.loginRegisterLink,
                         merge: true,
                         child: TextButton(
-                          onPressed: _busy ? null : () => context.go('/register'),
+                          onPressed: _busy ? null : () => context.go(AppRoutes.register),
                           child: Text(strings.authCreateAccount),
                         ),
                       ),
@@ -318,7 +322,9 @@ class _RecoveryLink extends StatelessWidget {
     id: UiTestIds.loginRecoveryLink,
     merge: true,
     child: TextButton(
-      onPressed: busy ? null : () => context.go(admin ? '/recovery?from=admin' : '/recovery'),
+      onPressed: busy
+          ? null
+          : () => context.go(admin ? AppRoutes.recoveryFromAdmin : AppRoutes.recovery),
       child: Text(AppLocalizations.of(context).authForgotPassword),
     ),
   );
@@ -369,7 +375,7 @@ class _RecoveryRequestPageState extends State<RecoveryRequestPage> {
       title: strings.authRecoveryTitle,
       heroTitle: strings.authHeroRecovery,
       description: strings.authRecoveryHint,
-      backLocation: widget.admin ? '/admin/login' : '/login',
+      backLocation: widget.admin ? AppRoutes.adminLogin : AppRoutes.login,
       child: AutofillGroup(
         child: Form(
           key: _form,
@@ -388,6 +394,7 @@ class _RecoveryRequestPageState extends State<RecoveryRequestPage> {
                     textInputAction: TextInputAction.done,
                     autofillHints: const [AutofillHints.email],
                     decoration: authInputDecoration(
+                      context: context,
                       hint: 'name@example.com',
                       icon: Icons.person_outline,
                     ),
@@ -492,7 +499,7 @@ class _ActivationPageState extends State<ActivationPage> {
       id: UiTestIds.activationResendPage,
       title: strings.authPendingEmail,
       description: strings.authPendingEmailHint,
-      backLocation: '/login',
+      backLocation: AppRoutes.login,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -532,7 +539,7 @@ class AuthResultPage extends StatelessWidget {
   const AuthResultPage({
     required this.title,
     required this.message,
-    this.backLocation = '/login',
+    this.backLocation = AppRoutes.login,
     this.actionLocation,
     this.actionLabel,
     this.actionId,
@@ -577,7 +584,7 @@ class AuthUnavailablePage extends StatelessWidget {
       id: UiTestIds.authResultPage,
       title: loading ? strings.authLoading : strings.authUnavailable,
       description: loading ? strings.authLoading : strings.authServiceUnavailable,
-      backLocation: '/login',
+      backLocation: AppRoutes.login,
       child: loading
           ? const Center(child: CircularProgressIndicator())
           : FilledButton(onPressed: onRetry, child: Text(strings.authCheckAgain)),

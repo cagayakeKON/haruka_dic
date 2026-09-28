@@ -48,23 +48,8 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     Text(strings.shellTitle, style: theme.textTheme.headlineLarge),
-                    const SizedBox(height: 12),
-                    Text(
-                      strings.shellDescription,
-                      style: theme.textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
-                    ),
                     const SizedBox(height: 48),
                     Text(strings.materialsTitle, style: theme.textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    Text(
-                      strings.materialsDescription,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      strings.materialLanguages,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-                    ),
                     const SizedBox(height: 24),
                     Wrap(
                       spacing: 16,

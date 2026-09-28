@@ -9,6 +9,7 @@ import '../core/layout/adaptive_policy.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
 import '../shared/identified.dart';
+import 'routes.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({required this.config, required this.location, required this.child, super.key});
@@ -20,8 +21,8 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    final selected = location == '/environment' ? 1 : 0;
-    void navigate(int index) => context.go(index == 0 ? '/' : '/environment');
+    final selected = location == AppRoutes.environment ? 1 : 0;
+    void navigate(int index) => context.go(index == 0 ? AppRoutes.home : AppRoutes.environment);
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.digit1, alt: true): () => navigate(0),
@@ -52,7 +53,7 @@ class AppShell extends StatelessWidget {
                               merge: true,
                               child: IconButton(
                                 tooltip: strings.referenceMaterialsTitle,
-                                onPressed: () => context.go('/reference/materials'),
+                                onPressed: () => context.go(AppRoutes.materials),
                                 icon: const Icon(Icons.auto_stories_outlined),
                               ),
                             ),
@@ -62,7 +63,7 @@ class AppShell extends StatelessWidget {
                               merge: true,
                               child: IconButton(
                                 tooltip: strings.referenceCollectionsTitle,
-                                onPressed: () => context.go('/collections'),
+                                onPressed: () => context.go(AppRoutes.collections),
                                 icon: const Icon(Icons.bookmark_outline),
                               ),
                             ),
@@ -78,7 +79,8 @@ class AppShell extends StatelessWidget {
                         merge: true,
                         child: IconButton(
                           tooltip: signedIn ? strings.authAccount : strings.authSignIn,
-                          onPressed: () => context.go(signedIn ? '/account' : '/login'),
+                          onPressed: () =>
+                              context.go(signedIn ? AppRoutes.account : AppRoutes.login),
                           icon: Icon(signedIn ? Icons.account_circle : Icons.login),
                         ),
                       );

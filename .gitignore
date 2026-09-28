@@ -49,3 +49,4 @@ frontend/android/app/debug/
 frontend/android/app/profile/
 frontend/android/app/release/
 frontend/windows/flutter/ephemeral/
+.agents

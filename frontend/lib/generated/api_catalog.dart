@@ -1,4 +1,4 @@
-// GENERATED from contracts/errors.json; sha256:69c539f6286e50c6466f09f03f4c9204820e4c756cc122d1aae8d4966c67c7f4. Do not edit.
+// GENERATED from contracts/errors.json; sha256:9bc59cc572aa9897ff0bdaa19c5732a7069ebf80ac76d938eb1a657250efee2c. Do not edit.
 import 'l10n/app_localizations.dart';
 
 abstract final class ApiCatalog {
@@ -6,6 +6,8 @@ abstract final class ApiCatalog {
     "ACCESS_EXPIRED",
     "AUTH_LOGIN_FAILED",
     "AUTH_REQUIRED",
+    "AUTH_SCOPE_CHANGED",
+    "AUTH_SCOPE_REQUIRED",
     "BAD_REQUEST",
     "CAPABILITY_UNSUPPORTED",
     "CSRF_FAILED",
@@ -35,6 +37,8 @@ abstract final class ApiCatalog {
     "ACCESS_EXPIRED" => strings.apiAccessExpired,
     "AUTH_LOGIN_FAILED" => strings.apiAuthLoginFailed,
     "AUTH_REQUIRED" => strings.apiAuthRequired,
+    "AUTH_SCOPE_CHANGED" => strings.apiAuthScopeChanged,
+    "AUTH_SCOPE_REQUIRED" => strings.apiAuthScopeRequired,
     "BAD_REQUEST" => strings.apiBadRequest,
     "CAPABILITY_UNSUPPORTED" => strings.apiCapabilityUnsupported,
     "CSRF_FAILED" => strings.apiCsrfFailed,

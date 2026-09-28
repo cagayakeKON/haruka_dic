@@ -1,0 +1,4 @@
+mDisplayFrame=Rect(0, 0 - 1080, 2400)
+InsetsSource id=27 type=displayCutout frame=[0,0][1080,136] visible=true flags= insetsRoundedCornerFrame=false
+InsetsSource id=7eb00000 type=statusBars frame=[0,0][1080,136] visible=true flags= insetsRoundedCornerFrame=false
+mSource=InsetsSource id=7eb00000 type=statusBars frame=[0,0][1080,136] visible=true flags= insetsRoundedCornerFrame=false

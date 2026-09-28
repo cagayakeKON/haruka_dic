@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/routes.dart';
+import '../../app/theme.dart';
 import '../../generated/l10n/app_localizations.dart';
 import '../../generated/ui_test_ids.dart';
 import '../../shared/identified.dart';
@@ -73,13 +75,19 @@ class _BrandMark extends StatelessWidget {
         height: 36,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: onBlue ? const Color(0xff4675f2) : const Color(0xff2457ed),
+          color: onBlue
+              ? Color.lerp(
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.onPrimary,
+                  .15,
+                )!
+              : Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(11),
         ),
-        child: const Text(
+        child: Text(
           'h',
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             fontSize: 27,
             fontWeight: FontWeight.w800,
             fontStyle: FontStyle.italic,
@@ -95,7 +103,9 @@ class _BrandMark extends StatelessWidget {
             fontSize: 23,
             letterSpacing: -0.9,
             fontWeight: FontWeight.w800,
-            color: onBlue ? Colors.white : const Color(0xff152b42),
+            color: onBlue
+                ? Theme.of(context).colorScheme.onPrimary
+                : Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -116,7 +126,7 @@ class _Signal extends StatelessWidget {
         width: 23,
         height: 6,
         decoration: BoxDecoration(
-          color: const Color(0xffd8f36a),
+          color: HarukaColors.of(context).signal,
           borderRadius: BorderRadius.circular(4),
         ),
       ),
@@ -171,7 +181,7 @@ class _MobileAuthFrame extends StatelessWidget {
                 leading: const Icon(Icons.language),
                 title: Text(AppLocalizations.of(context).apiLabel),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.go('/environment'),
+                onTap: () => context.go(AppRoutes.environment),
               ),
             ],
           ],
@@ -203,7 +213,7 @@ class _DesktopAuthFrame extends StatelessWidget {
     children: [
       Expanded(
         child: ColoredBox(
-          color: const Color(0xff2457ed),
+          color: Theme.of(context).colorScheme.primary,
           child: LayoutBuilder(
             builder: (context, size) => SingleChildScrollView(
               child: ConstrainedBox(
@@ -219,7 +229,7 @@ class _DesktopAuthFrame extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           DefaultTextStyle(
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
                             child: _Signal(label: admin ? 'ADMIN / HARUKA' : 'CLEAR SIGNAL'),
                           ),
                           const SizedBox(height: 28),
@@ -229,7 +239,7 @@ class _DesktopAuthFrame extends StatelessWidget {
                                     ? AppLocalizations.of(context).authAdminLoginTitle
                                     : AppLocalizations.of(context).authLoginTitle),
                             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontSize: 54,
                               fontWeight: FontWeight.w800,
                             ),
@@ -237,7 +247,11 @@ class _DesktopAuthFrame extends StatelessWidget {
                           const SizedBox(height: 18),
                           Text(
                             AppLocalizations.of(context).authBrandLine,
-                            style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontSize: 16,
+                              height: 1.5,
+                            ),
                           ),
                         ],
                       ),
@@ -356,6 +370,7 @@ class AuthField extends StatelessWidget {
 }
 
 InputDecoration authInputDecoration({
+  required BuildContext context,
   required String hint,
   required IconData icon,
   Widget? suffix,
@@ -364,22 +379,22 @@ InputDecoration authInputDecoration({
   prefixIcon: Icon(icon, size: 21),
   suffixIcon: suffix,
   filled: true,
-  fillColor: Colors.white,
+  fillColor: Theme.of(context).colorScheme.surface,
   contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 18),
   enabledBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(14),
-    borderSide: const BorderSide(color: Color(0xffd9e3ef)),
+    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
   ),
   focusedBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(14),
-    borderSide: const BorderSide(color: Color(0xff2457ed), width: 1.5),
+    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
   ),
   errorBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(14),
-    borderSide: const BorderSide(color: Color(0xffb42335)),
+    borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
   ),
   focusedErrorBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(14),
-    borderSide: const BorderSide(color: Color(0xffb42335), width: 1.5),
+    borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
   ),
 );

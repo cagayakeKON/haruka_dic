@@ -5,6 +5,8 @@ import re
 from uuid import UUID, uuid4
 
 import httpx2 as httpx
+
+from tests.support.bound_client import BoundAsyncClient
 import pytest
 from fastapi import FastAPI
 from sqlalchemy import select, text
@@ -72,7 +74,7 @@ async def test_http_source_resolution_collection_commit_and_lost_response_replay
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
     email = f"learner-{run_id}@haruka.example.test"
     password = "synthetic-collection-password-2026"  # noqa: S105 - isolated identity
-    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as admin:
+    async with BoundAsyncClient(transport=transport, base_url=ORIGIN) as admin:
         login = await admin.post(
             "/api/v1/admin/auth/login",
             json={
@@ -91,7 +93,7 @@ async def test_http_source_resolution_collection_commit_and_lost_response_replay
         )
         assert opened.status_code == 200
 
-    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as client:
+    async with BoundAsyncClient(transport=transport, base_url=ORIGIN) as client:
         registered = await client.post(
             "/api/v1/auth/register", json={"email": email, "password": password}, headers=headers
         )

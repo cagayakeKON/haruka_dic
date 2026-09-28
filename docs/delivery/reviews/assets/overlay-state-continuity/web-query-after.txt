@@ -1,0 +1,28 @@
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/query".
+1 AXWebArea Haruka, URL: 127.0.0.1:8772/mock/query
+	2 container
+		3 container flt-semantic-node-1
+			4 container flt-semantic-node-264
+				5 container h
+					6 text h
+				7 text 查询
+				8 container flt-semantic-node-285
+					9 text そっと 是什么意思？
+					10 container Description: 单词 日语 そっと sotto · 副词 释义 轻轻地；悄悄地 用于动作轻柔，或不希望打扰别人的场景。 语境例句 01 ドアをそっと閉めた。 轻轻地关上了门。 02 そっと手を握った。 轻轻握住了手。, ID: flt-semantic-node-286
+						11 button 朗读, ID: flt-semantic-node-291
+						12 button 再查一个, ID: flt-semantic-node-292
+						13 button 收藏, ID: flt-semantic-node-293
+					14 container flt-semantic-node-276
+						15 text entry area (settable) 输入单词、句子、语法问题，或添加图片…
+						16 text 还可输入 2,000 个字符
+						17 button 补充上下文（可选）, ID: flt-semantic-node-288
+						18 button 相册, ID: flt-semantic-node-289
+						19 button (disabled) 发送, ID: flt-semantic-node-290
+			20 tab group flt-semantic-node-193
+				21 tab (selectable, settable, boolean) Description: 材料, Value: 0, ID: flt-semantic-node-194
+				22 tab (selectable, settable, boolean) Description: 词本, Value: 0, ID: flt-semantic-node-195
+				23 tab (selected, settable, boolean) Description: 查询, Value: 1, ID: flt-semantic-node-196
+				24 tab (selectable, settable, boolean) Description: 练习, Value: 0, ID: flt-semantic-node-197
+				25 tab (selectable, settable, boolean) Description: 我的, Value: 0, ID: flt-semantic-node-198
+
+The focused UI element is 5 container h

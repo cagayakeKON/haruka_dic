@@ -8,6 +8,7 @@ import '../generated/api_catalog.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
 import '../shared/identified.dart';
+import 'theme.dart';
 
 class EnvironmentPage extends StatefulWidget {
   const EnvironmentPage({required this.config, required this.api, super.key});
@@ -103,7 +104,9 @@ class _EnvironmentPageState extends State<EnvironmentPage> {
                                 children: [
                                   Icon(
                                     _ready ? Icons.check_circle_outline : Icons.error_outline,
-                                    color: _ready ? const Color(0xff25744c) : colors.error,
+                                    color: _ready
+                                        ? HarukaColors.of(context).positive
+                                        : colors.error,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(

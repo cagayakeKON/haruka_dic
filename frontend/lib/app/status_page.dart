@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'routes.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
 import '../shared/identified.dart';
@@ -42,7 +43,7 @@ class StatusPage extends StatelessWidget {
                         id: UiTestIds.backHome,
                         merge: true,
                         child: FilledButton(
-                          onPressed: () => context.go('/'),
+                          onPressed: () => context.go(AppRoutes.home),
                           child: Text(AppLocalizations.of(context).backHome),
                         ),
                       ),

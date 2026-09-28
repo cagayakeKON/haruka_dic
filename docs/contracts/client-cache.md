@@ -1,6 +1,6 @@
 # 客户端缓存校验契约
 
-状态：2026-09-26，FCACHE1待实现协议。服务端始终是业务与权限权威；此契约为[前端缓存机制](../architecture/frontend-cache.md)提供轻量读取协作，不引入离线写同步或新模型调用入口。从B2a开始按实际消费者注册，B0/B1接口及验收不变。
+状态：2026-09-27，客户端缓存基础及本轮恢复修复已部分实现；私有请求真实会话绑定及响应头协作已接线，本篇定义的服务端 validate、cache_descriptor、offline_grant 仍待按消费者交付，不能把客户端测试替身视为正式离线协议已上线。服务端始终是业务与权限权威；此契约为[前端缓存机制](../architecture/frontend-cache.md)提供轻量读取协作，不引入离线写同步或新模型调用入口。从B2a开始按实际消费者注册，B0/B1历史验收不变；缺绑定头的旧客户端需按[统一响应契约](api-responses.md#51-b2起的私有请求会话绑定)升级。当前实现与恢复修复见[缓存恢复修复记录](../delivery/reviews/2026-09-27-cache-recovery-fixes.md)，后续缺陷修复及实际验证见[现有缓存缺陷修复](../delivery/reviews/2026-09-27-cache-defect-fixes.md)。
 
 ## 1. 传输与权限
 
@@ -32,6 +32,7 @@
 | items[].validated_versions | 仅有权时返回该投影的当前版本向量；same表示所需各维度都相符 |
 | items[].read_ref | changed时返回注册的规范资源/投影引用，客户端使用固定领域端点读取；不返回任意URL/隐藏字段或他人资源 |
 | items[].offline_grant | 仅登记为可离线且当前来源/动作/状态允许时返回，其他类型为null；不能根据same自行延长期限 |
+| items[].grant_revoked | 明确撤销已有本机许可时为true；缺省/false且offline_grant为null只表示本次未续租，不延长也不删除仍有效的同身份、来源和版本许可 |
 
 同一item的身份、来源权限、当前指针和投影版本必须来自一致读取；使用现有ScopeContext与领域锁/版本复核协议，不能先读授权后混入变更后的隐藏投影。不同item允许分别成功，不宣称整个批次是一份跨业务冻结快照。普通GET/resolve的DTO须提供同等可比较版本和许可元数据：放在注册类型的 `cache_descriptor`，不修改通用SuccessResponse/PageResponse信封，不保存旧request_id。
 
@@ -42,12 +43,14 @@
 | 注册类别 | 校验依据 | 是否可签离线许可 |
 | --- | --- | --- |
 | material_content | 本人material + 精确版本/章段 + 对应read + 源删除代次 | 仅正式已发布小说/教材阅读投影；试卷准备/隐藏字段不签 |
-| learning_text | 按入口分别注册：上下文解释为来源read + ai.explain；独立查询历史/card为agent.read及实际来源约束；独立收藏快照为collection.read及该快照约束 | 单独判断；仅既定离线学习字段可签，已有词句解释仍额外满足ai.explain与来源许可；缺离线资格不拒绝合法在线读取 |
+| learning_text | 已实现客户端查询历史/card使用agent.read及实际来源约束；后续上下文解释与收藏快照须分别注册其来源动作和投影 | 单独判断；仅既定离线学习字段可签，已有词句解释仍额外满足ai.explain与来源许可；缺离线资格不拒绝合法在线读取 |
 | speech_asset | 本人合法来源 + speech.play + 精确manifest/asset/实际格式；global_word另验本人词条/读音/profile资格 | 普通许可音频可；任何场次限次听力不可 |
 
 B2a可先交付路由/注册器/边界测试；未实现种类不能假返回same或许可。资料/设置/列表/消息/成绩/用量仍直接网络读取，无需为了validate新增版本表或业务空壳。各领域接入时在自身DTO和正式OpenAPI中登记cache_descriptor与注册schema，按后端单向生成流程更新客户端，不在文档阶段伪造生成物。
 
-offline_grant是服务器经当前鉴权生成的本机许可快照，必含scope/session_ref、安全/授权版本、精确来源/投影/内容版本、所需动作交集、issued_at/server_time、expires_at和许可schema版本；只经可信在线ApiClient写入。它不是登录凭证，不回传作为服务端授权依据，也不承诺防设备所有者篡改的DRM。期限取服务器配置上限（推荐24小时）、会话/动作/来源的最短期限。没有明确许可或缺任一依赖时不可离线读；合法在线same/changed可以同时offline_grant=null，不能让离线附加条件变成新的在线权限门槛。server_time由本次校验服务端生成，不回放旧响应时间；客户端按架构中的单调计时/往返上界计算剩余期，迟到响应不重置租期起点。
+offline_grant是服务器经当前鉴权生成的本机许可快照，必含scope/session_ref、security_epoch、authz_version.user、authz_version.policy、精确来源/投影/内容版本、所需动作交集、issued_at/server_time、expires_at和许可schema版本；只经可信在线ApiClient写入。两种授权版本必须同时与最近确认的access一致，任一缺失/变化都拒绝离线读。它不是登录凭证，不回传作为服务端授权依据，也不承诺防设备所有者篡改的DRM。期限取服务器配置上限（推荐24小时）、会话/动作/来源的最短期限。没有明确许可或缺任一依赖时不可离线读；合法在线same/changed可以同时offline_grant=null，不能让离线附加条件变成新的在线权限门槛。server_time由本次校验服务端生成，不回放旧响应时间；客户端按架构中的单调计时/往返上界计算剩余期，迟到响应不重置租期起点。
+
+可信响应适配字段形状为`schema_version: 1`、`scope: {instance_id,user_id,audience,session_ref,security_epoch,authz_version:{user,policy}}`、`resource: {kind,id,source_binding,projection,action,query_key?}`、`required_actions: [权限代码]`、`version: {resource,representation,artifact,nlp,binding}`及`issued_at/server_time/expires_at`。空query_key可省略，非空必须匹配。客户端先核对全部scope、来源、投影、动作及版本，再在本机派生不可由服务端指定的resourceKey摘要；`required_actions`只作响应绑定一致性核对，服务端仍负责动作交集授权。持久本机grant沿用原JSON格式读取，不能把其`resource_key`当作服务端wire字段。`same`且grant为null只保留仍有效的原许可，不续期；`grant_revoked=true`、版本变化、无权或不合法的新grant均立即撤许可。
 
 来源与成品是两层：字节相同可以有多个入口绑定，校验/离线grant按绑定保存；不能因另一个来源仍可读就展示已撤权入口的上下文。NLP/ruby与正文投影绑定、独立版本管理；返回分析状态缺失时仍按既定手动选区降级，不允许客户端补调AI作为缓存修复。
 

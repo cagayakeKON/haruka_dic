@@ -1,0 +1,18 @@
+BEFORE
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/library".
+There has been no change in the accessibility tree.
+The focused UI element is 5 container h
+OPEN
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/library".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 5-6
++				29 text h
++						30 container flt-semantic-node-39
++							31 button 查看详情, ID: flt-semantic-node-40
++							32 button 删除材料, ID: flt-semantic-node-42
+The focused UI element is 15 button 夏の手紙更多操作, ID: flt-semantic-node-14
+CLOSED
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/library".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 30-32
+The focused UI element is 15 button 夏の手紙更多操作, ID: flt-semantic-node-14

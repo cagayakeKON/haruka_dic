@@ -24,6 +24,33 @@
     "authz.denied": [
       "error_category"
     ],
+    "cache.cleared": [
+      "result"
+    ],
+    "cache.download": [
+      "result"
+    ],
+    "cache.evicted": [
+      "result"
+    ],
+    "cache.invalidated": [
+      "result"
+    ],
+    "cache.read.hit": [
+      "source"
+    ],
+    "cache.read.miss": [
+      "source"
+    ],
+    "cache.stale_response.discarded": [
+      "result"
+    ],
+    "cache.storage.degraded": [
+      "reason"
+    ],
+    "cache.validation": [
+      "result"
+    ],
     "collection.saved": [
       "card_type",
       "duration_ms",
@@ -48,6 +75,9 @@
       "duration_ms",
       "material_type"
     ],
+    "schema.migration": [
+      "result"
+    ],
     "screen.viewed": [
       "duration_ms",
       "screen_name"
@@ -67,11 +97,21 @@
     "auth.register.submitted",
     "auth.session.revoked",
     "authz.denied",
+    "cache.cleared",
+    "cache.download",
+    "cache.evicted",
+    "cache.invalidated",
+    "cache.read.hit",
+    "cache.read.miss",
+    "cache.stale_response.discarded",
+    "cache.storage.degraded",
+    "cache.validation",
     "collection.saved",
     "explanation.requested",
     "http.completed",
     "http.failed",
     "reading.chapter.opened",
+    "schema.migration",
     "screen.viewed",
     "telemetry.delivery.recovered"
   ],
@@ -96,6 +136,15 @@
     "auth.session.revoked",
     "auth.verification.request.accepted",
     "authz.denied",
+    "cache.cleared",
+    "cache.download",
+    "cache.evicted",
+    "cache.invalidated",
+    "cache.read.hit",
+    "cache.read.miss",
+    "cache.stale_response.discarded",
+    "cache.storage.degraded",
+    "cache.validation",
     "collection.saved",
     "database.connection.failed",
     "database.query.completed",
@@ -118,6 +167,7 @@
     "process.stopped",
     "process.unavailable",
     "reading.chapter.opened",
+    "schema.migration",
     "screen.viewed",
     "telemetry.delivery.recovered"
   ],

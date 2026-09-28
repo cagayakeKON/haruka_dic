@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import httpx2 as httpx
+
+from tests.support.bound_client import BoundAsyncClient
 import pytest
 
 from app.bootstrap import Runtime
@@ -43,7 +45,7 @@ async def test_authenticated_receiver_binds_owner_audience_and_transport(
     password = "synthetic-client-password-2026"  # noqa: S105 - isolated identity
     shared_event = str(uuid4())
 
-    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as admin:
+    async with BoundAsyncClient(transport=transport, base_url=ORIGIN) as admin:
         login = await admin.post(
             "/api/v1/admin/auth/login",
             json={
@@ -70,7 +72,7 @@ async def test_authenticated_receiver_binds_owner_audience_and_transport(
 
     for label in ("alice", "bob"):
         email = f"{label}-{run_id}@haruka.example.test"
-        async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as visitor:
+        async with BoundAsyncClient(transport=transport, base_url=ORIGIN) as visitor:
             registered = await visitor.post(
                 "/api/v1/auth/register",
                 json={"email": email, "password": password},
@@ -125,7 +127,7 @@ async def test_authenticated_receiver_binds_owner_audience_and_transport(
                 )
             ).status_code == 401
 
-    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:18081") as native:
+    async with BoundAsyncClient(transport=transport, base_url="http://127.0.0.1:18081") as native:
         logged = await native.post(
             "/api/v1/auth/native/login",
             json={

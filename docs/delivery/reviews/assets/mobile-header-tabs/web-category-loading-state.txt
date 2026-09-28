@@ -1,0 +1,21 @@
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/library".
+1 AXWebArea Haruka, URL: 127.0.0.1:8772/mock/library
+	2 container
+		3 container flt-semantic-node-1
+			4 container flt-semantic-node-3
+				29 text h
+				7 text 材料库
+				8 button 搜索材料, ID: flt-semantic-node-6
+				9 button 全部, ID: flt-semantic-node-7
+				10 button 小说, ID: flt-semantic-node-8
+				11 button 课本, ID: flt-semantic-node-9
+				12 button 试卷, ID: flt-semantic-node-10
+				22 button 导入材料, ID: flt-semantic-node-29
+			23 tab group flt-semantic-node-31
+				24 tab (selected, settable, boolean) Description: 材料, Value: 1, ID: flt-semantic-node-32
+				25 tab (selectable, settable, boolean) Description: 词本, Value: 0, ID: flt-semantic-node-33
+				26 tab (selectable, settable, boolean) Description: 查询, Value: 0, ID: flt-semantic-node-34
+				27 tab (selectable, settable, boolean) Description: 练习, Value: 0, ID: flt-semantic-node-35
+				28 tab (selectable, settable, boolean) Description: 我的, Value: 0, ID: flt-semantic-node-36
+
+The focused UI element is 11 button 课本, ID: flt-semantic-node-9

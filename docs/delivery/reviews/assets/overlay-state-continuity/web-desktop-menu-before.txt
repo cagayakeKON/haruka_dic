@@ -1,0 +1,3 @@
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/library".
+There has been no change in the accessibility tree.
+The focused UI element is 4 container h

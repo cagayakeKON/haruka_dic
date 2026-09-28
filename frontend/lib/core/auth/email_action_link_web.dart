@@ -1,5 +1,6 @@
 import 'package:web/web.dart' as web;
 
+import '../../app/routes.dart';
 import 'email_action_link.dart';
 
 CapturedEmailAction? captureEmailActionLink() {
@@ -14,7 +15,7 @@ CapturedEmailAction? captureEmailActionLink() {
     '',
     '${location.pathname}${location.search}',
   );
-  if (path != '/verify-email' && path != '/reset-password') return null;
+  if (path != AppRoutes.verifyEmail && path != AppRoutes.resetPassword) return null;
   final token = validatedEmailActionFragment(
     fragment.startsWith('#') ? fragment.substring(1) : fragment,
   );

@@ -533,6 +533,8 @@
           "ACCESS_EXPIRED",
           "SESSION_REVOKED",
           "SESSION_INVALID",
+          "AUTH_SCOPE_REQUIRED",
+          "AUTH_SCOPE_CHANGED",
           "PERMISSION_DENIED",
           "CSRF_FAILED",
           "RESOURCE_NOT_FOUND",
@@ -3726,6 +3728,24 @@
                                   ],
                                   "title": "Material Type"
                                 },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "enum": [
+                                        "writer_unavailable",
+                                        "browser_storage_unsafe",
+                                        "quota_exceeded",
+                                        "audio_unavailable",
+                                        "invalid_payload"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "title": "Reason"
+                                },
                                 "result": {
                                   "anyOf": [
                                     {
@@ -3735,7 +3755,10 @@
                                         "cancelled",
                                         "denied",
                                         "hit",
-                                        "miss"
+                                        "miss",
+                                        "same",
+                                        "changed",
+                                        "unavailable"
                                       ],
                                       "type": "string"
                                     },
@@ -3782,6 +3805,22 @@
                                     }
                                   ],
                                   "title": "Screen Name"
+                                },
+                                "source": {
+                                  "anyOf": [
+                                    {
+                                      "enum": [
+                                        "network",
+                                        "memory",
+                                        "disk"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "title": "Source"
                                 },
                                 "status_code": {
                                   "anyOf": [
@@ -7107,6 +7146,24 @@
                                   ],
                                   "title": "Material Type"
                                 },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "enum": [
+                                        "writer_unavailable",
+                                        "browser_storage_unsafe",
+                                        "quota_exceeded",
+                                        "audio_unavailable",
+                                        "invalid_payload"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "title": "Reason"
+                                },
                                 "result": {
                                   "anyOf": [
                                     {
@@ -7116,7 +7173,10 @@
                                         "cancelled",
                                         "denied",
                                         "hit",
-                                        "miss"
+                                        "miss",
+                                        "same",
+                                        "changed",
+                                        "unavailable"
                                       ],
                                       "type": "string"
                                     },
@@ -7163,6 +7223,22 @@
                                     }
                                   ],
                                   "title": "Screen Name"
+                                },
+                                "source": {
+                                  "anyOf": [
+                                    {
+                                      "enum": [
+                                        "network",
+                                        "memory",
+                                        "disk"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "title": "Source"
                                 },
                                 "status_code": {
                                   "anyOf": [
@@ -7604,6 +7680,24 @@
                                   ],
                                   "title": "Material Type"
                                 },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "enum": [
+                                        "writer_unavailable",
+                                        "browser_storage_unsafe",
+                                        "quota_exceeded",
+                                        "audio_unavailable",
+                                        "invalid_payload"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "title": "Reason"
+                                },
                                 "result": {
                                   "anyOf": [
                                     {
@@ -7613,7 +7707,10 @@
                                         "cancelled",
                                         "denied",
                                         "hit",
-                                        "miss"
+                                        "miss",
+                                        "same",
+                                        "changed",
+                                        "unavailable"
                                       ],
                                       "type": "string"
                                     },
@@ -7660,6 +7757,22 @@
                                     }
                                   ],
                                   "title": "Screen Name"
+                                },
+                                "source": {
+                                  "anyOf": [
+                                    {
+                                      "enum": [
+                                        "network",
+                                        "memory",
+                                        "disk"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "title": "Source"
                                 },
                                 "status_code": {
                                   "anyOf": [

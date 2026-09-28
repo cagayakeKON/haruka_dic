@@ -11,10 +11,18 @@ from app.contracts.errors import ErrorCode
 from app.domain.correlation import audience_context, user_id_context
 from app.domain.errors import AppError
 from app.domain.scope import Audience, ScopeContext
-from app.services.auth_context import verify_scope_in_transaction
+from app.services.auth_context import require_permissions, verify_scope_in_transaction
 from app.services.auth_crypto import AuthCrypto
 
 _WEB_COOKIES = {"client": "haruka_client_session", "admin": "haruka_admin_session"}
+_UNBOUND_SCOPE_ROUTES = {
+    ("GET", "/api/v1/auth/csrf"),
+    ("GET", "/api/v1/admin/auth/csrf"),
+    ("GET", "/api/v1/me/access"),
+    ("GET", "/api/v1/admin/me/access"),
+    ("POST", "/api/v1/auth/refresh"),
+    ("POST", "/api/v1/admin/auth/refresh"),
+}
 
 
 def require_runtime(request: Request) -> Runtime:
@@ -90,8 +98,20 @@ async def require_scope(
                 session_id=session_id,
                 audience=audience,
                 transport=transport,
-                permissions=permissions,
+                permissions=(),
             )
+            request.state.session_ref = str(scope.session_id)
+            request.state.instance_id = runtime.settings.instance_id
+            if (request.method, request.url.path) not in _UNBOUND_SCOPE_ROUTES:
+                expected = request.headers.get("x-haruka-expected-session")
+                if expected is None:
+                    raise AppError(ErrorCode.AUTH_SCOPE_REQUIRED)
+                if expected != str(scope.session_id):
+                    raise AppError(ErrorCode.AUTH_SCOPE_CHANGED)
+            if permissions:
+                await require_permissions(
+                    session, user_id=scope.user_id, audience=audience, codes=permissions
+                )
         if transport == "web":
             idle = timedelta(minutes=30) if audience == "admin" else timedelta(hours=24)
             ttl = min(

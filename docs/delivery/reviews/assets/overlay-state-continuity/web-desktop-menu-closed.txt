@@ -1,0 +1,35 @@
+Browser tab: 1, Title: "Haruka", URL: "http://127.0.0.1:8772/mock/library".
+1 AXWebArea Haruka, URL: 127.0.0.1:8772/mock/library
+	2 container
+		3 container flt-semantic-node-63
+			4 text h
+			5 text haruka
+			6 text 日语
+			7 button 站内消息, ID: flt-semantic-node-73
+			8 button 材料库, ID: flt-semantic-node-66
+			9 button 单词本, ID: flt-semantic-node-67
+			10 button 查询, ID: flt-semantic-node-68
+			11 text 材料库
+			12 text field (settable) 搜索标题或语言
+			13 button 全部, ID: flt-semantic-node-76
+			14 button 小说, ID: flt-semantic-node-77
+			15 button 课本, ID: flt-semantic-node-78
+			16 button 试卷, ID: flt-semantic-node-79
+			17 button 导入材料, ID: flt-semantic-node-75
+			18 button 练习, ID: flt-semantic-node-69
+			19 button 我的, ID: flt-semantic-node-70
+			20 button 小 小遥 日语, ID: flt-semantic-node-71
+			21 container flt-semantic-node-101
+				22 text 最近更新
+				23 container Description: 夏 夏の手紙 · 12 章 · 日语小说 可阅读, ID: flt-semantic-node-86
+					24 button (collapsed) 夏の手紙更多操作, ID: flt-semantic-node-87, Secondary Actions: Expand
+					25 button 查看夏の手紙, ID: flt-semantic-node-88
+				26 container Description: あ 日语的日常表达 · 8 单元 · 日语课本 可学习, ID: flt-semantic-node-90
+					27 button (collapsed) 日语的日常表达更多操作, ID: flt-semantic-node-91, Secondary Actions: Expand
+					28 button 查看日语的日常表达, ID: flt-semantic-node-92
+				29 container Description: N2 N2 模拟试卷 · 38 题 · 日语试卷 待校对, ID: flt-semantic-node-94
+					30 button (collapsed) N2 模拟试卷更多操作, ID: flt-semantic-node-95, Secondary Actions: Expand
+					31 button 查看N2 模拟试卷, ID: flt-semantic-node-96
+				32 progress indicator Description: 雨 雨上がり · 日语小说 解析中 · 35% 35, Value: 35, ID: flt-semantic-node-98
+
+The focused UI element is 24 button (collapsed) 夏の手紙更多操作, ID: flt-semantic-node-87, Secondary Actions: Expand

@@ -60,6 +60,9 @@ class RequestContextMiddleware:
                 headers = MutableHeaders(scope=message)
                 headers["X-Request-ID"] = str(request_id)
                 headers["Cache-Control"] = "no-store"
+                if state.get("session_ref") and state.get("instance_id"):
+                    headers["X-Haruka-Instance-ID"] = state["instance_id"]
+                    headers["X-Haruka-Session-Ref"] = state["session_ref"]
             await send(message)
 
         try:

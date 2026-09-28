@@ -441,6 +441,7 @@ void main() {
         api.close();
       });
       expect(await controller.login('a@example.test', 'valid-test-password'), isTrue);
+      expect(api.sessionBinding?.sessionRef, sessionA);
       final oldAction = operation == 'logout'
           ? controller.signOut()
           : operation == 'password'
@@ -457,6 +458,7 @@ void main() {
       expect(await loginB, isTrue);
       expect(controller.access?.sessionRef, '018f1234-0000-7000-8000-000000000003');
       expect(controller.access?.userId, '018f1234-0000-7000-8000-000000000004');
+      expect(api.sessionBinding?.sessionRef, sessionB);
       expect(sync.locallySignedOut('client'), isFalse);
     });
   }

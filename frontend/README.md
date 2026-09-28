@@ -18,6 +18,16 @@ flutter run -d emulator-5554 --flavor dev --dart-define=HARUKA_ENV=dev --dart-de
 
 Android 的设备 ID 以 `flutter devices` 为准。模拟器地址必须显式传入，不自动把回环地址或缺失配置替换为生产服务。
 
+固定样例数据的前端预览使用独立入口 `lib/main_preview.dart`，仅用于开发和界面对照。正式入口 `lib/main.dart` 始终按公开环境配置装配应用；`HARUKA_MOCK` 不再切换入口。Web 和 Android 预览可分别运行或构建：
+
+```powershell
+flutter run -d chrome --web-port=8772 --target=lib/main_preview.dart
+flutter run -d emulator-5554 --flavor dev --target=lib/main_preview.dart
+flutter build web --target=lib/main_preview.dart --output=build/web-preview --no-web-resources-cdn
+```
+
+预览构建输出到独立目录，避免覆盖正式 Web 构建。预览样例不连接正式业务 API，也不作为实际账号、授权或持久化的验收证据。
+
 公开配置的唯一来源为 [build_targets.json](config/build_targets.json)：
 
 | 参数 | dev | production |

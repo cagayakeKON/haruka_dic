@@ -172,10 +172,47 @@ void main() {
         throwsA(
           isA<ApiFailure>()
               .having((error) => error.code, 'safe code', code)
+              .having((error) => error.statusCode, 'HTTP status', 502)
               .having((error) => error.toString(), 'no body', isNot(contains('private sentinel'))),
         ),
       );
       expect(adapter.calls, 1);
+    }
+  });
+
+  test('HTTP 401 and 403 remain visible when the error envelope cannot be trusted', () async {
+    for (final (status, body, contentType, code) in [
+      (
+        401,
+        jsonEncode({
+          'error': {'code': 'FUTURE_ERROR', 'status_code': 200},
+          'meta': {'request_id': '018f1234-1234-7123-8123-123456789abc'},
+        }),
+        'application/json',
+        'UNKNOWN_ERROR',
+      ),
+      (403, '<html>private sentinel</html>', 'text/html', 'INVALID_RESPONSE'),
+    ]) {
+      final adapter = SampleAdapter(
+        (_, _) async => ResponseBody.fromString(
+          body,
+          status,
+          headers: {
+            Headers.contentTypeHeader: [contentType],
+          },
+        ),
+      );
+      final api = ApiClient(config, adapter: adapter);
+      addTearDown(api.close);
+      await expectLater(
+        api.checkReadiness(),
+        throwsA(
+          isA<ApiFailure>()
+              .having((error) => error.code, 'safe code', code)
+              .having((error) => error.statusCode, 'transport status', status)
+              .having((error) => error.toString(), 'no body', isNot(contains('private sentinel'))),
+        ),
+      );
     }
   });
 

@@ -207,6 +207,7 @@ final class AccessRead {
     required this.authzVersion,
     required this.navigation,
     required this.featureFlags,
+    this.securityEpoch,
   });
   factory AccessRead.fromJson(Object? value) {
     final json = wireObject(value);
@@ -219,6 +220,10 @@ final class AccessRead {
     if (permissions is! List<Object?>) throw const FormatException('Invalid permissions');
     final navigation = json['navigation'];
     final flags = json['feature_flags'];
+    final securityEpoch = json['security_epoch'];
+    if (securityEpoch != null && (securityEpoch is! int || securityEpoch < 0)) {
+      throw const FormatException('Invalid security epoch');
+    }
     if (navigation is! List<Object?> || flags is! List<Object?>) {
       throw const FormatException('Invalid access projection');
     }
@@ -231,12 +236,14 @@ final class AccessRead {
       authzVersion: AuthorizationVersion.fromJson(json['authz_version']),
       navigation: List.unmodifiable(navigation.map(NavigationItem.fromJson)),
       featureFlags: List.unmodifiable(flags.map(wireString)),
+      securityEpoch: securityEpoch as int?,
     );
   }
   final String userId;
   final String instanceId;
   final String audience;
   final String sessionRef;
+  final int? securityEpoch;
   final List<PermissionGrant> permissions;
   final AuthorizationVersion authzVersion;
   final List<NavigationItem> navigation;

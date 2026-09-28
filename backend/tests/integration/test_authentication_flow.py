@@ -14,6 +14,8 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 import httpx2 as httpx
+
+from tests.support.bound_client import BoundAsyncClient
 import pytest
 import pytest_asyncio
 from pydantic import SecretStr
@@ -269,7 +271,7 @@ async def test_concurrent_registration_is_unique_and_invalid_role_is_atomic(
     app.state.runtime = runtime
     email = f"concurrent-{run_id}@haruka.example.test"
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
         responses = await asyncio.gather(
             *(
                 web.post(
@@ -381,7 +383,7 @@ async def test_login_only_identity_survives_dependency_faults_without_profile_gr
     email = f"login-only-{run_id}@haruka.example.test"
     password = "synthetic-login-only-password-2026"  # noqa: S105 - isolated test identity
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
         registered = await web.post(
             "/api/v1/auth/register", json={"email": email, "password": password}, headers=headers
         )
@@ -455,7 +457,7 @@ async def test_existing_verified_account_can_be_prepared_for_login_only_ui_scena
     email = f"scenario-{run_id}@haruka.example.test"
     password = "synthetic-scenario-password-2026"  # noqa: S105 - isolated test identity
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
         registered = await web.post(
             "/api/v1/auth/register", json={"email": email, "password": password}, headers=headers
         )
@@ -506,7 +508,25 @@ async def test_existing_verified_account_can_be_prepared_for_login_only_ui_scena
         access = await web.get("/api/v1/me/access")
         assert access.status_code == 200
         assert {grant["code"] for grant in access.json()["data"]["permissions"]} == {"client.login"}
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url=ORIGIN, cookies=web.cookies
+        ) as unbound:
+            missing_scope = await unbound.get("/api/v1/materials")
+            assert missing_scope.status_code == 409
+            assert missing_scope.json()["error"]["code"] == "AUTH_SCOPE_REQUIRED"
+            assert (
+                missing_scope.headers["X-Haruka-Session-Ref"]
+                == access.json()["data"]["session_ref"]
+            )
+            changed_scope = await unbound.get(
+                "/api/v1/materials", headers={"X-Haruka-Expected-Session": str(uuid4())}
+            )
+            assert changed_scope.status_code == 409
+            assert changed_scope.json()["error"]["code"] == "AUTH_SCOPE_CHANGED"
         assert (await web.get("/api/v1/materials")).status_code == 403
+        assert (await web.get("/api/v1/materials")).headers[
+            "X-Haruka-Session-Ref"
+        ] == access.json()["data"]["session_ref"]
         with pytest.raises(ValueError, match="before the account signs in"):
             await prepare_login_only_user(maintenance, email=email)
 
@@ -523,7 +543,7 @@ async def test_committed_password_change_with_lost_response_is_not_replayed(
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
     old_password = "synthetic-admin-password-2026"  # noqa: S105 - isolated test identity
     new_password = "synthetic-admin-changed-2026"  # noqa: S105 - isolated test identity
-    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=transport, base_url=ORIGIN) as web:
         logged = await web.post(
             "/api/v1/admin/auth/login",
             json={"email": email, "password": old_password},
@@ -592,8 +612,8 @@ async def test_password_recovery_revokes_existing_admin_web_cookie(
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
     transport = httpx.ASGITransport(app=app)
     async with (
-        httpx.AsyncClient(transport=transport, base_url=ORIGIN) as old_admin,
-        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as public,
+        BoundAsyncClient(transport=transport, base_url=ORIGIN) as old_admin,
+        BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as public,
     ):
         signed_in = await old_admin.post(
             "/api/v1/admin/auth/login",
@@ -669,7 +689,7 @@ async def test_email_challenges_reject_reuse_expiry_and_wrong_purpose(
     app.state.runtime = runtime
     email = f"challenge-{run_id}@haruka.example.test"
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
         registered = await web.post(
             "/api/v1/auth/register",
             json={"email": email, "password": "synthetic-challenge-password-2026"},
@@ -741,7 +761,7 @@ async def test_mail_worker_discards_stale_recovery_challenge(
     email = f"admin-{run_id}@haruka.example.test"
     app = create_app(runtime.settings)
     app.state.runtime = runtime
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
         response = await web.post(
             "/api/v1/auth/recovery/request",
             json={"email": email},
@@ -821,7 +841,7 @@ async def test_password_change_and_recovery_race_has_one_committed_winner(
     changed_password = "synthetic-race-changed-2026"  # noqa: S105 - isolated test identity
     recovered_password = "synthetic-race-recovered-2026"  # noqa: S105 - isolated test identity
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
         registered = await web.post(
             "/api/v1/auth/register",
             json={"email": email, "password": original_password},
@@ -931,7 +951,7 @@ async def test_admin_cannot_open_registration_with_privileged_default_role(
     app = create_app(runtime.settings)
     app.state.runtime = runtime
     headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
         admin = await web.post(
             "/api/v1/admin/auth/login",
             json={
@@ -975,7 +995,7 @@ async def test_registration_session_and_native_refresh(
     email = f"alice-{run_id}@haruka.example.test"
     password = "synthetic-client-password-2026"  # noqa: S105 - isolated test identity
     admin_email = f"admin-{run_id}@haruka.example.test"
-    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=transport, base_url=ORIGIN) as web:
         closed = await web.post(
             "/api/v1/auth/register",
             json={"email": email, "password": password},
@@ -1072,7 +1092,7 @@ async def test_registration_session_and_native_refresh(
             headers={**json_headers, "X-CSRF-Token": current_csrf},
         )
         assert foreign_revoke.status_code == 404
-    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:18081") as native:
+    async with BoundAsyncClient(transport=transport, base_url="http://127.0.0.1:18081") as native:
         native_login = await native.post(
             "/api/v1/auth/native/login",
             json={"email": email, "password": password, "platform": "windows"},
@@ -1143,7 +1163,7 @@ async def test_registration_session_and_native_refresh(
         assert old_access_again.status_code == 200
     changed_password = "synthetic-client-updated-2026"  # noqa: S105 - isolated test identity
     recovered_password = "synthetic-client-recovered-2026"  # noqa: S105 - isolated test identity
-    async with httpx.AsyncClient(transport=transport, base_url=ORIGIN) as web:
+    async with BoundAsyncClient(transport=transport, base_url=ORIGIN) as web:
         logged = await web.post(
             "/api/v1/auth/login",
             json={"email": email, "password": password},
@@ -1181,7 +1201,7 @@ async def test_registration_session_and_native_refresh(
         )
         assert active_web.status_code == 200
         assert (await web.get("/api/v1/me/access")).status_code == 200
-        async with httpx.AsyncClient(
+        async with BoundAsyncClient(
             transport=transport, base_url="http://127.0.0.1:18081"
         ) as native_after_change:
             active_native = await native_after_change.post(
@@ -1197,7 +1217,7 @@ async def test_registration_session_and_native_refresh(
         )
         assert recovered.status_code == 204
         assert (await web.get("/api/v1/me/access")).status_code == 401
-        async with httpx.AsyncClient(
+        async with BoundAsyncClient(
             transport=transport, base_url="http://127.0.0.1:18081"
         ) as native_after_recovery:
             stale_access = await native_after_recovery.get(

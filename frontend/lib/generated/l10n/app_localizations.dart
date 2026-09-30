@@ -92,6 +92,12 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('zh')];
 
+  /// No description provided for @authManualRecoveryCode.
+  ///
+  /// In zh, this message translates to:
+  /// **'人工恢复码或安全链接'**
+  String get authManualRecoveryCode;
+
   /// No description provided for @appTitle.
   ///
   /// In zh, this message translates to:
@@ -764,6 +770,12 @@ abstract class AppLocalizations {
   /// **'当前暂停新账号注册'**
   String get authRegistrationClosed;
 
+  /// No description provided for @authRecoveryClosed.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前未开放找回'**
+  String get authRecoveryClosed;
+
   /// No description provided for @authServiceUnavailable.
   ///
   /// In zh, this message translates to:
@@ -1267,6 +1279,78 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'人工恢复'**
   String get adminRecoveryRequests;
+
+  /// No description provided for @adminMenuOrder.
+  ///
+  /// In zh, this message translates to:
+  /// **'排序（越小越靠前）'**
+  String get adminMenuOrder;
+
+  /// No description provided for @adminMenuIcon.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航图标'**
+  String get adminMenuIcon;
+
+  /// No description provided for @adminMenuOrderError.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入 0 到 100000 的排序值。'**
+  String get adminMenuOrderError;
+
+  /// No description provided for @adminAuditAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'操作类别'**
+  String get adminAuditAction;
+
+  /// No description provided for @adminAuditActor.
+  ///
+  /// In zh, this message translates to:
+  /// **'操作者 ID'**
+  String get adminAuditActor;
+
+  /// No description provided for @adminAuditTargetType.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标类型'**
+  String get adminAuditTargetType;
+
+  /// No description provided for @adminAuditTargetId.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标 ID'**
+  String get adminAuditTargetId;
+
+  /// No description provided for @adminAuditTargetCode.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标代码'**
+  String get adminAuditTargetCode;
+
+  /// No description provided for @adminAuditFrom.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始时间（含时区）'**
+  String get adminAuditFrom;
+
+  /// No description provided for @adminAuditTo.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束时间（含时区）'**
+  String get adminAuditTo;
+
+  /// No description provided for @adminAuditFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'筛选'**
+  String get adminAuditFilter;
+
+  /// No description provided for @adminAuditTimeError.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入带时区的有效时间，结束时间不能早于开始时间。'**
+  String get adminAuditTimeError;
 
   /// No description provided for @adminRecoveryIssue.
   ///
@@ -8719,6 +8803,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'代码'**
   String get adminMenuCode;
+
+  /// No description provided for @authActivationProgressTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号激活进度'**
+  String get authActivationProgressTitle;
+
+  /// No description provided for @authActivationProgressHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在检查邮箱验证和注册审批状态。'**
+  String get authActivationProgressHint;
+
+  /// No description provided for @authActivationApprovalTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'注册申请待审批'**
+  String get authActivationApprovalTitle;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

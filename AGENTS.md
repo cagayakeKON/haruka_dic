@@ -2,7 +2,7 @@
 
 ## 项目与当前状态
 
-Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md；[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)已按用户最终验收决定通过，未运行的检查仍按原始证据标注。[B2a本人资料与设置](docs/delivery/reviews/2026-09-28-profile-settings-acceptance.md)已按当期范围重新验收通过：用户指出旧正式界面偏离已确认Flutter mock后，旧视觉通过结论被撤回；现已把真实功能接入同一Flutter主界面、删除重复展示，并经正式Web与Android实操及定点复核。[B2b身份治理](docs/delivery/reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，正式 Web/Android 对照未做，不签署验收；B2c凭据/模型任务尚未实现，阶段1未完成。现行产品设计语言为[「晴空频率」](docs/product/design-language.md)，整体方向已确认，手机/电脑HTML原型已按该语言重建，现有已确认Flutter mock画面是正式页面主基线，真实业务按所属阶段接入；不设“继续阅读”，演示边界见prototype/README.md。
+Haruka 是以用户自有材料为基础的 AI 语言学习应用。当前仓库包含需求/架构/计划、prototype/ HTML原型，以及frontend/ Flutter应用、backend/ Python包、scripts/开发入口和dev/隔离基础设施。阶段1的完整B0可重复工程基础已验收，候选来源、完整矩阵与边界见docs/delivery/reviews/2026-09-22-b0-acceptance.md；[B1账号与收藏闭环](docs/delivery/reviews/2026-09-26-b1-implementation.md)已按用户最终验收决定通过，未运行的检查仍按原始证据标注。[B2a本人资料与设置](docs/delivery/reviews/2026-09-28-profile-settings-acceptance.md)已按当期范围重新验收通过：用户指出旧正式界面偏离已确认Flutter mock后，旧视觉通过结论被撤回；现已把真实功能接入同一Flutter主界面、删除重复展示，并经正式Web与Android实操及定点复核。[B2b身份治理](docs/delivery/reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；B2c凭据/模型任务尚未实现，阶段1未完成。现行产品设计语言为[「晴空频率」](docs/product/design-language.md)，整体方向已确认，手机/电脑HTML原型已按该语言重建，现有已确认Flutter mock画面是正式页面主基线，真实业务按所属阶段接入；不设“继续阅读”，演示边界见prototype/README.md。
 
 文档任务只修改文档；用户要求开始实现时，按实施计划推进必要工程工作。不把计划当成已实现，不为了运行不存在的检查擅自创建项目骨架。
 

@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query, Request
 
 from app.api.auth_dependencies import require_runtime, require_scope
+from app.api.governance_writes import GOVERNANCE_WRITE_HEADERS, governance_write
 from app.api.responses import error_responses, get_request_id
 from app.api.security_guards import require_session_csrf
 from app.bootstrap import Runtime
@@ -78,7 +79,7 @@ async def list_admin_roles(
     operation_id="create_admin_role",
     response_model=SuccessResponse[AuthorizationWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.role.create"]},
+    openapi_extra={**GOVERNANCE_WRITE_HEADERS, "x-haruka-permissions": ["admin.role.create"]},
 )
 async def create_admin_role(
     request: Request, payload: RoleCreate
@@ -87,12 +88,18 @@ async def create_admin_role(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        created = await role_governance.create_role(
+        created = await governance_write(
             session,
-            actor_id=scope.user_id,
-            code=payload.code,
-            name=payload.name,
-            description=payload.description,
+            request,
+            scope,
+            AuthorizationWriteResult,
+            lambda: role_governance.create_role(
+                session,
+                actor_id=scope.user_id,
+                code=payload.code,
+                name=payload.name,
+                description=payload.description,
+            ),
         )
     return SuccessResponse[AuthorizationWriteResult](
         data=created, meta=ResponseMeta(request_id=get_request_id(request))
@@ -123,7 +130,7 @@ async def get_admin_role(request: Request, role_id: UUID) -> SuccessResponse[Rol
     operation_id="update_admin_role",
     response_model=SuccessResponse[AuthorizationWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.role.update"]},
+    openapi_extra={**GOVERNANCE_WRITE_HEADERS, "x-haruka-permissions": ["admin.role.update"]},
 )
 async def update_admin_role(
     request: Request, role_id: UUID, payload: RoleMetadataUpdate
@@ -132,13 +139,19 @@ async def update_admin_role(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        updated = await role_governance.update_role_metadata(
+        updated = await governance_write(
             session,
-            actor_id=scope.user_id,
-            role_id=role_id,
-            expected_revision=payload.expected_revision,
-            name=payload.name,
-            description=payload.description,
+            request,
+            scope,
+            AuthorizationWriteResult,
+            lambda: role_governance.update_role_metadata(
+                session,
+                actor_id=scope.user_id,
+                role_id=role_id,
+                expected_revision=payload.expected_revision,
+                name=payload.name,
+                description=payload.description,
+            ),
         )
     return SuccessResponse[AuthorizationWriteResult](
         data=updated, meta=ResponseMeta(request_id=get_request_id(request))
@@ -150,7 +163,7 @@ async def update_admin_role(
     operation_id="set_admin_role_enabled",
     response_model=SuccessResponse[AuthorizationWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.role.update"]},
+    openapi_extra={**GOVERNANCE_WRITE_HEADERS, "x-haruka-permissions": ["admin.role.update"]},
 )
 async def set_admin_role_enabled(
     request: Request, role_id: UUID, payload: RoleEnabledUpdate
@@ -159,12 +172,18 @@ async def set_admin_role_enabled(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        updated = await role_governance.set_role_enabled(
+        updated = await governance_write(
             session,
-            actor_id=scope.user_id,
-            role_id=role_id,
-            expected_revision=payload.expected_revision,
-            enabled=payload.enabled,
+            request,
+            scope,
+            AuthorizationWriteResult,
+            lambda: role_governance.set_role_enabled(
+                session,
+                actor_id=scope.user_id,
+                role_id=role_id,
+                expected_revision=payload.expected_revision,
+                enabled=payload.enabled,
+            ),
         )
     return SuccessResponse[AuthorizationWriteResult](
         data=updated, meta=ResponseMeta(request_id=get_request_id(request))
@@ -176,7 +195,10 @@ async def set_admin_role_enabled(
     operation_id="replace_admin_role_grants",
     response_model=SuccessResponse[AuthorizationWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.role.permission.assign"]},
+    openapi_extra={
+        **GOVERNANCE_WRITE_HEADERS,
+        "x-haruka-permissions": ["admin.role.permission.assign"],
+    },
 )
 async def replace_admin_role_grants(
     request: Request, role_id: UUID, payload: RoleGrantsUpdate
@@ -185,13 +207,19 @@ async def replace_admin_role_grants(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        updated = await role_governance.replace_role_grants(
+        updated = await governance_write(
             session,
-            actor_id=scope.user_id,
-            role_id=role_id,
-            expected_revision=payload.expected_revision,
-            grants=tuple(
-                (item.permission_code, item.effect, item.data_scope) for item in payload.grants
+            request,
+            scope,
+            AuthorizationWriteResult,
+            lambda: role_governance.replace_role_grants(
+                session,
+                actor_id=scope.user_id,
+                role_id=role_id,
+                expected_revision=payload.expected_revision,
+                grants=tuple(
+                    (item.permission_code, item.effect, item.data_scope) for item in payload.grants
+                ),
             ),
         )
     return SuccessResponse[AuthorizationWriteResult](
@@ -204,7 +232,10 @@ async def replace_admin_role_grants(
     operation_id="replace_admin_role_inheritance",
     response_model=SuccessResponse[AuthorizationWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.role.permission.assign"]},
+    openapi_extra={
+        **GOVERNANCE_WRITE_HEADERS,
+        "x-haruka-permissions": ["admin.role.permission.assign"],
+    },
 )
 async def replace_admin_role_inheritance(
     request: Request, role_id: UUID, payload: RoleInheritanceUpdate
@@ -213,12 +244,18 @@ async def replace_admin_role_inheritance(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        updated = await role_governance.replace_role_parents(
+        updated = await governance_write(
             session,
-            actor_id=scope.user_id,
-            role_id=role_id,
-            expected_revision=payload.expected_revision,
-            parent_role_ids=tuple(payload.parent_role_ids),
+            request,
+            scope,
+            AuthorizationWriteResult,
+            lambda: role_governance.replace_role_parents(
+                session,
+                actor_id=scope.user_id,
+                role_id=role_id,
+                expected_revision=payload.expected_revision,
+                parent_role_ids=tuple(payload.parent_role_ids),
+            ),
         )
     return SuccessResponse[AuthorizationWriteResult](
         data=updated, meta=ResponseMeta(request_id=get_request_id(request))
@@ -230,7 +267,7 @@ async def replace_admin_role_inheritance(
     operation_id="delete_admin_role",
     response_model=SuccessResponse[AuthorizationWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.role.delete"]},
+    openapi_extra={**GOVERNANCE_WRITE_HEADERS, "x-haruka-permissions": ["admin.role.delete"]},
 )
 async def delete_admin_role(
     request: Request, role_id: UUID, payload: RoleDelete
@@ -239,11 +276,17 @@ async def delete_admin_role(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        deleted = await role_governance.delete_role(
+        deleted = await governance_write(
             session,
-            actor_id=scope.user_id,
-            role_id=role_id,
-            expected_revision=payload.expected_revision,
+            request,
+            scope,
+            AuthorizationWriteResult,
+            lambda: role_governance.delete_role(
+                session,
+                actor_id=scope.user_id,
+                role_id=role_id,
+                expected_revision=payload.expected_revision,
+            ),
         )
     return SuccessResponse[AuthorizationWriteResult](
         data=deleted, meta=ResponseMeta(request_id=get_request_id(request))
@@ -301,7 +344,10 @@ async def list_admin_grant_boundaries(
     operation_id="replace_admin_grant_boundaries",
     response_model=SuccessResponse[AuthorizationWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.grant_boundary.update"]},
+    openapi_extra={
+        **GOVERNANCE_WRITE_HEADERS,
+        "x-haruka-permissions": ["admin.grant_boundary.update"],
+    },
 )
 async def replace_admin_grant_boundaries(
     request: Request, role_id: UUID, payload: GrantBoundariesUpdate
@@ -310,12 +356,18 @@ async def replace_admin_grant_boundaries(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        updated = await role_governance.replace_grant_boundaries(
+        updated = await governance_write(
             session,
-            actor_id=scope.user_id,
-            role_id=role_id,
-            expected_revision=payload.expected_revision,
-            boundaries=tuple(payload.boundaries),
+            request,
+            scope,
+            AuthorizationWriteResult,
+            lambda: role_governance.replace_grant_boundaries(
+                session,
+                actor_id=scope.user_id,
+                role_id=role_id,
+                expected_revision=payload.expected_revision,
+                boundaries=tuple(payload.boundaries),
+            ),
         )
     return SuccessResponse[AuthorizationWriteResult](
         data=updated, meta=ResponseMeta(request_id=get_request_id(request))

@@ -11,8 +11,9 @@ import 'auth_frame.dart';
 
 enum EmailActionKind { verify, resetPassword }
 
-/// Consumes a fragment token only after explicit confirmation. On native, the
-/// user may paste a complete, trusted email link; the token is never shown.
+/// Fragment tokens are not displayed or consumed until explicit confirmation.
+/// Email mode accepts a complete trusted link; explicit manual recovery mode
+/// also accepts a pasted opaque recovery code.
 class EmailActionPage extends StatefulWidget {
   const EmailActionPage({
     required this.kind,
@@ -21,6 +22,7 @@ class EmailActionPage extends StatefulWidget {
     this.passwordMinLength = 15,
     this.passwordMaxLength = 128,
     this.initialToken,
+    this.allowManualRecoveryCode = false,
     super.key,
   });
 
@@ -28,6 +30,7 @@ class EmailActionPage extends StatefulWidget {
   final Uri trustedActionBase;
   final Future<void> Function(String token, String? newPassword) onSubmit;
   final String? initialToken;
+  final bool allowManualRecoveryCode;
   final int passwordMinLength;
   final int passwordMaxLength;
 
@@ -61,8 +64,15 @@ class _EmailActionPageState extends State<EmailActionPage> {
   Future<void> _submit() async {
     if (_busy || !_form.currentState!.validate()) return;
     final strings = AppLocalizations.of(context);
+    final manualCode =
+        widget.kind == EmailActionKind.resetPassword &&
+            widget.allowManualRecoveryCode &&
+            RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(_link.text.trim())
+        ? _link.text.trim()
+        : null;
     final token =
         _token ??
+        manualCode ??
         tokenFromPastedActionLink(
           pasted: _link.text,
           trustedBase: widget.trustedActionBase,
@@ -131,7 +141,11 @@ class _EmailActionPageState extends State<EmailActionPage> {
                     autocorrect: false,
                     enableSuggestions: false,
                     decoration: InputDecoration(
-                      labelText: reset ? strings.authRecoveryToken : strings.authVerificationToken,
+                      labelText: reset
+                          ? widget.allowManualRecoveryCode
+                                ? strings.authManualRecoveryCode
+                                : strings.authRecoveryToken
+                          : strings.authVerificationToken,
                     ),
                     validator: (value) =>
                         value == null || value.trim().isEmpty ? strings.authRequired : null,

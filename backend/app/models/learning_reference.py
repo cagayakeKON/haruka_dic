@@ -814,7 +814,7 @@ class CollectionItem(IdentityMixin, TimestampMixin, LibraryScopeMixin, Base):
 
 
 class IdempotencyRecord(IdentityMixin, TimestampMixin, Base):
-    """The shared user-owned idempotency contract; current slice writes collection results."""
+    """Actor-scoped collection results and encrypted administrative action receipts."""
 
     __tablename__ = "idempotency_records"
     __table_args__ = (
@@ -825,17 +825,29 @@ class IdempotencyRecord(IdentityMixin, TimestampMixin, Base):
             "key_digest",
             name="uq_learning_idempotency_action_key",
         ),
+        UniqueConstraint(
+            "owner_user_id",
+            "audience",
+            "action_code",
+            "lookup_digest",
+            name="uq_governance_idempotency_lookup",
+        ),
         CheckConstraint(
-            "audience IN ('client') AND state IN ('committed')", name="learning_action_state"
+            "lookup_digest IS NULL OR octet_length(lookup_digest) = 32",
+            name="governance_lookup_length",
+        ),
+        CheckConstraint(
+            "audience IN ('client', 'admin') AND state IN ('committed')",
+            name="learning_action_state",
         ),
         CheckConstraint("http_status IN (200, 201)", name="learning_http_status"),
         CheckConstraint("revision >= 1 AND response_schema_version >= 1", name="learning_versions"),
         CheckConstraint(
-            "(result_kind IS NULL AND result_id IS NULL) OR (result_kind IS NOT NULL AND result_id IS NOT NULL)",
+            "(audience = 'admin' AND result_kind = 'governance_result' AND result_id IS NULL) OR (audience = 'client' AND ((result_kind IS NULL AND result_id IS NULL) OR (result_kind IS NOT NULL AND result_id IS NOT NULL)))",
             name="learning_result_pair",
         ),
         CheckConstraint(
-            "result_kind = 'collection_item' AND result_id IS NOT NULL AND safe_response IS NOT NULL",
+            "safe_response IS NOT NULL AND ((audience = 'client' AND result_kind = 'collection_item' AND result_id IS NOT NULL) OR (audience = 'admin' AND result_kind = 'governance_result' AND result_id IS NULL AND library_id IS NULL))",
             name="learning_committed_result",
         ),
         CheckConstraint(
@@ -854,32 +866,41 @@ class IdempotencyRecord(IdentityMixin, TimestampMixin, Base):
                 "user_owned",
                 owner="owner_user_id",
                 module="learning_reference",
-                entrances=("authorized POST /api/v1/collections",),
+                entrances=(
+                    "authorized POST /api/v1/collections",
+                    "authorized administrative governance writes",
+                ),
                 deletion="expire only after replay window; collection business uniqueness persists",
                 relations=(
                     business_relation(
                         "owner_user_id",
                         "users.id",
                         nullable=False,
-                        parent_lock=_LOCK,
-                        service=_SERVICE,
-                        tests=_TESTS,
+                        parent_lock="collection: "
+                        + _LOCK
+                        + "; governance: authorization_revisions → users → auth_sessions",
+                        service=_SERVICE + "; app.services.governance_receipts",
+                        tests=_TESTS + "; backend/tests/integration/test_governance_security.py",
                     ),
                     business_relation(
                         "library_id",
                         "libraries.id",
                         nullable=True,
-                        parent_lock=_LOCK,
-                        service=_SERVICE,
-                        tests=_TESTS,
+                        parent_lock="collection: "
+                        + _LOCK
+                        + "; governance: authorization_revisions → users → auth_sessions",
+                        service=_SERVICE + "; app.services.governance_receipts",
+                        tests=_TESTS + "; backend/tests/integration/test_governance_security.py",
                     ),
                     business_relation(
                         "result_id",
                         "collection_items.id",
                         nullable=True,
-                        parent_lock=_LOCK,
-                        service=_SERVICE,
-                        tests=_TESTS,
+                        parent_lock="collection: "
+                        + _LOCK
+                        + "; governance: authorization_revisions → users → auth_sessions",
+                        service=_SERVICE + "; app.services.governance_receipts",
+                        tests=_TESTS + "; backend/tests/integration/test_governance_security.py",
                     ),
                 ),
             ),
@@ -898,7 +919,10 @@ class IdempotencyRecord(IdentityMixin, TimestampMixin, Base):
         info=column_info("locked library", "personal_reference"),
     )
     audience: Mapped[str] = mapped_column(
-        String(16), nullable=False, comment="固定client受众", info=column_info("route boundary")
+        String(16),
+        nullable=False,
+        comment="固定client受众",
+        info=column_info("route boundary"),
     )
     revision: Mapped[int] = mapped_column(
         BigInteger,
@@ -915,6 +939,12 @@ class IdempotencyRecord(IdentityMixin, TimestampMixin, Base):
         nullable=False,
         comment="客户端键的服务端HMAC摘要",
         info=column_info("server HMAC", "secret_hash"),
+    )
+    lookup_digest: Mapped[bytes | None] = mapped_column(
+        LargeBinary,
+        nullable=True,
+        comment="治理客户端键稳定查询摘要；旧client为空",
+        info=column_info("governance receipt boundary", "secret_hash"),
     )
     request_digest: Mapped[bytes] = mapped_column(
         LargeBinary,

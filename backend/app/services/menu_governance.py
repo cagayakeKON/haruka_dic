@@ -271,8 +271,18 @@ async def project_navigation(
         )
         for menu in menus
     ]
+    by_code = {menu.code: menu for menu in menus}
+    published = {page.code: page for page in PUBLISHED_PAGES}
     return [
-        NavigationRead(key=code, route_key=route_key, title=title)
+        NavigationRead(
+            key=code,
+            route_key=route_key,
+            title=title,
+            icon_key=by_code[code].icon_key,
+            title_customized=code not in published or title != published[code].title,
+            icon_customized=code not in published
+            or by_code[code].icon_key != published[code].icon_key,
+        )
         for code, route_key, title in visible_menu_entries(projections, allowed)
     ]
 

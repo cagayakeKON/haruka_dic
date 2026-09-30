@@ -645,6 +645,9 @@ final class AuthController extends ChangeNotifier {
   }
 
   void _clearMemory() {
+    _sessionPages.clear();
+    _sessionReads.clear();
+    ++_sessionGeneration;
     _accessDeadline?.cancel();
     _accessValidationAge = null;
     repository.api.clearSessionBinding();
@@ -685,6 +688,7 @@ final class AuthController extends ChangeNotifier {
       final result = await action({
         ...(write ? _writeHeaders() : _readHeaders()),
         'X-Operation-ID': operationId,
+        if (write && _admin) 'Idempotency-Key': operationId,
       });
       if (current != _epoch || _access?.userId != userId) {
         throw const ApiFailure(code: 'SESSION_INVALID');
@@ -706,6 +710,7 @@ final class AuthController extends ChangeNotifier {
           final result = await action({
             ...(write ? _writeHeaders() : _readHeaders()),
             'X-Operation-ID': operationId,
+            if (write && _admin) 'Idempotency-Key': operationId,
           });
           if (current != _epoch || _access?.userId != userId) {
             throw const ApiFailure(code: 'SESSION_INVALID');
@@ -807,9 +812,42 @@ final class AuthController extends ChangeNotifier {
     throw const ApiFailure(code: 'REFRESH_SUPERSEDED');
   }
 
-  Future<PageResponse<SessionSummary>> sessions({String? cursor}) => _authorized(
-    (headers) => repository.sessions(admin: _admin, headers: headers, cursor: cursor),
-  );
+  final _sessionPages = <String, PageResponse<SessionSummary>>{};
+  final _sessionReads = <String, Future<PageResponse<SessionSummary>>>{};
+  var _sessionGeneration = 0;
+
+  Future<PageResponse<SessionSummary>> sessions({String? cursor}) async {
+    if (!isAuthenticated) throw const ApiFailure(code: 'AUTH_REQUIRED');
+    final key = cursor ?? '';
+    final cached = _sessionPages[key];
+    if (cached != null) return cached;
+    final pending = _sessionReads[key];
+    if (pending != null) return pending;
+    final epoch = _epoch;
+    final generation = _sessionGeneration;
+    final session = _sessionRef;
+    final request = () async {
+      final page = await _authorized(
+        (headers) => repository.sessions(admin: _admin, headers: headers, cursor: cursor),
+      );
+      if (_disposed ||
+          epoch != _epoch ||
+          generation != _sessionGeneration ||
+          session != _sessionRef) {
+        throw const ApiFailure(code: 'SESSION_INVALID');
+      }
+      _sessionPages[key] = page;
+      return page;
+    }();
+    _sessionReads[key] = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_sessionReads[key], request)) {
+        unawaited(_sessionReads.remove(key));
+      }
+    }
+  }
 
   Future<AccountRead> account() => _authorized((headers) => repository.account(headers));
 
@@ -822,6 +860,9 @@ final class AuthController extends ChangeNotifier {
       (headers) => repository.revoke(id, admin: _admin, headers: headers, operationId: operationId),
       write: true,
     );
+    _sessionPages.clear();
+    _sessionReads.clear();
+    ++_sessionGeneration;
   }
 
   Future<bool> revokeAll() async {
@@ -963,10 +1004,14 @@ final class AuthController extends ChangeNotifier {
   Future<GovernanceSummaryRead> adminGovernanceSummary() =>
       authorizedRead((headers) => repository.adminGovernanceSummary(headers));
 
-  Future<PageResponse<AuditEventRead>> adminAuditEvents({String? cursor, String? result}) =>
-      authorizedRead(
-        (headers) => repository.adminAuditEvents(headers, cursor: cursor, result: result),
-      );
+  Future<PageResponse<AuditEventRead>> adminAuditEvents({
+    String? cursor,
+    String? result,
+    Map<String, String> filters = const {},
+  }) => authorizedRead(
+    (headers) =>
+        repository.adminAuditEvents(headers, cursor: cursor, result: result, filters: filters),
+  );
 
   Future<AccountWriteResult> createAdminAccount(
     String email,

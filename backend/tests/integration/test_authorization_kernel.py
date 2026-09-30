@@ -85,8 +85,19 @@ async def test_disabled_parent_and_parent_deny_do_not_grant(
                 )
             )
             assert menu_permission_column == 0
-            assert await session.scalar(text("SELECT COUNT(*) FROM menus")) == await session.scalar(
-                text("SELECT COUNT(*) FROM menu_permission_links")
+            assert (
+                await session.scalar(
+                    text("SELECT COUNT(*) FROM menus WHERE code = 'administration'")
+                )
+                == 1
+            )
+            assert (
+                await session.scalar(
+                    text(
+                        "SELECT COUNT(*) FROM menu_permission_links WHERE permission_code = 'admin.login'"
+                    )
+                )
+                == 1
             )
             parent = Role(
                 code="kernel_parent",

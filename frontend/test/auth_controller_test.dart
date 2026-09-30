@@ -107,6 +107,80 @@ void main() {
   );
   final requestId = '018f1234-1234-7123-8123-123456789abc';
 
+  test('session pages reuse complete data, invalidate after revoke and reject a late old identity read', () async {
+    var reads = 0;
+    var block = false;
+    var started = Completer<void>();
+    var release = Completer<void>();
+    final adapter = SampleAdapter((options, _) async {
+      switch (options.uri.path) {
+        case '/api/v1/meta':
+          return jsonBody({
+            'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+            'meta': {'request_id': requestId},
+          });
+        case '/api/v1/auth/native/login':
+          return jsonBody(samples['auth_native_authenticated'] as Object);
+        case '/api/v1/me/access':
+          return jsonBody(samples['auth_client_access_login_only'] as Object);
+        case '/api/v1/auth/sessions':
+          reads++;
+          if (block) {
+            started.complete();
+            await release.future;
+          }
+          return jsonBody(samples['auth_sessions_page'] as Object);
+        case '/api/v1/auth/sessions/$sessionB/revoke':
+          return ResponseBody.fromString('', 204);
+      }
+      throw StateError('Unexpected ${options.method} ${options.uri.path}');
+    });
+    final api = ApiClient(config, adapter: adapter);
+    final controller = AuthController(
+      AuthRepository(api, config),
+      config,
+      vault: _MemoryVault(),
+      sync: _NoSync(),
+    );
+    addTearDown(() {
+      controller.dispose();
+      api.close();
+    });
+    expect(await controller.login('a@example.test', 'private-password'), isTrue);
+    final first = await controller.sessions();
+    expect(await controller.sessions(), same(first));
+    await controller.sessions(cursor: 'next');
+    await controller.sessions(cursor: 'next');
+    expect(reads, 2);
+    await controller.revoke(sessionB);
+    await controller.sessions();
+    expect(reads, 3);
+    block = true;
+    final late = controller.sessions(cursor: 'late');
+    await started.future;
+    final mergedLate = controller.sessions(cursor: 'late');
+    await controller.revoke(sessionB);
+    final staleFailure = throwsA(
+      isA<ApiFailure>().having((failure) => failure.code, 'code', 'SESSION_INVALID'),
+    );
+    final firstRejected = expectLater(late, staleFailure);
+    final secondRejected = expectLater(mergedLate, staleFailure);
+    release.complete();
+    await Future.wait([firstRejected, secondRejected]);
+    started = Completer<void>();
+    release = Completer<void>();
+    final oldIdentity = controller.sessions(cursor: 'old-identity');
+    await started.future;
+    final oldIdentityRejected = expectLater(oldIdentity, staleFailure);
+    await controller.logout();
+    release.complete();
+    await oldIdentityRejected;
+    block = false;
+    expect(await controller.login('b@example.test', 'private-password'), isTrue);
+    await controller.sessions();
+    expect(reads, 6);
+  });
+
   test('adopting an endpoint clears old policy until the new policy is verified', () async {
     final adapter = SampleAdapter((options, _) async {
       if (options.path == '/api/v1/meta') {

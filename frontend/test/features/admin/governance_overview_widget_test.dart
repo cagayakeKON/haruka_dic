@@ -66,6 +66,7 @@ void main() {
     var auditReads = 0;
     var revoke = false;
     var policy = 1;
+    Map<String, String>? query;
     final adapter = SampleAdapter((options, _) async {
       final path = options.uri.path;
       switch (path) {
@@ -113,6 +114,7 @@ void main() {
           });
         case '/api/v1/admin/audit-events':
           auditReads += 1;
+          query = options.uri.queryParameters;
           return _json({
             'data': [
               {
@@ -176,18 +178,39 @@ void main() {
     await tester.pump();
     expect(auditReads, 1);
     expect(find.text('user.updated'), findsOneWidget);
-    await tester.tap(find.text('user.updated'));
+    final values = [
+      'user.updated',
+      userId,
+      'user',
+      eventId,
+      'desk',
+      '2026-09-29T09:00:00+09:00',
+      '2026-09-30T09:00:00+09:00',
+    ];
+    for (var index = 0; index < values.length; index++) {
+      await tester.enterText(find.byType(TextField).at(index), values[index]);
+    }
+    expect(auditReads, 1);
+    await tester.tap(find.text('筛选'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await _until(tester, find.text('user.updated'));
+    expect(query, containsPair('action', 'user.updated'));
+    expect(query, containsPair('actor_user_id', userId));
+    expect(query, containsPair('target_id', eventId));
+    expect(query, containsPair('created_from', '2026-09-29T00:00:00.000Z'));
+    expect(auditReads, 2);
+    await tester.tap(find.text('user.updated').last);
     await tester.pumpAndSettle();
     expect(find.text('审计详情'), findsOneWidget);
     expect(find.text('status: disabled'), findsOneWidget);
-    expect(auditReads, 1);
+    expect(auditReads, 2);
     revoke = true;
     expect(await tester.runAsync(() => auth.verifyCurrentAccess()), isTrue);
     await tester.pump();
     expect(find.text('当前管理会话没有此操作权限。'), findsWidgets);
     expect(find.text('status: disabled'), findsNothing);
     expect(find.text('user.updated'), findsNothing);
-    expect(auditReads, 1);
+    expect(auditReads, 2);
     await tester.pumpWidget(const SizedBox.shrink());
     auth.dispose();
   });

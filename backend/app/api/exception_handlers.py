@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 async def handle_app_error(request: Request, exc: Exception) -> JSONResponse:
     if not isinstance(exc, AppError):
         return error_response(request, ErrorCode.INTERNAL_ERROR)
+    if exc.code == ErrorCode.PERMISSION_DENIED:
+        from app.api.governance_denials import record_governance_denial
+
+        await record_governance_denial(request)
     return error_response(request, exc.code, revision=exc.current_revision)
 
 

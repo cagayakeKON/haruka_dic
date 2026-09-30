@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:haruka/app/haruka_app.dart';
+import 'package:haruka/core/api/auth_models.dart';
 import 'package:haruka/features/auth/auth_forms.dart';
 import 'package:haruka/features/auth/auth_pages.dart';
 import 'package:haruka/features/auth/email_action_page.dart';
@@ -17,6 +18,51 @@ Widget _host(Widget child) => MaterialApp(
 );
 
 void main() {
+  testWidgets('activation uses actual approval state and does not offer email resend', (
+    tester,
+  ) async {
+    var state = 'pending_approval';
+    var reads = 0;
+    await tester.pumpWidget(
+      _host(
+        ActivationPage(
+          onStatus: () async {
+            reads++;
+            return ActivationStatus(state: state, expiresAt: DateTime.utc(2030));
+          },
+          onResend: (_) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(reads, 1);
+    expect(find.text('注册申请待审批'), findsOneWidget);
+    expect(find.text('邮箱已验证，正在等待管理员审批。'), findsOneWidget);
+    expect(find.byKey(const ValueKey(UiTestIds.activationResendSubmit)), findsNothing);
+    state = 'rejected';
+    await tester.tap(find.text('检查验证状态'));
+    await tester.pumpAndSettle();
+    expect(find.text('注册申请已被拒绝。'), findsOneWidget);
+    expect(find.text('邮箱尚待验证'), findsNothing);
+    expect(find.byKey(const ValueKey(UiTestIds.activationResendSubmit)), findsNothing);
+  });
+
+  testWidgets('activation offers resend only when email is actually pending', (tester) async {
+    await tester.pumpWidget(
+      _host(
+        ActivationPage(
+          onStatus: () async =>
+              ActivationStatus(state: 'pending_email', expiresAt: DateTime.utc(2030)),
+          onResend: (_) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('邮箱尚待验证'), findsOneWidget);
+    expect(find.byKey(const ValueKey(UiTestIds.activationResendEmail)), findsOneWidget);
+    expect(find.byKey(const ValueKey(UiTestIds.activationResendSubmit)), findsOneWidget);
+  });
+
   testWidgets('administrator login offers the same email recovery without registration', (
     tester,
   ) async {
@@ -244,6 +290,41 @@ void main() {
     expect(email, 'user@example.test');
     expect(password, 'valid-test-password');
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('raw recovery code requires manual mode and explicit confirmation', (tester) async {
+    const token = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    var calls = 0;
+    for (final manual in [false, true]) {
+      await tester.pumpWidget(
+        _host(
+          EmailActionPage(
+            key: ValueKey(manual),
+            kind: EmailActionKind.resetPassword,
+            allowManualRecoveryCode: manual,
+            trustedActionBase: Uri.parse('https://localhost:18443'),
+            onSubmit: (value, password) async {
+              expect(value, token);
+              expect(password, 'Synthetic-new-password-123!');
+              calls++;
+            },
+          ),
+        ),
+      );
+      await tester.enterText(find.byKey(const ValueKey(UiTestIds.recoveryCompleteToken)), token);
+      await tester.enterText(
+        find.byKey(const ValueKey(UiTestIds.recoveryCompletePassword)),
+        'Synthetic-new-password-123!',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey(UiTestIds.recoveryCompleteConfirm)),
+        'Synthetic-new-password-123!',
+      );
+      expect(calls, 0);
+      await tester.tap(find.byKey(const ValueKey(UiTestIds.recoveryCompleteSubmit)));
+      await tester.pump();
+      expect(calls, manual ? 1 : 0);
+    }
   });
 
   testWidgets('email link is not consumed before confirmation and wrong-purpose link is rejected', (

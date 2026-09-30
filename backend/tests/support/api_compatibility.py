@@ -593,6 +593,12 @@ def _auth_samples() -> dict[str, object]:
         "auth_native_action_required": success(pending),
         "auth_client_access_login_only": success(client_access),
         "auth_admin_access": success(admin_access),
+        "auth_admin_access_custom_navigation": success(
+            admin_access.model_copy(update={"navigation": [NavigationRead(
+                key="users", route_key="users", title="账号治理",
+                icon_key="book", title_customized=True, icon_customized=True,
+            )]})
+        ),
         "auth_account_legacy_unverified": success(
             AccountRead(email="legacy@example.test", email_verified_at=None, created_at=at)
         ),

@@ -25,7 +25,7 @@ def public_summary(value: dict[str, object] | None) -> dict[str, str] | None:
         return None
     clean: dict[str, str] = {}
     for key, item in value.items():
-        if not isinstance(key, str) or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", key) is None:
+        if re.fullmatch(r"[a-z][a-z0-9_]{0,63}", key) is None:
             continue
         if any(hidden in key for hidden in _HIDDEN_SUMMARY):
             continue
@@ -92,6 +92,10 @@ async def list_audit_events(
     result: str | None,
     actor_user_id: UUID | None,
     target_type: str | None,
+    target_id: UUID | None = None,
+    target_code: str | None = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
 ) -> tuple[list[AuditEventRead], str | None]:
     await require_permissions(
         session, user_id=actor_id, audience="admin", codes=("admin.audit.read",)
@@ -101,6 +105,12 @@ async def list_audit_events(
     if result is not None and result not in _RESULTS:
         raise AppError(ErrorCode.INPUT_INVALID)
     if target_type is not None and re.fullmatch(r"[a-z][a-z0-9_]{0,63}", target_type) is None:
+        raise AppError(ErrorCode.INPUT_INVALID)
+    if any(value is not None and value.utcoffset() is None for value in (created_from, created_to)):
+        raise AppError(ErrorCode.INPUT_INVALID)
+    if created_from is not None and created_to is not None and created_from > created_to:
+        raise AppError(ErrorCode.INPUT_INVALID)
+    if target_code is not None and re.fullmatch(r"[a-zA-Z0-9_.:-]{1,100}", target_code) is None:
         raise AppError(ErrorCode.INPUT_INVALID)
     statement = select(AdminAuditEvent).order_by(
         AdminAuditEvent.created_at.desc(), AdminAuditEvent.id.desc()
@@ -113,6 +123,14 @@ async def list_audit_events(
         statement = statement.where(AdminAuditEvent.actor_user_id == actor_user_id)
     if target_type is not None:
         statement = statement.where(AdminAuditEvent.target_type == target_type)
+    if target_id is not None:
+        statement = statement.where(AdminAuditEvent.target_id == target_id)
+    if target_code is not None:
+        statement = statement.where(AdminAuditEvent.target_code == target_code)
+    if created_from is not None:
+        statement = statement.where(AdminAuditEvent.created_at >= created_from)
+    if created_to is not None:
+        statement = statement.where(AdminAuditEvent.created_at <= created_to)
     if cursor is not None:
         created_at, event_id = _decode_cursor(cursor)
         statement = statement.where(

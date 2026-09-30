@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
@@ -26,9 +27,11 @@ final class PlatformAuthSync implements AuthSync {
 
   @override
   Future<T> withIdentityLock<T>(Future<T> Function() action) async {
+    final callerZone = Zone.current;
     T? result;
     final callback = ((web.Lock? _) => (() async {
-      result = await action();
+      // JS callbacks do not retain the retired sign-out authorization zone.
+      result = await callerZone.run(action);
       return null;
     })().toJS).toJS;
     await web.window.navigator.locks.request('haruka.auth.$_instanceId', callback).toDart;

@@ -145,6 +145,8 @@ void main() {
             'meta': {'request_id': requestId},
           });
         case '/api/v1/admin/menus/layout':
+          expect(options.headers['Idempotency-Key'], options.headers['X-Operation-ID']);
+          expect(options.headers['Idempotency-Key'], isNotEmpty);
           layout = _body(options);
           return _json({
             'data': {
@@ -220,6 +222,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(menuReads, 1);
 
+    await tester.enterText(find.byType(TextField).at(0), '材料入口');
+    await tester.enterText(find.byType(TextField).at(1), '5');
     await tester.tap(find.byType(SwitchListTile));
     await tester.pump();
     await tester.tap(find.text('保存'));
@@ -230,6 +234,8 @@ void main() {
     final items = body['items']! as List<Object?>;
     final item = items.single! as Map<String, Object?>;
     expect(item['enabled'], isFalse);
+    expect(item['title'], '材料入口');
+    expect(item['sort_order'], 5);
     expect(item.containsKey('route_key'), isFalse);
     expect(item.containsKey('password'), isFalse);
     await _until(tester, find.text('已隐藏'));

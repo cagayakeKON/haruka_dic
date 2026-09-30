@@ -21,12 +21,11 @@ from app.models import (
     RolePermission,
 )
 from app.repositories.identity import (
-    current_user_for_update,
     global_revision_for_update,
     registration_policy,
 )
 from app.schemas.auth import AdminAuthPolicyRead, AdminAuthPolicyUpdate, AuthPolicyRead
-from app.services.auth_context import ScopeContext, verify_scope_in_transaction
+from app.services.auth_context import ScopeContext, require_permissions, verify_scope_in_transaction
 
 _LOGGER = logging.getLogger(__name__)
 RECOVERY_MODES = frozenset({"disabled", "email", "manual", "email_or_manual"})
@@ -115,99 +114,78 @@ async def read_admin_policy(runtime: Runtime, scope: ScopeContext) -> AdminAuthP
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
 
 
-async def update_admin_policy(
-    runtime: Runtime, scope: ScopeContext, payload: AdminAuthPolicyUpdate
+async def write_admin_policy(
+    session: AsyncSession,
+    scope: ScopeContext,
+    payload: AdminAuthPolicyUpdate,
+    *,
+    mail_available: bool,
 ) -> AdminAuthPolicyRead:
-    resources = runtime.resources
-    if resources is None:
+    if (
+        payload.registration_mode in {"open", "approval"}
+        or payload.recovery_mode in EMAIL_RECOVERY_MODES
+    ) and not mail_available:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
-    if payload.registration_mode in {"open", "approval"} and not mail_ready(runtime):
-        raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
-    if payload.recovery_mode in EMAIL_RECOVERY_MODES and not mail_ready(runtime):
-        raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
-    try:
-        async with resources.database.sessions() as session, session.begin():
-            revision = await global_revision_for_update(session)
-            user = await current_user_for_update(session, scope)
-            if revision is None or user is None:
-                raise AppError(ErrorCode.SESSION_INVALID)
-            await verify_scope_in_transaction(
-                session,
-                user_id=scope.user_id,
-                session_id=scope.session_id,
-                audience="admin",
-                transport="web",
-                permissions=("admin.auth_policy.update",),
-            )
-            policy = await registration_policy(session, for_update=True)
-            if (
-                policy is None
-                or not policy.require_email_verification
-                or policy.registration_mode not in {"closed", "approval", "open"}
-                or policy.recovery_mode not in RECOVERY_MODES
-            ):
-                raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
-            if policy.revision != payload.expected_revision:
-                raise AppError(ErrorCode.REVISION_CONFLICT)
-            next_recovery = payload.recovery_mode or policy.recovery_mode
-            registration_changed = policy.registration_mode != payload.registration_mode
-            recovery_changed = policy.recovery_mode != next_recovery
-            if not registration_changed and not recovery_changed:
-                return _admin_view(policy)
-            if registration_changed and payload.registration_mode in {"open", "approval"}:
-                # The public role remains non-protected and client-only at the point of opening.
-                await validate_public_registration_role(session, policy.default_role_id)
-            # Existing accounts, approval snapshots, and in-flight challenges stay as stored.
-            policy.registration_mode = payload.registration_mode
-            policy.recovery_mode = next_recovery
-            policy.revision += 1
-            policy.updated_at = datetime.now(UTC)
-            revision.revision += 1
-            request_id, operation_id = current_correlation()
-            audit = AdminAuditEvent(
-                action="auth_policy.updated",
-                actor="authenticated-admin",
-                actor_user_id=scope.user_id,
-                audience="admin",
-                permission_code="admin.auth_policy.update",
-                target_type="auth_policy",
-                target_code="registration",
-                result="committed",
-                payload_schema_version=1,
-                change_summary={
-                    "registration_mode": payload.registration_mode,
-                    "recovery_mode": next_recovery,
-                },
-                request_id=request_id,
-                operation_id=operation_id,
-                authorization_revision=revision.revision,
-            )
-            session.add(audit)
-            await session.flush()
-            session.add(
-                OutboxEvent(
-                    event_type="authorization.changed",
-                    audit_event_id=audit.id,
-                    authorization_revision=revision.revision,
-                    status="pending",
-                )
-            )
-            result = _admin_view(policy)
-    except AppError:
-        raise
-    except Exception:
-        raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
-    request_id, operation_id = current_correlation()
-    _LOGGER.info(
-        "auth.policy.updated",
-        extra={
-            "request_id": request_id,
-            "operation_id": operation_id,
-            "user_id": scope.user_id,
-            "audience": "admin",
-        },
+    revision = await global_revision_for_update(session)
+    if revision is None:
+        raise AppError(ErrorCode.SESSION_INVALID)
+    await require_permissions(
+        session, user_id=scope.user_id, audience="admin", codes=("admin.auth_policy.update",)
     )
-    return result
+    policy = await registration_policy(session, for_update=True)
+    if (
+        policy is None
+        or not policy.require_email_verification
+        or policy.registration_mode not in {"closed", "approval", "open"}
+        or policy.recovery_mode not in RECOVERY_MODES
+    ):
+        raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
+    if policy.revision != payload.expected_revision:
+        raise AppError(ErrorCode.REVISION_CONFLICT)
+    next_recovery = payload.recovery_mode or policy.recovery_mode
+    registration_changed = policy.registration_mode != payload.registration_mode
+    recovery_changed = policy.recovery_mode != next_recovery
+    if not registration_changed and not recovery_changed:
+        return _admin_view(policy)
+    if registration_changed and payload.registration_mode in {"open", "approval"}:
+        # The public role remains non-protected and client-only at the point of opening.
+        await validate_public_registration_role(session, policy.default_role_id)
+    # Existing accounts, approval snapshots, and in-flight challenges stay as stored.
+    policy.registration_mode = payload.registration_mode
+    policy.recovery_mode = next_recovery
+    policy.revision += 1
+    policy.updated_at = datetime.now(UTC)
+    revision.revision += 1
+    request_id, operation_id = current_correlation()
+    audit = AdminAuditEvent(
+        action="auth_policy.updated",
+        actor="authenticated-admin",
+        actor_user_id=scope.user_id,
+        audience="admin",
+        permission_code="admin.auth_policy.update",
+        target_type="auth_policy",
+        target_code="registration",
+        result="committed",
+        payload_schema_version=1,
+        change_summary={
+            "registration_mode": payload.registration_mode,
+            "recovery_mode": next_recovery,
+        },
+        request_id=request_id,
+        operation_id=operation_id,
+        authorization_revision=revision.revision,
+    )
+    session.add(audit)
+    await session.flush()
+    session.add(
+        OutboxEvent(
+            event_type="authorization.changed",
+            audit_event_id=audit.id,
+            authorization_revision=revision.revision,
+            status="pending",
+        )
+    )
+    return _admin_view(policy)
 
 
 async def validate_public_registration_role(session: AsyncSession, role_id: UUID) -> Role:

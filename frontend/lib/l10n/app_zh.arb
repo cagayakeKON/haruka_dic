@@ -1,5 +1,6 @@
 {
   "@@locale": "zh",
+  "authManualRecoveryCode": "人工恢复码或安全链接",
   "appTitle": "Haruka",
   "home": "主页",
   "environment": "环境信息",
@@ -112,6 +113,7 @@
   "authVerified": "邮箱验证完成",
   "authResetComplete": "密码已重置",
   "authRegistrationClosed": "当前暂停新账号注册",
+  "authRecoveryClosed": "当前未开放找回",
   "authServiceUnavailable": "账号服务暂不可用，请稍后重试。",
   "authRetry": "重试",
   "authWorking": "正在处理…",
@@ -199,6 +201,18 @@
   "adminPolicyRecoveryEither": "邮件或人工",
   "adminPolicyRecoveryDisabled": "关闭找回",
   "adminRecoveryRequests": "人工恢复",
+  "adminMenuOrder": "排序（越小越靠前）",
+  "adminMenuIcon": "导航图标",
+  "adminMenuOrderError": "请输入 0 到 100000 的排序值。",
+  "adminAuditAction": "操作类别",
+  "adminAuditActor": "操作者 ID",
+  "adminAuditTargetType": "目标类型",
+  "adminAuditTargetId": "目标 ID",
+  "adminAuditTargetCode": "目标代码",
+  "adminAuditFrom": "开始时间（含时区）",
+  "adminAuditTo": "结束时间（含时区）",
+  "adminAuditFilter": "筛选",
+  "adminAuditTimeError": "请输入带时区的有效时间，结束时间不能早于开始时间。",
   "adminRecoveryIssue": "核验签发",
   "adminRecoveryReject": "拒绝恢复",
   "adminRecoveryInPerson": "当面核验",
@@ -1834,5 +1848,8 @@
   "adminMenuExtra": "附加显示条件",
   "adminMenuPreview": "预览导航",
   "adminMenuSave": "保存",
-  "adminMenuCode": "代码"
+  "adminMenuCode": "代码",
+  "authActivationProgressTitle": "账号激活进度",
+  "authActivationProgressHint": "正在检查邮箱验证和注册审批状态。",
+  "authActivationApprovalTitle": "注册申请待审批"
 }

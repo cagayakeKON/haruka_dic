@@ -54,7 +54,7 @@ final class AuthRepository {
   Future<ActivationStatus> activationStatus(String continuationToken) async => (await api.getJson(
     '/api/v1/auth/activation/status',
     ActivationStatus.fromJson,
-    headers: {'Authorization': 'Continuation $continuationToken'},
+    headers: {'Authorization': 'Bearer $continuationToken'},
   )).data;
 
   Future<LoginResult> login(
@@ -356,11 +356,14 @@ final class AuthRepository {
     Map<String, String> headers, {
     String? cursor,
     String? result,
+    Map<String, String> filters = const {},
   }) {
     final query = [
       'limit=50',
       if (cursor != null) 'cursor=${Uri.encodeQueryComponent(cursor)}',
       if (result != null) 'result=${Uri.encodeQueryComponent(result)}',
+      for (final entry in filters.entries)
+        '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}',
     ].join('&');
     return api.getPage(
       '/api/v1/admin/audit-events?$query',

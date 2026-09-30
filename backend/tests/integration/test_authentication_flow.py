@@ -7,7 +7,7 @@ import os
 import secrets
 from base64 import urlsafe_b64encode
 from collections.abc import AsyncIterator
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Protocol, cast
 from urllib.parse import urlsplit
@@ -46,15 +46,18 @@ from app.models import (
     AuthChallenge,
     AuthChallengeDelivery,
     AuthPolicy,
+    AuthSession,
+    IdempotencyRecord,
     Library,
     OutboxEvent,
     Role,
+    RoleGrantBoundary,
     RolePermission,
     User,
     UserExtension,
     UserRole,
 )
-from app.services.auth_crypto import AuthCrypto
+from app.services.auth_crypto import AuthCrypto, hash_password
 from app.services.initialization import apply_seed, initialize_admin
 from app.services.notifications import claim_due_mail
 from app.services.outbox_delivery import deliver_outbox_one
@@ -68,6 +71,170 @@ ORIGIN = "https://localhost:18443"
 
 class _KeyScanner(Protocol):
     def scan_iter(self, *, match: str, count: int) -> AsyncIterator[bytes]: ...
+
+
+@pytest.mark.parametrize("action", ["enable", "disable"])
+async def test_governance_status_http_uses_only_current_action_permission(
+    identity_runtime: tuple[Runtime, MaintenanceSettings, str], action: str
+) -> None:
+    runtime, _maintenance, run_id = identity_runtime
+    assert runtime.resources is not None
+    email = f"status-{action}-{run_id}@haruka.example.test"
+    async with runtime.resources.database.sessions() as session, session.begin():
+        role = Role(code="status_delegate", name="Delegate", enabled=True, protected=False)
+        learner = await session.scalar(select(Role).where(Role.code == "learner"))
+        assert learner is not None
+        actor = User(
+            email=email,
+            email_normalized=email,
+            status="active",
+            password_hash=await hash_password(SecretStr("synthetic-status-password-2026")),
+        )
+        holder = User(
+            email=f"holder-{run_id}@haruka.example.test",
+            email_normalized=f"holder-{run_id}@haruka.example.test",
+            status="disabled" if action == "enable" else "active",
+            password_hash=await hash_password(SecretStr("synthetic-holder-password-2026")),
+        )
+        session.add_all([role, actor, holder])
+        await session.flush()
+        holder_id = holder.id
+        session.add_all(
+            [
+                Library(owner_user_id=actor.id),
+                UserExtension(user_id=actor.id),
+                Library(owner_user_id=holder.id),
+                UserExtension(user_id=holder.id),
+                UserRole(user_id=actor.id, role_id=role.id),
+                UserRole(user_id=holder.id, role_id=learner.id),
+                RolePermission(
+                    role_id=role.id,
+                    permission_code="admin.login",
+                    effect="allow",
+                    data_scope="platform_metadata",
+                ),
+                RolePermission(
+                    role_id=role.id,
+                    permission_code=f"admin.user.{action}",
+                    effect="allow",
+                    data_scope="platform_metadata",
+                ),
+                RoleGrantBoundary(
+                    grantor_role_id=role.id,
+                    boundary_kind="manage_account_role",
+                    target_role_id=learner.id,
+                ),
+            ]
+        )
+    app = create_app(runtime.settings)
+    app.state.runtime = runtime
+    headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+        login_response = await web.post(
+            "/api/v1/admin/auth/login",
+            json={"email": email, "password": "synthetic-status-password-2026"},
+            headers=headers,
+        )
+        assert login_response.status_code == 200
+        csrf = (await web.get("/api/v1/admin/auth/csrf")).json()["data"]["csrf_token"]
+        write_headers = {
+            **headers,
+            "X-CSRF-Token": csrf,
+            "Idempotency-Key": f"status-{action}-stable-key",
+        }
+        payload = {"status": "active" if action == "enable" else "disabled", "expected_revision": 1}
+        route = f"/api/v1/admin/users/{holder_id}/status"
+        changed = await web.post(route, json=payload, headers=write_headers)
+        assert changed.status_code == 200
+        replay = await web.post(route, json=payload, headers=write_headers)
+        assert replay.status_code == 200 and replay.json()["data"] == changed.json()["data"]
+        forbidden = await web.post(
+            route,
+            json={
+                "status": "disabled" if action == "enable" else "active",
+                "expected_revision": changed.json()["data"]["revision"],
+            },
+            headers={**write_headers, "Idempotency-Key": "status-forbidden-new-key"},
+        )
+        assert forbidden.status_code == 403
+    async with runtime.resources.database.sessions() as session:
+        denied = (
+            await session.scalars(
+                select(AdminAuditEvent).where(
+                    AdminAuditEvent.action == "authorization.denied",
+                    AdminAuditEvent.target_id == holder_id,
+                )
+            )
+        ).all()
+        assert len(denied) == 1
+        assert denied[0].change_summary == {"method": "POST", "operation": "set_admin_user_status"}
+        assert (
+            denied[0].permission_code
+            == f"admin.user.{'disable' if action == 'enable' else 'enable'}"
+        )
+        assert (
+            await session.scalar(
+                select(OutboxEvent.id).where(OutboxEvent.audit_event_id == denied[0].id)
+            )
+            is not None
+        )
+
+
+async def test_policy_http_receipt_and_stale_reauth(
+    identity_runtime: tuple[Runtime, MaintenanceSettings, str],
+) -> None:
+    runtime, _maintenance, run_id = identity_runtime
+    assert runtime.resources is not None
+    app = create_app(runtime.settings)
+    app.state.runtime = runtime
+    headers = {"Origin": ORIGIN, "Content-Type": "application/json"}
+    async with BoundAsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as web:
+        logged = await web.post(
+            "/api/v1/admin/auth/login",
+            json={
+                "email": f"admin-{run_id}@haruka.example.test",
+                "password": "synthetic-admin-password-2026",
+            },
+            headers=headers,
+        )
+        assert logged.status_code == 200
+        csrf = (await web.get("/api/v1/admin/auth/csrf")).json()["data"]["csrf_token"]
+        policy = (await web.get("/api/v1/admin/auth-policy")).json()["data"]
+        write_headers = {
+            **headers,
+            "X-CSRF-Token": csrf,
+            "Idempotency-Key": "policy-stable-intent-2026",
+        }
+        payload = {
+            "registration_mode": "closed",
+            "recovery_mode": "disabled",
+            "expected_revision": policy["revision"],
+        }
+        changed = await web.patch("/api/v1/admin/auth-policy", json=payload, headers=write_headers)
+        assert changed.status_code == 200
+        replay = await web.patch("/api/v1/admin/auth-policy", json=payload, headers=write_headers)
+        assert replay.status_code == 200 and replay.json()["data"] == changed.json()["data"]
+        async with runtime.resources.database.sessions() as session, session.begin():
+            current = await session.get(
+                AuthSession, logged.json()["data"]["session_ref"], with_for_update=True
+            )
+            assert current is not None
+            current.reauthenticated_at = datetime.now(UTC) - timedelta(minutes=6)
+        rejected = await web.patch(
+            "/api/v1/admin/auth-policy",
+            json={**payload, "expected_revision": changed.json()["data"]["revision"]},
+            headers={**write_headers, "Idempotency-Key": "policy-expired-intent-2026"},
+        )
+        assert rejected.status_code == 401
+    async with runtime.resources.database.sessions() as session:
+        assert (
+            await session.scalar(
+                select(func.count())
+                .select_from(IdempotencyRecord)
+                .where(IdempotencyRecord.audience == "admin")
+            )
+            == 1
+        )
 
 
 class _DropCommittedPasswordResponse(httpx.ASGITransport):
@@ -986,7 +1153,11 @@ async def test_admin_cannot_open_registration_with_privileged_default_role(
         rejected = await web.patch(
             "/api/v1/admin/auth-policy",
             json={"registration_mode": "open", "expected_revision": policy_read["revision"]},
-            headers={**headers, "X-CSRF-Token": csrf},
+            headers={
+                **headers,
+                "X-CSRF-Token": csrf,
+                "Idempotency-Key": "policy-authentication_flow-1153",
+            },
         )
         assert rejected.status_code == 503
         assert (await web.get("/api/v1/auth/policy")).json()["data"][
@@ -1040,7 +1211,11 @@ async def test_registration_session_and_native_refresh(
                 "registration_mode": "open",
                 "expected_revision": policy.json()["data"]["revision"],
             },
-            headers={**json_headers, "X-CSRF-Token": admin_token},
+            headers={
+                **json_headers,
+                "X-CSRF-Token": admin_token,
+                "Idempotency-Key": "policy-authentication_flow-1204",
+            },
         )
         assert opened.status_code == 200
         accepted = await web.post(

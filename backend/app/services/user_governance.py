@@ -51,9 +51,20 @@ from app.services.authorization import (
     load_graph,
     require_super_admin_remains,
 )
+from app.services.governance_security import revoke_lost_login
 from app.services.registration import email_identity
 
 _ADMIN_SCOPE = "platform_metadata"
+
+
+async def authorize_account_receipt(
+    session: AsyncSession, *, actor_id: UUID, user_id: UUID
+) -> None:
+    _reject_self(actor_id, user_id)
+    user = await session.get(User, user_id)
+    if user is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
+    await _assert_manageable(session, actor_id, set(await _direct_role_ids(session, user_id)))
 _CLIENT_LOGIN = ("client.login", "self")
 _ADMIN_LOGIN = ("admin.login", "platform_metadata")
 
@@ -456,6 +467,7 @@ async def replace_account_roles(
     await _assert_assignable(session, actor_id, proposed | current)
     await _assert_manageable(session, actor_id, proposed)
     before_actor = await _actor_pairs(session, actor_id)
+    before_target = await _actor_pairs(session, user.id)
     if proposed:
         await session.execute(
             delete(UserRole).where(UserRole.user_id == user.id, UserRole.role_id.not_in(proposed))
@@ -468,6 +480,11 @@ async def replace_account_roles(
     await session.flush()
     await _reject_elevation(session, actor_id, before_actor)
     await _assert_last_admin(session)
+    await revoke_lost_login(
+        session,
+        before={user.id: before_target},
+        after={user.id: await _actor_pairs(session, user.id)},
+    )
     added = sorted(str(role_id) for role_id in proposed - current)
     removed = sorted(str(role_id) for role_id in current - proposed)
     return await _audit(

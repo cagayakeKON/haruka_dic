@@ -10,6 +10,9 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get authManualRecoveryCode => '人工恢复码或安全链接';
+
+  @override
   String get appTitle => 'Haruka';
 
   @override
@@ -346,6 +349,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authRegistrationClosed => '当前暂停新账号注册';
 
   @override
+  String get authRecoveryClosed => '当前未开放找回';
+
+  @override
   String get authServiceUnavailable => '账号服务暂不可用，请稍后重试。';
 
   @override
@@ -602,6 +608,42 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminRecoveryRequests => '人工恢复';
+
+  @override
+  String get adminMenuOrder => '排序（越小越靠前）';
+
+  @override
+  String get adminMenuIcon => '导航图标';
+
+  @override
+  String get adminMenuOrderError => '请输入 0 到 100000 的排序值。';
+
+  @override
+  String get adminAuditAction => '操作类别';
+
+  @override
+  String get adminAuditActor => '操作者 ID';
+
+  @override
+  String get adminAuditTargetType => '目标类型';
+
+  @override
+  String get adminAuditTargetId => '目标 ID';
+
+  @override
+  String get adminAuditTargetCode => '目标代码';
+
+  @override
+  String get adminAuditFrom => '开始时间（含时区）';
+
+  @override
+  String get adminAuditTo => '结束时间（含时区）';
+
+  @override
+  String get adminAuditFilter => '筛选';
+
+  @override
+  String get adminAuditTimeError => '请输入带时区的有效时间，结束时间不能早于开始时间。';
 
   @override
   String get adminRecoveryIssue => '核验签发';
@@ -4508,4 +4550,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adminMenuCode => '代码';
+
+  @override
+  String get authActivationProgressTitle => '账号激活进度';
+
+  @override
+  String get authActivationProgressHint => '正在检查邮箱验证和注册审批状态。';
+
+  @override
+  String get authActivationApprovalTitle => '注册申请待审批';
 }

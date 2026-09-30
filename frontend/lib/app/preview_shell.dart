@@ -10,6 +10,8 @@ import 'package:haruka/generated/ui_test_ids.dart';
 import 'package:haruka/shared/identified.dart';
 import 'package:haruka/shared/presentation/components.dart';
 import 'package:haruka/dev/preview/fixture_store.dart';
+import 'package:haruka/core/api/auth_models.dart';
+import 'package:haruka/shared/presentation/navigation_icons.dart';
 
 class PreviewStoreScope extends InheritedNotifier<PreviewFixtureStore> {
   const PreviewStoreScope({required PreviewFixtureStore store, required super.child, super.key})
@@ -32,6 +34,7 @@ class ShellPresentationScope extends InheritedWidget {
     required this.canReadMaterials,
     required this.canReadCollections,
     this.navigationRoutes,
+    this.navigationItems,
     required super.child,
     super.key,
   });
@@ -45,6 +48,7 @@ class ShellPresentationScope extends InheritedWidget {
   /// Published routes currently visible to this account. Null keeps the full shell.
 
   final Set<String>? navigationRoutes;
+  final List<NavigationItem>? navigationItems;
 
   static ShellPresentationScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ShellPresentationScope>();
@@ -56,7 +60,8 @@ class ShellPresentationScope extends InheritedWidget {
       reducedMotion != oldWidget.reducedMotion ||
       canReadMaterials != oldWidget.canReadMaterials ||
       canReadCollections != oldWidget.canReadCollections ||
-      !_sameRoutes(navigationRoutes, oldWidget.navigationRoutes);
+      !_sameRoutes(navigationRoutes, oldWidget.navigationRoutes) ||
+      !listEquals(navigationItems, oldWidget.navigationItems);
 }
 
 bool _sameRoutes(Set<String>? left, Set<String>? right) {
@@ -77,10 +82,54 @@ bool _sectionShown(BuildContext context, PreviewSection section) {
   });
 }
 
-List<PreviewSection> _shownSections(BuildContext context) => [
-  for (final section in PreviewSection.values)
-    if (_sectionShown(context, section)) section,
-];
+String _sectionRoute(PreviewSection section) => switch (section) {
+  PreviewSection.library => AppRoutes.materials,
+  PreviewSection.notebooks => AppRoutes.collections,
+  PreviewSection.query => AppRoutes.query,
+  PreviewSection.exercise => AppRoutes.exercise,
+  PreviewSection.settings => AppRoutes.settings,
+};
+
+NavigationItem? _navigationItem(BuildContext context, PreviewSection section) {
+  for (final item
+      in ShellPresentationScope.maybeOf(context)?.navigationItems ?? const <NavigationItem>[]) {
+    if (item.routeKey == _sectionRoute(section)) return item;
+  }
+  return null;
+}
+
+List<PreviewSection> _shownSections(BuildContext context) {
+  final items = ShellPresentationScope.maybeOf(context)?.navigationItems;
+  if (items == null) {
+    return [
+      for (final section in PreviewSection.values)
+        if (_sectionShown(context, section)) section,
+    ];
+  }
+  final sections = <PreviewSection>[];
+  for (final item in items) {
+    for (final section in PreviewSection.values) {
+      if (item.routeKey == _sectionRoute(section) && !sections.contains(section)) {
+        sections.add(section);
+      }
+    }
+  }
+  if (!sections.contains(PreviewSection.settings)) sections.add(PreviewSection.settings);
+  return sections;
+}
+
+String _navigationLabel(BuildContext context, PreviewSection section, String fallback) {
+  final item = _navigationItem(context, section);
+  return item?.titleCustomized == true ? item!.title : fallback;
+}
+
+IconData _navigationIcon(BuildContext context, PreviewSection section) {
+  final item = _navigationItem(context, section);
+  return publishedNavigationIcon(
+    item?.iconCustomized == true ? item?.iconKey : null,
+    previewSectionIcons[section.index],
+  );
+}
 
 bool _sectionAvailable(BuildContext context, PreviewSection section) {
   final live = ShellPresentationScope.maybeOf(context);
@@ -472,8 +521,8 @@ class PreviewSideNavigation extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(rail ? 8 : 14, 2, rail ? 8 : 14, 2),
                 child: Tooltip(
                   message: _sectionAvailable(context, section)
-                      ? _sectionLabel(l10n, section)
-                      : '${_sectionLabel(l10n, section)} · ${l10n.apiPermissionDenied}',
+                      ? _navigationLabel(context, section, _sectionLabel(l10n, section))
+                      : '${_navigationLabel(context, section, _sectionLabel(l10n, section))} · ${l10n.apiPermissionDenied}',
                   excludeFromSemantics: !rail,
                   child: _identifyReferenceNav(
                     context,
@@ -508,7 +557,7 @@ class PreviewSideNavigation extends StatelessWidget {
                           child: rail
                               ? Center(
                                   child: Icon(
-                                    previewSectionIcons[section.index],
+                                    _navigationIcon(context, section),
                                     size: 22,
                                     color: section == selected
                                         ? scheme.primary
@@ -518,7 +567,7 @@ class PreviewSideNavigation extends StatelessWidget {
                               : Row(
                                   children: [
                                     Icon(
-                                      previewSectionIcons[section.index],
+                                      _navigationIcon(context, section),
                                       size: 22,
                                       color: section == selected
                                           ? scheme.primary
@@ -527,7 +576,11 @@ class PreviewSideNavigation extends StatelessWidget {
                                     const SizedBox(width: 13),
                                     Expanded(
                                       child: Text(
-                                        _sectionLabel(l10n, section),
+                                        _navigationLabel(
+                                          context,
+                                          section,
+                                          _sectionLabel(l10n, section),
+                                        ),
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: section == selected
@@ -875,8 +928,8 @@ class PreviewBottomNavigation extends StatelessWidget {
           height: 68,
           child: TextButton.icon(
             onPressed: () => onSelected(section),
-            icon: Icon(previewSectionIcons[section.index]),
-            label: Text(_mobileNavLabel(l10n, section)),
+            icon: Icon(_navigationIcon(context, section)),
+            label: Text(_navigationLabel(context, section, _mobileNavLabel(l10n, section))),
           ),
         ),
       );
@@ -903,19 +956,19 @@ class PreviewBottomNavigation extends StatelessWidget {
               final id? => Identified(
                 id: id,
                 merge: true,
-                child: Icon(previewSectionIcons[section.index]),
+                child: Icon(_navigationIcon(context, section)),
               ),
-              null => Icon(previewSectionIcons[section.index]),
+              null => Icon(_navigationIcon(context, section)),
             },
             selectedIcon: switch (_referenceNavId(context, section)) {
               final id? => Identified(
                 id: id,
                 merge: true,
-                child: Icon(previewSectionIcons[section.index], color: colors.primary),
+                child: Icon(_navigationIcon(context, section), color: colors.primary),
               ),
-              null => Icon(previewSectionIcons[section.index], color: colors.primary),
+              null => Icon(_navigationIcon(context, section), color: colors.primary),
             },
-            label: _mobileNavLabel(l10n, section),
+            label: _navigationLabel(context, section, _mobileNavLabel(l10n, section)),
           ),
       ],
     );
@@ -1020,10 +1073,12 @@ class DesktopPreviewShell extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
                           child: TextButton.icon(
                             onPressed: () => navigateSection(context, item, onNavigate: onNavigate),
-                            icon: Icon(previewSectionIcons[item.index], size: 20),
+                            icon: Icon(_navigationIcon(context, item), size: 20),
                             label: Align(
                               alignment: Alignment.centerLeft,
-                              child: Text(_sectionLabel(l10n, item)),
+                              child: Text(
+                                _navigationLabel(context, item, _sectionLabel(l10n, item)),
+                              ),
                             ),
                             style: TextButton.styleFrom(
                               minimumSize: const Size(double.infinity, 44),

@@ -199,6 +199,9 @@ class NavigationRead(ApiModel):
     key: str
     route_key: str
     title: str
+    icon_key: str | None = None
+    title_customized: bool = False
+    icon_customized: bool = False
 
 
 class AccessRead(ApiModel):

@@ -24,6 +24,7 @@ EVENTS = frozenset(
         "infrastructure.unavailable",
         "frontend.received",
         "auth.session.revoked",
+        "authz.denied",
         "auth.password.changed",
         "auth.password.recovered",
         "auth.registration.accepted",

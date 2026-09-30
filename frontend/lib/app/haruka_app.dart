@@ -180,7 +180,7 @@ class _HarukaAppState extends State<HarukaApp> {
       settingsSource: _settingsRepository.source,
       settingsRepository: _settingsRepository,
     );
-    _router.routeInformationProvider.addListener(_observeRoute);
+    _router.routerDelegate.addListener(_observeRoute);
     _observeRoute();
     _telemetry.track('app.started');
     if (widget.installErrorHandlers) {
@@ -211,7 +211,7 @@ class _HarukaAppState extends State<HarukaApp> {
     _settingsRepository.dispose();
     _settingsCache.dispose();
     _settingsDraft.dispose();
-    _router.routeInformationProvider.removeListener(_observeRoute);
+    _router.routerDelegate.removeListener(_observeRoute);
     _router.dispose();
     _activeLocation.dispose();
     _shellActions.dispose();
@@ -313,7 +313,11 @@ class _HarukaAppState extends State<HarukaApp> {
   }
 
   void _observeRoute() {
-    final path = _router.routeInformationProvider.value.uri.path;
+    // Popup routes do not replace the matched application page. Observe the
+    // committed route configuration so a dialog cannot change its background.
+    final configuration = _router.routerDelegate.currentConfiguration;
+    final last = configuration.matches.lastOrNull;
+    final path = last is ImperativeRouteMatch ? last.matches.uri.path : configuration.uri.path;
     if (path == _lastRoute) return;
     _lastRoute = path;
     _activeLocation.value = path;
@@ -383,6 +387,7 @@ class _HarukaAppState extends State<HarukaApp> {
                 navigationRoutes: _auth.access == null
                     ? null
                     : {for (final item in _auth.access!.navigation) item.routeKey},
+                navigationItems: _auth.access?.navigation,
                 child: AnimatedBuilder(
                   animation: _cacheBinding.foregroundRevalidating,
                   builder: (context, _) {

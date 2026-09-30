@@ -5,7 +5,7 @@
   "migration_revision": "0007_authorization_governance",
   "schema_version": 1,
   "source": "backend/app/models",
-  "source_sha256": "472d03887c53a1eda81af131b90399085ecc0766465547896b20c6da48646fb7",
+  "source_sha256": "e4d5b6c82f8761549d3806499a4ea44374b4435ae9e282e3c661c43e8e1bb0bb",
   "tables": [
     {
       "columns": [
@@ -1554,6 +1554,18 @@
           "type": "BYTEA"
         },
         {
+          "comment": "治理客户端键稳定查询摘要；旧client为空",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret_hash",
+            "source": "governance receipt boundary"
+          },
+          "name": "lookup_digest",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
           "comment": "规范请求SHA-256摘要",
           "default": null,
           "metadata": {
@@ -1702,12 +1714,17 @@
       "comment": "本人业务幂等受理；current slice写入收藏动作子集",
       "constraints": [
         {
-          "definition": "audience IN ('client') AND state IN ('committed')",
+          "definition": "lookup_digest IS NULL OR octet_length(lookup_digest) = 32",
+          "kind": "check",
+          "name": "ck_idempotency_records_governance_lookup_length"
+        },
+        {
+          "definition": "audience IN ('client', 'admin') AND state IN ('committed')",
           "kind": "check",
           "name": "ck_idempotency_records_learning_action_state"
         },
         {
-          "definition": "result_kind = 'collection_item' AND result_id IS NOT NULL AND safe_response IS NOT NULL",
+          "definition": "safe_response IS NOT NULL AND ((audience = 'client' AND result_kind = 'collection_item' AND result_id IS NOT NULL) OR (audience = 'admin' AND result_kind = 'governance_result' AND result_id IS NULL AND library_id IS NULL))",
           "kind": "check",
           "name": "ck_idempotency_records_learning_committed_result"
         },
@@ -1722,7 +1739,7 @@
           "name": "ck_idempotency_records_learning_http_status"
         },
         {
-          "definition": "(result_kind IS NULL AND result_id IS NULL) OR (result_kind IS NOT NULL AND result_id IS NOT NULL)",
+          "definition": "(audience = 'admin' AND result_kind = 'governance_result' AND result_id IS NULL) OR (audience = 'client' AND ((result_kind IS NULL AND result_id IS NULL) OR (result_kind IS NOT NULL AND result_id IS NOT NULL)))",
           "kind": "check",
           "name": "ck_idempotency_records_learning_result_pair"
         },
@@ -1737,6 +1754,16 @@
           ],
           "kind": "primary_key",
           "name": "pk_idempotency_records"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "audience",
+            "action_code",
+            "lookup_digest"
+          ],
+          "kind": "unique",
+          "name": "uq_governance_idempotency_lookup"
         },
         {
           "definition": [
@@ -1764,7 +1791,8 @@
       ],
       "metadata": {
         "allowed_entrances": [
-          "authorized POST /api/v1/collections"
+          "authorized POST /api/v1/collections",
+          "authorized administrative governance writes"
         ],
         "deletion_policy": "expire only after replay window; collection business uniqueness persists",
         "lifecycle": "mutable",
@@ -1773,34 +1801,34 @@
             "column": "owner_user_id",
             "deletion": "restrict or explicitly detach",
             "nullable": false,
-            "parent_lock": "lock library then material root then source version/card before collection write",
+            "parent_lock": "collection: lock library then material root then source version/card before collection write; governance: authorization_revisions → users → auth_sessions",
             "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
-            "service": "app.services.learning_reference",
+            "service": "app.services.learning_reference; app.services.governance_receipts",
             "state_rule": "check active parent and matching owner inside the write transaction",
             "target": "users.id",
-            "tests": "tests/integration/test_learning_reference.py"
+            "tests": "tests/integration/test_learning_reference.py; backend/tests/integration/test_governance_security.py"
           },
           {
             "column": "library_id",
             "deletion": "restrict or explicitly detach",
             "nullable": true,
-            "parent_lock": "lock library then material root then source version/card before collection write",
+            "parent_lock": "collection: lock library then material root then source version/card before collection write; governance: authorization_revisions → users → auth_sessions",
             "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
-            "service": "app.services.learning_reference",
+            "service": "app.services.learning_reference; app.services.governance_receipts",
             "state_rule": "check active parent and matching owner inside the write transaction",
             "target": "libraries.id",
-            "tests": "tests/integration/test_learning_reference.py"
+            "tests": "tests/integration/test_learning_reference.py; backend/tests/integration/test_governance_security.py"
           },
           {
             "column": "result_id",
             "deletion": "restrict or explicitly detach",
             "nullable": true,
-            "parent_lock": "lock library then material root then source version/card before collection write",
+            "parent_lock": "collection: lock library then material root then source version/card before collection write; governance: authorization_revisions → users → auth_sessions",
             "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
-            "service": "app.services.learning_reference",
+            "service": "app.services.learning_reference; app.services.governance_receipts",
             "state_rule": "check active parent and matching owner inside the write transaction",
             "target": "collection_items.id",
-            "tests": "tests/integration/test_learning_reference.py"
+            "tests": "tests/integration/test_learning_reference.py; backend/tests/integration/test_governance_security.py"
           }
         ],
         "module": "learning_reference",

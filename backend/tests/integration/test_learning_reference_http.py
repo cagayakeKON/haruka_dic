@@ -5,8 +5,6 @@ import re
 from uuid import UUID, uuid4
 
 import httpx2 as httpx
-
-from tests.support.bound_client import BoundAsyncClient
 import pytest
 from fastapi import FastAPI
 from sqlalchemy import select, text
@@ -18,6 +16,7 @@ from app.models.learning_reference import CollectionItem
 from tests.integration.test_authentication_flow import (
     _mail_token,  # pyright: ignore[reportPrivateUsage] - shared isolated challenge fixture
 )
+from tests.support.bound_client import BoundAsyncClient
 from tests.support.learning_reference_scenarios import prepare_learning_source
 
 pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
@@ -89,7 +88,11 @@ async def test_http_source_resolution_collection_commit_and_lost_response_replay
         opened = await admin.patch(
             "/api/v1/admin/auth-policy",
             json={"registration_mode": "open", "expected_revision": policy["revision"]},
-            headers={**headers, "X-CSRF-Token": csrf},
+            headers={
+                **headers,
+                "X-CSRF-Token": csrf,
+                "Idempotency-Key": "policy-learning_reference_http-89",
+            },
         )
         assert opened.status_code == 200
 

@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Request
 
 from app.api.auth_dependencies import require_runtime, require_scope
+from app.api.governance_writes import GOVERNANCE_WRITE_HEADERS, governance_write
 from app.api.responses import error_responses, get_request_id
 from app.api.security_guards import require_session_csrf
 from app.bootstrap import Runtime
@@ -78,7 +79,7 @@ async def get_admin_menu_catalog(request: Request) -> SuccessResponse[MenuCatalo
     operation_id="create_admin_menu_group",
     response_model=SuccessResponse[MenuWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.menu.update"]},
+    openapi_extra={**GOVERNANCE_WRITE_HEADERS, "x-haruka-permissions": ["admin.menu.update"]},
 )
 async def create_admin_menu_group(
     body: MenuGroupCreate, request: Request
@@ -87,7 +88,13 @@ async def create_admin_menu_group(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        created = await menu_governance.create_group(session, actor_id=scope.user_id, command=body)
+        created = await governance_write(
+            session,
+            request,
+            scope,
+            MenuWriteResult,
+            lambda: menu_governance.create_group(session, actor_id=scope.user_id, command=body),
+        )
     return SuccessResponse[MenuWriteResult](
         data=created, meta=ResponseMeta(request_id=get_request_id(request))
     )
@@ -98,7 +105,7 @@ async def create_admin_menu_group(
     operation_id="replace_admin_menu_layout",
     response_model=SuccessResponse[MenuWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.menu.update"]},
+    openapi_extra={**GOVERNANCE_WRITE_HEADERS, "x-haruka-permissions": ["admin.menu.update"]},
 )
 async def replace_admin_menu_layout(
     body: MenuLayoutUpdate, request: Request
@@ -107,8 +114,14 @@ async def replace_admin_menu_layout(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        updated = await menu_governance.replace_layout(
-            session, actor_id=scope.user_id, items=tuple(body.items)
+        updated = await governance_write(
+            session,
+            request,
+            scope,
+            MenuWriteResult,
+            lambda: menu_governance.replace_layout(
+                session, actor_id=scope.user_id, items=tuple(body.items)
+            ),
         )
     return SuccessResponse[MenuWriteResult](
         data=updated, meta=ResponseMeta(request_id=get_request_id(request))
@@ -146,7 +159,7 @@ async def preview_admin_menu_navigation(
     operation_id="delete_admin_menu_group",
     response_model=SuccessResponse[MenuWriteResult],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.menu.update"]},
+    openapi_extra={**GOVERNANCE_WRITE_HEADERS, "x-haruka-permissions": ["admin.menu.update"]},
 )
 async def delete_admin_menu_group(
     menu_id: UUID, body: MenuDelete, request: Request
@@ -155,11 +168,17 @@ async def delete_admin_menu_group(
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     async with runtime.resources.database.sessions() as session, session.begin():
-        deleted = await menu_governance.delete_group(
+        deleted = await governance_write(
             session,
-            actor_id=scope.user_id,
-            menu_id=menu_id,
-            expected_revision=body.expected_revision,
+            request,
+            scope,
+            MenuWriteResult,
+            lambda: menu_governance.delete_group(
+                session,
+                actor_id=scope.user_id,
+                menu_id=menu_id,
+                expected_revision=body.expected_revision,
+            ),
         )
     return SuccessResponse[MenuWriteResult](
         data=deleted, meta=ResponseMeta(request_id=get_request_id(request))

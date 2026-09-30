@@ -14,7 +14,7 @@ from sqlalchemy.schema import SchemaItem
 
 from app.models import Base
 
-EXPECTED_REVISION = "0007_authorization_governance"
+EXPECTED_REVISION = "0009_governance_lookup"
 
 
 class SchemaMismatchError(RuntimeError):
@@ -25,7 +25,7 @@ class ConstraintBaseline(BaseModel):
     """Reviewed PostgreSQL canonical expressions, paired with their exact model sources."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
-    revision: Literal["0007_authorization_governance"]
+    revision: Literal["0009_governance_lookup"]
     model_checks: dict[str, dict[str, str]]
     database_checks: dict[str, dict[str, str]]
 

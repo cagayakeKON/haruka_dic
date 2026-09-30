@@ -346,7 +346,6 @@ ValueKey<String> _accountScope(AuthController auth, String page) {
       access?.audience ?? '',
       access?.sessionRef ?? '',
       access?.authzVersion.user ?? 0,
-      access?.authzVersion.policy ?? 0,
     ].join(':'),
   );
 }
@@ -622,12 +621,13 @@ GoRouter createRouter(
       path: AppRoutes.recovery,
       builder: (context, state) => _watchAuth(
         auth,
-        () => auth.policy == null || !auth.policy!.recoveryEnabled
+        () => auth.policy == null
             ? AuthUnavailablePage(
                 loading: auth.phase == AuthPhase.starting,
                 onRetry: () => unawaited(auth.start()),
               )
-            : RecoveryRequestPage(
+            : auth.policy!.recoveryEnabled
+            ? RecoveryRequestPage(
                 admin: state.uri.queryParameters['from'] == 'admin',
                 emailChannel:
                     auth.policy!.recoveryMode == 'email' ||
@@ -659,6 +659,11 @@ GoRouter createRouter(
                     );
                   }
                 },
+              )
+            : StatusPage(
+                id: UiTestIds.recoveryRequestPage,
+                title: AppLocalizations.of(context).authRecoveryClosed,
+                description: AppLocalizations.of(context).authAdminPolicyHint,
               ),
       ),
     ),
@@ -672,7 +677,9 @@ GoRouter createRouter(
         backLocation: state.uri.queryParameters['from'] == 'admin'
             ? AppRoutes.adminLogin
             : AppRoutes.login,
-        actionLocation: AppRoutes.resetPassword,
+        actionLocation: state.uri.queryParameters['channel'] == 'manual'
+            ? '${AppRoutes.resetPassword}?channel=manual'
+            : AppRoutes.resetPassword,
         actionLabel: AppLocalizations.of(context).authCompleteRecovery,
         actionId: UiTestIds.recoveryAcceptedResetLink,
       ),
@@ -721,6 +728,9 @@ GoRouter createRouter(
               )
             : EmailActionPage(
                 kind: EmailActionKind.resetPassword,
+                allowManualRecoveryCode:
+                    state.uri.queryParameters['channel'] == 'manual' ||
+                    const {'manual', 'email_or_manual'}.contains(auth.policy!.recoveryMode),
                 trustedActionBase: auth.policy!.actionLinkBase,
                 passwordMinLength: auth.policy!.passwordMinLength,
                 passwordMaxLength: auth.policy!.passwordMaxLength,

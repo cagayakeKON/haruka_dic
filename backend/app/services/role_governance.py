@@ -46,8 +46,20 @@ from app.services.authorization import (
     require_super_admin_remains,
     validate_inheritance_graph,
 )
+from app.services.governance_security import revoke_lost_login
 
 _ADMIN_SCOPE = "platform_metadata"
+
+
+async def authorize_role_receipt(
+    session: AsyncSession, *, actor_id: UUID, role_id: UUID, deleted: bool
+) -> None:
+    role = await session.get(Role, role_id)
+    if role is None:
+        if deleted:
+            return
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
+    await _protect(session, actor_id, role)
 
 
 async def list_roles(
@@ -180,11 +192,13 @@ async def set_role_enabled(
     before_actor = await _actor_pairs(session, actor_id)
     affected = await _affected_users(session, role.id)
     before = await _pairs_for(session, affected)
+    permission_ceiling = await _permission_ceiling(session, actor_id)
     had_assign = await _holds(session, actor_id, "admin.role.permission.assign")
     role.enabled = enabled
     await session.flush()
     await _reject_elevation(session, actor_id, before_actor)
     changed = await _effective_change(session, affected, before, had_assign=had_assign)
+    await _check_permission_expansion(session, affected, before, permission_ceiling)
     await _assert_public_role(session)
     await _assert_last_admin(session)
     return await _audit(
@@ -222,6 +236,8 @@ async def replace_role_grants(
         return _unchanged(role, revision)
     before_actor = await _actor_pairs(session, actor_id)
     affected = await _affected_users(session, role.id)
+    before = await _pairs_for(session, affected)
+    permission_ceiling = await _permission_ceiling(session, actor_id)
     await session.execute(delete(RolePermission).where(RolePermission.role_id == role.id))
     session.add_all(
         [
@@ -232,6 +248,7 @@ async def replace_role_grants(
     await session.flush()
     await _assert_graph(session)
     await _reject_elevation(session, actor_id, before_actor)
+    await _check_permission_expansion(session, affected, before, permission_ceiling)
     await _assert_public_role(session)
     await _assert_last_admin(session)
     added = sorted(f"{code}:{effect}:{scope}" for code, effect, scope in proposed - current)
@@ -266,14 +283,25 @@ async def replace_role_parents(
     _expect(role, expected_revision)
     await _protect(session, actor_id, role)
     ceiling = await _role_ceiling(session, actor_id)
-    if any(parent_id not in ceiling for parent_id in parent_role_ids):
+    ancestors = {
+        UUID(item)
+        for item in closure(tuple(str(item) for item in parent_role_ids), await _all_edges(session))
+    }
+    if not ancestors <= ceiling:
         raise AppError(ErrorCode.PERMISSION_DENIED)
+    protected_parent = await session.scalar(
+        select(Role.id).where(Role.id.in_(ancestors), Role.protected.is_(True))
+    )
+    if protected_parent is not None:
+        await _require(session, actor_id, "admin.protected_role.manage")
     current = set(await _parent_ids(session, role.id))
     proposed = set(parent_role_ids)
     if current == proposed:
         return _unchanged(role, revision)
     before_actor = await _actor_pairs(session, actor_id)
     affected = await _affected_users(session, role.id)
+    before = await _pairs_for(session, affected)
+    permission_ceiling = await _permission_ceiling(session, actor_id)
     await session.execute(delete(RoleInheritance).where(RoleInheritance.child_role_id == role.id))
     session.add_all(
         [
@@ -284,6 +312,7 @@ async def replace_role_parents(
     await session.flush()
     await _assert_graph(session)
     await _reject_elevation(session, actor_id, before_actor)
+    await _check_permission_expansion(session, affected, before, permission_ceiling)
     await _assert_public_role(session)
     await _assert_last_admin(session)
     return await _audit(
@@ -704,6 +733,18 @@ async def _effective_change(
     if changed and not had_assign:
         raise AppError(ErrorCode.PERMISSION_DENIED)
     return changed
+
+
+async def _check_permission_expansion(
+    session: AsyncSession,
+    user_ids: list[UUID],
+    before: dict[UUID, set[tuple[str, str]]],
+    ceiling: set[tuple[str, str]],
+) -> None:
+    after = await _pairs_for(session, user_ids)
+    if any(not (after[user_id] - before[user_id]) <= ceiling for user_id in user_ids):
+        raise AppError(ErrorCode.PERMISSION_DENIED)
+    await revoke_lost_login(session, before=before, after=after)
 
 
 async def _all_edges(session: AsyncSession) -> tuple[tuple[str, str], ...]:

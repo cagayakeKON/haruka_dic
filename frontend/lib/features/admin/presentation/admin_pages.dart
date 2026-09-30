@@ -22,6 +22,7 @@ import 'package:haruka/app/theme.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 import 'package:haruka/shared/identified.dart';
+import 'package:haruka/shared/presentation/navigation_icons.dart';
 
 /// In-memory state for the management interface.
 final class AdminPreviewState extends ChangeNotifier {
@@ -662,10 +663,20 @@ List<(String, IconData)> _liveSections(AuthController auth) {
   final items = [
     for (final item in auth.access?.navigation ?? const <NavigationItem>[])
       if (known[item.routeKey] != null && seen.add(item.routeKey))
-        (item.routeKey, known[item.routeKey]!),
+        (
+          item.routeKey,
+          publishedNavigationIcon(item.iconCustomized ? item.iconKey : null, known[item.routeKey]!),
+        ),
   ];
   if (seen.add('security')) items.add(('security', known['security']!));
   return items;
+}
+
+String _liveNavigationLabel(AuthController? auth, AppLocalizations strings, String id) {
+  for (final item in auth?.access?.navigation ?? const <NavigationItem>[]) {
+    if (item.routeKey == id && item.titleCustomized) return item.title;
+  }
+  return _sectionLabel(strings, id);
 }
 
 class _AdminSidebar extends StatelessWidget {
@@ -737,7 +748,7 @@ class _AdminSidebar extends StatelessWidget {
                             ),
                             leading: Icon(icon, size: 19),
                             title: Text(
-                              _sectionLabel(strings, id),
+                              _liveNavigationLabel(liveAuth, strings, id),
                               style: TextStyle(
                                 fontWeight: section == id ? FontWeight.w700 : FontWeight.w500,
                               ),

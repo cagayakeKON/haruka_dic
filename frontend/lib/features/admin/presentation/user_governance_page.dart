@@ -63,6 +63,7 @@ class _AdminUserScope {
     final rights = [
       'admin.user.read',
       'admin.user.create',
+      'admin.user.update',
       'admin.user.enable',
       'admin.user.disable',
       'admin.user.approve',
@@ -266,35 +267,53 @@ class _AdminUserGovernanceState extends State<AdminUserGovernance> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  strings.mockAdminUserList,
-                  style: Theme.of(context).textTheme.titleLarge,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final title = Text(
+                strings.mockAdminUserList,
+                style: Theme.of(context).textTheme.titleLarge,
+              );
+              final create = scope.allows('admin.user.create')
+                  ? Identified(
+                      id: UiTestIds.adminUserCreate,
+                      merge: true,
+                      child: FilledButton(onPressed: _create, child: Text(strings.adminUserCreate)),
+                    )
+                  : null;
+              final search = TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: strings.mockAdminSearchUsers,
+                  prefixIcon: const Icon(Icons.search),
+                  isDense: true,
+                  border: const OutlineInputBorder(),
                 ),
-              ),
-              if (scope.allows('admin.user.create'))
-                Identified(
-                  id: UiTestIds.adminUserCreate,
-                  merge: true,
-                  child: FilledButton(onPressed: _create, child: Text(strings.adminUserCreate)),
-                ),
-              if (scope.allows('admin.user.create')) const SizedBox(width: 12),
-              SizedBox(
-                width: 260,
-                child: TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: strings.mockAdminSearchUsers,
-                    prefixIcon: const Icon(Icons.search),
-                    isDense: true,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-              ),
-            ],
+              );
+              if (constraints.maxWidth < 600) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: title),
+                        ?create,
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    search,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  ?create,
+                  if (create != null) const SizedBox(width: 12),
+                  SizedBox(width: 260, child: search),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 17),
           if (_error != null)

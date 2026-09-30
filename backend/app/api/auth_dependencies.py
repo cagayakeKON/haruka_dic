@@ -101,6 +101,7 @@ async def require_scope(
                 permissions=(),
             )
             request.state.session_ref = str(scope.session_id)
+            request.state.authenticated_scope = scope
             request.state.instance_id = runtime.settings.instance_id
             if (request.method, request.url.path) not in _UNBOUND_SCOPE_ROUTES:
                 expected = request.headers.get("x-haruka-expected-session")

@@ -22,9 +22,45 @@
       "instance_id": "haruka-test-0123456789abcdef0123456789abcdef",
       "navigation": [
         {
+          "icon_customized": false,
+          "icon_key": null,
           "key": "administration",
           "route_key": "/admin",
-          "title": "管理"
+          "title": "管理",
+          "title_customized": false
+        }
+      ],
+      "permissions": [
+        {
+          "code": "admin.auth_policy.read",
+          "data_scope": "platform_metadata"
+        }
+      ],
+      "session_ref": "018f1234-0000-7000-8000-000000000002",
+      "user_id": "018f1234-0000-7000-8000-000000000001"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "auth_admin_access_custom_navigation": {
+    "data": {
+      "account_status": "active",
+      "audience": "admin",
+      "authz_version": {
+        "policy": 3,
+        "user": 2
+      },
+      "feature_flags": [],
+      "instance_id": "haruka-test-0123456789abcdef0123456789abcdef",
+      "navigation": [
+        {
+          "icon_customized": true,
+          "icon_key": "book",
+          "key": "users",
+          "route_key": "users",
+          "title": "账号治理",
+          "title_customized": true
         }
       ],
       "permissions": [

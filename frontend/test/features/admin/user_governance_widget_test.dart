@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/app/theme.dart';
+import 'package:haruka/app/routes.dart';
 import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/auth/auth_controller.dart';
 import 'package:haruka/core/auth/auth_repository.dart';
@@ -68,6 +69,10 @@ void main() {
     var accountReads = 0;
     var sessionReads = 0;
     var detailReads = 0;
+    var policyRevision = 1;
+    var recoveryAllowed = true;
+    var recoveryReads = 0;
+    var recoveryIssues = 0;
     Object? created;
     final adapter = SampleAdapter((options, _) async {
       final path = options.uri.path;
@@ -106,11 +111,14 @@ void main() {
               'session_ref': sessionRef,
               'account_status': 'active',
               'permissions': [
+                {'code': 'admin.login', 'data_scope': 'platform_metadata'},
                 {'code': 'admin.user.read', 'data_scope': 'platform_metadata'},
                 {'code': 'admin.user.create', 'data_scope': 'platform_metadata'},
+                if (recoveryAllowed)
+                  {'code': 'admin.user.update', 'data_scope': 'platform_metadata'},
                 {'code': 'admin.session.read', 'data_scope': 'platform_metadata'},
               ],
-              'authz_version': {'user': 1, 'policy': 1},
+              'authz_version': {'user': 1, 'policy': policyRevision},
               'navigation': <Object>[],
               'feature_flags': <Object>[],
             },
@@ -164,6 +172,33 @@ void main() {
             'data': <Object>[],
             'meta': {'request_id': requestId},
           });
+        case '/api/v1/admin/users/$accountId/recovery-requests':
+          recoveryReads += 1;
+          return _json({
+            'data': [
+              {
+                'challenge_id': requestId,
+                'status': 'requested',
+                'created_at': '2026-09-28T00:00:00Z',
+                'expires_at': '2026-10-01T00:00:00Z',
+              },
+            ],
+            'meta': {'request_id': requestId},
+          });
+        case '/api/v1/admin/users/$accountId/recovery-decisions':
+          recoveryIssues += 1;
+          return _json({
+            'data': {
+              'challenge_id': requestId,
+              'status': 'issued',
+              'expires_at': '2026-10-01T00:00:00Z',
+              'token': 'synthetic-one-time-recovery',
+              'revision': 3,
+              'authorization_revision': policyRevision,
+              'audit_id': requestId,
+            },
+            'meta': {'request_id': requestId},
+          });
         case '/api/v1/admin/users/$createdId':
           detailReads += 1;
           return _json({
@@ -207,13 +242,15 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
+    final router = createRouter(config, api, auth, initialLocation: '/admin/users');
+    addTearDown(router.dispose);
     await tester.pumpWidget(
-      MaterialApp(
+      MaterialApp.router(
         theme: HarukaTheme.light(),
         locale: const Locale('zh'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: AdminUserGovernance(auth: auth)),
+        routerConfig: router,
       ),
     );
     await _until(tester, find.text('学习者 A'));
@@ -221,6 +258,14 @@ void main() {
     expect(find.text('learner-a@example.test'), findsOneWidget);
     expect(find.text('用户端'), findsOneWidget);
     expect(find.text('正常'), findsOneWidget);
+    final originalState = tester.state(find.byType(AdminUserGovernance));
+    await tester.enterText(find.byType(TextField), '学习者');
+    policyRevision += 1;
+    expect(await tester.runAsync(auth.verifyCurrentAccess), isTrue);
+    await tester.pump();
+    expect(tester.state(find.byType(AdminUserGovernance)), same(originalState));
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, '学习者');
+    expect(accountReads, 1);
 
     await tester.enterText(find.byType(TextField), '不存在');
     await tester.pump();
@@ -232,14 +277,31 @@ void main() {
     await tester.tap(find.text('查看运维摘要'));
     await tester.pumpAndSettle();
     await _until(tester, find.text('运维摘要'));
+    await _until(tester, find.text('核验签发'));
+    expect(recoveryReads, 1);
     expect(sessionReads, 1);
     expect(accountReads, 1);
-    await tester.tap(find.text('关闭'));
+    expect(recoveryReads, 1);
+    await tester.tap(find.text('核验签发'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('当面核验'));
+    await _until(tester, find.text('synthetic-one-time-recovery'));
+    expect(recoveryIssues, 1);
+    recoveryAllowed = false;
+    policyRevision += 1;
+    expect(await tester.runAsync(auth.verifyCurrentAccess), isTrue);
+    await tester.pump();
+    expect(find.text('synthetic-one-time-recovery'), findsNothing);
+    expect(find.text('核验签发'), findsNothing);
+    // Both the token dialog and its account owner are closed to the old scope.
+    await tester.tap(find.text('关闭').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('关闭'));
+    await _until(tester, find.text('学习者 A'));
     await tester.tap(find.text('查看运维摘要'));
     await tester.pumpAndSettle();
-    expect(sessionReads, 1);
-    expect(accountReads, 1);
+    expect(sessionReads, 2);
+    expect(accountReads, 2);
     await tester.tap(find.text('关闭'));
     await tester.pumpAndSettle();
 
@@ -254,7 +316,7 @@ void main() {
     expect(created, {'email': 'desk@example.test', 'display_name': '服务台', 'role_ids': <Object>[]});
     await _until(tester, find.text('服务台账号'));
     expect(detailReads, 1);
-    expect(accountReads, 1);
+    expect(accountReads, 2);
     expect(find.text('学习者 A'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     auth.dispose();
@@ -553,6 +615,7 @@ Object? _body(RequestOptions options) {
 
 Future<void> _until(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 12 && finder.evaluate().isEmpty; attempt++) {
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump(const Duration(milliseconds: 500));
   }
   expect(

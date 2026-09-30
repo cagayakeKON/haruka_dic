@@ -113,8 +113,12 @@
         "additionalProperties": false,
         "properties": {
           "action_required": {
-            "const": "verify_email",
             "default": "verify_email",
+            "enum": [
+              "verify_email",
+              "await_approval",
+              "rejected"
+            ],
             "title": "Action Required",
             "type": "string"
           },
@@ -800,7 +804,8 @@
           "next_step": {
             "enum": [
               "verify_email",
-              "check_email"
+              "check_email",
+              "await_review"
             ],
             "title": "Next Step",
             "type": "string"
@@ -905,6 +910,22 @@
       "NavigationRead": {
         "additionalProperties": false,
         "properties": {
+          "icon_customized": {
+            "default": false,
+            "title": "Icon Customized",
+            "type": "boolean"
+          },
+          "icon_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Key"
+          },
           "key": {
             "title": "Key",
             "type": "string"
@@ -916,6 +937,11 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "title_customized": {
+            "default": false,
+            "title": "Title Customized",
+            "type": "boolean"
           }
         },
         "required": [

@@ -1856,9 +1856,7 @@ class _MobileSettingsContent extends StatelessWidget {
 
   Widget _security(BuildContext context) => _stack([
     if (!settingsUsePreviewAvatar(context))
-      _settingCard(context, logic.l10n.mockSettingSecurityAccount, [
-        const AccountIdentitySummary(),
-      ]),
+      const AccountIdentitySummary(compact: true),
     _settingCard(context, logic.l10n.mockSettingProfile, [
       ListTile(
         contentPadding: EdgeInsets.zero,

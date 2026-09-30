@@ -1,5 +1,6 @@
 """Read-only audit chronology and identity governance counts."""
 
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Request
@@ -31,6 +32,10 @@ async def list_admin_audit_events(
     result: str | None = Query(default=None, max_length=24),
     actor_user_id: UUID | None = None,
     target_type: str | None = Query(default=None, max_length=64),
+    target_id: UUID | None = None,
+    target_code: str | None = Query(default=None, max_length=100),
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
 ) -> PageResponse[AuditEventRead]:
     runtime = require_runtime(request)
     scope = await require_scope(request, audience="admin", permissions=("admin.audit.read",))
@@ -46,6 +51,10 @@ async def list_admin_audit_events(
             result=result,
             actor_user_id=actor_user_id,
             target_type=target_type,
+            target_id=target_id,
+            target_code=target_code,
+            created_from=created_from,
+            created_to=created_to,
         )
     return PageResponse[AuditEventRead](
         data=events,

@@ -301,6 +301,19 @@ class _AdminAuditEventsState extends State<AdminAuditEvents> {
   String? _result;
   String? _error;
   var _generation = 0;
+  final _filterFields = {
+    for (final key in [
+      'action',
+      'actor_user_id',
+      'target_type',
+      'target_id',
+      'target_code',
+      'created_from',
+      'created_to',
+    ])
+      key: TextEditingController(),
+  };
+  Map<String, String> _filters = const {};
 
   @override
   void initState() {
@@ -312,6 +325,9 @@ class _AdminAuditEventsState extends State<AdminAuditEvents> {
   @override
   void dispose() {
     widget.auth.removeListener(_onAuth);
+    for (final controller in _filterFields.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -336,7 +352,11 @@ class _AdminAuditEventsState extends State<AdminAuditEvents> {
     final cursor = append ? _cursor : null;
     final result = _result;
     try {
-      final page = await scope.auth.adminAuditEvents(cursor: cursor, result: result);
+      final page = await scope.auth.adminAuditEvents(
+        cursor: cursor,
+        result: result,
+        filters: _filters,
+      );
       if (!mounted || !scope.isCurrent || generation != _generation) return;
       setState(() {
         _events = append ? [...?_events, ...page.data] : page.data;
@@ -362,6 +382,42 @@ class _AdminAuditEventsState extends State<AdminAuditEvents> {
     );
   }
 
+  void _applyFilters() {
+    final scope = _scope;
+    if (scope == null || !scope.isCurrent) return;
+    final filters = <String, String>{
+      for (final entry in _filterFields.entries)
+        if (entry.value.text.trim().isNotEmpty) entry.key: entry.value.text.trim(),
+    };
+    DateTime? from;
+    DateTime? to;
+    for (final key in ['created_from', 'created_to']) {
+      final value = filters[key];
+      if (value == null) continue;
+      final parsed = DateTime.tryParse(value);
+      if (parsed == null || !RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(value)) {
+        setState(() => _error = AppLocalizations.of(context).adminAuditTimeError);
+        return;
+      }
+      filters[key] = parsed.toUtc().toIso8601String();
+      if (key == 'created_from') {
+        from = parsed;
+      } else {
+        to = parsed;
+      }
+    }
+    if (from != null && to != null && from.isAfter(to)) {
+      setState(() => _error = AppLocalizations.of(context).adminAuditTimeError);
+      return;
+    }
+    setState(() {
+      _filters = filters;
+      _cursor = null;
+      _error = null;
+    });
+    unawaited(_load(scope, append: false));
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
@@ -375,6 +431,49 @@ class _AdminAuditEventsState extends State<AdminAuditEvents> {
           if (!allowed)
             _GovernanceCard(child: Text(strings.authNoAdminPermission))
           else ...[
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final entry in {
+                  'action': strings.adminAuditAction,
+                  'actor_user_id': strings.adminAuditActor,
+                  'target_type': strings.adminAuditTargetType,
+                  'target_id': strings.adminAuditTargetId,
+                  'target_code': strings.adminAuditTargetCode,
+                  'created_from': strings.adminAuditFrom,
+                  'created_to': strings.adminAuditTo,
+                }.entries)
+                  Identified(
+                    id: switch (entry.key) {
+                      'action' => UiTestIds.adminAuditAction,
+                      'actor_user_id' => UiTestIds.adminAuditActor,
+                      'target_type' => UiTestIds.adminAuditTargetType,
+                      'target_id' => UiTestIds.adminAuditTargetId,
+                      'target_code' => UiTestIds.adminAuditTargetCode,
+                      'created_from' => UiTestIds.adminAuditFrom,
+                      _ => UiTestIds.adminAuditTo,
+                    },
+                    child: SizedBox(
+                      width: 230,
+                      child: TextField(
+                        controller: _filterFields[entry.key],
+                        decoration: InputDecoration(labelText: entry.value),
+                        onSubmitted: (_) => _applyFilters(),
+                      ),
+                    ),
+                  ),
+                Identified(
+                  id: UiTestIds.adminAuditFilter,
+                  merge: true,
+                  child: FilledButton(
+                    onPressed: _applyFilters,
+                    child: Text(strings.adminAuditFilter),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             DropdownButton<String?>(
               value: _result,
               items: [
@@ -464,6 +563,14 @@ class _AuditDetail extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(event.action),
+              Text(_stamp(event.createdAt)),
+              Text('${strings.adminAuditActor}: ${event.actorUserId ?? event.actor}'),
+              if (event.targetType != null)
+                Text('${strings.adminAuditTargetType}: ${event.targetType}'),
+              if (event.targetId != null) Text('${strings.adminAuditTargetId}: ${event.targetId}'),
+              if (event.targetCode != null)
+                Text('${strings.adminAuditTargetCode}: ${event.targetCode}'),
+              Text(_resultLabel(strings, event.result)),
               Text('${strings.adminGovernanceRevision} ${event.authorizationRevision}'),
               if (event.reasonCode != null) Text('${strings.adminAuditReason} ${event.reasonCode}'),
               if (event.requestId != null) Text('${strings.adminAuditRequest} ${event.requestId}'),

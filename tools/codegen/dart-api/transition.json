@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "reviewed-handwritten-contract",
-  "reviewed_schemas_sha256": "85daaf838d340794a91a4eb3f0041c037469666a8cf87e2d02134c2d2586f7b4",
+  "reviewed_schemas_sha256": "a42c4fc998df0038b81514aa71a22fd5e09c942ae9c9ead0d852e4c73e84f9b4",
   "consumer": "frontend/lib/core/api",
   "compatibility_fixture": "tools/codegen/dart-api/fixtures",
   "decision_date": "2026-09-28",

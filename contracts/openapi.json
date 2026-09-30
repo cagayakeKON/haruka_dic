@@ -2675,6 +2675,22 @@
       "NavigationRead": {
         "additionalProperties": false,
         "properties": {
+          "icon_customized": {
+            "default": false,
+            "title": "Icon Customized",
+            "type": "boolean"
+          },
+          "icon_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Key"
+          },
           "key": {
             "title": "Key",
             "type": "string"
@@ -2686,6 +2702,11 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "title_customized": {
+            "default": false,
+            "title": "Title Customized",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5862,6 +5883,74 @@
               ],
               "title": "Target Type"
             }
+          },
+          {
+            "in": "query",
+            "name": "target_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "target_code",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Code"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created To"
+            }
           }
         ],
         "responses": {
@@ -6110,6 +6199,20 @@
       },
       "patch": {
         "operationId": "update_admin_auth_policy",
+        "parameters": [
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -8354,6 +8457,20 @@
       },
       "post": {
         "operationId": "create_admin_menu_group",
+        "parameters": [
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -8478,6 +8595,20 @@
     "/api/v1/admin/menus/layout": {
       "post": {
         "operationId": "replace_admin_menu_layout",
+        "parameters": [
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -8735,6 +8866,18 @@
             "schema": {
               "format": "uuid",
               "title": "Menu Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
               "type": "string"
             }
           }
@@ -9119,6 +9262,20 @@
       },
       "post": {
         "operationId": "create_admin_role",
+        "parameters": [
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -9377,6 +9534,18 @@
               "title": "Role Id",
               "type": "string"
             }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -9513,6 +9682,18 @@
               "title": "Role Id",
               "type": "string"
             }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -9647,6 +9828,18 @@
             "schema": {
               "format": "uuid",
               "title": "Role Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
               "type": "string"
             }
           }
@@ -9909,6 +10102,18 @@
               "title": "Role Id",
               "type": "string"
             }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -10045,6 +10250,18 @@
               "title": "Role Id",
               "type": "string"
             }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -10179,6 +10396,18 @@
             "schema": {
               "format": "uuid",
               "title": "Role Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
               "type": "string"
             }
           }
@@ -10466,6 +10695,20 @@
       },
       "post": {
         "operationId": "create_admin_user",
+        "parameters": [
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -10726,6 +10969,18 @@
               "title": "User Id",
               "type": "string"
             }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -10860,6 +11115,18 @@
             "schema": {
               "format": "uuid",
               "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
               "type": "string"
             }
           }
@@ -11124,6 +11391,18 @@
               "title": "User Id",
               "type": "string"
             }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -11258,6 +11537,18 @@
             "schema": {
               "format": "uuid",
               "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
               "type": "string"
             }
           }
@@ -11520,6 +11811,18 @@
             "schema": {
               "format": "uuid",
               "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable key for one administrative user intent; retain for retries.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9._:-]+$",
               "type": "string"
             }
           }

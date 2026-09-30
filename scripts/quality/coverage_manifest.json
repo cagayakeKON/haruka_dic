@@ -878,6 +878,39 @@
       "language": "flutter",
       "kind": "ordinary",
       "groups": []
+    },
+    "backend/app/services/governance_security.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/governance_receipts.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "frontend/lib/shared/presentation/navigation_icons.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/api/governance_denials.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/governance_writes.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
     }
   },
   "core_groups": {

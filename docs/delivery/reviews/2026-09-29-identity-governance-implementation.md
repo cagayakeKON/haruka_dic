@@ -1,6 +1,78 @@
 # B2b 身份治理实现与切片复核
 
-状态：**代码与切片复核已完成，本记录不签署 B2b 验收。** 当前 Flutter mock 的管理概览和审计已在桌面与手机视口实操；正式 Web/Android 对照和阶段 1 联合验收没有做。没有 Git commit。B2c 的配额、模型目录、任务运维和用量聚合没有实现。
+## 2026-09-30 正式验收候选（当期验收通过）
+
+本次候选来源为 `106eac8647e08c377be72c5f96b0f0da253f5e78` 加本轮集中修复；正式 Web/Android 必要实操、集中修复和root独立定点复核完成，B2b当期范围验收通过。本轮修复以包含本记录的本地提交为准，实际 commit 哈希见交付消息及 Git 历史。下文 2026-09-29 内容保留为历史证据，历史端口、schema 指纹及未运行状态不代表当前候选。
+
+| 证据 | 当前事实 | 复核及边界 |
+| --- | --- | --- |
+| 已确认 Flutter mock | 亲自操作 `7488b19` 工作树的管理登录、五个治理栏目、用户摘要 dialog，桌面 1400×900 与手机 390×844；隔离预览 8774 | 已完成桌面/手机正式对照；授权与真实数据允许差异 |
+| 正式 Web | 当前 release build 成功，5173 直接提供该构建；早期管理登录、概览、菜单、策略和审计真实读取已操作 | 已完成；最后 Web 退出204 |
+| Android | 独立执行者已有 mock 与正式用户端首轮实操 | 最终 APK 与全部必要用户路径已完成 |
+| 集中前端回归 | 身份稳定路由、人工恢复撤权清退、会话作用域缓存、菜单配置、审计显式筛选与新旧契约消费定点用例通过 | 定点静态无问题；必要实际路径完成 |
+| 共享契约 | Python 单向生成 customization 样本，Dart 消费并断言旧字段缺失兼容；独立 review 后提升 `reviewed_schemas_sha256` 为 `a42c4fc998df0038b81514aa71a22fd5e09c942ae9c9ead0d852e4c73e84f9b4` | 后续 schemas 变化仍需重新 review |
+
+本轮修复包括人工恢复权限 scope 漏项、无关 global revision 导致路由 State 重建、配置标题/图标/排序未投影实际导航、审计筛选缺项及用户会话 dialog 重开重复读取。治理写由同一明确操作的 operation ID 提供 Idempotency-Key；401 不自动重放。最终 Web 实操受到真实管理员登录限流短暂阻塞，保留限制并等待自然到期，没有清除或放宽。
+
+最终集中修复 Web 构建与 5173 实际提供的 `main.dart.js` SHA256 同为 `be8547577dcff6001111d73d667b74d27ce5aeb425ec32e8857f3075347c40f1`。实际启动参数直接指向 `frontend/build/web`，不使用旧复制发布目录。
+
+已完成的最终 API 路径：管理 UI 策略预览后 PATCH 200 切为 approval/manual；菜单 dialog 编辑查询标题、顺序与图标后 POST layout 200；已注册待审批账号的摘要首次读取会话 200、关闭重开不增加读取。审计逐字输入 action 跨等待保持焦点且提交前读取不增加，点击筛选后真实读取，再开关已加载行详情额外 GET 0，筛选草稿保持。桌面和手机截图保存在忽略的 `dev/.local/governance-review`；不保存秘密响应或 Token 可见截图。菜单实际用户导航投影、审批及恢复结果均已完成。
+
+本次为 B2b 当期验收，只执行受影响组件、契约及必要 Web/Android 路径；Windows 原生、全仓门禁、B2c 和阶段 1 联合验收没有运行，不据此标为通过。
+
+### 本轮实际失败与集中修复
+
+| 发现方式 | 失败事实 | 修复及复核 |
+| --- | --- | --- |
+| 独立代码复核 | 人工恢复 scope 漏 `admin.user.update`，有权也无法核验，撤权不收敛 | 补权限 scope，组件验证核验与撤权清内容；真实 Web 已核验签发 200 |
+| 路由复核 | 无关 global revision 改 ValueKey，销毁背景页 | 身份 key 排除无关 global 值，router 级断言同 State、搜索草稿与读取次数 |
+| 实际导航 | 配置标题、顺序、图标未投影实际菜单 | 新旧兼容 DTO、明确 customization 标记，同壳渲染；真实 Web 保存 200，Android 亲自确认第一项「查询验收」与 book 图标，随后 UI 恢复原值 200 |
+| 审计规格与 UI | 仅结果筛选，缺少时间/action/actor/target | 补显式筛选与已有行详情；Web 逐字输入焦点稳定，apply 前无读取，详情开关 GET 0 |
+| Android 会话 dialog | 关再开重读第一页 | 身份/会话作用域缓存，成功撤销失效；共享合并 Future 全部执行代次 fence，两个合并 caller 迟到均拒绝 |
+| Android 实际激活进度 | `Continuation` header 与服务端 `Bearer` 不匹配，已验证账号仍显示待邮件 | 对齐 opaque Bearer，按服务端 pending/rejected/active 渲染；最终 Android 待审批、批准登录与拒绝状态实测 |
+| Android 实际 push 入口 | 首次回归用 `router.go` 没覆盖安全卡 `context.push`；dialog 出现底栏 | 真实入口回归先复现红；沿顶部 ImperativeRouteMatch 取匹配页，真实点击安全/查看会话回归绿。最后 APK 真实入口、关闭/重开/HOME 实操无底栏且业务 GET 0；不用早期合成 dialog 绿替代 |
+| 最终手机管理截图 | 创建按钮与固定搜索宽度压挤标题成竖排 | 手机标题/创建与搜索分两排，同 controller/数据源；桌面保留，最后 Web 桌面/手机截图直接复核完成 |
+| 人工恢复消费 UI | 签发 raw 码，但 reset 只接受完整信任链接 | 明确 manual/email_or_manual 模式接收严格 43 位码，manual 受理入口标记保留；默认邮件/验证仍检查信任来源与用途。默认拒绝/明确提交组件回归绿，新签发 raw 码经明确 manual 入口真实提交返回 204 |
+
+第一条人工恢复已由 Android 真实申请、Web 核验签发，再从用户 Web 以受信任同用途链接明确提交并返回 204。Android 旧会话 dialog 清退，新密码重新登录成功；PG 同次 `password_recovery` 撤销对应旧 session，Loki 有相同 request 的 204。HOME 窗口没有 `/me/access` 401 证据，不把匿名前端日志的 401 误归到该会话。
+
+Web 登录限流 429 与快速输入遗漏产生的 401 保留为过程失败；采用逐字真实输入、失焦与提交前值匹配确认，等待限流自然结束。近期重验不足的菜单写返回 401，未自动重放，重新密码登录后由用户明确再次保存成功。首次隔离管理员没有 learner 管理上限，摘要读取 403 正确拒绝；只补合成前置管理角色与受控上限，未预置审批/恢复结果。
+
+### 当前实际 UI 矩阵
+
+| 路径 | 最终事实 |
+| --- | --- |
+| 管理五栏目与 mock/正式直接对照 | 桌面、手机登录、用户、角色、菜单、策略、审计均亲自操作；最终手机两排 header 已直接看图复核 |
+| 角色创建、边界预览、删除 | 空合成角色真 UI 创建/预览/二次确认删除 200，无残留；没有宣称每个角色按钮均实操 |
+| 菜单配置与实际导航 | 真 UI 保存标题/顺序/icon 200，Android 实见查询验收/book/首项；真 UI 恢复后 Android 原标题顺序恢复 |
+| 审批与拒绝 | Android 真注册/邮箱验证，Web 批准/拒绝 200，Android 准确 pending/active/rejected 与正常登录 |
+| 人工恢复 | Android 请求202，Web 核验签发200，受限文件安全交付；用户 Web 链接消费204，Android旧内容清退、新密码登录；第二个新挑战 raw 码明确消费204 |
+| dialog/搜索连续性 | 管理摘要重开与审计详情开关额外 GET0；Android真实安全卡 push→dialog→返回/重开/HOME业务GET0、背景稳定无底栏，搜索逐字跨防抖仍focused |
+| 权限与会话清退 | Web停用200→Android旧dialog/邮箱清退；Web启用200→Android重新登录；单个当前会话撤销先401近期重验，密码重登录后明确提交200→Android清退，PG分别account_disabled/admin_revoked |
+| 初始状态恢复 | 策略 UI 恢复 closed/email200，后端只读确认revision3、邮箱验证仍true；菜单原值已恢复 |
+| Web管理退出 | 原实现远端未确认；Web Locks Zone修复后最后构建成功，真实管理菜单退出204并回登录，无远端未确认提示；PG同会话user_requested持久撤销 |
+
+最终 APK SHA256：`034320ef13681e4fe0f2c52687e50b2cdfc1458a6b41ef100155d4da07852c18`。Android完整事实与截图索引在本机忽略产物 `artifacts/dev/identity-android-20260930/current-candidate.md`。Web截图在 `dev/.local/governance-review`，实际秘密没有进入截图、报告或输出。Token仅从当前真实UI复制到忽略的受限文件，消费经真实表单，不用HTTP替代。
+
+### 独立 review 关闭依据与后端证据
+
+root 第一轮集中定位、第二轮只复核本轮必要修订；没有全仓第三轮。事务内重新验证当前 actor/user/session与5分钟近期重验；丢失对应登录资格推进 audience epoch，重授不复活旧token；effective grant ceiling、deny解除与继承复核；按实际status动作鉴权；17个治理写接口必需Idempotency-Key；7日用途限定密文回执在当前授权且挑战仍有效时重展，摘要/加密密钥版本不符失败关闭，稳定查询摘要防止旧键重执行；拒绝审计提交与Outbox；0007→0008/0009升级保留已有客户端回执，均有定点回归及root独立源码复核。
+
+证据索引为本机忽略的 `artifacts/identity-governance-backend-evidence.json`，保留每份XML真实结果和早期失败，不以一个合并总数掩盖失败：manual-receipt-attempt2的四个非过期case通过，expired由manual-expired-final同名case1项通过补齐；schema-final的additive case通过，迁移兼容由migration-compat-source-final1项通过补齐；final-security早期regrant失败由final-security-attempt2三种regrant与receipt共4项通过补齐；HTTP status错误由http-status-final启用/停用2项通过补齐；旧菜单seed断言由security-regression8项通过覆盖。policy receipt/stale reauth、拒绝审计HTTP/PG、日志秘密扫描与Loki正常/拒绝事件以该索引各原始报告为准。
+
+当前共享契约 OpenAPI SHA256 `89595b5f703024cca7af2d31b3d72cbf73475584ae4e453b67f8f6ff04681d20`，database-schema SHA256 `c3d7028e4f0f6ee46f0d2104ab6da856be9ba67293eb99b0f781660997b85475`。components兼容扩展与共享样本/旧字段消费经独立复核后提升前述schemas指纹；新增必需header只改operation元数据。
+
+Web管理退出的新增失败是JS Web Locks回调丢失调用Zone，导致退休绑定授权不传递；最小纯Dart编译JS harness在正常localhost/headless中原实现ZONE_LOST、修后ZONE_RETAINED。仅Web条件分支捕获调用Zone再run(action)，没有放宽ApiClient代次、实例、会话或退休请求白名单。新增browser unit尝试停在loading，没有执行结果，明确不记为通过；上述实际harness为最低运行证据。临时源码 `dev/.local/governance-review/zone-harness.dart` 直接导入现有 `frontend/lib/core/auth/auth_sync_web.dart`，调用 runZoned→withIdentityLock→异步等待后比较 marker 对象同一性；命令 `dart compile js --packages=frontend/.dart_tool/package_config.json dev/.local/governance-review/zone-harness.dart -o dev/.local/governance-review/zone-harness.js`，普通 localhost:8780 页面与锁定 Playwright1.63 headless读取DOM结果。原输出ZONE_LOST、仅生产实现修订后同一harness输出ZONE_RETAINED；临时产物不构成正式运行/构建依赖。
+
+最后生成门禁发现拒绝审计 action 被错误用作未注册日志事件，定点改为共享已注册 `authz.denied` 并纳入后端事件清单；PG审计 action 保持不变，日志字段与业务安全行为未扩展。相关 Ruff/Pyright/registry 检查通过，最终 `scripts/dev.py codegen --check` 通过，报告 `artifacts/dev/codegen-635167e931594bc8bc02709a0e321322.json`。
+
+限制：本轮不运行全仓覆盖率、Windows原生、真实供应商或阶段1联合验收；B2c未完成。没有宣称每个管理按钮均真实实操，分页超过20页静默截断仍是规模建议，未据无真实规模证据扩展本轮。当前空材料fixture没有真实滚动资产，不宣称内容长列表滚动实测。
+
+当前管理退出持久证据：专属管理员最终会话于 `2026-09-30T04:51:01.599585Z` 以 `user_requested` 撤销，HTTP logout204于 `04:51:01.632543Z`，前置access200；见忽略产物 `artifacts/identity-governance-admin-logout-evidence.json`。
+
+## 2026-09-29 历史记录
+
+状态：**代码与切片复核已完成，本记录不签署 B2b 验收。** 当前 Flutter mock 的管理概览和审计已在桌面与手机视口实操；正式 Web/Android 对照和阶段 1 联合验收没有做。当时没有 Git commit；当前候选来源与本轮提交见上文。B2c 的配额、模型目录、任务运维和用量聚合没有实现。
 
 ## 已实现范围
 

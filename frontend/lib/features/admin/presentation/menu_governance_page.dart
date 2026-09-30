@@ -393,6 +393,8 @@ class _MenuDialog extends StatefulWidget {
 
 class _MenuDialogState extends State<_MenuDialog> {
   late final TextEditingController _title;
+  late final TextEditingController _order;
+  late String? _icon;
   late String? _parent;
   late bool _hidden;
   late Set<String> _extras;
@@ -404,6 +406,8 @@ class _MenuDialogState extends State<_MenuDialog> {
   void initState() {
     super.initState();
     _title = TextEditingController(text: widget.menu.title);
+    _order = TextEditingController(text: '${widget.menu.sortOrder}');
+    _icon = widget.menu.iconKey;
     _parent = widget.menu.parentMenuId;
     _hidden = !widget.menu.enabled;
     _extras = widget.menu.permissionCodes.toSet();
@@ -412,11 +416,17 @@ class _MenuDialogState extends State<_MenuDialog> {
   @override
   void dispose() {
     _title.dispose();
+    _order.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (_busy) return;
+    final order = int.tryParse(_order.text.trim());
+    if (order == null || order < 0 || order > 100000) {
+      setState(() => _error = AppLocalizations.of(context).adminMenuOrderError);
+      return;
+    }
     setState(() => _busy = true);
     try {
       final next = MenuRead(
@@ -427,8 +437,8 @@ class _MenuDialogState extends State<_MenuDialog> {
         componentKey: widget.menu.componentKey,
         parentMenuId: _parent,
         title: _title.text.trim(),
-        iconKey: widget.menu.iconKey,
-        sortOrder: widget.menu.sortOrder,
+        iconKey: _icon,
+        sortOrder: order,
         permissionMatch: widget.menu.permissionMatch,
         enabled: !_hidden,
         floor: widget.menu.floor,
@@ -493,6 +503,26 @@ class _MenuDialogState extends State<_MenuDialog> {
                 decoration: InputDecoration(labelText: strings.mockAdminMenus),
               ),
               const SizedBox(height: 8),
+              Identified(
+                id: UiTestIds.adminMenuOrder,
+                child: TextField(
+                  controller: _order,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: strings.adminMenuOrder),
+                ),
+              ),
+              Identified(
+                id: UiTestIds.adminMenuIcon,
+                child: DropdownButtonFormField<String>(
+                  initialValue: _icon,
+                  decoration: InputDecoration(labelText: strings.adminMenuIcon),
+                  items: [
+                    for (final icon in widget.catalog.icons)
+                      DropdownMenuItem(value: icon, child: Text(icon)),
+                  ],
+                  onChanged: _busy ? null : (value) => setState(() => _icon = value),
+                ),
+              ),
               DropdownButton<String?>(
                 value: _parent,
                 items: [

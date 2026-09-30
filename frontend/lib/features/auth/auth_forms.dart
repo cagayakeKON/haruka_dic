@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -153,6 +155,15 @@ class _ActivationPageState extends State<ActivationPage> {
   final _email = TextEditingController();
   bool _busy = false;
   String? _message;
+  String? _state;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_check());
+    });
+  }
 
   @override
   void dispose() {
@@ -169,15 +180,10 @@ class _ActivationPageState extends State<ActivationPage> {
     try {
       final status = await widget.onStatus();
       if (mounted) {
-        final strings = AppLocalizations.of(context);
-        setState(
-          () => _message = switch (status.state) {
-            'active' => strings.authVerified,
-            'pending_approval' => strings.authPendingApproval,
-            'rejected' => strings.authApprovalRejected,
-            _ => strings.authStillPending,
-          },
-        );
+        setState(() {
+          _state = status.state;
+          _message = null;
+        });
       }
     } on Object catch (error) {
       if (mounted) setState(() => _message = _safeError(context, error));
@@ -205,10 +211,23 @@ class _ActivationPageState extends State<ActivationPage> {
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
+    final title = switch (_state) {
+      'pending_email' => strings.authPendingEmail,
+      'pending_approval' => strings.authActivationApprovalTitle,
+      'rejected' => strings.authApprovalRejected,
+      'active' => strings.authVerified,
+      _ => strings.authActivationProgressTitle,
+    };
+    final description = switch (_state) {
+      'pending_email' => strings.authPendingEmailHint,
+      'pending_approval' => strings.authPendingApproval,
+      'rejected' || 'active' => strings.authBackToLogin,
+      _ => strings.authActivationProgressHint,
+    };
     return AuthFrame(
       id: UiTestIds.activationResendPage,
-      title: strings.authPendingEmail,
-      description: strings.authPendingEmailHint,
+      title: title,
+      description: description,
       backLocation: AppRoutes.login,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -217,26 +236,28 @@ class _ActivationPageState extends State<ActivationPage> {
             onPressed: _busy ? null : _check,
             child: Text(strings.authCheckActivation),
           ),
-          const SizedBox(height: 24),
-          Identified(
-            id: UiTestIds.activationResendEmail,
-            merge: true,
-            child: TextField(
-              controller: _email,
-              enabled: !_busy,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(labelText: strings.authEmail),
+          if (_state == 'pending_email') ...[
+            const SizedBox(height: 24),
+            Identified(
+              id: UiTestIds.activationResendEmail,
+              merge: true,
+              child: TextField(
+                controller: _email,
+                enabled: !_busy,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(labelText: strings.authEmail),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Identified(
-            id: UiTestIds.activationResendSubmit,
-            merge: true,
-            child: FilledButton(
-              onPressed: _busy ? null : _resend,
-              child: Text(strings.authResendVerification),
+            const SizedBox(height: 12),
+            Identified(
+              id: UiTestIds.activationResendSubmit,
+              merge: true,
+              child: FilledButton(
+                onPressed: _busy ? null : _resend,
+                child: Text(strings.authResendVerification),
+              ),
             ),
-          ),
+          ],
           if (_message != null)
             Padding(padding: const EdgeInsets.only(top: 16), child: Text(_message!)),
         ],

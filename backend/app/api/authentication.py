@@ -1,5 +1,6 @@
 """Authentication, account security, and session HTTP routes."""
 
+import logging
 import re
 from typing import NoReturn
 from uuid import UUID
@@ -7,6 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Header, Query, Request, Response
 
 from app.api.auth_dependencies import require_runtime, require_scope
+from app.api.governance_writes import GOVERNANCE_WRITE_HEADERS, governance_write
 from app.api.responses import error_responses, get_request_id
 from app.api.security_guards import (
     rate_limit,
@@ -46,7 +48,12 @@ from app.schemas.auth import (
     WebLoginRead,
 )
 from app.schemas.responses import PageMeta, PageResponse, ResponseMeta, SuccessResponse
-from app.services.auth_policy import read_admin_policy, read_public_policy, update_admin_policy
+from app.services.auth_policy import (
+    mail_ready,
+    read_admin_policy,
+    read_public_policy,
+    write_admin_policy,
+)
 from app.services.registration import activation_status as read_activation_status
 from app.services.registration import complete_recovery as consume_password_recovery
 from app.services.registration import email_identity, register, request_challenge
@@ -142,13 +149,26 @@ async def admin_auth_policy(request: Request) -> SuccessResponse[AdminAuthPolicy
     operation_id="update_admin_auth_policy",
     response_model=SuccessResponse[AdminAuthPolicyRead],
     responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["admin.auth_policy.update"]},
+    openapi_extra={
+        **GOVERNANCE_WRITE_HEADERS,
+        "x-haruka-permissions": ["admin.auth_policy.update"],
+    },
 )
 async def update_admin_auth_policy(
     request: Request, payload: AdminAuthPolicyUpdate
 ) -> SuccessResponse[AdminAuthPolicyRead]:
     runtime, scope = await _write_scope(request, "admin")
-    updated = await update_admin_policy(runtime, scope, payload)
+    if runtime.resources is None:
+        raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
+    async with runtime.resources.database.sessions() as session, session.begin():
+        updated = await governance_write(
+            session,
+            request,
+            scope,
+            AdminAuthPolicyRead,
+            lambda: write_admin_policy(session, scope, payload, mail_available=mail_ready(runtime)),
+        )
+    logging.getLogger(__name__).info("auth.policy.updated")
     return SuccessResponse[AdminAuthPolicyRead](
         data=updated, meta=ResponseMeta(request_id=get_request_id(request))
     )

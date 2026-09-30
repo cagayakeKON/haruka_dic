@@ -4,8 +4,6 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import httpx2 as httpx
-
-from tests.support.bound_client import BoundAsyncClient
 import pytest
 
 from app.bootstrap import Runtime
@@ -14,6 +12,7 @@ from app.maintenance.settings import MaintenanceSettings
 from tests.integration.test_authentication_flow import (
     _mail_token,  # pyright: ignore[reportPrivateUsage] - shared isolated mail fixture
 )
+from tests.support.bound_client import BoundAsyncClient
 
 pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 pytest_plugins = ("tests.integration.test_authentication_flow",)
@@ -66,7 +65,7 @@ async def test_authenticated_receiver_binds_owner_audience_and_transport(
         opened = await admin.patch(
             "/api/v1/admin/auth-policy",
             json={"registration_mode": "open", "expected_revision": policy["revision"]},
-            headers=admin_headers,
+            headers={**admin_headers, "Idempotency-Key": "policy-frontend_telemetry_auth-66"},
         )
         assert opened.status_code == 200
 

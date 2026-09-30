@@ -1,15 +1,49 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/api/auth_models.dart';
 import 'package:haruka/core/api/responses.dart';
 import 'package:haruka/core/api/wire.dart';
+import 'package:haruka/core/auth/auth_repository.dart';
+import 'package:haruka/core/config/app_config.dart';
+
+import '../test_support/sample_adapter.dart';
 
 void main() {
   final samples = wireObject(
     jsonDecode(File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync()),
   );
+
+  test('activation uses the opaque Bearer continuation without a session', () async {
+    const token = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    final config = AppConfig.parse(platform: AppPlatform.windows, environment: 'dev');
+    final api = ApiClient(
+      config,
+      adapter: SampleAdapter((options, _) async {
+        expect(options.uri.path, '/api/v1/auth/activation/status');
+        expect(options.headers['Authorization'], 'Bearer $token');
+        return ResponseBody.fromString(
+          jsonEncode({
+            'data': {
+              'state': 'pending_approval',
+              'action_required': null,
+              'expires_at': '2026-10-01T00:00:00Z',
+            },
+            'meta': {'request_id': '018f1234-1234-7123-8123-123456789abc'},
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: ['application/json'],
+          },
+        );
+      }),
+    );
+    addTearDown(api.close);
+    expect((await AuthRepository(api, config).activationStatus(token)).state, 'pending_approval');
+  });
 
   test('Python login variants preserve active and restricted pending state', () {
     for (final (key, decode) in [
@@ -56,6 +90,25 @@ void main() {
     expect(admin.audience, 'admin');
     expect(admin.permissions, isNotEmpty);
     expect(admin.navigation.every((item) => item.routeKey.isNotEmpty), isTrue);
+  });
+
+  test('navigation customization consumes Python flags and old fields remain compatible', () {
+    final custom = SuccessResponse<AccessRead>.fromJson(
+      samples['auth_admin_access_custom_navigation'],
+      AccessRead.fromJson,
+    ).data.navigation.single;
+    expect(custom.title, '账号治理');
+    expect(custom.iconKey, 'book');
+    expect(custom.titleCustomized, isTrue);
+    expect(custom.iconCustomized, isTrue);
+    final legacy = NavigationItem.fromJson({
+      'key': 'users',
+      'route_key': 'users',
+      'title': '用户与会话',
+    });
+    expect(legacy.iconKey, isNull);
+    expect(legacy.titleCustomized, isFalse);
+    expect(legacy.iconCustomized, isFalse);
   });
 
   test('account nullable verification, session fields and 202/204 transport', () {

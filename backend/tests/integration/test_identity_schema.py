@@ -3,6 +3,7 @@
 import asyncio
 import os
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,7 +12,12 @@ import pytest_asyncio
 from sqlalchemy import Connection, inspect, text
 from sqlalchemy.schema import CreateSchema, DropSchema
 
-from app.maintenance.migrations import upgrade_database
+from app.maintenance.migrations import (
+    _upgrade,  # pyright: ignore[reportPrivateUsage]
+    load_migration_resources,
+    locked_connection,
+    upgrade_database,
+)
 from app.maintenance.schema import EXPECTED_REVISION, check_schema
 from app.maintenance.settings import (
     MaintenanceSettings,
@@ -104,3 +110,49 @@ async def test_identity_core_is_additive_and_matches_model(target: MaintenanceSe
             assert grants == (True, True, True, False, False)
     finally:
         await engine.dispose()
+
+
+async def test_governance_migrations_preserve_existing_client_receipt(
+    target: MaintenanceSettings,
+) -> None:
+    """Constraint-level legacy receipt fixture survives both additive revisions."""
+    resources = load_migration_resources(MIGRATIONS)
+    receipt_id, owner_id, result_id = uuid4(), uuid4(), uuid4()
+    async with locked_connection(target) as (connection, ownership):
+        await connection.run_sync(
+            _upgrade,
+            replace(resources, head="0007_authorization_governance"),
+            ownership,
+        )
+        await connection.execute(
+            text("""
+            INSERT INTO idempotency_records
+            (id, owner_user_id, audience, action_code, key_digest, request_digest, state,
+             result_kind, result_id, safe_response, response_schema_version, http_status, expires_at, operation_id)
+            VALUES (:id, :owner, 'client', 'collection.create', :digest, :request, 'committed',
+                    'collection_item', :result, CAST(:response AS jsonb), 1, 201, now() + interval '7 days', :op)
+        """),
+            {
+                "id": receipt_id,
+                "owner": owner_id,
+                "digest": b"d" * 32,
+                "request": b"r" * 32,
+                "result": result_id,
+                "response": '{"collection_id":"legacy"}',
+                "op": uuid4(),
+            },
+        )
+        await connection.commit()
+        await connection.run_sync(_upgrade, resources, ownership)
+        row = (
+            await connection.execute(
+                text("""
+            SELECT audience, result_kind, result_id, safe_response, lookup_digest
+            FROM idempotency_records WHERE id = :id
+        """),
+                {"id": receipt_id},
+            )
+        ).one()
+        assert row == ("client", "collection_item", result_id, {"collection_id": "legacy"}, None)
+    status = await upgrade_database(target, MIGRATIONS)
+    assert status.compatible and status.current_revision == "0009_governance_lookup"

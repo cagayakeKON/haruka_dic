@@ -193,18 +193,31 @@ final class PermissionGrant {
 }
 
 final class NavigationItem {
-  const NavigationItem({required this.key, required this.routeKey, required this.title});
+  const NavigationItem({
+    required this.key,
+    required this.routeKey,
+    required this.title,
+    this.iconKey,
+    this.titleCustomized = false,
+    this.iconCustomized = false,
+  });
   factory NavigationItem.fromJson(Object? value) {
     final json = wireObject(value);
     return NavigationItem(
       key: wireString(json['key']),
       routeKey: wireString(json['route_key']),
       title: wireString(json['title']),
+      iconKey: json['icon_key'] == null ? null : wireString(json['icon_key']),
+      titleCustomized: json['title_customized'] == true,
+      iconCustomized: json['icon_customized'] == true,
     );
   }
   final String key;
   final String routeKey;
   final String title;
+  final String? iconKey;
+  final bool titleCustomized;
+  final bool iconCustomized;
 }
 
 final class AccessRead {

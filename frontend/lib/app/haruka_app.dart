@@ -410,16 +410,20 @@ class _HarukaAppState extends State<HarukaApp> {
                                     child: _auth.isAuthenticated && !_auth.admin
                                         ? ReferenceFeatureScope(
                                             controller: _referenceController!,
-                                            child: PreviewPersistentShell(
-                                              location: _activeLocation,
-                                              onNavigate: _router.go,
-                                              onBack: () => _router.canPop()
-                                                  ? _router.pop()
-                                                  : _router.go(AppRoutes.materials),
-                                              onOpenNotifications: () =>
-                                                  _router.go(AppRoutes.notifications),
-                                              actions: _shellActions,
-                                              child: child,
+                                            // The persistent shell is outside the router Navigator;
+                                            // its tooltips need their own overlay ancestor.
+                                            child: Overlay.wrap(
+                                              child: PreviewPersistentShell(
+                                                location: _activeLocation,
+                                                onNavigate: _router.go,
+                                                onBack: () => _router.canPop()
+                                                    ? _router.pop()
+                                                    : _router.go(AppRoutes.materials),
+                                                onOpenNotifications: () =>
+                                                    _router.go(AppRoutes.notifications),
+                                                actions: _shellActions,
+                                                child: child,
+                                              ),
                                             ),
                                           )
                                         : child ?? const SizedBox.shrink(),

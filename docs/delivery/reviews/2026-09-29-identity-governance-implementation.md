@@ -14,7 +14,7 @@
 
 本轮修复包括人工恢复权限 scope 漏项、无关 global revision 导致路由 State 重建、配置标题/图标/排序未投影实际导航、审计筛选缺项及用户会话 dialog 重开重复读取。治理写由同一明确操作的 operation ID 提供 Idempotency-Key；401 不自动重放。最终 Web 实操受到真实管理员登录限流短暂阻塞，保留限制并等待自然到期，没有清除或放宽。
 
-最终集中修复 Web 构建与 5173 实际提供的 `main.dart.js` SHA256 同为 `be8547577dcff6001111d73d667b74d27ce5aeb425ec32e8857f3075347c40f1`。实际启动参数直接指向 `frontend/build/web`，不使用旧复制发布目录。
+8650f13 当期验收时的 Web 构建与 5173 实际提供的 `main.dart.js` SHA256 同为 `be8547577dcff6001111d73d667b74d27ce5aeb425ec32e8857f3075347c40f1`。实际启动参数直接指向 `frontend/build/web`，不使用旧复制发布目录。
 
 已完成的最终 API 路径：管理 UI 策略预览后 PATCH 200 切为 approval/manual；菜单 dialog 编辑查询标题、顺序与图标后 POST layout 200；已注册待审批账号的摘要首次读取会话 200、关闭重开不增加读取。审计逐字输入 action 跨等待保持焦点且提交前读取不增加，点击筛选后真实读取，再开关已加载行详情额外 GET 0，筛选草稿保持。桌面和手机截图保存在忽略的 `dev/.local/governance-review`；不保存秘密响应或 Token 可见截图。菜单实际用户导航投影、审批及恢复结果均已完成。
 
@@ -69,6 +69,22 @@ Web管理退出的新增失败是JS Web Locks回调丢失调用Zone，导致退�
 限制：本轮不运行全仓覆盖率、Windows原生、真实供应商或阶段1联合验收；B2c未完成。没有宣称每个管理按钮均真实实操，分页超过20页静默截断仍是规模建议，未据无真实规模证据扩展本轮。当前空材料fixture没有真实滚动资产，不宣称内容长列表滚动实测。
 
 当前管理退出持久证据：专属管理员最终会话于 `2026-09-30T04:51:01.599585Z` 以 `user_requested` 撤销，HTTP logout204于 `04:51:01.632543Z`，前置access200；见忽略产物 `artifacts/identity-governance-admin-logout-evidence.json`。
+
+## 2026-09-30 用户桌面导航漏验与补修（修复复核完成）
+
+用户在本地体验提交 `8650f13c401052b7ce3d39f1447c17a55e36e277` 后报告左侧菜单整块灰色，材料页仍正常。此前管理端与Android实操没有覆盖正式普通用户桌面侧栏悬停，存在验收漏项；先前通过不能证明该路径正常。
+
+GPT-6.1 Sol亲自查看用户截图，并在独立headless Chromium 1400×900上下文正常登录、跳过可选资料、悬停正式导航后复现相同灰块。release脱敏错误处理没有console正文，不据此判定无异常。亲自操作已确认7488b19基线的材料/查询/我的导航与悬停，对照原侧栏布局。
+
+新增 `frontend/test/app/desktop_navigation_overlay_test.dart` 运行真实HarukaApp、MaterialApp.router.builder与正常认证控制器，修前抛出 `RawTooltip: No Overlay widget found`，涉及侧栏Tooltip及通知IconButton；先前独立home:Scaffold手机组件测试未覆盖这种祖先关系。测试中的login-only样本无材料导航，首次查材料的定位断言也失败，随后定位实际允许的「我的」；不把fixture错误当生产根因。
+
+最小修复仅为已登录普通用户持久壳包 `Overlay.wrap`。没有新增Navigator、改权限、删Tooltip或更换导航。锁定SDK `packages/flutter/lib/src/widgets/overlay.dart:930` 实现为Stateful wrapper、late final OverlayEntry，更新只markNeedsBuild，dispose才移除；不因普通build新建entry或销毁路由子页。root独立定点复核该实现与生产diff，并直接查看修后桌面提示截图。
+
+source-only inventory尝试仍被既有大量未分类源拒绝，未记通过；本次唯一生产源haruka_app.dart已分类为core/frontend-foundation，没有新增生产源或清单改动，不扩大范围修旧库存。
+
+真实桌面回归修后1项通过：悬停提示文字增加、移开恢复，通知提示可见；1400→900rail→390phone→1400保留同一背景Element，额外业务读取0。既有手机真实安全入口dialog回归1项及底栏导航2项通过。受影响2文件静态检查无问题。前次Android治理证据按原版本保留；本次只追加Overlay共同祖先窄路径：新APK88.0秒构建/安装成功，SHA256 `9181a7fe2918e95edcda5174a58a6fcade4736f9175a91fe98ce5ead076b374b`，真实My→安全→sessions/BACK再开/HOME返回均无底栏，dialog居中与层级正常。暖sessions200后有效窗口业务GET0，身份access校验仍有正常日志。证据索引为忽略产物 `artifacts/dev/android-overlay-20260930/report.md`，同目录window.json与security/sessions/return/resume/dialog-resume.png。没有重跑审批/恢复/撤销、改密码、权限或策略。
+
+正式Web新版构建104.8秒成功，5173直接提供同一 `frontend/build/web`。磁盘与HTTP实际提供的main.dart.js SHA256均为 `f7ff0284f5d33cb60e9963b8341c57c64b3ead2e732190fba12c43d51c2dfcd2`。真实查询→材料→我的切换成功；材料首次GET1属于实际资源变化必要读。材料与通知hover提示正常出现、移开消失，通知真实点击进入既定未开放页面；900rail→390phone→1400保持/settings及正常导航，窗口只有身份/me/access1次校验，业务GET0。截图在 `dev/.local/governance-review/sidebar-fixed-*.png`。没有操作用户的浏览器tab、系统鼠标或改其账号/策略，真实验证使用独立本地上下文。
 
 ## 2026-09-29 历史记录
 

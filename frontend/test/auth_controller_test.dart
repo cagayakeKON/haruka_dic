@@ -298,60 +298,73 @@ void main() {
     await controller.resend('user@example.test');
   });
 
-  test('native definitive ACCESS_EXPIRED refreshes once before protected write', () async {
-    var refreshCalls = 0;
-    final adapter = SampleAdapter((options, _) async {
-      if (options.path == '/api/v1/meta') {
-        return jsonBody({
-          'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
-          'meta': {'request_id': requestId},
+  for (final logUpload in [false, true]) {
+    test(
+      'native ACCESS_EXPIRED refreshes once before ${logUpload ? 'log upload' : 'business write'}',
+      () async {
+        var refreshCalls = 0;
+        var accessCalls = 0;
+        final adapter = SampleAdapter((options, _) async {
+          if (options.path == '/api/v1/meta') {
+            return jsonBody({
+              'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+              'meta': {'request_id': requestId},
+            });
+          }
+          if (options.path == '/api/v1/auth/native/login') {
+            return jsonBody(samples['auth_native_authenticated'] as Object);
+          }
+          if (options.path == '/api/v1/me/access') {
+            accessCalls++;
+            return jsonBody(samples['auth_client_access_login_only'] as Object);
+          }
+          if (options.path == '/api/v1/auth/native/refresh') {
+            refreshCalls++;
+            final refreshed = jsonDecode(
+              jsonEncode(samples['auth_native_authenticated']),
+            ) as Map<String, dynamic>;
+            final data = refreshed['data'] as Map<String, dynamic>;
+            data['session_generation'] = 2;
+            data['access_token'] = 'rotated-access';
+            data['refresh_token'] = 'rotated-refresh';
+            return jsonBody(refreshed);
+          }
+          throw StateError('Unexpected path');
         });
-      }
-      if (options.path == '/api/v1/auth/native/login') {
-        return jsonBody(samples['auth_native_authenticated'] as Object);
-      }
-      if (options.path == '/api/v1/me/access') {
-        return jsonBody(samples['auth_client_access_login_only'] as Object);
-      }
-      if (options.path == '/api/v1/auth/native/refresh') {
-        refreshCalls++;
-        final refreshed =
-            jsonDecode(jsonEncode(samples['auth_native_authenticated'])) as Map<String, dynamic>;
-        final data = refreshed['data'] as Map<String, dynamic>;
-        data['session_generation'] = 2;
-        data['access_token'] = 'rotated-access';
-        data['refresh_token'] = 'rotated-refresh';
-        return jsonBody(refreshed);
-      }
-      throw StateError('Unexpected path');
-    });
-    final api = ApiClient(config, adapter: adapter);
-    final vault = _MemoryVault();
-    final controller = AuthController(
-      AuthRepository(api, config),
-      config,
-      vault: vault,
-      sync: _NoSync(),
+        final api = ApiClient(config, adapter: adapter);
+        final vault = _MemoryVault();
+        final controller = AuthController(
+          AuthRepository(api, config),
+          config,
+          vault: vault,
+          sync: _NoSync(),
+        );
+        addTearDown(() {
+          controller.dispose();
+          api.close();
+        });
+        expect(await controller.login('user@example.test', 'valid-test-password'), isTrue);
+        var writes = 0;
+        String? operationId;
+        final send = logUpload
+            ? controller.authorizedLogUpload<void>
+            : controller.authorizedWrite<void>;
+        await send((headers) async {
+          writes++;
+          operationId ??= headers['X-Operation-ID'];
+          expect(headers['X-Operation-ID'], operationId);
+          if (writes == 1) throw const ApiFailure(code: 'ACCESS_EXPIRED');
+          expect(headers['Authorization'], 'Bearer rotated-access');
+        });
+        expect(writes, 2);
+        expect(operationId, isNotNull);
+        expect(refreshCalls, 1);
+        expect(vault.current?.generation, 2);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(accessCalls, logUpload ? 1 : 2);
+      },
     );
-    addTearDown(() {
-      controller.dispose();
-      api.close();
-    });
-    expect(await controller.login('user@example.test', 'valid-test-password'), isTrue);
-    var writes = 0;
-    String? operationId;
-    await controller.authorizedWrite((headers) async {
-      writes++;
-      operationId ??= headers['X-Operation-ID'];
-      expect(headers['X-Operation-ID'], operationId);
-      if (writes == 1) throw const ApiFailure(code: 'ACCESS_EXPIRED');
-      expect(headers['Authorization'], 'Bearer rotated-access');
-    });
-    expect(writes, 2);
-    expect(operationId, isNotNull);
-    expect(refreshCalls, 1);
-    expect(vault.current?.generation, 2);
-  });
+  }
 
   test('native refresh rereads a competing committed credential once', () async {
     var refreshCalls = 0;

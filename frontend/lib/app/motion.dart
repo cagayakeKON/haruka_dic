@@ -59,25 +59,27 @@ Future<T?> showHarukaDialog<T>({
   bool fullscreenDialog = false,
   bool? requestFocus,
   AnimationStyle? animationStyle,
-}) {
+  bool waitForRemoval = false,
+}) async {
   final navigator = Navigator.of(context, rootNavigator: useRootNavigator);
-  return navigator.push<T>(
-    _HarukaDialogRoute<T>(
-      context: context,
-      builder: builder,
-      themes: InheritedTheme.capture(from: context, to: navigator.context),
-      barrierColor: barrierColor ?? HarukaColors.of(context).scrim,
-      barrierDismissible: barrierDismissible,
-      barrierLabel: barrierLabel,
-      useSafeArea: useSafeArea,
-      settings: routeSettings,
-      anchorPoint: anchorPoint,
-      traversalEdgeBehavior: traversalEdgeBehavior ?? TraversalEdgeBehavior.closedLoop,
-      fullscreenDialog: fullscreenDialog,
-      requestFocus: requestFocus,
-      animationStyle: animationStyle ?? HarukaMotion.dialogStyle(context),
-    ),
+  final route = _HarukaDialogRoute<T>(
+    context: context,
+    builder: builder,
+    themes: InheritedTheme.capture(from: context, to: navigator.context),
+    barrierColor: barrierColor ?? HarukaColors.of(context).scrim,
+    barrierDismissible: barrierDismissible,
+    barrierLabel: barrierLabel,
+    useSafeArea: useSafeArea,
+    settings: routeSettings,
+    anchorPoint: anchorPoint,
+    traversalEdgeBehavior: traversalEdgeBehavior ?? TraversalEdgeBehavior.closedLoop,
+    fullscreenDialog: fullscreenDialog,
+    requestFocus: requestFocus,
+    animationStyle: animationStyle ?? HarukaMotion.dialogStyle(context),
   );
+  final result = await navigator.push<T>(route);
+  if (waitForRemoval) await route.completed;
+  return result;
 }
 
 /// Motion timings shared by Material routes, dialogs, and sheets.
@@ -120,10 +122,7 @@ abstract final class HarukaMotion {
       child: child,
       builder: (context, content) => Opacity(
         opacity: (curved.value * departing.value).clamp(0.0, 1.0),
-        child: Transform.translate(
-          offset: Offset(0, (1 - curved.value) * 8),
-          child: content,
-        ),
+        child: Transform.translate(offset: Offset(0, (1 - curved.value) * 8), child: content),
       ),
     );
   }

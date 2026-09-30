@@ -1,5 +1,6 @@
 {
   "@@locale": "zh",
+  "apiReauthenticationRequired": "为保护个人凭据，请重新登录后再操作。",
   "authManualRecoveryCode": "人工恢复码或安全链接",
   "appTitle": "Haruka",
   "home": "主页",

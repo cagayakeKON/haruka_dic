@@ -584,6 +584,7 @@
           "ACCESS_EXPIRED",
           "SESSION_REVOKED",
           "SESSION_INVALID",
+          "REAUTHENTICATION_REQUIRED",
           "AUTH_SCOPE_REQUIRED",
           "AUTH_SCOPE_CHANGED",
           "PERMISSION_DENIED",

@@ -329,6 +329,19 @@ class _AccountPageState extends ConsumerState<AccountPage> {
       children: [
         HarukaSurface(child: const AccountIdentitySummary()),
         const SizedBox(height: 18),
+        if (controller.access!.allows('client.credential.read')) ...[
+          _securityCard(
+            context,
+            strings.mockSettingPersonalModel,
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(strings.mockSettingPersonalModel),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go('${AppRoutes.settings}/model'),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         if (canReadProfile) ...[
           _securityCard(
             context,
@@ -397,6 +410,15 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                           title: Text(strings.mockSettingProfile),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => context.go(AppRoutes.settings),
+                        ),
+                        const Divider(),
+                      ],
+                      if (controller.access!.allows('client.credential.read')) ...[
+                        ListTile(
+                          leading: const Icon(Icons.auto_awesome_outlined),
+                          title: Text(strings.mockSettingPersonalModel),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => context.go('${AppRoutes.settings}/model'),
                         ),
                         const Divider(),
                       ],

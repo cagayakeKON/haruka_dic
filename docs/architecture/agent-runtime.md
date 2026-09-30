@@ -3,10 +3,12 @@
 | 字段 | 内容 |
 | --- | --- |
 | 决策状态 | 已确认采用 Pydantic AI；下述实现细节为设计方案 |
-| 文档状态 | Draft v0.4，2026-09-22，加入 RBAC 执行边界，未实现 |
+| 文档状态 | 2026-09-30：B2c 凭据测试切片实施中；下述完整学习 Agent 为设计 |
 | 依据 | [PRD](../product/overview.md)、[架构总览](overview.md)、[认证与隔离](authentication.md)、[管理后台与 RBAC](authorization.md) |
 
 DESIGN23输出发布在同一业务事务持久化完整Explanation/Card及[基础NLP](text-analysis.md)任务Outbox；NLP是确定性后处理，不进入LLM循环，不创建AiRun/供应商用量。失败只重试标注，不重放已完成AI；流式delta不成为正式标注来源。视觉识别成品与ruby映射按[提取契约](../contracts/source-extraction.md)发布。
+
+当前只有本人最小文本/视觉凭据测试经 Pydantic AI 类型化输出执行，个人 Key 按每次运行依赖注入；TTS 使用受控供应商适配器，共用持久任务、调用限额及 attempt 记账。完整学习查询、工具、内容发布与 NLP 尚未在本切片实现，验收见[B2c记录](../delivery/reviews/2026-09-30-model-credentials-tasks.md)。
 
 ## 1. 框架与职责
 

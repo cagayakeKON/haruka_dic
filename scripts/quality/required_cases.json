@@ -1073,6 +1073,316 @@
         "smtp_failure_retry_and_restart",
         "one_time_link_and_no_external_send"
       ]
+    },
+    {
+      "case_id": "SCF-B2-01",
+      "acceptance_refs": [
+        "SCF-B2-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "model-tasks-host",
+      "nodes": [
+        "SCF-B2-01:host"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "save_does_not_call_provider",
+        "single_capability_confirmed",
+        "persistent_job_stage_run_outbox_attempt_result",
+        "precise_credential_and_model_version",
+        "fake_and_live_attempts_distinct"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-01",
+      "acceptance_refs": [
+        "SCF-B2-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "http",
+      "parameters": {
+        "service": "isolated-dev-test",
+        "build": "release"
+      },
+      "shard": "model-tasks-web",
+      "nodes": [
+        "SCF-B2-01:web"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "save_does_not_call_provider",
+        "single_capability_confirmed",
+        "persistent_job_stage_run_outbox_attempt_result",
+        "precise_credential_and_model_version",
+        "fake_and_live_attempts_distinct"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-01",
+      "acceptance_refs": [
+        "SCF-B2-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "service": "isolated-dev-test",
+        "build": "release"
+      },
+      "shard": "model-tasks-android",
+      "nodes": [
+        "SCF-B2-01:android"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "save_does_not_call_provider",
+        "single_capability_confirmed",
+        "persistent_job_stage_run_outbox_attempt_result",
+        "precise_credential_and_model_version",
+        "fake_and_live_attempts_distinct"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-02",
+      "acceptance_refs": [
+        "SCF-B2-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "model-tasks-host",
+      "nodes": [
+        "SCF-B2-02:host"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "fake_only_controlled_dev_test",
+        "caller_cannot_select_fake",
+        "missing_key_rejected",
+        "undeclared_provider_egress_rejected"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-03",
+      "acceptance_refs": [
+        "SCF-B2-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "model-tasks-host",
+      "nodes": [
+        "SCF-B2-03:host"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "idempotency_input_conflict",
+        "outbox_send_before_mark_recovery",
+        "duplicate_delivery_single_result",
+        "consumer_commit_before_ack_recovery"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-04",
+      "acceptance_refs": [
+        "SCF-B2-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "model-tasks-host",
+      "nodes": [
+        "SCF-B2-04:host"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "persistent_stage_takeover",
+        "old_lease_cannot_publish",
+        "known_result_publish_without_new_attempt",
+        "credential_and_configuration_generation_fences"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-05",
+      "acceptance_refs": [
+        "SCF-B2-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "model-tasks-host",
+      "nodes": [
+        "SCF-B2-05:host"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "current_permission_checks_at_boundaries",
+        "cancel_and_revoke_stop_new_call",
+        "owner_result_and_event_isolation",
+        "logout_does_not_cancel_accepted_authorization"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-06",
+      "acceptance_refs": [
+        "SCF-B2-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "model-tasks-host",
+      "nodes": [
+        "SCF-B2-06:host"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "invalid_schema_and_decode_rejected",
+        "disabled_capability_and_limits_rejected",
+        "unknown_outcome_no_automatic_new_attempt",
+        "unknown_usage_remains_null"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-07",
+      "acceptance_refs": [
+        "SCF-B2-07"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "http",
+      "parameters": {
+        "service": "isolated-dev-test",
+        "build": "release"
+      },
+      "shard": "model-tasks-web",
+      "nodes": [
+        "SCF-B2-07:web"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "disconnect_authorized_snapshot_recovery",
+        "layout_single_subscription",
+        "account_generation_drops_old_events",
+        "dialog_menu_focus_no_background_reload",
+        "search_focus_filter_scroll_draft_stable"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-07",
+      "acceptance_refs": [
+        "SCF-B2-07"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "service": "isolated-dev-test",
+        "build": "release"
+      },
+      "shard": "model-tasks-android",
+      "nodes": [
+        "SCF-B2-07:android"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "disconnect_authorized_snapshot_recovery",
+        "layout_single_subscription",
+        "account_generation_drops_old_events",
+        "dialog_menu_focus_no_background_reload",
+        "search_focus_filter_scroll_draft_stable"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-08",
+      "acceptance_refs": [
+        "SCF-B2-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "isolated-process",
+      "parameters": {
+        "service": "isolated-dev-test"
+      },
+      "shard": "model-tasks-host",
+      "nodes": [
+        "SCF-B2-08:host"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "attempt_only_usage_aggregation",
+        "normal_failure_unknown_sources_in_loki_grafana",
+        "safe_operation_request_job_run_correlation",
+        "key_sample_reply_absent_from_logs"
+      ]
+    },
+    {
+      "case_id": "SCF-B2-08",
+      "acceptance_refs": [
+        "SCF-B2-08"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "http",
+      "parameters": {
+        "service": "isolated-dev-test",
+        "build": "release"
+      },
+      "shard": "model-tasks-web",
+      "nodes": [
+        "SCF-B2-08:web"
+      ],
+      "source": "tools/ci/model-task-procedures.json",
+      "assertions": [
+        "attempt_only_usage_aggregation",
+        "normal_failure_unknown_sources_in_loki_grafana",
+        "safe_operation_request_job_run_correlation",
+        "key_sample_reply_absent_from_logs"
+      ]
     }
   ],
   "scopes": {
@@ -1105,6 +1415,16 @@
       "SCF-B1-06",
       "SCF-B1-07",
       "SCF-B1-08"
+    ],
+    "B2c": [
+      "SCF-B2-01",
+      "SCF-B2-02",
+      "SCF-B2-03",
+      "SCF-B2-04",
+      "SCF-B2-05",
+      "SCF-B2-06",
+      "SCF-B2-07",
+      "SCF-B2-08"
     ]
   }
 }

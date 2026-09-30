@@ -10,6 +10,9 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get apiReauthenticationRequired => '为保护个人凭据，请重新登录后再操作。';
+
+  @override
   String get authManualRecoveryCode => '人工恢复码或安全链接';
 
   @override

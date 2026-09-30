@@ -1,4 +1,4 @@
-// GENERATED from config/ui_test_ids.json; sha256:a6f00ca6dd3ab35c1f40ad52c4eea9f9fd57c7bf0c790fd5cb07f207814d55bb. Do not edit.
+// GENERATED from config/ui_test_ids.json; sha256:4641149e6716cbf991ea1bce3d698f1b3536d8aedf4c3add18ecc9670d440483. Do not edit.
 abstract final class UiTestIds {
   static const accountChangePassword = "client.account.password.submit";
   static const accountConfirmPassword = "client.account.password.confirm";
@@ -73,6 +73,15 @@ abstract final class UiTestIds {
   static const loginRecoveryLink = "client.auth.login.recovery_link";
   static const loginRegisterLink = "client.auth.login.register_link";
   static const loginSubmit = "client.auth.login.submit";
+  static const modelBindingsSave = "client.model.bindings.save";
+  static const modelCredentialAdd = "client.model.credential.add";
+  static const modelCredentialKey = "client.model.credential.key";
+  static const modelCredentialSave = "client.model.credential.save";
+  static const modelTestCapability = "client.model.test.capability";
+  static const modelTestConfirm = "client.model.test.confirm";
+  static const modelTestOpen = "client.model.test.open";
+  static const modelUsageApply = "client.model.usage.apply";
+  static const modelUsageModelFilter = "client.model.usage.model_filter";
   static const notFoundPage = "client.shell.not_found.page";
   static const recoveryAcceptedResetLink = "client.auth.result.reset_link";
   static const recoveryCompleteConfirm = "client.auth.recovery_complete.confirm";

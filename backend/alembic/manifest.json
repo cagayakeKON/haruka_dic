@@ -9,8 +9,12 @@
     "versions/0006_avatar_assets.py": "26b34f056bb00d4ac6930cec562e2ab5d5dded41b7a5fdbe332bd0bd727247fd",
     "versions/0007_authorization_governance.py": "b02eb51038405d639f516b6c468fb3f4ad5727d467dd53fd4b067fe1ea09ad85",
     "versions/0008_governance_receipts.py": "24a8aea48862fc77b6d9512e1afafc540888ec2df927b7016f44ae67fe7d67e9",
-    "versions/0009_governance_lookup.py": "e14212827f031c7474be30b6093c1d45a89ce880f892782559d6487c7d54748c"
+    "versions/0009_governance_lookup.py": "e14212827f031c7474be30b6093c1d45a89ce880f892782559d6487c7d54748c",
+    "versions/0010_model_tasks.py": "57c88bbb479fb313c9a5b994a4a26d1029f77254113c9090ac48c9d7fd6ecc15",
+    "versions/0011_model_job_audit.py": "8625a044d4a0b4199cf9409a8d9e2941aa9f65757011c32d3fb855eb2ce9b51d",
+    "versions/0012_model_runtime_grants.py": "32bb8f772858b038438d61341f87db101c616453b8734d365a4214de46f84b0e",
+    "versions/0013_outbox_delivery_lease.py": "7e05d9f95019ffe2711decdd991e4d0265d97eddf447376085c5593a910a65c3"
   },
-  "head": "0009_governance_lookup",
+  "head": "0013_outbox_delivery_lease",
   "schema_version": 1
 }

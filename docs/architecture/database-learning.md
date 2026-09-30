@@ -6,6 +6,16 @@
 
 DESIGN23解释/卡片/收藏/题目/反馈的白名单文字由[统一NLP](text-analysis.md)派生到[3张文本标注表](database-materials.md#27-全应用派生语言标注)。Explanation/Card/题目仍各自保存权威结构；稳定数组项ID随成品发布，不以UI数组下标定位。发布事务登记NLP Job/Outbox，NLP失败不删除成品或重放AiRun；正式schema中增加字段项身份不另增实体表。
 
+## 当前凭据测试与任务切片（2026-09-30）
+
+[B2c 实施记录](../delivery/reviews/2026-09-30-model-credentials-tasks.md)对应的 Job/Stage/AiRun/attempt/Inbox 与 Outbox 扩展已进入实现，尚未签署验收；真实字段、索引和归属入口以[生成字典](../../contracts/database-schema.json)为准。下方学习查询、材料任务、持久解释与音频结构仍按各自功能迁移，不能把本切片当成完整业务运行层。
+
+- 当前唯一任务种类为 `credential_test`。Job 的版本1 `input_refs` 冻结能力、凭据与所需权限，输入摘要和本人/动作/幂等键唯一性受服务校验；会话 ID 只保留历史关联，接受后的任务不依赖该会话继续登录。
+- AiRun 的版本1 `generation_config` 冻结单能力参数、一个模型调用、零工具与技术限额快照。`provider_call` 阶段持久保存 job generation/fence 和 attempt 引用；已封存调用阶段可只恢复非模型发布，不再外发。未知外部结果阻断自动重试，过期租约推进 fence，旧执行者不能发布结果。
+- attempt 明确保存供应商可得的 nullable 用量列；缺失为 null，模拟事实独立标记。有限 usage JSON 是同一事实的安全投影，不形成第二套汇总权威。业务发布与 Inbox 同事务，Kafka ACK 在提交后；Outbox 租约与 delivery fence 保护发送回写。
+- 本次不持久化测试 TTS 的业务音频、不建立学习结果缓存；后续任务种类、来源引用及真实内容消费必须以受控迁移扩展当前结构，继续遵守完整设计的隔离与恢复要求。
+
+
 ## 1. 字典记法与关系规则
 
 - `B`：`id uuid NN`（服务端 uuid4，无数据库默认值）、`created_at timestamptz NN DEFAULT now()`、`updated_at timestamptz NN DEFAULT now()`。

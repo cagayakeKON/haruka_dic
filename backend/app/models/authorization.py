@@ -1,11 +1,13 @@
 """Release catalogs and authorization metadata; no business authorization bypasses."""
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    DateTime,
     Index,
     Integer,
     String,
@@ -835,36 +837,64 @@ class OutboxEvent(IdentityMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("audit_event_id"),
         CheckConstraint(
-            "event_type IN ('authorization.changed', 'identity.security')", name="event_type"
+            "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated')",
+            name="event_type",
         ),
         CheckConstraint("status IN ('pending', 'published')", name="status"),
-        CheckConstraint("authorization_revision >= 1", name="authorization_revision_positive"),
+        CheckConstraint(
+            "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR (event_type LIKE 'model.%' AND authorization_revision IS NULL AND audit_event_id IS NULL)",
+            name="authorization_revision_positive",
+        ),
         {
             "comment": "授权与身份变更的持久通知及受控投递状态",
             "info": table_info(
                 "system_operation",
-                relations=(relation("audit_event_id", "admin_audit_events.id", historical=True),),
+                relations=(
+                    relation(
+                        "audit_event_id", "admin_audit_events.id", nullable=True, historical=True
+                    ),
+                ),
             ),
         },
     )
     event_type: Mapped[str] = mapped_column(
-        String(48),
+        String(128),
         nullable=False,
         comment="已注册事件类型",
         info=column_info("authorization transaction"),
     )
-    audit_event_id: Mapped[UUID] = mapped_column(
+    audit_event_id: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True),
-        nullable=False,
+        nullable=True,
         comment="同事务追加的审计标识",
         info=column_info("authorization transaction"),
     )
-    authorization_revision: Mapped[int] = mapped_column(
+    authorization_revision: Mapped[int | None] = mapped_column(
         BigInteger,
-        nullable=False,
+        nullable=True,
         comment="待通知的授权版本",
         info=column_info("authorization transaction"),
     )
     status: Mapped[str] = mapped_column(
         String(16), nullable=False, comment="投递状态", info=column_info("outbox service")
+    )
+    payload: Mapped[dict[str, object]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+        comment="安全事件引用",
+        info=column_info("outbox transaction"),
+    )
+    delivery_fence: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("0"),
+        comment="投递fence",
+        info=column_info("outbox service"),
+    )
+    delivery_lease_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="投递租约",
+        info=column_info("outbox service"),
     )

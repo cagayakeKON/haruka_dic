@@ -1,4 +1,4 @@
-// GENERATED from contracts/errors.json; sha256:9bc59cc572aa9897ff0bdaa19c5732a7069ebf80ac76d938eb1a657250efee2c. Do not edit.
+// GENERATED from contracts/errors.json; sha256:743b495aab5d2e9d874834b53c2e4b21743bb9134df83d543e4fa3e496cb1f49. Do not edit.
 import 'l10n/app_localizations.dart';
 
 abstract final class ApiCatalog {
@@ -24,6 +24,7 @@ abstract final class ApiCatalog {
     "PERMISSION_DENIED",
     "QUOTA_EXCEEDED",
     "RATE_LIMITED",
+    "REAUTHENTICATION_REQUIRED",
     "REFRESH_SUPERSEDED",
     "RESOURCE_EXPIRED",
     "RESOURCE_NOT_FOUND",
@@ -55,6 +56,7 @@ abstract final class ApiCatalog {
     "PERMISSION_DENIED" => strings.apiPermissionDenied,
     "QUOTA_EXCEEDED" => strings.apiQuotaExceeded,
     "RATE_LIMITED" => strings.apiRateLimited,
+    "REAUTHENTICATION_REQUIRED" => strings.apiReauthenticationRequired,
     "REFRESH_SUPERSEDED" => strings.apiRefreshSuperseded,
     "RESOURCE_EXPIRED" => strings.apiResourceExpired,
     "RESOURCE_NOT_FOUND" => strings.apiResourceNotFound,

@@ -21,6 +21,7 @@ from app.api.frontend_telemetry import router as frontend_telemetry_router
 from app.api.health import router
 from app.api.learning_reference import router as learning_reference_router
 from app.api.menu_governance import router as menu_governance_router
+from app.api.model_settings import router as model_settings_router
 from app.api.profile import router as profile_router
 from app.api.responses import error_responses
 from app.api.role_governance import router as role_governance_router
@@ -76,6 +77,7 @@ def create_app(settings: Settings | None = None, *, schema_only: bool = False) -
     application.include_router(profile_router)
     application.include_router(audit_governance_router)
     application.include_router(menu_governance_router)
+    application.include_router(model_settings_router)
     application.include_router(role_governance_router)
     application.include_router(user_governance_router)
     application.include_router(avatar_router)

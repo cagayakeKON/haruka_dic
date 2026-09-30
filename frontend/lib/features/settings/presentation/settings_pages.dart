@@ -31,6 +31,9 @@ import 'package:haruka/features/auth/account_pages.dart';
 import 'package:haruka/core/api/request_ids.dart';
 import 'package:haruka/core/telemetry/telemetry.dart';
 
+import 'model_configuration_content.dart';
+import 'model_usage_content.dart';
+
 String mockLanguageOptionsSummary(BuildContext context) {
   final l10n = AppLocalizations.of(context);
   final study = SettingsRepositoryScope.of(context).snapshot(SettingsGroup.studyProfile);
@@ -147,12 +150,16 @@ Map<String, List<(String, String, IconData, String)>> mockSettingGroups(BuildCon
     ],
   };
   if (settingsUsePreviewAvatar(context)) return groups;
-  const previewOnly = {'speech', 'model', 'usage'};
+  const previewOnly = {'speech'};
+  final canReadCredentials =
+      sessionAuth(context)?.access?.allows('client.credential.read') ?? false;
   return {
     for (final group in groups.entries)
       group.key: [
         for (final item in group.value)
-          if (!previewOnly.contains(item.$1)) item,
+          if (!previewOnly.contains(item.$1) &&
+              (canReadCredentials || !{'model', 'usage'}.contains(item.$1)))
+            item,
       ],
   };
 }
@@ -319,13 +326,24 @@ class MobileSettingsView extends StatelessWidget {
             AppLocalizations.of(context).mockSettingModelDataGroup,
             settingsUsePreviewAvatar(context)
                 ? ['queryPreferences', 'model', 'usage', 'cache']
-                : ['queryPreferences', 'cache'],
+                : [
+                    'queryPreferences',
+                    if (sessionAuth(context)?.access?.allows('client.credential.read') ??
+                        false) ...[
+                      'model',
+                      'usage',
+                    ],
+                    'cache',
+                  ],
           ),
           (
             AppLocalizations.of(context).mockSettingAccountUpdatesGroup,
             settingsUsePreviewAvatar(context)
                 ? ['notifications', 'jobs', 'security']
-                : ['security'],
+                : [
+                    if (sessionAuth(context)?.access?.allows('client.job.read') ?? false) 'jobs',
+                    'security',
+                  ],
           ),
           (AppLocalizations.of(context).mockSettingMoreGroup, ['connection']),
         ]) ...[
@@ -373,7 +391,9 @@ Widget _settingRow(BuildContext context, String key) {
       key == 'notifications'
           ? AppRoutes.mockNotifications
           : key == 'jobs'
-          ? AppRoutes.mockJobs
+          ? settingsUsePreviewAvatar(context)
+                ? AppRoutes.mockJobs
+                : AppRoutes.jobs
           : settingsSectionPath(context, key),
     ),
   );
@@ -545,8 +565,9 @@ class _SettingsDetailPageState extends State<SettingsDetailPage> {
       'appearance' ||
       'readingPrefs' ||
       'speech' ||
-      'queryPreferences' ||
-      'model' => {SettingsGroup.preferences},
+      'queryPreferences' => {SettingsGroup.preferences},
+      'model' =>
+        settingsUsePreviewAvatar(context) ? {SettingsGroup.preferences} : <SettingsGroup>{},
       _ => <SettingsGroup>{},
     };
     Widget frame(BuildContext context) {
@@ -1428,9 +1449,10 @@ class _MobileSettingsContent extends StatelessWidget {
     'appearance' => _appearance(context),
     'readingPrefs' => _reading(context),
     'queryPreferences' => _query(context),
-    'model' => _model(context),
+    'model' =>
+      settingsUsePreviewAvatar(context) ? _model(context) : const ModelConfigurationContent(),
     'speech' => _speech(context),
-    'usage' => _usage(context),
+    'usage' => settingsUsePreviewAvatar(context) ? _usage(context) : const ModelUsageContent(),
     'cache' => _cache(context),
     'connection' => _connection(context),
     'security' => _security(context),
@@ -1855,8 +1877,7 @@ class _MobileSettingsContent extends StatelessWidget {
   }
 
   Widget _security(BuildContext context) => _stack([
-    if (!settingsUsePreviewAvatar(context))
-      const AccountIdentitySummary(compact: true),
+    if (!settingsUsePreviewAvatar(context)) const AccountIdentitySummary(compact: true),
     _settingCard(context, logic.l10n.mockSettingProfile, [
       ListTile(
         contentPadding: EdgeInsets.zero,
@@ -1940,9 +1961,13 @@ class _DesktopSettingsContent extends StatelessWidget {
     'appearance' => _appearance(context),
     'readingPrefs' => _reading(context),
     'queryPreferences' => _query(context),
-    'model' => _model(context),
+    'model' =>
+      settingsUsePreviewAvatar(context)
+          ? _model(context)
+          : const ModelConfigurationContent(wide: true),
     'speech' => _speech(context),
-    'usage' => _usage(context),
+    'usage' =>
+      settingsUsePreviewAvatar(context) ? _usage(context) : const ModelUsageContent(wide: true),
     'cache' => _cache(context),
     'connection' => _connection(context),
     'security' => _security(context),

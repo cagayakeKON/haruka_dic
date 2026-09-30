@@ -8,6 +8,8 @@
 
 2026-09-28 的长期决策：正式采用**受审的集中手写 DTO/feature 转换 + 后端生成的 Python/Dart 共享样本 + 全量 OpenAPI schema 指纹审查门禁**。Dart DTO 不在 generated 目录，也不宣称自动生成。`frontend/tool/generate.py` 继续只生成既有错误目录等清单目标；`backend/tests/support/api_compatibility.py` 经 `backend/tools/export_compatibility.py` 单向生成 `fixtures/` 的 OpenAPI、样本和摘要。受影响手写转换必须在 Dart 契约测试中消费对应后端样本；schema 变化须先独立审查旧字段兼容性、手写消费者与样本测试，再更新 [transition.json](transition.json) 的 `reviewed_schemas_sha256`。B2a 的资料、学习档案、服务器设置、语言目录和头像 wire 样本已加入；空 cache validate 尚无前端消费者，仅由后端注册框架和 HTTP 契约测试覆盖。新增实际消费者时再补共享样本与 Dart 转换测试。
 
+B2c 按用户要求先完成两端实现与联调，再做独立 review。生成器提供 `--only ui-identifiers`、`--only client-resources` 与 `--only build-targets`：前者只消费 UI 注册源，后者只消费错误目录、ARB 和既有本地化配置；`build-targets` 仅消费公开开发目标注册表；三者不读取或签署 OpenAPI schema，不生成手写 DTO。它们分别保留标识唯一性和错误/翻译匹配检查，供联调前编译必要资源。完整生成及 `--check` 仍检查全量 schema 指纹；独立 reviewer 核对新凭据/配置/Job/event/结果/用量共享样本与 Dart 消费者后，才更新 `reviewed_schemas_sha256` 并完成全量受管生成验证。
+
 重现原型：先按 evaluation.json 下载并校验 JAR，执行 `java -jar <jar> generate -g dart-dio -i contracts/openapi.json -o artifacts/dart-dio-prototype` 并传入该文件的 properties，再使用锁定 Dart 对输出的 `model/message_args_value.dart` 运行 `dart format --output=none`。原始试验输出保存在忽略的 artifacts 中；它不是生产输入。
 
 健康 API 消费只通过已校验的实例地址、显式用户操作与依赖注入执行，无自动重试、Token 注入或模型调用。无效 JSON、未知错误码、代理 HTML 均归类为安全失败，远端正文不进入异常字符串或界面。204 与二进制走独立传输路径，成功响应只解包一次。

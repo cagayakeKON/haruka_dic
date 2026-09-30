@@ -1,6 +1,8 @@
 # 任务进度 WebSocket 契约
 
-状态：2026-09-24，P0 设计已确认，正式服务待实现。用于材料解析及本人任务的实时进度；HTML 原型有独立本地模拟服务，不能作为本契约的生产实现证据。配套：[API](api.md)、[认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md)、[任务事务](../architecture/data-jobs.md)。
+状态：2026-09-30，P0 设计已确认；B2c 本人凭据测试进度已进入实现，尚未签署验收，材料进度仍待后续接入。用于材料解析及本人任务的实时进度；HTML 原型有独立本地模拟服务，不能作为本契约的生产实现证据。配套：[API](api.md)、[认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md)、[任务事务](../architecture/data-jobs.md)。
+
+当前切片实际协议：`subscribe/unsubscribe` 必须包含整数 `schema_version: 1`、UUID `job_ids`，可带只属于本次 IDs 的 `cursors`（generation≥1、sequence≥0）；未知字段或错误版本拒绝。B2c 每次重连完整重新授权并返回安全 Job 快照，不实现历史事件回放；其载荷只覆盖凭据测试的 state/revision/generation/sequence/能力/可用操作与错误码，没有材料比例或正文。正常生产使用 WSS，本地受控开发可使用同源 localhost HTTP/WS。实现与局部证据见[B2c记录](../delivery/reviews/2026-09-30-model-credentials-tasks.md)，下文其余业务字段仍为完整目标契约。
 
 ## 1. 连接与授权
 

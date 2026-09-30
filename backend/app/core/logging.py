@@ -15,6 +15,21 @@ from app.schemas.frontend_telemetry import CLIENT_EVENTS, TelemetryEvent
 
 EVENTS = frozenset(
     {
+        "credential.created",
+        "credential.rotated",
+        "credential.deleted",
+        "credential.test.accepted",
+        "credential.test.completed",
+        "credential.test.failed",
+        "model.job.claimed",
+        "model.job.cancelled",
+        "model.job.retry.accepted",
+        "model.attempt.started",
+        "model.attempt.completed",
+        "model.attempt.failed",
+        "model.attempt.unknown",
+        "model.worker.unavailable",
+        "outbox.model.published",
         "process.started",
         "process.stopped",
         "http.completed",
@@ -102,7 +117,7 @@ class SafeJsonFormatter(logging.Formatter):
         request_id: object = getattr(record, "request_id", None)
         if isinstance(request_id, UUID):
             payload["request_id"] = str(request_id)
-        for field in ("operation_id", "client_request_id", "user_id"):
+        for field in ("operation_id", "client_request_id", "user_id", "job_id", "ai_run_id"):
             value: object = getattr(record, field, None)
             if isinstance(value, UUID):
                 payload[field] = str(value)

@@ -623,7 +623,7 @@ final class Telemetry {
           : '/api/v1/frontend-logs';
       final response = anonymous
           ? await api.postJson(path, payload, TelemetryBatchRead.fromJson)
-          : await auth.authorizedWrite(
+          : await auth.authorizedLogUpload(
               (headers) =>
                   api.postJson(path, payload, TelemetryBatchRead.fromJson, headers: headers),
             );

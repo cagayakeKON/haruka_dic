@@ -2,7 +2,7 @@
 
 状态：2026-09-22，B0已建立12张账号/授权初始化基础表、UTC公共Mixin、受控迁移与字典检查器，局部证据见 [数据库切片](../delivery/reviews/2026-09-22-b0-identity.md)。不使用数据库外键；后续业务表仍按本文实施，未实现的隔离/删除/任务验收不计为通过。
 
-本文维护物理结构、公共字段、无外键关联、隔离与数据库变更规则。具体表结构与Redis键设计见[数据库设计书](../architecture/database-design.md)，其中B0账号/角色/授权增量已实现，其他新增业务结构仍待实施。业务聚合/事务/任务状态以 [数据与任务](../architecture/data-jobs.md) 为准，身份和授权分别以 [认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准；操作流程见 [部署与恢复](../operations/deployment-recovery.md)，测试执行频率以根 [AGENTS.md](../../AGENTS.md) 为准。
+本文维护物理结构、公共字段、无外键关联、隔离与数据库变更规则。具体表结构与Redis键设计见[数据库设计书](../architecture/database-design.md)，其中 B0 及已验收账号/资料/身份治理增量已有工程证据，B2c 凭据/任务切片正在实施；当前结构以生成字典为准，其余业务表仍待对应切片。业务聚合/事务/任务状态以 [数据与任务](../architecture/data-jobs.md) 为准，身份和授权分别以 [认证](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准；操作流程见 [部署与恢复](../operations/deployment-recovery.md)，测试执行频率以根 [AGENTS.md](../../AGENTS.md) 为准。
 
 ## 1. 总体边界
 

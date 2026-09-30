@@ -29,6 +29,8 @@ python -m scripts.quality.cases --scope B0 --identity artifacts/run/identity.jso
 
 人工 procedure 的结果节点额外包含 `procedure`：`author/reviewer/reviewed_at/assertions`。作者与reviewer必须不同，审查时间含时区；assertions键与case登记清单完全一致，每项包含 `passed=true/evidence_path/sha256`，证据需位于仓库内、非空且摘要匹配。实际命令、断言、工具/制品在这些证据中由独立reviewer核验；只有自由文本“测过”或缺hash的结果不能通过。
 
+B2c 使用 [模型任务流程](model-task-procedures.json) 与 `required_cases.json` 的 `B2c` 范围登记八个 SCF 项、十二个 host/Web/Android 变体。`scripts/dev.py check --stage B2c --identity <候选身份> --report <报告>` 只消费明确报告，不重新执行测试或自动接受当前 HEAD。声明源和空报告不能作为通过证据；通过仅表示这个小阶段，不表示 B2 或阶段1完成。
+
 ## 覆盖分母
 
 [coverage_manifest.json](../../scripts/quality/coverage_manifest.json) 逐一登记所有 Python/Dart 手写源、核心分组和窄例外。新增源文件或核心路径漏登记立即失败。生成物只有在受管生成清单登记来源/生成器/精确输出时可排除；纯声明必须经 AST 或 Dart 指令检查。小阶段只运行 `--inventory-only` 及检查器坏样本，不为凑百分比触发全仓测试。

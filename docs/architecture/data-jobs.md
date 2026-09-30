@@ -6,6 +6,11 @@ DESIGN20[章节准备](../contracts/novel-preparation.md)以现有持久Job/Outb
 
 DESIGN23按[提取契约](../contracts/source-extraction.md)持久化OCR完整候选为内部FileObject并由JobStage.result_refs持有；发布失败先恢复成品。源/AI成品发布与[确定性NLP](text-analysis.md) Job/Outbox同事务，可编辑源同时绑定已验证实际输入快照；后者按有界发布组及stage fence提交单元和句子，失败不重调AI；关联锁、选用CAS与GC见数据库分册。
 
+## 当前实现边界（2026-09-30）
+
+[B2c](../delivery/reviews/2026-09-30-model-credentials-tasks.md)正在实现本人凭据单能力测试：接受事务写 Job/AiRun/Outbox，独立 Outbox→Kafka→Worker 消费，已知调用阶段可恢复发布，未知外部结果阻断自动外发。当前任务种类只覆盖 `credential_test`，并不代表下述材料、考试、学习结果或业务 TTS 聚合已实现。当前物理冻结字段与兼容扩展说明见[任务分册](database-learning.md#当前凭据测试与任务切片2026-09-30)，正式验收状态以交付记录为准。
+
+
 ## 1. 通用数据规则
 
 - PostgreSQL 是身份撤销、权限、业务状态、任务和审计的真相；Redis 只承载可丢失的会话材料/缓存/通知/限流，Kafka 只传事件，MinIO 保存被数据库引用的私有对象。

@@ -1,6 +1,6 @@
 # 个人设置、模型凭据与客户端缓存
 
-状态：设计基线 v0.2；[B2a本人资料与设置](../delivery/reviews/2026-09-28-profile-settings-acceptance.md)在原视觉通过结论因正式UI偏离已确认Flutter mock而撤回后，已把真实功能接入同一主界面并经正式Web/Android及隔离PG定点复核，按当期范围重新验收通过。本人资料、学习档案、显示/阅读/查询预算偏好由 `/users/me/profile`、`/users/me/study-profile`、`/users/me/settings` 读写，已登录应用的设置页走这三组接口。显式登录后若 `profile_completeness` 仍缺显示名、解释语言、学习语言或时区，会进入可跳过引导；跳过不提交、不在本机记下完成。头像的校验、发布和 `private, no-store` 读取在后端可用；已登录设置页按当前资料指针读取本人 JPEG，并在有 `profile.avatar.update` 时用同一按钮提交意图与完成请求。预览页的头像按钮仍只切换字形。Windows/Android 可在登录前或设置里探测新的 HTTPS 服务地址；确认后才退出当前实例、清理本机缓存并改指向，探测不带旧凭据，连接失败保持未登录。确认后的地址保存在本机，下次启动继续使用，且不写入遥测。Web 只显示当前部署地址。B2c模型凭据、L4媒体本机容量配额及其消费者仍未交付；B2a只保存当期阅读/查询偏好，不冒充后续业务已消费。注册/登录/改密/设备会话以 [账号流程](accounts.md) 为准，身份/权限/离线限制以 [认证与隔离](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准。字段契约见 [API 契约](../contracts/api.md)。
+状态：设计基线 v0.2；[B2a本人资料与设置](../delivery/reviews/2026-09-28-profile-settings-acceptance.md)在原视觉通过结论因正式UI偏离已确认Flutter mock而撤回后，已把真实功能接入同一主界面并经正式Web/Android及隔离PG定点复核，按当期范围重新验收通过。本人资料、学习档案、显示/阅读/查询预算偏好由 `/users/me/profile`、`/users/me/study-profile`、`/users/me/settings` 读写，已登录应用的设置页走这三组接口。显式登录后若 `profile_completeness` 仍缺显示名、解释语言、学习语言或时区，会进入可跳过引导；跳过不提交、不在本机记下完成。头像的校验、发布和 `private, no-store` 读取在后端可用；已登录设置页按当前资料指针读取本人 JPEG，并在有 `profile.avatar.update` 时用同一按钮提交意图与完成请求。预览页的头像按钮仍只切换字形。Windows/Android 可在登录前或设置里探测新的 HTTPS 服务地址；确认后才退出当前实例、清理本机缓存并改指向，探测不带旧凭据，连接失败保持未登录。确认后的地址保存在本机，下次启动继续使用，且不写入遥测。Web 只显示当前部署地址。B2c本人模型凭据、单能力测试、任务及用量已实现并完成当期联调与独立review，真实测试均KEY_REJECTED、可用性未验证，待用户验收；L4媒体本机容量配额及其消费者仍未交付；B2a只保存当期阅读/查询偏好，不冒充后续业务已消费。注册/登录/改密/设备会话以 [账号流程](accounts.md) 为准，身份/权限/离线限制以 [认证与隔离](../architecture/authentication.md)、[RBAC](../architecture/authorization.md) 为准。字段契约见 [API 契约](../contracts/api.md)。
 
 DESIGN20已确认小说章节的提前下载：在章节入口多选解析/朗读，单项或双项，生成完成后提前缓存到当前账号设备；暂停/继续和失败重试包含该受控章范围。现有容量/清理/离线租期继续适用，具体状态见[章节准备契约](../contracts/novel-preparation.md)；全局下载中心、固定保留等管理增强仍为P1，不能将已确认章节能力整体推迟到P1。
 
@@ -47,7 +47,7 @@ Web 推荐固定同源部署，显示当前服务地址和连接状态；不在�
 
 #### 保存
 
-1. 界面明确 Haruka 不将材料用于自身训练，并说明本次能力将向所选供应商发送什么内容；供应商保留/训练政策以其已核对的说明为准，不代其作未验证的保证。选择 provider；首版允许配置的入口为 OpenRouter 与 Gemini 直连，具体默认值仍待确认。界面说明文本/视觉/TTS 可能需要不同能力，Key 本身不代表所有模型都可用。
+1. 界面明确 Haruka 不将材料用于自身训练，并说明本次能力将向所选供应商发送什么内容；供应商保留/训练政策以其已核对的说明为准，不代其作未验证的保证。选择 provider；首版允许配置的入口为 OpenRouter 与 Gemini 直连，2026-09-30用户确认默认 OpenRouter。模型绑定仍可为空，不自动替本人选择 Key；当期最小测试组合及真实调用授权见[实施记录](../delivery/reviews/2026-09-30-model-credentials-tasks.md)。界面说明文本/视觉/TTS 可能需要不同能力，Key 本身不代表所有模型都可用。
 2. 输入 Key 时默认掩码，可临时显示/粘贴；不回显旧 Key、不自动填入浏览器持久表单/普通偏好，不写错误日志、分析事件或崩溃上下文，应用不主动复制到剪贴板。UI 完成/离开即释放其受控输入状态，不声称能保证运行时字符串内存物理擦除或清除操作系统已有的剪贴板历史。
 3. 点击“保存”经 HTTPS 提交到本人 credential 服务，校验允许 provider/长度与权限，不调用模型。保存和测试是两个操作；保存只证明已加密持久化，状态显示 untested，而不是“连接成功”。
 4. 后端用部署 Secret 中独立主密钥封装加密，保存 owner、provider、密文、credential_version、encryption_key_version、revision、状态与掩码。credential_version 是用户供应商 Key 的更换/撤销代次；encryption_key_version 仅引用部署加密 Keyring 的主密钥版本；row revision 独立用于并发更新。密文和明文都不作为 API 响应、Job 参数或日志属性，任务只保存本人 credential_id 与必要的安全版本引用。

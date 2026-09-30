@@ -21,7 +21,8 @@
       "test_instance_pattern": "^haruka-test-[0-9a-f]{32}$",
       "test_api_base_urls": {
         "web": [
-          "https://localhost:18443"
+          "https://localhost:18443",
+          "http://localhost:18443"
         ],
         "windows": [
           "http://127.0.0.1:18081"

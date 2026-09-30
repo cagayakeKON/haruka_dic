@@ -20,8 +20,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.pool import AsyncAdaptedQueuePool, ConnectionPoolEntry
 
 from app.domain.correlation import (
+    ai_run_id_context,
     audience_context,
     current_correlation,
+    job_id_context,
     user_id_context,
 )
 
@@ -102,6 +104,12 @@ def _metadata(
     audience = audience_context.get()
     if audience in {"client", "admin"}:
         metadata["audience"] = audience
+    job_id = job_id_context.get()
+    run_id = ai_run_id_context.get()
+    if job_id is not None:
+        metadata["job_id"] = job_id
+    if run_id is not None:
+        metadata["ai_run_id"] = run_id
     return metadata
 
 

@@ -76,6 +76,7 @@ abstract final class AppRoutes {
   static const exercise = '/exercise';
   static const notifications = '/notifications';
   static const settings = '/settings';
+  static const jobs = '/jobs';
   static const settingsSection = '/settings/:section';
   static const guide = '/guide';
   static const admin = '/admin';
@@ -448,7 +449,11 @@ Widget _settingsRoute(
   if (!canReadProfile && section == null) {
     return AccountPage(key: _accountScope(auth, 'account'));
   }
-  if (!canReadProfile && section != 'security' && section != 'connection') {
+  final canReadCredentials = auth.access?.allows('client.credential.read') ?? false;
+  if (!canReadProfile &&
+      section != 'security' &&
+      section != 'connection' &&
+      !(canReadCredentials && const {'model', 'usage'}.contains(section))) {
     return StatusPage(
       id: UiTestIds.notFoundPage,
       title: AppLocalizations.of(context).apiPermissionDenied,
@@ -916,6 +921,20 @@ GoRouter createRouter(
         state.uri.path,
         settingsPage,
         state.pathParameters['section'] ?? '',
+      ),
+    ),
+    _appRoute(
+      path: AppRoutes.jobs,
+      builder: (context, state) => _watchAuth(
+        auth,
+        () =>
+            auth.isAuthenticated && !auth.admin && (auth.access?.allows('client.job.read') ?? false)
+            ? const JobsPage()
+            : StatusPage(
+                id: UiTestIds.notFoundPage,
+                title: AppLocalizations.of(context).apiPermissionDenied,
+                description: AppLocalizations.of(context).authBackToLogin,
+              ),
       ),
     ),
     _appRoute(

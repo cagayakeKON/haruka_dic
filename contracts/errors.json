@@ -169,6 +169,14 @@
       "retryable": false
     },
     {
+      "code": "REAUTHENTICATION_REQUIRED",
+      "details_kind": null,
+      "http_status": 403,
+      "message": "请重新登录以确认敏感操作",
+      "message_args": {},
+      "retryable": false
+    },
+    {
       "code": "REFRESH_SUPERSEDED",
       "details_kind": null,
       "http_status": 409,

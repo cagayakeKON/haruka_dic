@@ -24,6 +24,26 @@ class PublishedPage:
 
 PUBLISHED_PAGES: tuple[PublishedPage, ...] = (
     PublishedPage(
+        "models",
+        "admin",
+        "models",
+        "admin.models",
+        ("admin.model_catalog.read",),
+        "spark",
+        "模型目录",
+        85,
+    ),
+    PublishedPage(
+        "limits",
+        "admin",
+        "limits",
+        "admin.limits",
+        ("admin.quota.read",),
+        "settings",
+        "技术限额",
+        86,
+    ),
+    PublishedPage(
         "overview",
         "admin",
         "overview",

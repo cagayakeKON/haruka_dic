@@ -911,6 +911,937 @@
       "groups": [
         "backend-foundation"
       ]
+    },
+    "backend/app/adapters/models.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/avatar.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/body_limits.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/client_cache.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/model_settings.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/profile.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/contracts/audit_actions.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/core/sql_telemetry.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/maintenance/avatar_gc.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/avatar.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/models/model_tasks.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/repositories/avatar.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/repositories/profile.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/avatar.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/client_cache.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/language_capabilities.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/model_settings.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/schemas/profile.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/services/avatar.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/avatar_image.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/client_cache.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/credential_crypto.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/language_capabilities.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/model_configuration.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/model_tasks.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/model_worker.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/profile_settings.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "frontend/lib/app/cache_blocked_screen.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/lifecycle_visibility.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/motion.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/page_route_activity.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/preview_app.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/preview_shell.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/query_prefill.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/routes.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/app/theme.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/core/api/browser_credentials_stub.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/api/browser_credentials_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/api/model_settings_models.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/audio_blob_backend.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/audio_blob_backend_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/audio_blob_backend_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/audio_blob_store.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/audio_process_lock.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_audio_manager.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_backend.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_backend_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_backend_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_coordinator.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_database.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_entry_lock.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_entry_lock_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_entry_lock_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_invalidation_channel.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_invalidation_channel_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_invalidation_channel_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_invalidation_hint.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_models.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_partition_lock.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_partition_lock_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_partition_lock_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_read_retry.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_session_binding.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/cache/cache_web_lock.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/platform/query_paste.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/platform/query_paste_stub.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/core/platform/query_paste_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/dev/preview/exam_fixture.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/fixture_collection_remote.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/fixture_learning_result_remote.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/fixture_material_remote.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/fixture_notification_remote.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/fixture_query_card_collection.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/fixture_settings_source.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/fixture_store.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/dev/preview/settings_cache_adapter.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/admin/presentation/model_operations_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/application/query_images.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/data/cached_query_result_repository.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/data/query_card_collection_repository.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/data/query_result_repository.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/domain/learning_card.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/domain/query_history_entry.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/domain/query_request.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/presentation/query_card_collection_scope.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/presentation/query_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/agent/presentation/query_result_scope.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/ai_exercises/presentation/exercise_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/ai_exercises/presentation/exercise_support_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/data/cached_collection_catalog.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/data/collection_catalog.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/data/csv_file_port.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/data/csv_save_native.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/data/csv_save_web.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/domain/account_calendar.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/domain/collection_entry.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/domain/notebook_record.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/domain/vocabulary_csv.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/bookmark_question.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/collection_catalog_access.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/collection_catalog_scope.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/collection_detail_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/collection_overlay_read.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/csv_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/daily_words_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/notebook_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/presentation/word_detail_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/collections/reference_selection.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/exams/data/exam_projections.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/exams/presentation/exam_result_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/exams/presentation/exam_session_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/jobs/data/job_socket.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/jobs/data/job_socket_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/jobs/data/job_socket_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/jobs/presentation/jobs_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/data/cached_material_catalog.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/data/material_catalog.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/domain/material_summary.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/presentation/library_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/presentation/material_catalog_access.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/presentation/material_catalog_scope.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/library/presentation/material_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/notifications/data/cached_notification_repository.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/notifications/data/notification_repository.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/notifications/domain/notification_record.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/notifications/domain/notification_target.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/notifications/platform/notification_shade.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/notifications/presentation/notification_repository_scope.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/notifications/presentation/notifications_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/novels/presentation/selection_overlay.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/data/cached_settings_repository.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/data/http_settings_source.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/data/language_capabilities.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/data/model_configuration_repository.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/data/service_endpoint_store.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/data/service_endpoint_store_native.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/data/service_endpoint_store_web.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/data/settings_source.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/domain/avatar_upload.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/domain/model_configuration_controller.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/domain/profile_guide.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/domain/service_endpoint.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/domain/settings_snapshot.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/presentation/avatar_row.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/model_configuration_content.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/model_configuration_scope.dart": {
+      "language": "flutter",
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
+    },
+    "frontend/lib/features/settings/presentation/model_usage_content.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/profile_guide_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/profile_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/service_endpoint_form.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/settings_chrome.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/settings_form_draft.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/settings_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/settings_repository_scope.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/settings/presentation/settings_snapshot_gate.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/textbooks/presentation/textbook_practice_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/main_preview.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/shared/domain/learning_records.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/shared/presentation/components.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
     }
   },
   "core_groups": {

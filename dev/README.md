@@ -35,6 +35,10 @@ python scripts/dev.py infra down
 - `.local/secrets/minio_password`：MinIO Console 用户 `haruka_local_root` 的密码；应用不使用该账号。
 - `.local/credentials.json`、`.local/minio/`、`.local/secrets/`：初始化凭据材料，不应复制到应用发布包或日志。
 
+模型任务切片使用 `python -m dev.isolated_app_run prepare --model-mode fake` 创建专属测试schema、账号/密钥材料和Kafka Topic，再经同一 `build-web` 与 `serve --web` 启动正式API/模型Worker/Outbox。默认不带该选项仍是既有core模式。`fake`仅替换供应商边界，PG/Redis/Kafka及任务事实保持真实；运行配置与Topic不进入产品包。
+
+真实供应商样本须先停该run全部进程并结束或取消所有未完成Job，使用 `set-model-mode --run-id <run> --mode live` 显式切换组装后再启动；该命令不接收Key、不创建attempt，不凭切换宣称能力已验证。Key仍经正式本人凭据UI保存。测试调用按当期授权次数执行，不能因为跨端验证或重连重发。Topic创建/清理先检查本机Docker及run ledger，清理只删除当前run登记的 `<instance_id>.jobs`，不操作其他项目或既有环境Topic。
+
 PG 运行账号不是超级用户，无建库、建角色、Schema CREATE 或业务 DDL 权限；维护账号拥有对应数据库，默认授权未来维护账号创建的表/序列给运行账号。初始化只配置角色/数据库/Schema 权限，业务结构必须经受控 Alembic 迁移。此处不实现用户/ScopeContext/RLS 隔离。
 
 脚本拒绝远程 Docker engine 和属于其他工作区的同名 Compose 项目；启动前检查首次所需端口。并发操作通过 `.local/operation.lock` 排他保护。若进程被强制结束留下锁，先确认其中记录的 PID 已退出，再手动移除该单一锁文件。
@@ -57,8 +61,12 @@ Alloy 同时采集 `.local/logs/dev*.jsonl`、`test*.jsonl` 和 `infra.jsonl`（
 
 真实合成账号完成可见界面流程并生成私有 actor 文件后，可用 `python -m dev.secret_absence_proof --run-id <run> --actor-file dev/.local/b1/<run>/<actor文件>.secret --output artifacts/dev/<新的证明文件>.json` 检查**该文件当前密码**和本机捕获的邮件操作 Token 是否原样出现在本 run 的全部应用 JSONL及带精确实例 ID 的 Loki 记录。工具从 run 创建时间查询完整 Loki 窗口，要求最早带实例 ID 的本地事件也可在 Loki 找到；窗口不完整、超过100,000行或本地/Loki任一侧128MiB、文件不可用均失败。Loki按五分钟分片查询，单片达到5,000条视为截断，run超过24小时拒绝。极早的启动日志可能尚无实例 ID，仍在本地全文检查中并在报告单独计数，不宣称 Loki 实例过滤覆盖它们。报告只写计数和布尔结果，不保存秘密；它不覆盖该账号以前用过的全部密码，也不代替已执行操作的业务/授权证明。
 
+个人模型实测后，`python -m dev.model_log_proof --run-id <run> --output artifacts/dev/<新的证明文件>.json` 从标准输入接收本人测试Key，仅在内存检查该Key和固定朗读样本文字是否出现在上述完整本地/Loki窗口；不得把Key写入命令参数、临时文件或shell历史。报告只包含缺失布尔值、计数和白名单模型事件，不保存Key、摘要或日志正文。事件计数不等于任务提交或用量证明，仍需核对持久Job/Stage/Run/attempt；其他供应商回复和历史Key另按实际样本验证。
+
 受控接收故障实际发生后，可从私有503回执读取目标事件 UUID，再运行 `python -m dev.telemetry_recovery_proof --run-id <run> --rule-id <规则32位hex> --event-id <目标事件UUID> --expected-user-id <已验证账号UUID> --audience <client|admin> --output artifacts/dev/<新的证明文件>.json`。证明要求目标 UUID 确实在该受众正式日志路径的故障批次中，故障后以同一账号/受众被接收，并在 Loki 出现同一事件 UUID；客户端事件带 operation_id，收藏事件还要求有同操作的服务端提交日志。只显示安全关联字段，不能用另一受众或另一事件的回执替代；它不证明所有队列事件都成功送达。
 
 `smoke` 必须实际读到 PostgreSQL、Redis、两个 Kafka Topic、MinIO/Grafana 健康端点，并将唯一的正常 info 事件从 JSONL 经 Alloy 采入 Loki，同时验证 PostgreSQL 容器日志已到达。后端真实客户端连接、权限隔离、读写与关闭验证由本轮后端集成测试负责。
 
 实现依据：[PostgreSQL 容器数据目录](https://docs.docker.com/guides/postgresql/immediate-setup-and-data-persistence/)、[Kafka 容器与 listener](https://kafka.apache.org/42/getting-started/docker/)、[Alloy Docker 日志](https://grafana.com/docs/alloy/latest/reference/components/loki/loki.source.docker/)。
+
+本人模型切片的本地 Web 也支持同源 HTTP：停止该 run 后执行 `python -m dev.isolated_app_run set-web-transport --run-id <run> --transport http`，再 `build-web --run-id <run> --replace` 并重新 `serve --web`。入口为 `http://localhost:18443`，端口仍只绑定 loopback；localhost 开发白名单、Origin/CSRF/鉴权保持有效，正式包仍要求 HTTPS，Secure Cookie 属性不放宽。网关只为既有任务事件端点透传 WebSocket Upgrade；所有者与来源授权仍由 API 检查。邮件进程使用同 run 的私有 core 配置，模型进程使用 jobs 配置，停机确认后删除临时邮件配置。

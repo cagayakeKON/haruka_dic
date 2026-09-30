@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:haruka/app/motion.dart';
 
 import '../../support/preview_test_app.dart';
 
@@ -79,7 +80,7 @@ void main() {
 
   testWidgets('query preset remains a draft across resize until saved', (tester) async {
     final store = await launch(tester, const Size(1440, 900));
-    await tester.tap(find.widgetWithText(TextButton, '我的').first);
+    await tester.tap(find.widgetWithText(ListTile, store.displayName).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('查询与上下文'));
     await tester.pumpAndSettle();
@@ -163,12 +164,21 @@ void main() {
             matching: find.byType(DropdownButtonFormField<String>),
           )
           .first;
-      await tester.ensureVisible(gender);
+      final profileScroll = find
+          .descendant(of: find.byType(MobileProfileView), matching: find.byType(Scrollable))
+          .first;
+      await tester.scrollUntilVisible(gender, -200, scrollable: profileScroll);
       await tester.tap(gender);
       await tester.pumpAndSettle();
       await tester.tap(find.text(label).last);
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('保存资料'));
+      if (code == 'self_described') {
+        final description = find
+            .descendant(of: find.byType(ProfileFields), matching: find.byType(TextField))
+            .last;
+        await tester.enterText(description, '个人描述');
+      }
+      await tester.scrollUntilVisible(find.text('保存资料'), 200, scrollable: profileScroll);
       await tester.tap(find.text('保存资料'));
       await tester.pumpAndSettle();
       expect(settings.snapshot(SettingsGroup.profile)?.fields['gender_code'], code);
@@ -244,7 +254,7 @@ void main() {
     await tester.tap(clear);
     await tester.pumpAndSettle();
     final firstRoute = ModalRoute.of(tester.element(find.byType(AlertDialog)))!;
-    expect(firstRoute.transitionDuration, const Duration(milliseconds: 240));
+    expect(firstRoute.transitionDuration, HarukaMotion.dialogEnter);
     await tester.tap(find.text('取消').last);
     await tester.pumpAndSettle();
 
@@ -257,13 +267,13 @@ void main() {
     expect(Theme.of(dialogContext).brightness, Brightness.dark);
     expect(nextRoute.transitionDuration, Duration.zero);
     expect(nextRoute.reverseTransitionDuration, Duration.zero);
-    expect(firstRoute.reverseTransitionDuration, const Duration(milliseconds: 150));
+    expect(firstRoute.reverseTransitionDuration, HarukaMotion.exit);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('model key stays in memory and speech changes only after save', (tester) async {
     final store = await launch(tester, const Size(1440, 900));
-    await tester.tap(find.widgetWithText(TextButton, '我的').first);
+    await tester.tap(find.widgetWithText(ListTile, store.displayName).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('个人模型'));
     await tester.pumpAndSettle();
@@ -295,7 +305,7 @@ void main() {
     tester,
   ) async {
     final store = await launch(tester, const Size(1440, 900));
-    await tester.tap(find.widgetWithText(TextButton, '我的').first);
+    await tester.tap(find.widgetWithText(ListTile, store.displayName).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('服务连接'));
     await tester.pumpAndSettle();

@@ -675,9 +675,15 @@ final class AuthController extends ChangeNotifier {
   Future<T> authorizedWrite<T>(Future<T> Function(Map<String, String>) action) =>
       _authorized(action, write: true);
 
+  /// Log delivery changes no authorization state. Keep normal write credentials,
+  /// expiry handling and account fences, without generating another access log.
+  Future<T> authorizedLogUpload<T>(Future<T> Function(Map<String, String>) action) =>
+      _authorized(action, write: true, validateAccessAfterWrite: false);
+
   Future<T> _authorized<T>(
     Future<T> Function(Map<String, String>) action, {
     bool write = false,
+    bool validateAccessAfterWrite = true,
   }) async {
     if (!isAuthenticated) throw const ApiFailure(code: 'AUTH_REQUIRED');
     final current = _epoch;
@@ -693,7 +699,7 @@ final class AuthController extends ChangeNotifier {
       if (current != _epoch || _access?.userId != userId) {
         throw const ApiFailure(code: 'SESSION_INVALID');
       }
-      if (write) unawaited(verifyCurrentAccess());
+      if (write && validateAccessAfterWrite) unawaited(verifyCurrentAccess());
       return result;
     } on ApiFailure catch (error) {
       if (error.code == 'ACCESS_EXPIRED' && config.platform != AppPlatform.web) {
@@ -715,7 +721,7 @@ final class AuthController extends ChangeNotifier {
           if (current != _epoch || _access?.userId != userId) {
             throw const ApiFailure(code: 'SESSION_INVALID');
           }
-          if (write) unawaited(verifyCurrentAccess());
+          if (write && validateAccessAfterWrite) unawaited(verifyCurrentAccess());
           return result;
         } on ApiFailure catch (refreshError) {
           if (_isUnauthenticated(refreshError)) {

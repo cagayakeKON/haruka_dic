@@ -1,6 +1,6 @@
 # 实施计划与验收
 
-状态：2026-09-30，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在撤回旧错误视觉结论、改用已确认Flutter mock为唯一主界面并完成Web/Android复核后，按当期范围重新验收通过。[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；B2c及后续业务尚未实现，阶段1未完成。
+状态：2026-09-30，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在撤回旧错误视觉结论、改用已确认Flutter mock为唯一主界面并完成Web/Android复核后，按当期范围重新验收通过。[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；[B2c凭据与模型任务](reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，模型可用性未验证，待用户验收，后续业务未实现，阶段1未完成。
 
 用户确认当前手机/电脑原型所有功能均纳入当前v0.1。逐项操作、首交付、跨阶段收口由[原型功能清单UI-01～35](prototype-scope.md)维护；现有文档全部P0继续由[覆盖索引](coverage.md)维护。两份清单取并集，不能用原型没画、只有模拟或待决方案排除已承诺功能。实际原型走查、独立review和本次文档证据见[PLAN2记录](reviews/2026-09-26-prototype-implementation-plan.md)。
 
@@ -35,14 +35,14 @@ Flutter用户端覆盖Windows、Web、Android，管理端为Web；Python后端�
 - [x] B1：Windows/Web/Android均提供正式注册、邮箱激活、登录/access、邮件找回/重置、本人改密/会话管理、合法选区收藏新增/列表；按用户最终决定验收通过，证据与未运行边界见[实施及验收记录](reviews/2026-09-26-b1-implementation.md)。找回完整闭环只验Web，Windows原生完整矩阵和Android找回完整闭环不补测；已有局部操作保留。前端日志只验Web，开放注册开关默认关闭，本地隔离SMTP闭环获接受，外部SMTP不实测。
 - [x] B2a（当期重新验收通过）：完整资料/头像/可跳过引导、母语/解释语/日英目标语/当前语/水平目标/时区、显示偏好、阅读与查询预算偏好、原生服务实例切换；头像专用验证发布与private/no-store读取，分组revision冲突、人口资料默认不进AI；交付FCACHE三端存储/策略注册/版本代次/写后刷新/跨标签/清理升级基础及validate注册框架，未实现业务不伪签离线许可。旧以HTML比较平行正式界面的视觉通过结论已撤回；真实功能已迁入已确认Flutter mock，重复页面/壳/导航移除，正式Web/Android实操及定点复核见[B2a验收记录](reviews/2026-09-28-profile-settings-acceptance.md)。FCACHE仅签当期分支，不代表全族或阶段1完成。
 - [x] B2b：完整管理Web用户/会话、角色/继承/allow/deny、成员/授予边界、两端菜单、注册/恢复策略（含原型审批注册与人工恢复）、安全初始化/最后管理员保护、审计；原型“预览”之后必须支持合法真实提交与失效反馈，不允许私有内容旁路。B1仍是已选邮箱验证/邮件找回路径；审批的待审批/拒绝/激活进度、人工恢复的申请/受理/受控核验/一次性安全交付/旧会话撤销一并在B2b实现，不能只做管理开关；默认策略不自动切换，邀请不因此进入范围。代码与切片复核见[实现记录](reviews/2026-09-29-identity-governance-implementation.md)；2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过。
-- [ ] B2c：本人凭据保存/单能力测试/轮换/撤销、能力目录/技术限额、ModelFactory、Job/Outbox/Kafka/Worker、attempt用量/本人及管理视图、有权任务进度。使用正式凭据测试路径证明持久闭环，见[B2验收](milestones/scaffold.md)。
+- [x] B2c工程实现：本人凭据保存/单能力测试/轮换/撤销、能力目录/技术限额、ModelFactory、Job/Outbox/Kafka/Worker、attempt用量/本人及管理视图、有权任务进度。正式Web/Android、持久任务和两轮独立review完成，SCF当期证据门禁通过；真实三次均KEY_REJECTED，未证明模型可用，待用户验收，见[B2c实施记录](reviews/2026-09-30-model-credentials-tasks.md)。
 
 B1账号、激活/恢复通知与最小收藏合同保持原样，完整SCF-B1-01～08不变。B2复用B1已需要的通知Outbox/Worker，不另建第二套异步系统。B1合成材料/已提交卡片所必需的最小源、卡片及关联结构由B1交付，不能等阶段2/3/4建表才让B1运行；这不代表提前交付上传或完整查询。
 
 验收：
 
 - [ ] B1既定SCF/ACC和真实通道证据通过；B2a关闭ACC-11/12剩余、PROFILE及当期SET/CACHE/FCACHE；B2b关闭身份治理ADM/PERM，不以B1最小管理入口替代。
-- [ ] B2c关闭SCF-B2-01～08、SET单能力测试、USAGE-01～09当期分支；Fake仅dev/test供应商边界，正式PG/Redis/Kafka/Worker不可替成内存成功桩。所选真实供应商最小样本须有授权与实际协议证据；未验证能力明确不可用，之后消费切片补齐，不能宣称全量AI/TTS通过。
+- [ ] B2c用户验收：SCF-B2-01～08、SET单能力测试、USAGE-01～09当期工程分支已有定点证据与独立复核；本轮真实调用均认证拒绝，成功协议未验证；Fake仅dev/test供应商边界，正式PG/Redis/Kafka/Worker不可替成内存成功桩。所选真实供应商最小样本须有授权与实际协议证据；未验证能力明确不可用，之后消费切片补齐，不能宣称全量AI/TTS通过。
 - [ ] Web Cookie/CSRF、原生安全存储、持久撤销/安全epoch、双账号与client/admin隔离、迟到响应/日志/缓存清理、防提权和权限失败关闭通过。
 - [ ] 本阶段实际表的DB-01～12、DAT/API与返回契约、UIE/TDS/FLT、DESIGN适用项通过；迁移锁/无物理外键/ScopeContext/父锁/UTC时间等按专题证明。
 - [ ] 前端正常日志和info埋点在Web验证，API/Worker/AI/ORM/PG按来源验证到Alloy/Loki/Grafana可查关联；未登录受限上报、有界补传/接收故障/秘密哨兵/账号切换验证，不把埋点当业务或用量真相。

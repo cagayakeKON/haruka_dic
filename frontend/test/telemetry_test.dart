@@ -72,6 +72,104 @@ final class _NoSync implements AuthSync {
 }
 
 void main() {
+  test('authenticated log uploads drain without generating access requests or more logs', () async {
+    final samples = jsonDecode(
+      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final config = AppConfig.parse(
+      platform: AppPlatform.web,
+      environment: 'dev',
+      instanceId: 'haruka-test-0123456789abcdef0123456789abcdef',
+      apiBaseUrl: 'http://localhost:18443',
+    );
+    const requestId = '018f1234-1234-7123-8123-123456789abc';
+    var accessCalls = 0;
+    var uploads = 0;
+    ResponseBody jsonBody(Object value) => ResponseBody.fromString(
+      jsonEncode(value),
+      200,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+    final api = ApiClient(
+      config,
+      adapter: SampleAdapter((options, stream) async {
+        switch (options.path) {
+          case '/api/v1/meta':
+            return jsonBody({
+              'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+              'meta': {'request_id': requestId},
+            });
+          case '/api/v1/auth/login':
+            return jsonBody(samples['auth_web_authenticated'] as Object);
+          case '/api/v1/auth/csrf':
+            return jsonBody({
+              'data': {
+                'session_ref': '018f1234-0000-7000-8000-000000000002',
+                'csrf_token': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+              },
+              'meta': {'request_id': requestId},
+            });
+          case '/api/v1/me/access':
+            accessCalls++;
+            return jsonBody(samples['auth_client_access_login_only'] as Object);
+          case '/api/v1/frontend-logs':
+            uploads++;
+            expect(options.headers['X-CSRF-Token'], 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+            expect(options.headers['X-Operation-ID'], isNotEmpty);
+            final body = jsonDecode(
+              utf8.decode((await stream!.toList()).expand((part) => part).toList()),
+            ) as Map<String, dynamic>;
+            final events = (body['events'] as List<dynamic>).cast<Map<String, dynamic>>();
+            return jsonBody({
+              'data': {
+                'results': [
+                  for (var index = 0; index < events.length; index++)
+                    {'index': index, 'event_id': events[index]['event_id'], 'status': 'accepted'},
+                ],
+              },
+              'meta': {'request_id': requestId},
+            });
+        }
+        throw StateError('Unexpected endpoint ${options.path}');
+      }),
+    );
+    final auth = AuthController(
+      AuthRepository(api, config),
+      config,
+      vault: _EmptyVault(),
+      sync: _NoSync(),
+    );
+    expect(await auth.login('user@example.test', 'valid-test-password'), isTrue);
+    final telemetry = Telemetry(config, api, auth, store: _MemoryStore());
+    api.beginRequestObservation = telemetry.beginHttpObservation;
+    addTearDown(() async {
+      await telemetry.dispose();
+      auth.dispose();
+      api.close();
+    });
+    // More than one batch exercises the immediate drain path with observation
+    // wired exactly as in the application, rather than hiding transport logs.
+    for (var index = 0; index < 45; index++) {
+      telemetry.log('http.completed', attributes: {'status_code': 200});
+    }
+    await telemetry.flush();
+    for (var index = 0; index < 100 && telemetry.queuedCount != 0; index++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect(telemetry.queuedCount, 0);
+    expect(uploads, 3);
+    expect(accessCalls, 1); // Login only; delivery is not an access mutation.
+    await telemetry.flush();
+    expect(uploads, 3);
+    // Ordinary writes must retain their existing post-success access validation.
+    await auth.authorizedWrite((headers) async => true);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(accessCalls, 2);
+    expect(telemetry.queuedCount, greaterThan(0));
+  });
+
   test('restored authenticated queue reports storage recovery without claiming a drop', () async {
     final samples = jsonDecode(
       File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),

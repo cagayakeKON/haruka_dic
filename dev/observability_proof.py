@@ -20,19 +20,21 @@ from pathlib import Path
 from typing import TypeGuard
 from uuid import UUID
 
+from dev.infra import is_object
+from dev.local_smtp_capture import LOCAL_ROOT
+from sqlalchemy import select
+
 from app.adapters.database import Database
 from app.core.settings import load_settings
 from app.models.identity_security import AuthChallengeDelivery
-from sqlalchemy import select
-
-from dev.infra import is_object
-from dev.local_smtp_capture import LOCAL_ROOT
 
 ROOT = Path(__file__).resolve().parent.parent
 LOG_ROOT = ROOT / "dev/.local/logs"
 PROOF_ROOT = ROOT / "artifacts/dev"
 RUN = re.compile(r"[a-f0-9]{32}\Z")
-MAX_LINES = 100_000
+# Long cross-platform runs may exceed 100k records. Keep the complete run
+# bounded by both a finite count and the independent 128 MiB byte ceiling.
+MAX_LINES = 200_000
 MAX_TOTAL_BYTES = 128 * 1024 * 1024
 LOKI_PAGE_LIMIT = 5_000
 LOKI_URL = "http://127.0.0.1:13100"
@@ -55,10 +57,15 @@ def _empty_requests() -> set[str]:
 def _request(
     url: str, *, authorization: str | None = None, timeout: float = 5
 ) -> tuple[int, bytes]:
+    if urllib.parse.urlsplit(url).netloc not in {
+        "127.0.0.1:13100",
+        "127.0.0.1:13000",
+    } or not url.startswith("http://"):
+        return 0, b""
     headers = {"Authorization": authorization} if authorization is not None else {}
-    request = urllib.request.Request(url, headers=headers)
+    request = urllib.request.Request(url, headers=headers)  # noqa: S310 - exact loopback HTTP origins checked above.
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 - same guarded request.
             return response.status, response.read(5_000_000)
     except urllib.error.HTTPError as error:
         return error.code, b""
@@ -110,19 +117,21 @@ def _local_lines(run_id: str) -> tuple[list[str], int]:
 
 
 def _loki_lines(
-    instance_id: str, *, start_utc: datetime | None = None
+    instance_id: str, *, start_utc: datetime | None = None, window_seconds: int = 300
 ) -> tuple[int, list[str], bool]:
     end = datetime.now(UTC)
     start = start_utc if start_utc is not None else end - timedelta(hours=6)
     if start.tzinfo is None or start >= end or end - start > timedelta(hours=24):
         raise ProofError("Loki query start is invalid")
+    if not 1 <= window_seconds <= 300:
+        raise ProofError("Loki query window is invalid")
     query = (
         f'{{project="haruka",environment="test"}}'
         f' |= "{instance_id}" | json | instance_id="{instance_id}"'
     )
     lower_bound = int(start.timestamp() * 1_000_000_000)
     upper_bound = int(end.timestamp() * 1_000_000_000)
-    window_ns = 5 * 60 * 1_000_000_000
+    window_ns = window_seconds * 1_000_000_000
     lines: list[str] = []
     total_bytes = 0
     while lower_bound <= upper_bound:
@@ -139,9 +148,7 @@ def _loki_lines(
                 "direction": "forward",
             }
         )
-        status, raw = _request(
-            f"{LOKI_URL}/loki/api/v1/query_range?{parameters}", timeout=20
-        )
+        status, raw = _request(f"{LOKI_URL}/loki/api/v1/query_range?{parameters}", timeout=20)
         if status != 200:
             return status, lines, False
         try:
@@ -192,10 +199,10 @@ def read_isolated_local_lines(run_id: str) -> tuple[list[str], int]:
 
 
 def read_isolated_loki_lines(
-    instance_id: str, *, start_utc: datetime | None = None
+    instance_id: str, *, start_utc: datetime | None = None, window_seconds: int = 300
 ) -> tuple[int, list[str], bool]:
     """Reuse the bounded run-scoped Loki reader for safety probes."""
-    return _loki_lines(instance_id, start_utc=start_utc)
+    return _loki_lines(instance_id, start_utc=start_utc, window_seconds=window_seconds)
 
 
 def _grafana_authorization() -> str | None:
@@ -225,17 +232,11 @@ def _grafana_loki_query(instance_id: str) -> tuple[int, bool]:
     authorization = _grafana_authorization()
     if authorization is None:
         return 0, False
-    query = (
-        f'{{project="haruka",environment="test"}} | json | instance_id="{instance_id}"'
-    )
+    query = f'{{project="haruka",environment="test"}} | json | instance_id="{instance_id}"'
     parameters = urllib.parse.urlencode(
         {
             "query": query,
-            "start": str(
-                int(
-                    (datetime.now(UTC) - timedelta(hours=6)).timestamp() * 1_000_000_000
-                )
-            ),
+            "start": str(int((datetime.now(UTC) - timedelta(hours=6)).timestamp() * 1_000_000_000)),
             "limit": "1",
         }
     )
@@ -265,8 +266,8 @@ def _postgres_engine_source(instance_id: str) -> dict[str, object]:
         "'log_parameter_max_length','log_parameter_max_length_on_error',"
         "'log_statement','logging_collector')"
     )
-    result = subprocess.run(
-        [
+    result = subprocess.run(  # noqa: S603 - fixed local Docker/psql inspection; no caller command input.
+        [  # noqa: S607 - repository-owned local Docker CLI, static container and SQL.
             "docker",
             "exec",
             POSTGRES_CONTAINER,
@@ -309,9 +310,7 @@ def _postgres_engine_source(instance_id: str) -> dict[str, object]:
         "logging_collector",
     )
     safe_settings = {
-        name: settings.get(name)
-        for name in safe_names
-        if isinstance(settings.get(name), str)
+        name: settings.get(name) for name in safe_names if isinstance(settings.get(name), str)
     }
     prefix = settings.get("log_line_prefix")
     has_database = isinstance(prefix, str) and "%d" in prefix
@@ -322,11 +321,7 @@ def _postgres_engine_source(instance_id: str) -> dict[str, object]:
     parameters = urllib.parse.urlencode(
         {
             "query": query,
-            "start": str(
-                int(
-                    (datetime.now(UTC) - timedelta(hours=6)).timestamp() * 1_000_000_000
-                )
-            ),
+            "start": str(int((datetime.now(UTC) - timedelta(hours=6)).timestamp() * 1_000_000_000)),
             "limit": "1000",
             "direction": "backward",
         }
@@ -346,11 +341,7 @@ def _postgres_engine_source(instance_id: str) -> dict[str, object]:
                         if not _is_array(values):
                             continue
                         for row in values:
-                            if (
-                                _is_array(row)
-                                and len(row) == 2
-                                and isinstance(row[1], str)
-                            ):
+                            if _is_array(row) and len(row) == 2 and isinstance(row[1], str):
                                 line_count += 1
                                 if instance_id in row[1]:
                                     attributed_count += 1
@@ -403,9 +394,7 @@ async def _mail_state(run_id: str) -> dict[str, object]:
         return {
             "available": True,
             "status_counts": dict(sorted(counts.items())),
-            "max_attempt_count": max(
-                (attempts for _status, attempts in rows), default=0
-            ),
+            "max_attempt_count": max((attempts for _status, attempts in rows), default=0),
         }
     finally:
         await database.aclose()
@@ -422,8 +411,7 @@ def _summary(events: list[dict[str, object]]) -> dict[str, object]:
         and _valid_uuid(value)
     }
     request_count = sum(
-        isinstance(event.get("request_id"), str)
-        and _valid_uuid(str(event["request_id"]))
+        isinstance(event.get("request_id"), str) and _valid_uuid(str(event["request_id"]))
         for event in events
     )
     return {
@@ -554,9 +542,7 @@ def _sentinel_receipt(run_id: str, sentinel: bytes | None) -> dict[str, object]:
 async def collect(run_id: str, sentinel: bytes | None) -> dict[str, object]:
     instance_id = f"haruka-test-{run_id}"
     local_lines, file_count = await asyncio.to_thread(_local_lines, run_id)
-    loki_status, loki_lines, truncated = await asyncio.to_thread(
-        _loki_lines, instance_id
-    )
+    loki_status, loki_lines, truncated = await asyncio.to_thread(_loki_lines, instance_id)
     local_events = _events(local_lines, instance_id)
     loki_events = _events(loki_lines, instance_id)
     local_ids = {
@@ -607,15 +593,13 @@ async def collect(run_id: str, sentinel: bytes | None) -> dict[str, object]:
         "sentinel_injection_verified": receipt["verified"],
         "sentinel_probe_request_id": probe_request_id,
         "sentinel_probe_http_log_local": any(
-            event.get("request_id") == probe_request_id
-            and event.get("event") == "http.completed"
+            event.get("request_id") == probe_request_id and event.get("event") == "http.completed"
             for event in local_events
         )
         if receipt["verified"]
         else False,
         "sentinel_probe_http_log_loki": any(
-            event.get("request_id") == probe_request_id
-            and event.get("event") == "http.completed"
+            event.get("request_id") == probe_request_id and event.get("event") == "http.completed"
             for event in loki_events
         )
         if receipt["verified"]
@@ -628,9 +612,7 @@ async def collect(run_id: str, sentinel: bytes | None) -> dict[str, object]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Summarize isolated log collection safely"
-    )
+    parser = argparse.ArgumentParser(description="Summarize isolated log collection safely")
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--label", required=True)
     parser.add_argument("--sentinel-file", type=Path)
@@ -658,10 +640,10 @@ def main() -> int:
         with path.open("x", encoding="utf-8") as stream:
             json.dump(proof, stream, indent=2, sort_keys=True)
             stream.write("\n")
-        print(path.relative_to(ROOT).as_posix())
+        sys.stdout.write(f"{path.relative_to(ROOT).as_posix()}\n")
         return 0
     except (OSError, ProofError, subprocess.SubprocessError):
-        print("isolated observability proof failed", file=sys.stderr)
+        sys.stderr.write("isolated observability proof failed\n")
         return 1
 
 

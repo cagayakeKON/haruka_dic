@@ -24,6 +24,8 @@ import 'package:haruka/generated/ui_test_ids.dart';
 import 'package:haruka/shared/identified.dart';
 import 'package:haruka/shared/presentation/navigation_icons.dart';
 
+import 'model_operations_page.dart';
+
 /// In-memory state for the management interface.
 final class AdminPreviewState extends ChangeNotifier {
   AdminPreviewState({Set<String>? permissions})
@@ -50,6 +52,8 @@ final class AdminPreviewState extends ChangeNotifier {
     'jobs': 'admin.job.read',
     'audit': 'admin.audit.read',
     'usage': 'admin.dashboard.view',
+    'models': 'admin.model_catalog.read',
+    'limits': 'admin.quota.read',
     'security': 'admin.login',
   };
 
@@ -466,6 +470,8 @@ class _AdminShell extends StatelessWidget {
     ('jobs', Icons.schedule_outlined),
     ('audit', Icons.menu_book_outlined),
     ('usage', Icons.auto_awesome_outlined),
+    ('models', Icons.tune_outlined),
+    ('limits', Icons.speed_outlined),
     ('security', Icons.verified_user_outlined),
   ];
 
@@ -611,6 +617,13 @@ class _AdminShell extends StatelessWidget {
                                                 AdminAuditEvents(auth: liveAuth!),
                                               'audit' => _AdminCard(
                                                 child: Text(strings.authNoAdminPermission),
+                                              ),
+                                              'jobs' ||
+                                              'usage' ||
+                                              'models' ||
+                                              'limits' => AdminModelOperations(
+                                                auth: liveAuth!,
+                                                section: section,
                                               ),
                                               _ => const _AdminCard(child: Text('此功能尚未开放。')),
                                             }
@@ -799,6 +812,8 @@ String _sectionLabel(AppLocalizations strings, String section) => switch (sectio
   'jobs' => strings.mockAdminJobs,
   'audit' => strings.mockAdminAudit,
   'usage' => strings.mockAdminUsage,
+  'models' => '模型能力目录',
+  'limits' => '模型运行限制',
   'security' => strings.mockAdminSecurityNav,
   _ => strings.mockAdminOverview,
 };

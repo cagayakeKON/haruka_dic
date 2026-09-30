@@ -15,7 +15,7 @@
 | 应用识别 | APP_ENV、INSTANCE_ID、PUBLIC_BASE_URL、RELEASE、允许Origin | 部署配置；INSTANCE_ID稳定区分缓存，不随重启随机变化；生产域名缺失不启动公开服务 |
 | 数据库 | DATABASE_URL、独立维护凭据、连接池/超时、DB_APPLICATION_NAME | Haruka专用数据库；运行DML与迁移/维护身份分离，UTC/search_path和最小权限按[数据库规范](../engineering/database.md)，API/Worker不取得维护凭据；连接失败readiness不通过 |
 | 会话/权限 | REDIS_URL、HARUKA_NAMESPACE、session TTL、issuer、原生JWT算法/签名key版本 | 签名秘密独立；Cookie名/受众固定；Redis/PG失败关闭认证 |
-| 加密 | CREDENTIAL_KEYRING、ACTIVE_ENCRYPTION_KEY_VERSION、挑战/回执用途隔离密钥 | 独立Secret，版本对应encryption_key_version而非用户credential_version；未知版本不当明文读取或换公共Key |
+| 加密 | CREDENTIAL_KEYRING、CREDENTIAL_ENCRYPTION_KEY_VERSION、挑战/回执用途隔离密钥 | 独立Secret，版本对应encryption_key_version而非用户credential_version；正式Settings环境字段使用HARUKA_前缀，Keyring为版本到受保护密钥的JSON对象；未知版本不当明文读取或换公共Key |
 | 队列 | KAFKA_BOOTSTRAP、topics/groups、ack/retry/lease参数 | Haruka namespace；不可达保留Outbox，不丢已受理Job |
 | 对象存储 | S3_ENDPOINT、PUBLIC_S3_ENDPOINT、bucket、应用凭据、签名TTL | 私有Haruka Bucket；地址需三端可达；不能使用MyHome root凭据 |
 | 邮件与注册 | 发件身份、SMTP认证/加密、通知加密密钥、challenge URL允许域；注册策略closed/open默认closed | 邮箱验证/邮件找回已确认；外部配置尚未准备。完整通知配置才可开启注册或受理邮件请求；本地隔离SMTP闭环经用户确认足以验收B1，仍不等于外部邮箱实测送达。注册关闭不影响既有账号登录/验证/找回；缺失不能显示“已发送” |
@@ -23,6 +23,7 @@
 | 观测 | project/environment/service、日志级别、接收/队列上限 | 生产启用正常埋点，脱敏；客户端无Loki写密钥 |
 | 管理策略 | 注册开放/审批/默认角色、feature flags、配额、模型目录 | PG带revision/审计，不随容器重启恢复旧环境默认值 |
 | 个人AI | 用户provider/model/voice/credential引用 | 用户库密文/设置；缺Key就暂停，不回退到环境全局模型调用Key |
+| 模型组装 | MODEL_EXECUTION_MODE=disabled/fake/live | 默认disabled；fake只能dev/test受控进程组装，不接受用户Header/模型ID切换。live使用本人加密凭据，保存Key不调用；真实调用仍遵守显式单能力意图与attempt上限 |
 | Flutter | API同源或明确实例地址、发布版本、非秘密功能协议版本 | 编译/公开运行配置；禁止数据库、签名、加密、供应商秘密进入包 |
 
 日志只输出配置是否齐备、Secret版本标识和安全的组件状态，不输出整份settings对象或完整连接串。生产/测试数据库、Bucket、Topic、Redis前缀和加密材料分别设置，测试启动时拒绝生产目标。

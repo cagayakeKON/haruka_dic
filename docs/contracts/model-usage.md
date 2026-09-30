@@ -1,6 +1,6 @@
 # 模型用量统计契约
 
-> 状态：2026-09-23 设计基线，尚未实现。本文只定义模型调用事实与统计口径，不定义订阅、余额、购买、价格或结算能力。
+> 状态：2026-09-23 设计基线；B2c 已实现本人凭据测试 attempt 和当期聚合投影，尚待本期验收，其余业务调用仍按后续阶段推进。本文不定义订阅、余额、购买、价格或结算能力。
 
 ## 1. 范围与原则
 
@@ -31,6 +31,7 @@ Haruka P0 使用用户自行配置的供应商 API Key。产品不提供套餐�
 | capability | `text`、`vision`、`tts` 或后续登记的明确能力 |
 | operation_kind | 解释、OCR、习题生成、评分、TTS 等受控枚举 |
 | call_status | 映射attempt.status，调用中started，结束后succeeded/failed或unknown；与业务结果状态分开 |
+| simulated | 必填布尔值；dev/test 模拟事实与真实供应商事实分别聚合和展示，模拟成功不证明真实模型能力 |
 | usage_status | `complete`、`partial` 或 `unavailable` |
 | input_tokens | 供应商报告的输入 Token；未知为 `null` |
 | output_tokens | 供应商报告的输出 Token；未知为 `null` |
@@ -64,7 +65,7 @@ Haruka P0 使用用户自行配置的供应商 API Key。产品不提供套餐�
 
 1. 发起外部请求前先持久化 `ExternalCallAttempt`；得到供应商响应后，按attempt.id和owner幂等补全本行用量；重复回调写已报告绝对值，不累加，迟到NULL不清已有可信值，变化同事务推进aggregation_revision/updated_at及Outbox。
 2. 网络断开、进程崩溃或供应商结果不明时，`call_status=unknown`。没有可信用量就写 `usage_status=unavailable`，不能推算为零。
-3. 有界重试产生新的 attempt。作业、运行和用户维度的统计从 attempt 聚合，不能同时累加 attempt 与 AiRun 汇总而重复计算。
+3. 聚合必须保留 `simulated` 分组维度，模拟次数和 Token 不混入真实调用汇总。真实失败仍计入真实 attempt，未知用量仍为 null。有界重试产生新的 attempt。作业、运行和用户维度的统计从 attempt 聚合，不能同时累加 attempt 与 AiRun 汇总而重复计算。
 4. AiRun/Job 可保存派生汇总和统计版本用于查询加速；源记录变化后按版本重算，源 attempt 始终是权威事实。
 5. 迟到响应只能补全它所属的 attempt，不能覆盖后续重试、当前业务结果或其他模型版本的统计。
 6. 供应商只返回部分字段时保存现有字段并标记 `partial`；供应商完全不返回用量时标记 `unavailable`。

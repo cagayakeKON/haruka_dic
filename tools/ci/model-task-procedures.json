@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "status": "execution records required; this declaration is not passing evidence",
+  "procedures": [
+    {
+      "node_id": "SCF-B2-01:host",
+      "purpose": "SCF-B2-01 host credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-01:web",
+      "purpose": "SCF-B2-01 web credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-01:android",
+      "purpose": "SCF-B2-01 android credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-02:host",
+      "purpose": "SCF-B2-02 host credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-03:host",
+      "purpose": "SCF-B2-03 host credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-04:host",
+      "purpose": "SCF-B2-04 host credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-05:host",
+      "purpose": "SCF-B2-05 host credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-06:host",
+      "purpose": "SCF-B2-06 host credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-07:web",
+      "purpose": "SCF-B2-07 web credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-07:android",
+      "purpose": "SCF-B2-07 android credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-08:host",
+      "purpose": "SCF-B2-08 host credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    },
+    {
+      "node_id": "SCF-B2-08:web",
+      "purpose": "SCF-B2-08 web credentials and model-task evidence",
+      "evidence_required": [
+        "Exact isolated run, configuration mode, migration and build identity",
+        "Each assertion backed by a nonempty hash-bound execution record; declarations are not passing evidence",
+        "Independent review after frontend/backend implementation and integration"
+      ],
+      "acceptance_source": "docs/delivery/milestones/scaffold.md"
+    }
+  ]
+}

@@ -38,8 +38,26 @@ from app.models.learning_reference import (
     NovelChapterBlock,
     SourceResultBinding,
 )
+from app.models.model_tasks import (
+    AiRun,
+    ExternalCallAttempt,
+    InboxEvent,
+    Job,
+    JobStage,
+    ModelCatalogEntry,
+    ModelLimitPolicy,
+    ProviderCredential,
+)
 
 __all__ = [
+    "AiRun",
+    "ExternalCallAttempt",
+    "InboxEvent",
+    "Job",
+    "JobStage",
+    "ModelCatalogEntry",
+    "ModelLimitPolicy",
+    "ProviderCredential",
     "AdminAuditEvent",
     "AuthPolicy",
     "AuthChallenge",

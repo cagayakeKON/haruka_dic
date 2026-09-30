@@ -691,7 +691,8 @@ PreviewSection sectionFor(String location) {
       location.startsWith('${AppRoutes.settings}/') ||
       location == AppRoutes.account ||
       location.startsWith('${AppRoutes.account}/') ||
-      location == AppRoutes.notifications) {
+      location == AppRoutes.notifications ||
+      location == AppRoutes.jobs) {
     return PreviewSection.settings;
   }
   if (location.startsWith(AppRoutes.mockNotebooks) ||

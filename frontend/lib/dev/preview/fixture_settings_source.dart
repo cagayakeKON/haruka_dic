@@ -13,6 +13,7 @@ final class FixtureSettingsSource implements SettingsSource {
 
   final PreviewFixtureStore store;
   final CacheCoordinator cache;
+  String? _genderDescription;
   final _revisions = <SettingsGroup, int>{for (final group in SettingsGroup.values) group: 1};
   late List<Map<String, Object?>> _targetLanguages = [
     for (final language in store.learningLanguages)
@@ -44,6 +45,7 @@ final class FixtureSettingsSource implements SettingsSource {
         'display_name',
         'birth_year',
         'gender_code',
+        'gender_self_description',
         'use_optional_demographics_for_ai',
       },
       SettingsGroup.studyProfile => {
@@ -95,6 +97,7 @@ final class FixtureSettingsSource implements SettingsSource {
           throw ArgumentError.value(genderCode, 'gender_code');
         }
         final gender = genderCode == 'unspecified' ? 'unset' : genderCode;
+        _genderDescription = next['gender_self_description'] as String?;
         final consent = next['use_optional_demographics_for_ai'] as bool;
         store.updateProfileDetails(
           name: name,
@@ -231,6 +234,7 @@ final class FixtureSettingsSource implements SettingsSource {
         'display_name': store.displayName,
         'birth_year': store.birthYear,
         'gender_code': store.gender == 'unset' ? 'unspecified' : store.gender,
+        'gender_self_description': _genderDescription,
         'use_optional_demographics_for_ai': store.allowProfileForAi,
       },
       SettingsGroup.studyProfile => {

@@ -44,6 +44,7 @@ void main() {
         ('dev', 'another-instance', 'http://127.0.0.1:8000'),
         ('dev', 'haruka-local-dev', 'https://service.example'),
         ('production', 'haruka-public', 'http://service.example'),
+        ('production', 'haruka-public', 'http://localhost:18443'),
         ('production', 'haruka-local-dev', 'https://service.example'),
         ('production', 'haruka-public', 'https://localhost'),
         ('production', 'haruka-public', 'https://user:secret@service.example'),
@@ -73,6 +74,7 @@ void main() {
       const instance = 'haruka-test-0123456789abcdef0123456789abcdef';
       for (final target in [
         (AppPlatform.web, 'https://localhost:18443'),
+        (AppPlatform.web, 'http://localhost:18443'),
         (AppPlatform.windows, 'http://127.0.0.1:18081'),
         (AppPlatform.android, 'http://10.0.2.2:18081'),
       ]) {

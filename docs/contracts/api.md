@@ -62,10 +62,12 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/PATCH users/me/profile | 本人显示名、可选出生年份/性别、资料完整度；field mask + expected_revision | profile.read/update；拒绝邮箱/角色/状态/权限及整数年龄写入，可选人口字段默认不进入AI |
 | GET/PATCH users/me/study-profile | 母语/解释语言、目标语言/当前语言、各语言水平/目标；field mask + expected_revision | profile.read/update；受版本化语言能力目录约束，移除默认值不删除历史学习数据 |
 | GET/PATCH users/me/settings | 模型/声音、时区、AI习题默认、阅读/朗读、theme/显示默认；field mask + expected_revision | profile.read/update；本机缓存/服务地址不伪装服务器字段，拒绝修改派生掌握/权限/配额 |
+| GET/PATCH users/me/model-settings | 本人text/vision/tts模型与凭据绑定，TTS允许声音/语言/输出格式；expected_revision | credential.read读取安全绑定，profile.update修改；与users/me/settings共用settings_revision和父锁，不建立平行并发版本。保存不测试，不复制Key；具体化DTO由正式schema导出 |
 | POST users/me/avatar-upload-intents；POST users/me/avatar-upload-intents/{id}/complete；DELETE users/me/avatar | 本人avatar用途临时上传、验证/重编码后原子替换或删除当前头像。完成请求为 application/json，包含资料 expected_revision 与 image_base64；declared_format 必须与实际魔数一致。本切片不提供预签名直传或容量预留 | profile.read+profile.avatar.update；只接受配置允许的静态图片，不接受外链/任意FileObject ID；替换使用profile expected_revision，删除保留受控GC |
 | GET users/me/avatar | 当前本人私有头像媒体；无头像返回404/受控空态 | profile.read；每次鉴权，`Cache-Control: private, no-store`，不要求avatar.update，不产生长期公共URL或跨账号ETag，不因知道asset ID/旧revision读取他人对象 |
-| GET/POST/PATCH/DELETE provider-credentials；POST {id}/test；GET {id}/tests/{run_id} | 掩码/增删轮换；显式单能力固定最小样本异步测试，202返回job_id/run_id，读取持久安全结果 | credential.read/manage/test；测试需test，结果需read及本人凭据/run归属；Job进度另验job.read与来源，永不GET明文 |
-| GET users/me/model-usage | 本人按时间范围、供应商、模型、能力、操作类型聚合的调用状态及input/output/cache等用量；可按有权run查询明细 | credential.read与self范围；未知分项为null，应用缓存命中不冒充模型调用，不返回Key/Prompt/回复；口径见[模型用量统计](model-usage.md) |
+| GET/POST/PATCH/DELETE provider-credentials；POST {id}/test；GET {id}/tests/{run_id} | 本人掩码摘要列表active优先，随后近期revoked，总计最多100；增删轮换；显式单能力固定最小样本异步测试，202返回job_id/run_id，读取持久安全结果 | credential.read/manage/test；测试需test，结果需read及本人凭据/run归属；Job进度另验job.read与来源，永不GET明文 |
+| GET provider-credentials/{id}/deletion-impact | 当前revision、已绑定能力及未完成任务数，供本人撤销确认 | credential.read及本人归属；不返回其他用户、Key或任务私有正文。撤销DELETE带expected_revision，敏感凭据写操作复核近期密码登录及当前会话；过期返回安全重验要求 |
+| GET users/me/model-usage | 本人按时间范围、供应商、模型、能力、操作类型及必填simulated维度聚合的调用状态及input/output/cache等用量；真实与模拟分别汇总，可按有权run查询明细 | credential.read与self范围；未知分项为null，应用缓存命中不冒充模型调用，不返回Key/Prompt/回复；口径见[模型用量统计](model-usage.md) |
 | POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/requested_stages；视觉OCR与进一步AI分析分别明确范围/上限；新上传或本人源文件重新处理 | material.import、目标试卷组合权限；视觉OCR另验analyze；复用验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |
 | GET materials、materials/{id}、materials/{id}/revisions；PATCH/DELETE materials/{id} | 三类筛选、共用元数据/状态与版本摘要；改标题/删除，不返回正文/答案、不允许PATCH类型 | material.list/read/update/delete；类型分派以三类材料契约为准 |
@@ -120,12 +122,16 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET runs/{id}/events | Agent/解释的SSE文字、卡片及关联run状态；材料/通用任务进度使用jobs/events WebSocket | run类型所需read，不能只因有run_id放行 |
 | GET runs/{id}；POST runs/{id}/cancel | 持久运行快照/完整结果；取消意图 | 读需对应领域权限；取消需本人job.cancel，失去agent.use不妨碍仍获授权的停止操作 |
 | POST frontend-logs、admin/frontend-logs、frontend-logs/anonymous | 受众内批量/受限匿名，逐项接收结果 | 观测规范；不接收任意查询 |
-| admin/users、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作；用户审批决定；quotas只表示技术运行上限 | 管理工作流和admin对应动作、revision/审计；审批只处理 approval_status 不是 not_required 的账号。不提供商业套餐或金额字段。配额和模型目录仍按后续阶段接入 |
+| admin/users、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作；用户审批决定；quotas只表示技术运行上限 | 管理工作流和admin对应动作、revision/审计；审批只处理 approval_status 不是 not_required 的账号。不提供商业套餐或金额字段。当期本人模型目录与技术限额接口见下行，商业化字段不在范围 |
 | admin/roles、admin/roles/{id} 及 enabled、grants、inheritance、deletion、grant-boundaries；admin/permissions | 空角色创建、标题说明、启停、allow/deny、继承、删除和授予上限。创建不携带初始授权；启停在有效权限变化时另需 permission.assign；受保护角色另需 protected_role.manage。expected_revision 冲突返回当前版本，不合并。成功返回角色 revision、全局 authorization_revision、audit_id 和 affected_count | admin.role.*、admin.permission.read、admin.grant_boundary.*；授予上限未覆盖的权限或角色拒绝；不能借继承或改默认注册角色升权；最后可登录 super_admin 保留 |
 | admin/menus、menu-catalog、menus/layout、menus/preview、menus/{id}/deletion | 发布清单内的两端菜单可改标题、上级、顺序、图标、隐藏和附加显示条件。附加条件只能收紧页面最低权限。隐藏菜单不撤销页面权限。未知路由不能启用。分组无可见子项时不出现在导航。预览只返回目标账号的导航，不创建会话、不返回私人内容。 | admin.menu.read/update；预览另需 admin.user.read |
 | admin/users、status、roles、sessions、session-revocations、recovery-requests、recovery-decisions；admin/account-ceilings | 创建待授权账号时不接收、不返回密码。无角色创建只需 user.create；带角色另需 role.assign，且新角色及其父角色都在 assign_role 上限内。启停、改角色和撤销会话还要覆盖目标账号的全部直接角色及父角色（manage_account_role），无角色账号需要 manage_unassigned_accounts。不能改自己的绑定、状态或会话。禁用会推进三个安全代次并标记 PG 会话撤销。按端或全部撤销即使当时没有活动会话，也推进对应安全代次并写审计。人工恢复核验只接受当面或已知渠道，签发的恢复码只在当次响应出现，管理员不能代设密码。 | admin.user.*、admin.session.read/revoke；人工恢复决定使用 admin.user.update；受保护角色另需 protected_role.manage；越出上限、自操作和撤销最后一个可登录 super_admin 拒绝 |
 | GET admin/audit-events、GET admin/governance-summary | 审计按时间倒序分页，可按动作、结果、操作者和目标类型筛选。详情使用已加载行，含授权版本、原因、请求/操作标识，以及清洗后的短标量变更摘要；权限标识列表不在摘要中返回。概览只返回身份计数、待核验恢复数和授权版本。 | admin.audit.read / admin.dashboard.view；不返回邮箱、令牌、密码或私有内容；不提供修改、删除或导出 |
 | admin/sessions、resource-metadata、jobs、diagnostics | 限定元数据查询、撤销/安全运维 | 不返回私有内容/Key、不接受任意LogQL；任务运维和诊断查询尚未开放 |
+| GET/PATCH admin/model-limits；GET admin/user-model-limits；PATCH/DELETE admin/user-model-limits/{user_id} | 实例技术限额与本人并发覆盖，零为拒绝新动作；写入带 expected_revision、受控管理审计 | admin.quota.read/update；本人覆盖不改变部署硬上限，无 Key/私人内容 |
+| GET admin/model-catalog；PATCH admin/model-catalog/{model_id} | 受控目录及启停；当前只启用已登记协议的 OpenRouter 能力 | admin.model_catalog.read/update；revision CAS；不接受任意供应商地址/模型 |
+| GET admin/model-usage | 当期实例 attempt 聚合，按时间、供应商、模型、能力和操作类型筛选；模拟与真实分开 | admin.dashboard.view；nullable 用量口径，不提供私人内容或 Key |
+| GET admin/jobs；POST admin/jobs/{id}/cancel、retry | 安全运维任务快照和显式操作；retry 只恢复已封存阶段的非供应商发布 | admin.job.read/cancel/retry；当前凭据测试只处理明确元数据，不借管理员 Key 重调 |
 | GET admin/dashboard/model-usage | 按时间、供应商、模型、能力和状态的实例级Token/缓存等聚合 | admin.dashboard.view；不返回个人Key、Prompt、回复、私有材料或默认逐用户明细 |
 
 三类内容接口的语义和字段边界见 [三类材料契约](material-types.md)，源层与三类领域对象见 [解析数据结构](material-structures.md)，各专用路径由对应模块 schema 定义，不用大一统阅读 DTO。试卷准备响应必须把正式对象、AI候选、人工校对任务和冻结考试DTO分开；题面接口不返回隐藏听力稿、答案依据、候选内部证据或可推断答案的TTS文本。`model-capabilities` 只负责模型能力，材料支持组合随公共 `meta` 能力段返回，不携带私有数据或个人授权；UI 不用硬编码扩展名表越过后端检查。管理登录/续期/退出/本人安全流程用admin/auth镜像路径，固定admin受众；业务修改用户状态/角色/权限使用独立子资源，不能把通用PATCH映射任意ORM列。最终具体路由表在工程PR中从此契约展开并接受路由保护枚举检查。

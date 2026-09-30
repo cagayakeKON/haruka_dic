@@ -94,7 +94,12 @@ def validate_ids(registry: dict[str, object]) -> dict[str, str]:
     }
     for key, value in json_object(registry["templates"]).items():
         expected = allowed_templates.get(key)
-        if expected is None or key in identifiers or value != f"{expected[1]}{{{expected[0]}}}":
+        if (
+            not isinstance(value, str)
+            or expected is None
+            or key in identifiers
+            or value != f"{expected[1]}{{{expected[0]}}}"
+        ):
             raise ValueError(f"Unsupported UI identifier template: {key}")
         if value in values:
             raise ValueError(f"Duplicate UI identifier template: {value}")
@@ -221,30 +226,7 @@ def validate_error_catalog(
     return error_codes, translations
 
 
-def generate(directory: Path) -> None:
-    reviewed = json_object(
-        json.loads((ROOT.parent / "tools/codegen/dart-api/transition.json").read_text("utf-8"))
-    )
-    openapi = json_object(json.loads((ROOT.parent / "contracts/openapi.json").read_text("utf-8")))
-    schemas = json_object(json_object(openapi["components"])["schemas"])
-    validate_reviewed_schemas(schemas, reviewed.get("reviewed_schemas_sha256"))
-    catalog = json_object(json.loads((ROOT.parent / "contracts/errors.json").read_text("utf-8")))
-    locales = json_object(json.loads((ROOT / "lib/l10n/app_zh.arb").read_text("utf-8")))
-    error_codes, translations = validate_error_catalog(catalog, locales)
-    digest = hashlib.sha256(json.dumps(catalog, sort_keys=True).encode()).hexdigest()
-    emit(
-        directory,
-        OUTPUTS[5],
-        f"// GENERATED from contracts/errors.json; sha256:{digest}. Do not edit.\n"
-        "import 'l10n/app_localizations.dart';\n"
-        "abstract final class ApiCatalog {\n"
-        + "  static const errorCodes = <String>{"
-        + ", ".join(json.dumps(code) for code in sorted(error_codes))
-        + "};\n"
-        + "  static String message(AppLocalizations strings, String code) => switch (code) {\n"
-        + "\n".join(translations)
-        + "\n    _ => strings.apiUnknownError,\n  };\n}\n",
-    )
+def generate_ui_identifiers(directory: Path) -> None:
     id_registry = read_registry(ROOT / "config/ui_test_ids.json")
     ids = validate_ids(id_registry)
     declarations = "\n".join(
@@ -258,6 +240,8 @@ def generate(directory: Path) -> None:
         "sessionRevoke": "sessionId",
     }
     for key, value in sorted(templates.items()):
+        if not isinstance(value, str):
+            raise ValueError("UI identifier templates must be strings")
         parameter = parameters[key]
         prefix = value.split("{")[0]
         declarations += (
@@ -278,6 +262,36 @@ def generate(directory: Path) -> None:
         + "\n}\n",
     )
 
+
+def generate_error_catalog(directory: Path) -> None:
+    catalog = json_object(json.loads((ROOT.parent / "contracts/errors.json").read_text("utf-8")))
+    locales = json_object(json.loads((ROOT / "lib/l10n/app_zh.arb").read_text("utf-8")))
+    error_codes, translations = validate_error_catalog(catalog, locales)
+    digest = hashlib.sha256(json.dumps(catalog, sort_keys=True).encode()).hexdigest()
+    emit(
+        directory,
+        OUTPUTS[5],
+        f"// GENERATED from contracts/errors.json; sha256:{digest}. Do not edit.\n"
+        "import 'l10n/app_localizations.dart';\n"
+        "abstract final class ApiCatalog {\n"
+        + "  static const errorCodes = <String>{"
+        + ", ".join(json.dumps(code) for code in sorted(error_codes))
+        + "};\n"
+        + "  static String message(AppLocalizations strings, String code) => switch (code) {\n"
+        + "\n".join(translations)
+        + "\n    _ => strings.apiUnknownError,\n  };\n}\n",
+    )
+
+
+def generate_localizations(directory: Path) -> None:
+    # Flutter reads l10n.yaml from cwd, so use an isolated mini project to keep --check read-only.
+    for source in ("pubspec.yaml", "l10n.yaml", "lib/l10n/app_zh.arb"):
+        emit(directory, source, (ROOT / source).read_text(encoding="utf-8"))
+    emit(directory, "analysis_options.yaml", "formatter:\n  page_width: 100\n")
+    run(["flutter", "gen-l10n"], directory)
+
+
+def generate_build_targets(directory: Path) -> None:
     targets = build_targets(read_registry(ROOT / "config/build_targets.json"))
     emit(
         directory,
@@ -306,11 +320,38 @@ def generate(directory: Path) -> None:
     cmake += "endif()\n"
     emit(directory, OUTPUTS[4], cmake)
 
-    # Flutter reads l10n.yaml from cwd, so use an isolated mini project to keep --check read-only.
-    for source in ("pubspec.yaml", "l10n.yaml", "lib/l10n/app_zh.arb"):
-        emit(directory, source, (ROOT / source).read_text(encoding="utf-8"))
-    emit(directory, "analysis_options.yaml", "formatter:\n  page_width: 100\n")
-    run(["flutter", "gen-l10n"], directory)
+
+def generate(directory: Path) -> None:
+    reviewed = json_object(
+        json.loads((ROOT.parent / "tools/codegen/dart-api/transition.json").read_text("utf-8"))
+    )
+    openapi = json_object(json.loads((ROOT.parent / "contracts/openapi.json").read_text("utf-8")))
+    schemas = json_object(json_object(openapi["components"])["schemas"])
+    validate_reviewed_schemas(schemas, reviewed.get("reviewed_schemas_sha256"))
+    generate_error_catalog(directory)
+    generate_ui_identifiers(directory)
+
+    generate_build_targets(directory)
+
+    generate_localizations(directory)
+    run(["dart", "format", "lib/generated"], directory)
+
+
+def generate_selection(directory: Path, only: str | None) -> None:
+    if only is None:
+        generate(directory)
+        return
+    if only == "ui-identifiers":
+        generate_ui_identifiers(directory)
+        emit(directory, "analysis_options.yaml", "formatter:\n  page_width: 100\n")
+    elif only == "build-targets":
+        generate_build_targets(directory)
+        emit(directory, "analysis_options.yaml", "formatter:\n  page_width: 100\n")
+    elif only == "client-resources":
+        generate_error_catalog(directory)
+        generate_localizations(directory)
+    else:
+        raise ValueError("Unsupported independent generation selection")
     run(["dart", "format", "lib/generated"], directory)
 
 
@@ -318,6 +359,7 @@ class Arguments(argparse.Namespace):
     write: bool = False
     check: bool = False
     output_dir: Path | None = None
+    only: str | None = None
 
 
 def main() -> int:
@@ -328,13 +370,27 @@ def main() -> int:
     parser.add_argument(
         "--output-dir", type=Path, help="Export the generated outputs to this directory"
     )
+    parser.add_argument(
+        "--only",
+        choices=("ui-identifiers", "client-resources", "build-targets"),
+        help="Generate independent UI identifiers or error/localization resources; API schema review gate remains unchanged",
+    )
     arguments = parser.parse_args(namespace=Arguments())
     with tempfile.TemporaryDirectory(prefix="haruka-frontend-codegen-") as temporary:
         staging = Path(temporary)
-        generate(staging)
+        generate_selection(staging, arguments.only)
         target = arguments.output_dir.resolve() if arguments.output_dir else ROOT
         failures: list[str] = []
-        for relative in OUTPUTS:
+        selected_outputs = (
+            OUTPUTS
+            if arguments.only is None
+            else (OUTPUTS[0],)
+            if arguments.only == "ui-identifiers"
+            else (OUTPUTS[1], OUTPUTS[4])
+            if arguments.only == "build-targets"
+            else (OUTPUTS[2], OUTPUTS[3], OUTPUTS[5])
+        )
+        for relative in selected_outputs:
             expected = (staging / relative).read_text(encoding="utf-8")
             destination = target / relative
             if arguments.write:

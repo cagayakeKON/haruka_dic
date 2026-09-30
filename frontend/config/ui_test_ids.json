@@ -114,7 +114,16 @@
     "referenceWordDialog": "client.reference.word.dialog",
     "activationResendPage": "client.auth.activation_resend.page",
     "activationResendEmail": "client.auth.activation_resend.email",
-    "activationResendSubmit": "client.auth.activation_resend.submit"
+    "activationResendSubmit": "client.auth.activation_resend.submit",
+    "modelCredentialAdd": "client.model.credential.add",
+    "modelCredentialKey": "client.model.credential.key",
+    "modelCredentialSave": "client.model.credential.save",
+    "modelBindingsSave": "client.model.bindings.save",
+    "modelTestOpen": "client.model.test.open",
+    "modelTestConfirm": "client.model.test.confirm",
+    "modelTestCapability": "client.model.test.capability",
+    "modelUsageModelFilter": "client.model.usage.model_filter",
+    "modelUsageApply": "client.model.usage.apply"
   },
   "templates": {
     "referenceMaterialRow": "client.reference.materials.row.{materialId}",

@@ -67,6 +67,8 @@ def documents() -> dict[str, object]:
                 "request_id",
                 "ingest_request_id",
                 "operation_id",
+                "job_id",
+                "ai_run_id",
                 "client_request_id",
                 "user_id",
                 "audience",

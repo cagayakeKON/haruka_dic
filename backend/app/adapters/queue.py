@@ -137,3 +137,15 @@ class KafkaConsumer:
     async def aclose(self) -> None:
         # No automatic acknowledgment; business completion controls the commit boundary.
         await self._lane.close(self._client.close)
+
+    async def acknowledge(self, record: KafkaRecord) -> None:
+        """Commit only after the matching persistent consumer transaction."""
+        from confluent_kafka import TopicPartition
+
+        await self._lane.call(
+            partial(
+                self._client.commit,
+                offsets=[TopicPartition(record.topic, record.partition, record.offset + 1)],
+                asynchronous=False,
+            )
+        )

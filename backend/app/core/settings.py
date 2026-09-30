@@ -14,6 +14,9 @@ from app.domain.email_address import normalize_email
 
 
 class SettingsInput(TypedDict, total=False):
+    credential_keyring: dict[str, SecretStr]
+    credential_encryption_key_version: str
+    model_execution_mode: Literal["disabled", "fake", "live"]
     app_env: Literal["dev", "test", "staging", "production"]
     instance_id: str
     public_base_url: str
@@ -110,6 +113,9 @@ class Settings(BaseSettings):
     s3_secret_key: SecretStr | None = None
     s3_bucket: str | None = None
     log_file: Path | None = None
+    credential_keyring: dict[str, SecretStr] = Field(default_factory=dict, repr=False)
+    credential_encryption_key_version: str = "v1"
+    model_execution_mode: Literal["disabled", "fake", "live"] = "disabled"
 
     def __init__(self, **values: Unpack[SettingsInput]) -> None:
         # Settings accepts absent constructor fields because environment/file
@@ -118,6 +124,20 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
+        if self.model_execution_mode == "fake" and self.app_env not in {"dev", "test"}:
+            raise ValueError("fake provider assembly is limited to isolated environments")
+        if self.credential_keyring:
+            if self.credential_encryption_key_version not in self.credential_keyring:
+                raise ValueError("active credential encryption key is absent")
+            for version, secret in self.credential_keyring.items():
+                if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", version):
+                    raise ValueError("credential encryption version is invalid")
+                try:
+                    raw = b64decode(secret.get_secret_value(), altchars=b"-_", validate=True)
+                except (ValueError, binascii.Error):
+                    raise ValueError("credential encryption encoding is invalid") from None
+                if len(raw) != 32:
+                    raise ValueError("credential encryption key length is invalid")
         if self.app_env not in {"dev", "test"}:
             raise ValueError("runtime dependencies are not yet available for this environment")
         prefix = "haruka-local-" if self.app_env == "dev" else "haruka-test-"

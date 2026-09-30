@@ -92,6 +92,12 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('zh')];
 
+  /// No description provided for @apiReauthenticationRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'为保护个人凭据，请重新登录后再操作。'**
+  String get apiReauthenticationRequired;
+
   /// No description provided for @authManualRecoveryCode.
   ///
   /// In zh, this message translates to:

@@ -1,4 +1,87 @@
 {
+  "admin_model_catalog_patch": {
+    "data": {
+      "default_provider": "openrouter",
+      "limits": {
+        "enabled": true,
+        "instance_concurrent_jobs": 4,
+        "max_concurrent_jobs": 1,
+        "max_credentials": 10,
+        "max_model_calls": 1,
+        "max_output_tokens": 128,
+        "max_test_image_bytes": 4096,
+        "max_tts_characters": 32,
+        "revision": 1,
+        "timeout_seconds": 60,
+        "tts_timeout_seconds": 90,
+        "websocket_max_jobs": 100
+      },
+      "models": [
+        {
+          "adapter_id": null,
+          "capabilities": [
+            "text",
+            "vision"
+          ],
+          "display_name": "Gemini Flash",
+          "enabled": false,
+          "id": "12345678-1234-5678-1234-567812345678",
+          "model_id": "google/gemini-2.5-flash",
+          "provider": "openrouter",
+          "revision": 2,
+          "verified": false
+        }
+      ],
+      "revision": 2,
+      "voices": []
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "admin_model_jobs_blocked": {
+    "data": {
+      "items": [
+        {
+          "can_cancel": false,
+          "can_retry": true,
+          "created_at": "2026-09-30T00:00:00Z",
+          "error_code": "STATE_CONFLICT",
+          "generation": 1,
+          "id": "12345678-1234-5678-1234-567812345678",
+          "operation_kind": "credential_test",
+          "revision": 3,
+          "sequence": 3,
+          "state": "blocked",
+          "updated_at": "2026-09-30T00:00:00Z"
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "admin_model_retry_request": {
+    "expected_revision": 3
+  },
+  "admin_model_retry_response": {
+    "data": {
+      "can_cancel": true,
+      "can_retry": false,
+      "created_at": "2026-09-30T00:00:00Z",
+      "error_code": "STATE_CONFLICT",
+      "generation": 1,
+      "id": "12345678-1234-5678-1234-567812345678",
+      "operation_kind": "credential_test",
+      "revision": 4,
+      "sequence": 4,
+      "state": "queued",
+      "updated_at": "2026-09-30T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
   "auth_account_legacy_unverified": {
     "data": {
       "created_at": "2026-09-26T01:02:03Z",
@@ -540,6 +623,339 @@
       ],
       "target_language": "ja",
       "type": "word"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_capabilities": {
+    "data": {
+      "default_provider": "openrouter",
+      "limits": {
+        "enabled": true,
+        "instance_concurrent_jobs": 4,
+        "max_concurrent_jobs": 1,
+        "max_credentials": 10,
+        "max_model_calls": 1,
+        "max_output_tokens": 128,
+        "max_test_image_bytes": 4096,
+        "max_tts_characters": 32,
+        "revision": 1,
+        "timeout_seconds": 60,
+        "tts_timeout_seconds": 90,
+        "websocket_max_jobs": 100
+      },
+      "models": [
+        {
+          "adapter_id": "openrouter-gemini-speech-v1",
+          "capabilities": [
+            "tts"
+          ],
+          "display_name": "Gemini speech",
+          "enabled": true,
+          "id": "018f1234-0000-7000-8000-000000000301",
+          "model_id": "google/gemini-3.8-flash-lite-tts",
+          "provider": "openrouter",
+          "revision": 1,
+          "verified": false
+        }
+      ],
+      "revision": 1,
+      "voices": [
+        {
+          "display_name": "Kore",
+          "language_tags": [
+            "ja",
+            "en"
+          ],
+          "model_id": "google/gemini-3.8-flash-lite-tts",
+          "output_formats": [
+            "mp3"
+          ],
+          "provider": "openrouter",
+          "verified": false,
+          "voice_id": "Kore"
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_credential": {
+    "data": {
+      "created_at": "2026-09-30T00:00:00Z",
+      "credential_version": 1,
+      "id": "018f1234-0000-7000-8000-000000000301",
+      "label": "Example",
+      "masked_key": "****demo",
+      "provider": "openrouter",
+      "revision": 1,
+      "status": "active",
+      "updated_at": "2026-09-30T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_job": {
+    "data": {
+      "can_cancel": false,
+      "can_retry": true,
+      "created_at": "2026-09-30T00:00:00Z",
+      "credential_id": "018f1234-0000-7000-8000-000000000301",
+      "error_code": "EXTERNAL_RESULT_UNKNOWN",
+      "generation": 1,
+      "id": "018f1234-0000-7000-8000-000000000302",
+      "operation_kind": "credential_test",
+      "progress_percent": null,
+      "requires_new_attempt_confirmation": true,
+      "revision": 3,
+      "run_id": "018f1234-0000-7000-8000-000000000303",
+      "sequence": 3,
+      "stage": null,
+      "state": "blocked",
+      "updated_at": "2026-09-30T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_job_event": {
+    "event_id": "018f1234-0000-7000-8000-000000000302",
+    "generation": 1,
+    "job_id": "018f1234-0000-7000-8000-000000000302",
+    "occurred_at": "2026-09-30T00:00:00Z",
+    "payload": {
+      "can_cancel": false,
+      "can_retry": true,
+      "created_at": "2026-09-30T00:00:00Z",
+      "credential_id": "018f1234-0000-7000-8000-000000000301",
+      "error_code": "EXTERNAL_RESULT_UNKNOWN",
+      "generation": 1,
+      "id": "018f1234-0000-7000-8000-000000000302",
+      "operation_kind": "credential_test",
+      "progress_percent": null,
+      "requires_new_attempt_confirmation": true,
+      "revision": 3,
+      "run_id": "018f1234-0000-7000-8000-000000000303",
+      "sequence": 3,
+      "stage": null,
+      "state": "blocked",
+      "updated_at": "2026-09-30T00:00:00Z"
+    },
+    "schema_version": 1,
+    "sequence": 3,
+    "type": "failed"
+  },
+  "model_settings": {
+    "data": {
+      "bindings": {
+        "text": null,
+        "tts": null,
+        "vision": null
+      },
+      "default_provider": "openrouter",
+      "revision": 2
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_test_result": {
+    "data": {
+      "capability": "text",
+      "credential_id": "018f1234-0000-7000-8000-000000000301",
+      "credential_version": 1,
+      "error_code": "EXTERNAL_RESULT_UNKNOWN",
+      "job_id": "018f1234-0000-7000-8000-000000000302",
+      "model_id": "google/gemini-2.5-flash",
+      "model_revision": null,
+      "provider": "openrouter",
+      "run_id": "018f1234-0000-7000-8000-000000000303",
+      "state": "unknown_outcome",
+      "tested_at": "2026-09-30T00:00:00Z",
+      "usage": {
+        "aggregation_revision": 1,
+        "as_of": "2026-09-30T00:00:00Z",
+        "groups": [
+          {
+            "attempt_count": 1,
+            "capability": "text",
+            "failed_count": 0,
+            "metrics": {
+              "input_tokens": {
+                "completeness": "unavailable",
+                "known_attempt_count": 0,
+                "known_sum": null,
+                "unknown_attempt_count": 1
+              }
+            },
+            "model_id": "google/gemini-2.5-flash",
+            "operation_kind": "credential_test",
+            "provider": "openrouter",
+            "simulated": false,
+            "started_count": 0,
+            "succeeded_count": 0,
+            "unknown_count": 1
+          }
+        ]
+      }
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_usage_all_unknown": {
+    "data": {
+      "aggregation_revision": 1,
+      "as_of": "2026-09-30T00:00:00Z",
+      "groups": [
+        {
+          "attempt_count": 2,
+          "capability": "text",
+          "failed_count": 2,
+          "metrics": {
+            "input_tokens": {
+              "completeness": "unavailable",
+              "known_attempt_count": 0,
+              "known_sum": null,
+              "unknown_attempt_count": 2
+            }
+          },
+          "model_id": "google/gemini-2.5-flash",
+          "operation_kind": "credential_test",
+          "provider": "openrouter",
+          "simulated": false,
+          "started_count": 0,
+          "succeeded_count": 0,
+          "unknown_count": 0
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_usage_mixed_100": {
+    "data": {
+      "aggregation_revision": 1,
+      "as_of": "2026-09-30T00:00:00Z",
+      "groups": [
+        {
+          "attempt_count": 2,
+          "capability": "text",
+          "failed_count": 1,
+          "metrics": {
+            "input_tokens": {
+              "completeness": "partial",
+              "known_attempt_count": 1,
+              "known_sum": 100,
+              "unknown_attempt_count": 1
+            }
+          },
+          "model_id": "google/gemini-2.5-flash",
+          "operation_kind": "credential_test",
+          "provider": "openrouter",
+          "simulated": false,
+          "started_count": 0,
+          "succeeded_count": 1,
+          "unknown_count": 0
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_usage_mixed_zero": {
+    "data": {
+      "aggregation_revision": 1,
+      "as_of": "2026-09-30T00:00:00Z",
+      "groups": [
+        {
+          "attempt_count": 2,
+          "capability": "text",
+          "failed_count": 1,
+          "metrics": {
+            "input_tokens": {
+              "completeness": "partial",
+              "known_attempt_count": 1,
+              "known_sum": 0,
+              "unknown_attempt_count": 1
+            }
+          },
+          "model_id": "google/gemini-2.5-flash",
+          "operation_kind": "credential_test",
+          "provider": "openrouter",
+          "simulated": false,
+          "started_count": 0,
+          "succeeded_count": 1,
+          "unknown_count": 0
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_usage_started": {
+    "data": {
+      "aggregation_revision": 1,
+      "as_of": "2026-09-30T00:00:00Z",
+      "groups": [
+        {
+          "attempt_count": 1,
+          "capability": "text",
+          "failed_count": 0,
+          "metrics": {
+            "input_tokens": {
+              "completeness": "unavailable",
+              "known_attempt_count": 0,
+              "known_sum": null,
+              "unknown_attempt_count": 1
+            }
+          },
+          "model_id": "google/gemini-2.5-flash",
+          "operation_kind": "credential_test",
+          "provider": "openrouter",
+          "simulated": false,
+          "started_count": 1,
+          "succeeded_count": 0,
+          "unknown_count": 0
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "model_usage_unknown": {
+    "data": {
+      "aggregation_revision": 1,
+      "as_of": "2026-09-30T00:00:00Z",
+      "groups": [
+        {
+          "attempt_count": 1,
+          "capability": "text",
+          "failed_count": 0,
+          "metrics": {
+            "input_tokens": {
+              "completeness": "unavailable",
+              "known_attempt_count": 0,
+              "known_sum": null,
+              "unknown_attempt_count": 1
+            }
+          },
+          "model_id": "google/gemini-2.5-flash",
+          "operation_kind": "credential_test",
+          "provider": "openrouter",
+          "simulated": false,
+          "started_count": 0,
+          "succeeded_count": 0,
+          "unknown_count": 1
+        }
+      ]
     },
     "meta": {
       "request_id": "018f1234-1234-7123-8123-123456789abc"

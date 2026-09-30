@@ -1,6 +1,13 @@
 """Published admin audit actions. The database check and writers share this list."""
 
 AUDIT_ACTIONS: tuple[str, ...] = (
+    "credential.created",
+    "credential.rotated",
+    "credential.deleted",
+    "model_catalog.updated",
+    "model_limits.updated",
+    "model_job.cancelled",
+    "model_job.retried",
     "account.registered",
     "admin.created",
     "auth.login.denied",

@@ -2,7 +2,7 @@
 
 import base64
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID
@@ -334,6 +334,8 @@ def compatibility_samples() -> dict[str, object]:
         },
         **_auth_samples(),
         **_settings_samples(),
+        **_model_samples(),
+        **_model_review_samples(),
     }
 
 
@@ -594,10 +596,20 @@ def _auth_samples() -> dict[str, object]:
         "auth_client_access_login_only": success(client_access),
         "auth_admin_access": success(admin_access),
         "auth_admin_access_custom_navigation": success(
-            admin_access.model_copy(update={"navigation": [NavigationRead(
-                key="users", route_key="users", title="账号治理",
-                icon_key="book", title_customized=True, icon_customized=True,
-            )]})
+            admin_access.model_copy(
+                update={
+                    "navigation": [
+                        NavigationRead(
+                            key="users",
+                            route_key="users",
+                            title="账号治理",
+                            icon_key="book",
+                            title_customized=True,
+                            icon_customized=True,
+                        )
+                    ]
+                }
+            )
         ),
         "auth_account_legacy_unverified": success(
             AccountRead(email="legacy@example.test", email_verified_at=None, created_at=at)
@@ -631,3 +643,253 @@ def _auth_samples() -> dict[str, object]:
             ExplanationResolveRead(results=[ResolvedCard(card=card)])
         ),
     }
+
+
+def _model_samples() -> dict[str, object]:
+    from uuid import UUID
+
+    from app.schemas.model_settings import (
+        CredentialRead,
+        JobEvent,
+        JobRead,
+        ModelBindings,
+        ModelCapabilities,
+        ModelEntry,
+        ModelLimits,
+        ModelSettingsRead,
+        ModelUsage,
+        TestResult,
+        UsageGroup,
+        UsageMetric,
+        VoiceEntry,
+    )
+
+    at = datetime(2026, 9, 30, 0, 0, tzinfo=UTC)
+    credential = UUID("018f1234-0000-7000-8000-000000000301")
+    job_id = UUID("018f1234-0000-7000-8000-000000000302")
+    run_id = UUID("018f1234-0000-7000-8000-000000000303")
+    meta = ResponseMeta(request_id=REQUEST_ID)
+
+    def wrapped(value: object) -> dict[str, object]:
+        return SuccessResponse(data=value, meta=meta).model_dump(mode="json")
+
+    usage = ModelUsage(
+        as_of=at,
+        aggregation_revision=1,
+        groups=[
+            UsageGroup(
+                simulated=False,
+                provider="openrouter",
+                model_id="google/gemini-2.5-flash",
+                capability="text",
+                operation_kind="credential_test",
+                attempt_count=1,
+                started_count=0,
+                succeeded_count=0,
+                failed_count=0,
+                unknown_count=1,
+                metrics={
+                    "input_tokens": UsageMetric(
+                        known_sum=None,
+                        known_attempt_count=0,
+                        unknown_attempt_count=1,
+                        completeness="unavailable",
+                    )
+                },
+            )
+        ],
+    )
+    job = JobRead(
+        id=job_id,
+        run_id=run_id,
+        credential_id=credential,
+        state="blocked",
+        revision=3,
+        generation=1,
+        sequence=3,
+        stage=None,
+        progress_percent=None,
+        error_code="EXTERNAL_RESULT_UNKNOWN",
+        can_cancel=False,
+        can_retry=True,
+        requires_new_attempt_confirmation=True,
+        created_at=at,
+        updated_at=at,
+    )
+    return {
+        "model_credential": wrapped(
+            CredentialRead(
+                id=credential,
+                provider="openrouter",
+                label="Example",
+                masked_key="****demo",
+                revision=1,
+                credential_version=1,
+                status="active",
+                created_at=at,
+                updated_at=at,
+            )
+        ),
+        "model_settings": wrapped(ModelSettingsRead(revision=2, bindings=ModelBindings())),
+        "model_capabilities": wrapped(
+            ModelCapabilities(
+                revision=1,
+                limits=ModelLimits(),
+                models=[
+                    ModelEntry(
+                        id=credential,
+                        provider="openrouter",
+                        model_id="google/gemini-3.8-flash-lite-tts",
+                        display_name="Gemini speech",
+                        capabilities=["tts"],
+                        enabled=True,
+                        verified=False,
+                        revision=1,
+                        adapter_id="openrouter-gemini-speech-v1",
+                    )
+                ],
+                voices=[
+                    VoiceEntry(
+                        model_id="google/gemini-3.8-flash-lite-tts",
+                        provider="openrouter",
+                        voice_id="Kore",
+                        language_tags=["ja", "en"],
+                        display_name="Kore",
+                        output_formats=["mp3"],
+                        verified=False,
+                    )
+                ],
+            )
+        ),
+        "model_job": wrapped(job),
+        "model_job_event": JobEvent(
+            event_id=job_id,
+            job_id=job_id,
+            generation=1,
+            sequence=3,
+            type="failed",
+            occurred_at=at,
+            payload=job,
+        ).model_dump(mode="json"),
+        "model_test_result": wrapped(
+            TestResult(
+                run_id=run_id,
+                job_id=job_id,
+                credential_id=credential,
+                credential_version=1,
+                provider="openrouter",
+                model_id="google/gemini-2.5-flash",
+                capability="text",
+                state="unknown_outcome",
+                tested_at=at,
+                error_code="EXTERNAL_RESULT_UNKNOWN",
+                usage=usage,
+            )
+        ),
+        "model_usage_unknown": wrapped(usage),
+    }
+
+
+def _model_review_samples() -> dict[str, object]:
+    from app.schemas.model_settings import (
+        AdminJobList,
+        AdminJobRead,
+        JobCancel,
+        ModelCapabilities,
+        ModelEntry,
+        ModelLimits,
+        ModelUsage,
+        UsageGroup,
+        UsageMetric,
+    )
+
+    at = datetime(2026, 9, 30, tzinfo=UTC)
+    identifier = UUID("12345678-1234-5678-1234-567812345678")
+
+    def wrapped(value: object) -> dict[str, object]:
+        return SuccessResponse(data=value, meta=ResponseMeta(request_id=REQUEST_ID)).model_dump(
+            mode="json"
+        )
+
+    blocked = AdminJobRead(
+        id=identifier,
+        operation_kind="credential_test",
+        state="blocked",
+        revision=3,
+        generation=1,
+        sequence=3,
+        error_code="STATE_CONFLICT",
+        can_cancel=False,
+        can_retry=True,
+        created_at=at,
+        updated_at=at,
+    )
+    queued = blocked.model_copy(
+        update={
+            "state": "queued",
+            "revision": 4,
+            "sequence": 4,
+            "can_cancel": True,
+            "can_retry": False,
+        }
+    )
+    result: dict[str, object] = {
+        "admin_model_catalog_patch": wrapped(
+            ModelCapabilities(
+                revision=2,
+                limits=ModelLimits(),
+                models=[
+                    ModelEntry(
+                        id=identifier,
+                        provider="openrouter",
+                        model_id="google/gemini-2.5-flash",
+                        display_name="Gemini Flash",
+                        capabilities=["text", "vision"],
+                        enabled=False,
+                        verified=False,
+                        revision=2,
+                    )
+                ],
+                voices=[],
+            )
+        ),
+        "admin_model_jobs_blocked": wrapped(AdminJobList(items=[blocked])),
+        "admin_model_retry_request": JobCancel(expected_revision=3).model_dump(mode="json"),
+        "admin_model_retry_response": wrapped(queued),
+    }
+    for key, known_sum, known_count, unknown_count, started in (
+        ("model_usage_mixed_100", 100, 1, 1, 0),
+        ("model_usage_mixed_zero", 0, 1, 1, 0),
+        ("model_usage_all_unknown", None, 0, 2, 0),
+        ("model_usage_started", None, 0, 1, 1),
+    ):
+        count = known_count + unknown_count
+        result[key] = wrapped(
+            ModelUsage(
+                as_of=at,
+                aggregation_revision=1,
+                groups=[
+                    UsageGroup(
+                        simulated=False,
+                        provider="openrouter",
+                        model_id="google/gemini-2.5-flash",
+                        capability="text",
+                        operation_kind="credential_test",
+                        attempt_count=count,
+                        started_count=started,
+                        succeeded_count=known_count,
+                        failed_count=unknown_count - started,
+                        unknown_count=0,
+                        metrics={
+                            "input_tokens": UsageMetric(
+                                known_sum=known_sum,
+                                known_attempt_count=known_count,
+                                unknown_attempt_count=unknown_count,
+                                completeness="partial" if known_count else "unavailable",
+                            )
+                        },
+                    )
+                ],
+            )
+        )
+    return result

@@ -67,20 +67,31 @@ def _validate_relations(metadata: MetaData, table_name: str) -> None:
         registered.add(column)
     implied: set[str] = set()
     for column in table.columns:
+        if table_name in {"ai_runs", "external_call_attempts"} and column.name == "model_id":
+            # Published supplier model code, not a database entity UUID.
+            continue
         marker = column.info.get("non_entity_uuid")
         if marker is not None:
             reviewed = (
-                table_name == "idempotency_records"
-                and column.name == "operation_id"
-                and marker == "operation_correlation"
-            ) or (
-                table_name == "admin_audit_events"
-                and (
-                    (
-                        column.name in {"operation_id", "request_id"}
-                        and marker == "operation_correlation"
+                (
+                    table_name == "jobs"
+                    and column.name in {"operation_id", "request_id"}
+                    and marker == "operation_correlation"
+                )
+                or (
+                    table_name == "idempotency_records"
+                    and column.name == "operation_id"
+                    and marker == "operation_correlation"
+                )
+                or (
+                    table_name == "admin_audit_events"
+                    and (
+                        (
+                            column.name in {"operation_id", "request_id"}
+                            and marker == "operation_correlation"
+                        )
+                        or (column.name == "target_id" and marker == "polymorphic_target")
                     )
-                    or (column.name == "target_id" and marker == "polymorphic_target")
                 )
             )
             if not reviewed or not isinstance(column.type, PgUUID):

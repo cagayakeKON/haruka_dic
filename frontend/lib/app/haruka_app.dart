@@ -29,6 +29,9 @@ import '../features/settings/domain/service_endpoint.dart';
 import '../features/settings/presentation/service_endpoint_form.dart';
 import '../features/settings/presentation/settings_chrome.dart';
 import '../features/settings/presentation/settings_pages.dart';
+import '../features/settings/data/model_configuration_repository.dart';
+import '../features/settings/domain/model_configuration_controller.dart';
+import '../features/settings/presentation/model_configuration_scope.dart';
 import '../generated/l10n/app_localizations.dart';
 import '../generated/ui_test_ids.dart';
 import '../shared/identified.dart';
@@ -66,6 +69,7 @@ class _HarukaAppState extends State<HarukaApp> {
   late final ApiClient _api;
   late final ProviderContainer _providers;
   late final AuthController _auth;
+  late final ModelConfigurationController _modelConfiguration;
   late final CacheCoordinator _cache;
   late final CacheSessionBinding _cacheBinding;
   late final PreviewFixtureStore _settingsDraft;
@@ -104,6 +108,11 @@ class _HarukaAppState extends State<HarukaApp> {
       ],
     );
     _auth = _providers.read(authControllerProvider);
+    _modelConfiguration = ModelConfigurationController(
+      repository: HttpModelConfigurationRepository(_auth),
+      auth: _auth,
+      allows: (permission) => _auth.access?.allows(permission) ?? false,
+    );
     _cacheBinding = CacheSessionBinding(
       _auth,
       widget.config,
@@ -206,6 +215,7 @@ class _HarukaAppState extends State<HarukaApp> {
       WidgetsBinding.instance.platformDispatcher.onError = _previousPlatformError;
     }
     _serviceEndpoints.dispose();
+    _modelConfiguration.dispose();
     _auth.removeListener(_onAuthChanged);
     _settingsRepository.removeListener(_onSettingsChanged);
     _settingsRepository.dispose();
@@ -366,80 +376,83 @@ class _HarukaAppState extends State<HarukaApp> {
         theme: appTheme(),
         darkTheme: HarukaTheme.dark(),
         themeMode: themeMode,
-        builder: (context, child) => ServiceEndpointScope(
-          controller: _serviceEndpoints,
-          child: LanguageCapabilitiesScope(
-            value: _languages,
-            failed: _languageReadFailed,
-            retry: _requestLanguagesForScope,
-            child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                disableAnimations: MediaQuery.disableAnimationsOf(context) || reduceMotion,
-              ),
-              child: ShellPresentationScope(
-                displayName: (profile?.fields['display_name'] as String?)?.trim().isNotEmpty == true
-                    ? (profile!.fields['display_name'] as String).trim()
-                    : AppLocalizations.of(context).mockSettingMyTitle,
-                activeLanguage: studyProfile?.fields['active_target_language'] as String? ?? '',
-                reducedMotion: reduceMotion,
-                canReadMaterials: _auth.access?.allows('client.material.list') ?? false,
-                canReadCollections: _auth.access?.allows('client.collection.read') ?? false,
-                navigationRoutes: _auth.access == null
-                    ? null
-                    : {for (final item in _auth.access!.navigation) item.routeKey},
-                navigationItems: _auth.access?.navigation,
-                child: AnimatedBuilder(
-                  animation: _cacheBinding.foregroundRevalidating,
-                  builder: (context, _) {
-                    final revalidating = _cacheBinding.foregroundRevalidating.value;
-                    return AnnotatedRegion<SystemUiOverlayStyle>(
-                      value: HarukaTheme.systemUiOverlayStyle(context),
-                      child: switch (_cache.terminalReason) {
-                        'cache_update_required' || 'cache_writer_unavailable' => CacheBlockedScreen(
-                          reason: _cache.terminalReason!,
-                        ),
-                        _ => Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Offstage(
-                                offstage: revalidating,
-                                child: ExcludeFocus(
-                                  excluding: revalidating,
-                                  child: IgnorePointer(
-                                    ignoring: revalidating,
-                                    child: _auth.isAuthenticated && !_auth.admin
-                                        ? ReferenceFeatureScope(
-                                            controller: _referenceController!,
-                                            // The persistent shell is outside the router Navigator;
-                                            // its tooltips need their own overlay ancestor.
-                                            child: Overlay.wrap(
-                                              child: PreviewPersistentShell(
-                                                location: _activeLocation,
-                                                onNavigate: _router.go,
-                                                onBack: () => _router.canPop()
-                                                    ? _router.pop()
-                                                    : _router.go(AppRoutes.materials),
-                                                onOpenNotifications: () =>
-                                                    _router.go(AppRoutes.notifications),
-                                                actions: _shellActions,
-                                                child: child,
+        builder: (context, child) => ModelConfigurationScope(
+          controller: _modelConfiguration,
+          child: ServiceEndpointScope(
+            controller: _serviceEndpoints,
+            child: LanguageCapabilitiesScope(
+              value: _languages,
+              failed: _languageReadFailed,
+              retry: _requestLanguagesForScope,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  disableAnimations: MediaQuery.disableAnimationsOf(context) || reduceMotion,
+                ),
+                child: ShellPresentationScope(
+                  displayName:
+                      (profile?.fields['display_name'] as String?)?.trim().isNotEmpty == true
+                      ? (profile!.fields['display_name'] as String).trim()
+                      : AppLocalizations.of(context).mockSettingMyTitle,
+                  activeLanguage: studyProfile?.fields['active_target_language'] as String? ?? '',
+                  reducedMotion: reduceMotion,
+                  canReadMaterials: _auth.access?.allows('client.material.list') ?? false,
+                  canReadCollections: _auth.access?.allows('client.collection.read') ?? false,
+                  navigationRoutes: _auth.access == null
+                      ? null
+                      : {for (final item in _auth.access!.navigation) item.routeKey},
+                  navigationItems: _auth.access?.navigation,
+                  child: AnimatedBuilder(
+                    animation: _cacheBinding.foregroundRevalidating,
+                    builder: (context, _) {
+                      final revalidating = _cacheBinding.foregroundRevalidating.value;
+                      return AnnotatedRegion<SystemUiOverlayStyle>(
+                        value: HarukaTheme.systemUiOverlayStyle(context),
+                        child: switch (_cache.terminalReason) {
+                          'cache_update_required' || 'cache_writer_unavailable' =>
+                            CacheBlockedScreen(reason: _cache.terminalReason!),
+                          _ => Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Offstage(
+                                  offstage: revalidating,
+                                  child: ExcludeFocus(
+                                    excluding: revalidating,
+                                    child: IgnorePointer(
+                                      ignoring: revalidating,
+                                      child: _auth.isAuthenticated && !_auth.admin
+                                          ? ReferenceFeatureScope(
+                                              controller: _referenceController!,
+                                              // The persistent shell is outside the router Navigator;
+                                              // its tooltips need their own overlay ancestor.
+                                              child: Overlay.wrap(
+                                                child: PreviewPersistentShell(
+                                                  location: _activeLocation,
+                                                  onNavigate: _router.go,
+                                                  onBack: () => _router.canPop()
+                                                      ? _router.pop()
+                                                      : _router.go(AppRoutes.materials),
+                                                  onOpenNotifications: () =>
+                                                      _router.go(AppRoutes.notifications),
+                                                  actions: _shellActions,
+                                                  child: child,
+                                                ),
                                               ),
-                                            ),
-                                          )
-                                        : child ?? const SizedBox.shrink(),
+                                            )
+                                          : child ?? const SizedBox.shrink(),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            if (revalidating)
-                              const Positioned.fill(
-                                child: CacheBlockedScreen(reason: 'revalidating'),
-                              ),
-                          ],
-                        ),
-                      },
-                    );
-                  },
+                              if (revalidating)
+                                const Positioned.fill(
+                                  child: CacheBlockedScreen(reason: 'revalidating'),
+                                ),
+                            ],
+                          ),
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

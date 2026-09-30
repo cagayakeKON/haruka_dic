@@ -13,6 +13,7 @@ class ErrorCode(StrEnum):
     ACCESS_EXPIRED = "ACCESS_EXPIRED"
     SESSION_REVOKED = "SESSION_REVOKED"
     SESSION_INVALID = "SESSION_INVALID"
+    REAUTHENTICATION_REQUIRED = "REAUTHENTICATION_REQUIRED"
     AUTH_SCOPE_REQUIRED = "AUTH_SCOPE_REQUIRED"
     AUTH_SCOPE_CHANGED = "AUTH_SCOPE_CHANGED"
     PERMISSION_DENIED = "PERMISSION_DENIED"
@@ -52,6 +53,7 @@ ERRORS = MappingProxyType(
         ErrorCode.ACCESS_EXPIRED: ErrorDefinition(401, "登录凭据已过期"),
         ErrorCode.SESSION_REVOKED: ErrorDefinition(401, "登录已失效"),
         ErrorCode.SESSION_INVALID: ErrorDefinition(401, "登录已失效"),
+        ErrorCode.REAUTHENTICATION_REQUIRED: ErrorDefinition(403, "请重新登录以确认敏感操作"),
         ErrorCode.AUTH_SCOPE_REQUIRED: ErrorDefinition(409, "请更新应用后重新登录"),
         ErrorCode.AUTH_SCOPE_CHANGED: ErrorDefinition(409, "登录身份已变化，请重新确认"),
         ErrorCode.PERMISSION_DENIED: ErrorDefinition(403, "没有操作权限"),

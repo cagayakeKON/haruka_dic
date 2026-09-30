@@ -5,7 +5,7 @@
   "migration_revision": "0007_authorization_governance",
   "schema_version": 1,
   "source": "backend/app/models",
-  "source_sha256": "e4d5b6c82f8761549d3806499a4ea44374b4435ae9e282e3c661c43e8e1bb0bb",
+  "source_sha256": "bc58043af10956dc4c7bcde7e33a71226aa8b2d30742adf7f38ab3d05d1ef263",
   "tables": [
     {
       "columns": [
@@ -244,7 +244,7 @@
       "comment": "受控维护与身份安全追加审计，不包含密码、邮箱或私有材料",
       "constraints": [
         {
-          "definition": "action IN ('account.registered', 'admin.created', 'auth.login.denied', 'auth_policy.updated', 'authorization.denied', 'email.verified', 'grant_boundary.updated', 'menu.updated', 'password.changed', 'password.recovered', 'recovery.accepted', 'recovery.challenge_issued', 'recovery.completed', 'recovery.rejected', 'recovery.requested', 'recovery.verified', 'refresh.replayed', 'role.created', 'role.deleted', 'role.inheritance_changed', 'role.permission_assigned', 'role.updated', 'seed.applied', 'session.created', 'session.revoked', 'user.approved', 'user.created', 'user.disabled', 'user.enabled', 'user.rejected', 'user.role_assigned', 'user.role_removed', 'user.updated')",
+          "definition": "action IN ('credential.created', 'credential.rotated', 'credential.deleted', 'model_catalog.updated', 'model_limits.updated', 'model_job.cancelled', 'model_job.retried', 'account.registered', 'admin.created', 'auth.login.denied', 'auth_policy.updated', 'authorization.denied', 'email.verified', 'grant_boundary.updated', 'menu.updated', 'password.changed', 'password.recovered', 'recovery.accepted', 'recovery.challenge_issued', 'recovery.completed', 'recovery.rejected', 'recovery.requested', 'recovery.verified', 'refresh.replayed', 'role.created', 'role.deleted', 'role.inheritance_changed', 'role.permission_assigned', 'role.updated', 'seed.applied', 'session.created', 'session.revoked', 'user.approved', 'user.created', 'user.disabled', 'user.enabled', 'user.rejected', 'user.role_assigned', 'user.role_removed', 'user.updated')",
           "kind": "check",
           "name": "ck_admin_audit_events_action"
         },
@@ -372,6 +372,276 @@
         "scope_kind": "system_operation"
       },
       "name": "admin_audit_events"
+    },
+    {
+      "columns": [
+        {
+          "comment": "本人",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job scope"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "任务",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked job"
+          },
+          "name": "job_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "凭据身份",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked credential"
+          },
+          "name": "credential_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "秘密代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked credential"
+          },
+          "name": "credential_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "供应商",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "frozen config"
+          },
+          "name": "provider",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "精确模型",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "frozen config"
+          },
+          "name": "model_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(256)"
+        },
+        {
+          "comment": "已观测修订未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider response"
+          },
+          "name": "model_revision",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(128)"
+        },
+        {
+          "comment": "单能力",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "frozen config"
+          },
+          "name": "capability",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(12)"
+        },
+        {
+          "comment": "运行状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "state",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "运行代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job scope"
+          },
+          "name": "generation",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "冻结模型及调用上限",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job transaction"
+          },
+          "name": "generation_config",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "测试时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "finished_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "安全错误",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "error_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(96)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人模型测试运行安全事实",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_ai_runs"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "owner_user_id",
+            "credential_id",
+            "credential_version",
+            "model_id",
+            "capability",
+            "finished_at"
+          ],
+          "metadata": {
+            "purpose": "bounded owner/state/recovery lookup"
+          },
+          "name": "ix_ai_runs_owner_credential_test",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "job_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "jobs.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "credential_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_provider_credentials.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": "owner_user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "ai_runs"
     },
     {
       "columns": [
@@ -1161,6 +1431,495 @@
     {
       "columns": [
         {
+          "comment": "本人",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job scope"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "任务",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked job"
+          },
+          "name": "job_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "运行",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked run"
+          },
+          "name": "ai_run_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "凭据",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked credential"
+          },
+          "name": "credential_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "实际秘密代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked credential"
+          },
+          "name": "credential_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "供应商",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "frozen config"
+          },
+          "name": "provider",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "精确模型",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "frozen config"
+          },
+          "name": "model_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(256)"
+        },
+        {
+          "comment": "能力",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "frozen config"
+          },
+          "name": "capability",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(12)"
+        },
+        {
+          "comment": "动作",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "frozen config"
+          },
+          "name": "operation_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "真实调用序号",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "attempt_no",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "外部执行事实",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "用量完整性",
+          "default": "'unavailable'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider response"
+          },
+          "name": "usage_status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "白名单数字及未知NULL",
+          "default": "'{}'::jsonb",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider response"
+          },
+          "name": "usage",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "用量口径版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "adapter"
+          },
+          "name": "provider_usage_schema",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "受控模拟事实",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "runtime assembly"
+          },
+          "name": "simulated",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "补全版本",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "aggregation_revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "调用前落盘",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "started_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "外部结束",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "finished_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "受控错误",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "adapter"
+          },
+          "name": "error_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(96)"
+        },
+        {
+          "comment": "输入Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "input_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "输出Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "output_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "供应商总Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "total_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "缓存读取Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "cache_read_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "缓存写入Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "cache_write_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "推理Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "reasoning_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "输入音频Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "input_audio_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "输出音频Token；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "output_audio_tokens",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "输入图片数；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "input_images",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "输入字符数；未知NULL",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "provider usage"
+          },
+          "name": "input_characters",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "实际attempt与用量唯一权威事实",
+      "constraints": [
+        {
+          "definition": "status IN ('started','succeeded','failed','unknown')",
+          "kind": "check",
+          "name": "ck_external_call_attempts_status"
+        },
+        {
+          "definition": "usage_status IN ('complete','partial','unavailable')",
+          "kind": "check",
+          "name": "ck_external_call_attempts_usage_status"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_external_call_attempts"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "ai_run_id",
+            "attempt_no"
+          ],
+          "kind": "unique",
+          "name": "uq_external_call_attempts_owner_user_id_ai_run_id_attempt_no"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "owner_user_id",
+            "started_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded owner/state/recovery lookup"
+          },
+          "name": "ix_external_call_attempts_owner_started",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "job_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "jobs.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "ai_run_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "ai_runs.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "credential_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_provider_credentials.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": "owner_user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "external_call_attempts"
+    },
+    {
+      "columns": [
+        {
           "comment": "当前账号归属",
           "default": null,
           "metadata": {
@@ -1836,6 +2595,759 @@
         "scope_kind": "user_owned"
       },
       "name": "idempotency_records"
+    },
+    {
+      "columns": [
+        {
+          "comment": "固定消费者",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "consumer_name",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(96)"
+        },
+        {
+          "comment": "发布事件",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "outbox"
+          },
+          "name": "event_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "事件安全摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "payload_digest",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "提交时点",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "processed_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "业务提交后消费去重事实",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_inbox_events"
+        },
+        {
+          "definition": [
+            "consumer_name",
+            "event_id"
+          ],
+          "kind": "unique",
+          "name": "uq_inbox_events_consumer_name_event_id"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "event_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "outbox_events.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": null,
+        "scope_kind": "system_operation"
+      },
+      "name": "inbox_events"
+    },
+    {
+      "columns": [
+        {
+          "comment": "本人",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job scope"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "父任务",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked job"
+          },
+          "name": "job_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "任务代次",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked job"
+          },
+          "name": "job_generation",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "注册阶段",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker registry"
+          },
+          "name": "stage_key",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(96)"
+        },
+        {
+          "comment": "阶段状态",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "state",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "领取栅栏",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "fence",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "安全恢复成品",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "result_refs",
+          "nullable": true,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "已提交安全阶段恢复点",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_job_stages"
+        },
+        {
+          "definition": [
+            "job_id",
+            "job_generation",
+            "stage_key"
+          ],
+          "kind": "unique",
+          "name": "uq_job_stages_job_id_job_generation_stage_key"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "job_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "jobs.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": "owner_user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "job_stages"
+    },
+    {
+      "columns": [
+        {
+          "comment": "本人归属",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authenticated scope"
+          },
+          "name": "owner_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "发起人",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authenticated scope"
+          },
+          "name": "actor_user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "受理会话",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authenticated scope"
+          },
+          "name": "session_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "受理传输",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authenticated scope"
+          },
+          "name": "transport",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "受理受众",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authenticated scope"
+          },
+          "name": "audience",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "本人凭据引用",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked credential"
+          },
+          "name": "credential_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "运行引用",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job transaction"
+          },
+          "name": "run_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "受控动作",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job transaction"
+          },
+          "name": "operation_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "操作关联",
+          "default": null,
+          "metadata": {
+            "non_entity_uuid": "operation_correlation",
+            "sensitivity": "internal",
+            "source": "request context"
+          },
+          "name": "operation_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "请求关联",
+          "default": null,
+          "metadata": {
+            "non_entity_uuid": "operation_correlation",
+            "sensitivity": "internal",
+            "source": "request context"
+          },
+          "name": "request_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "安全固定样本及配置版本引用",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job transaction"
+          },
+          "name": "input_refs",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "输入摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job transaction"
+          },
+          "name": "input_digest",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "本人意图摘要",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job transaction"
+          },
+          "name": "idempotency_digest",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "任务状态",
+          "default": "'queued'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job service"
+          },
+          "name": "state",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "任务CAS",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "执行代次",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job service"
+          },
+          "name": "generation",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "持久进度序号",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job service"
+          },
+          "name": "progress_seq",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "领取栅栏",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "job service"
+          },
+          "name": "fence",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "Worker标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "lease_owner",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(128)"
+        },
+        {
+          "comment": "租约期限",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "lease_expires_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "心跳",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "heartbeat_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "受控错误",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "error_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(96)"
+        },
+        {
+          "comment": "任务终态时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "worker"
+          },
+          "name": "finished_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人持久模型任务及租约栅栏",
+      "constraints": [
+        {
+          "definition": "state IN ('queued','running','retry_wait','blocked','succeeded','failed','cancel_requested','cancelled')",
+          "kind": "check",
+          "name": "ck_jobs_state"
+        },
+        {
+          "definition": "generation >= 1 AND revision >= 1 AND fence >= 0 AND progress_seq >= 0",
+          "kind": "check",
+          "name": "ck_jobs_versions"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_jobs"
+        },
+        {
+          "definition": [
+            "owner_user_id",
+            "idempotency_digest"
+          ],
+          "kind": "unique",
+          "name": "uq_jobs_owner_user_id_idempotency_digest"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "state",
+            "lease_expires_at"
+          ],
+          "metadata": {
+            "purpose": "bounded owner/state/recovery lookup"
+          },
+          "name": "ix_jobs_lease",
+          "unique": false
+        },
+        {
+          "columns": [
+            "owner_user_id",
+            "state",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded owner/state/recovery lookup"
+          },
+          "name": "ix_jobs_owner_state",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "owner_user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "actor_user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "session_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_auth_sessions.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "credential_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_provider_credentials.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "run_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "ai_runs.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": "owner_user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "jobs"
     },
     {
       "columns": [
@@ -3261,6 +4773,184 @@
     {
       "columns": [
         {
+          "comment": "发布供应商",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "provider",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "精确模型",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "model_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(256)"
+        },
+        {
+          "comment": "显示名",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "display_name",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "已支持能力",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "capabilities",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "新调用启停",
+          "default": "false",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "catalog service"
+          },
+          "name": "enabled",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "真实协议验证时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorized protocol verification"
+          },
+          "name": "verified_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "目录版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "catalog service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "精确TTS适配器",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "adapter_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(128)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "发布注册精确模型能力",
+      "constraints": [
+        {
+          "definition": "jsonb_typeof(capabilities)='array' AND capabilities <@ '[\"text\",\"vision\",\"tts\"]'::jsonb",
+          "kind": "check",
+          "name": "ck_model_catalog_entries_capabilities"
+        },
+        {
+          "definition": "revision >= 1",
+          "kind": "check",
+          "name": "ck_model_catalog_entries_revision"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_model_catalog_entries"
+        },
+        {
+          "definition": [
+            "provider",
+            "model_code"
+          ],
+          "kind": "unique",
+          "name": "uq_model_catalog_entries_provider_model_code"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [],
+        "module": "model_tasks",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "model_catalog_entries"
+    },
+    {
+      "columns": [
+        {
           "comment": "共同材料根",
           "default": null,
           "metadata": {
@@ -3750,7 +5440,7 @@
           "name": "event_type",
           "nullable": false,
           "primary_key": false,
-          "type": "VARCHAR(48)"
+          "type": "VARCHAR(128)"
         },
         {
           "comment": "同事务追加的审计标识",
@@ -3760,7 +5450,7 @@
             "source": "authorization transaction"
           },
           "name": "audit_event_id",
-          "nullable": false,
+          "nullable": true,
           "primary_key": false,
           "type": "UUID"
         },
@@ -3772,7 +5462,7 @@
             "source": "authorization transaction"
           },
           "name": "authorization_revision",
-          "nullable": false,
+          "nullable": true,
           "primary_key": false,
           "type": "BIGINT"
         },
@@ -3787,6 +5477,42 @@
           "nullable": false,
           "primary_key": false,
           "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "安全事件引用",
+          "default": "'{}'::jsonb",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "outbox transaction"
+          },
+          "name": "payload",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "投递fence",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "outbox service"
+          },
+          "name": "delivery_fence",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "投递租约",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "outbox service"
+          },
+          "name": "delivery_lease_until",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
         },
         {
           "comment": "服务端生成的稳定标识",
@@ -3828,12 +5554,12 @@
       "comment": "授权与身份变更的持久通知及受控投递状态",
       "constraints": [
         {
-          "definition": "authorization_revision >= 1",
+          "definition": "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR (event_type LIKE 'model.%' AND authorization_revision IS NULL AND audit_event_id IS NULL)",
           "kind": "check",
           "name": "ck_outbox_events_authorization_revision_positive"
         },
         {
-          "definition": "event_type IN ('authorization.changed', 'identity.security')",
+          "definition": "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated')",
           "kind": "check",
           "name": "ck_outbox_events_event_type"
         },
@@ -3868,7 +5594,7 @@
           {
             "column": "audit_event_id",
             "deletion": "retain historical reference",
-            "nullable": false,
+            "nullable": true,
             "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
             "scope_rule": "controlled maintenance metadata only; no private content access",
             "service": "app.services.initialization",
@@ -4802,6 +6528,155 @@
         "scope_kind": "system_catalog"
       },
       "name": "roles"
+    },
+    {
+      "columns": [
+        {
+          "comment": "user_default或instance",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "subject_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "注册限制维度",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "limit_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "0禁止新动作",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "limit service"
+          },
+          "name": "value_limit",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "窗口秒数",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "window_seconds",
+          "nullable": true,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "策略启停",
+          "default": "true",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "limit service"
+          },
+          "name": "enabled",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "策略CAS",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "limit service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "受控模型技术上限",
+      "constraints": [
+        {
+          "definition": "value_limit >= 0 AND revision >= 1",
+          "kind": "check",
+          "name": "ck_runtime_limit_policies_limits"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_runtime_limit_policies"
+        },
+        {
+          "definition": [
+            "subject_kind",
+            "limit_code"
+          ],
+          "kind": "unique",
+          "name": "uq_runtime_limit_policies_subject_kind_limit_code"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [],
+        "module": "model_tasks",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "runtime_limit_policies"
     },
     {
       "columns": [
@@ -7199,6 +9074,421 @@
     {
       "columns": [
         {
+          "comment": "本人",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked extension"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "能力",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "configuration service"
+          },
+          "name": "capability",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(12)"
+        },
+        {
+          "comment": "本人凭据",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked credential"
+          },
+          "name": "credential_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "发布模型",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked catalog"
+          },
+          "name": "model_catalog_entry_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "参数schema",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "parameters_schema_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "有界合成参数",
+          "default": "'{}'::jsonb",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "configuration service"
+          },
+          "name": "parameters",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人模型选择；settings_revision保护",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_model_bindings"
+        },
+        {
+          "definition": [
+            "user_id",
+            "capability"
+          ],
+          "kind": "unique",
+          "name": "uq_user_model_bindings_user_id_capability"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "user_id",
+            "credential_id"
+          ],
+          "metadata": {
+            "purpose": "bounded owner/state/recovery lookup"
+          },
+          "name": "ix_user_model_bindings_user_credential",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "credential_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "user_provider_credentials.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          },
+          {
+            "column": "model_catalog_entry_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "model_catalog_entries.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_model_bindings"
+    },
+    {
+      "columns": [
+        {
+          "comment": "认证绑定本人",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authenticated scope"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "供应商",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "allowed provider"
+          },
+          "name": "provider",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "本人标签",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "validated input"
+          },
+          "name": "display_label",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "独立部署密钥封装",
+          "default": null,
+          "metadata": {
+            "sensitivity": "secret",
+            "source": "credential crypto"
+          },
+          "name": "encrypted_secret",
+          "nullable": true,
+          "primary_key": false,
+          "type": "BYTEA"
+        },
+        {
+          "comment": "部署加密版本",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "keyring"
+          },
+          "name": "encryption_key_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "安全掩码",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "credential crypto"
+          },
+          "name": "masked_hint",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "供应商秘密代次",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "credential service"
+          },
+          "name": "credential_version",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "行CAS版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "credential service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "使用状态",
+          "default": "'active'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "credential service"
+          },
+          "name": "state",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
+          "comment": "撤销提交时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "credential service"
+          },
+          "name": "revoked_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人供应商凭据密文与独立代次",
+      "constraints": [
+        {
+          "definition": "provider IN ('openrouter','gemini')",
+          "kind": "check",
+          "name": "ck_user_provider_credentials_provider"
+        },
+        {
+          "definition": "state IN ('active','revoked') AND ((state='active' AND encrypted_secret IS NOT NULL AND revoked_at IS NULL) OR (state='revoked' AND encrypted_secret IS NULL AND revoked_at IS NOT NULL))",
+          "kind": "check",
+          "name": "ck_user_provider_credentials_state"
+        },
+        {
+          "definition": "revision >= 1 AND credential_version >= 1",
+          "kind": "check",
+          "name": "ck_user_provider_credentials_versions"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_provider_credentials"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "user_id",
+            "state",
+            "created_at",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "bounded owner/state/recovery lookup"
+          },
+          "name": "ix_user_provider_credentials_user_state",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_provider_credentials"
+    },
+    {
+      "columns": [
+        {
           "comment": "已锁定账号标识",
           "default": null,
           "metadata": {
@@ -7325,6 +9615,155 @@
         "scope_kind": "user_owned"
       },
       "name": "user_role_links"
+    },
+    {
+      "columns": [
+        {
+          "comment": "目标账号",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorized admin target"
+          },
+          "name": "user_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "覆盖CAS",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "limit service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "注册维度",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "limit service"
+          },
+          "name": "limit_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "个人限制；0拒新动作",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "limit service"
+          },
+          "name": "value_limit",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "窗口秒数",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "window_seconds",
+          "nullable": true,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "本人技术保护覆盖；管理元数据",
+      "constraints": [
+        {
+          "definition": "value_limit >= 0 AND revision >= 1",
+          "kind": "check",
+          "name": "ck_user_runtime_limits_limits"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_user_runtime_limits"
+        },
+        {
+          "definition": [
+            "user_id",
+            "limit_code"
+          ],
+          "kind": "unique",
+          "name": "uq_user_runtime_limits_user_id_limit_code"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "user_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "users.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": "user_id",
+        "scope_kind": "user_owned"
+      },
+      "name": "user_runtime_limits"
     },
     {
       "columns": [
@@ -7604,6 +10043,175 @@
         "scope_kind": "identity"
       },
       "name": "users"
+    },
+    {
+      "columns": [
+        {
+          "comment": "模型根",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "model_catalog_entry_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "声音标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "voice_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(128)"
+        },
+        {
+          "comment": "语言",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "language_tag",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(35)"
+        },
+        {
+          "comment": "声音显示名",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release registry"
+          },
+          "name": "display_name",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "允许新合成",
+          "default": "false",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "catalog service"
+          },
+          "name": "enabled",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "comment": "真实协议证据",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorized verification"
+          },
+          "name": "verified_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "目录版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "catalog service"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "发布准确声音目录",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_voice_catalog_entries"
+        },
+        {
+          "definition": [
+            "model_catalog_entry_id",
+            "voice_code",
+            "language_tag"
+          ],
+          "kind": "unique",
+          "name": "uq_voice_catalog_entries_model_catalog_entry_id_vo_c0f0ccd30027"
+        }
+      ],
+      "indexes": [],
+      "metadata": {
+        "allowed_entrances": [
+          "authorized provider configuration",
+          "fenced model worker"
+        ],
+        "deletion_policy": "retain task history; revoke and erase credential ciphertext",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "model_catalog_entry_id",
+            "deletion": "retain historical reference",
+            "nullable": false,
+            "parent_lock": "runtime policy → user → user extension → credential → job → stage/run → attempt",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.model_configuration; app.services.model_tasks",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "model_catalog_entries.id",
+            "tests": "backend/tests/integration/test_model_credentials.py"
+          }
+        ],
+        "module": "model_tasks",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "voice_catalog_entries"
     }
   ]
 }

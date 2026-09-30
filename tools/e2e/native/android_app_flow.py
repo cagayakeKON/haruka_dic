@@ -17,9 +17,11 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import TypeGuard
+from urllib.parse import urlsplit
 from uuid import UUID as ParsedUUID
 from uuid import uuid4
 
+from app.core.settings import load_settings
 from app.maintenance.settings import create_maintenance_engine
 from sqlalchemy import text
 
@@ -332,13 +334,28 @@ class Report:
         self.stream.close()
 
 
+def _mail_action_origin_matches(link: str, public_origin: str) -> bool:
+    if public_origin not in {"http://localhost:18443", "https://localhost:18443"}:
+        return False
+    parsed = urlsplit(link)
+    return (
+        f"{parsed.scheme}://{parsed.netloc}" == public_origin
+        and parsed.username is None
+        and parsed.password is None
+        and parsed.path.startswith("/")
+    )
+
+
 def _captured_link(run_id: str, recipient: str, purpose: str) -> str:
     spool = guarded_spool(run_root(run_id) / "mail")
     path = spool / f"android-action-{uuid4().hex}.secret"
     try:
         extract_link(spool, recipient, purpose, path, 90)
         link = path.read_text(encoding="utf-8").strip()
-        if not link.startswith("https://localhost:18443/"):
+        public_origin = str(
+            load_settings(run_root(run_id) / "runtime.env").public_base_url
+        ).rstrip("/")
+        if not _mail_action_origin_matches(link, public_origin):
             raise FlowError("mail_action_origin_invalid")
         return link
     finally:
@@ -665,9 +682,7 @@ def run_flow(
         _select_published_word(device, block_id, ids["referenceQuery"])
         report.step("ui_reference_selection_query_visible")
         device.tap(ids["referenceQuery"])
-        _visible_after_scroll(
-            device, ids["referenceWordDialog"], ids["referenceSave"]
-        )
+        _visible_after_scroll(device, ids["referenceWordDialog"], ids["referenceSave"])
         report.step("ui_reference_result_save_visible")
         if collection_drop_once:
             if not (run_root(run_id) / "fault-proxy.enabled").is_file():

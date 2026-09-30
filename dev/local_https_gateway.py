@@ -6,7 +6,9 @@ import argparse
 import contextlib
 import http.client
 import os
+import select
 import shutil
+import socket
 import ssl
 import subprocess
 import sys
@@ -33,9 +35,7 @@ def openssl_binary() -> str:
         ):
             if candidate.is_file():
                 return str(candidate)
-    raise ProxyError(
-        "OpenSSL is needed to create the run-specific loopback certificate"
-    )
+    raise ProxyError("OpenSSL is needed to create the run-specific loopback certificate")
 
 
 def create_certificate(run_root: Path) -> tuple[Path, Path]:
@@ -46,7 +46,7 @@ def create_certificate(run_root: Path) -> tuple[Path, Path]:
         if not certificate.is_file() or not private_key.is_file():
             raise ProxyError("incomplete run-specific TLS certificate")
         return certificate, private_key
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: S603 - fixed OpenSSL arguments and owned loopback certificate paths.
         [
             openssl_binary(),
             "req",
@@ -83,6 +83,8 @@ class LocalProxy(BaseHTTPRequestHandler):
     api_port = 18081
     web_port = 15173
     upstream_timeout = 20.0
+    forwarded_scheme = "https"
+    shutdown_file: Path | None = None
 
     def log_message(self, format: str, *args: object) -> None:
         # Request paths may contain opaque credentials; never log them.
@@ -107,6 +109,9 @@ class LocalProxy(BaseHTTPRequestHandler):
         self.forward()
 
     def forward(self) -> None:
+        if self.headers.get("Upgrade", "").lower() == "websocket":
+            self.forward_websocket()
+            return
         api = self.path.startswith("/api/v1/") or self.path == "/api/v1"
         port = self.api_port if api else self.web_port
         path = self.path
@@ -136,7 +141,7 @@ class LocalProxy(BaseHTTPRequestHandler):
             }
             headers["Host"] = f"127.0.0.1:{port}"
             headers["Accept-Encoding"] = "identity"
-            headers["X-Forwarded-Proto"] = "https"
+            headers["X-Forwarded-Proto"] = self.forwarded_scheme
             if body is not None:
                 headers["Content-Length"] = str(length)
             connection.request(self.command, path, body=body, headers=headers)
@@ -166,22 +171,68 @@ class LocalProxy(BaseHTTPRequestHandler):
             if connection is not None:
                 connection.close()
 
+    def forward_websocket(self) -> None:
+        """Relay only the owned jobs endpoint; API remains the auth authority."""
+        self.close_connection = True
+        if self.path != "/api/v1/jobs/events" or self.command != "GET":
+            self.send_error(400)
+            return
+        try:
+            with socket.create_connection(("127.0.0.1", self.api_port), timeout=5) as upstream:
+                headers = [
+                    f"{key}: {value}"
+                    for key, value in self.headers.items()
+                    if key.lower() not in {"host", "x-forwarded-proto"}
+                ]
+                headers.extend(
+                    (
+                        f"Host: 127.0.0.1:{self.api_port}",
+                        f"X-Forwarded-Proto: {self.forwarded_scheme}",
+                    )
+                )
+                handshake = f"GET {self.path} HTTP/1.1\r\n" + "\r\n".join(headers) + "\r\n\r\n"
+                upstream.sendall(handshake.encode("latin-1"))
+                response = bytearray()
+                while not response.endswith(b"\r\n\r\n") and len(response) < 65536:
+                    part = upstream.recv(1)
+                    if not part:
+                        return
+                    response.extend(part)
+                if not response.endswith(b"\r\n\r\n"):
+                    return
+                self.connection.sendall(response)
+                if not bytes(response).split(b"\r\n", 1)[0].startswith(b"HTTP/1.1 101 "):
+                    return
+                upstream.settimeout(5)
+                self.connection.settimeout(5)
+                # Bound a local test connection; the application reconnects with auth.
+                deadline = time.monotonic() + 300
+                while time.monotonic() < deadline:
+                    if self.shutdown_file is not None and self.shutdown_file.exists():
+                        return
+                    ready, _, _ = select.select((self.connection, upstream), (), (), 1)
+                    for source in ready:
+                        payload = source.recv(65536)
+                        if not payload:
+                            return
+                        destination = upstream if source is self.connection else self.connection
+                        destination.sendall(payload)
+        except (OSError, ValueError):
+            return
+
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Isolated same-origin current slice HTTPS gateway"
-    )
+    parser = argparse.ArgumentParser(description="Isolated same-origin current slice HTTPS gateway")
     parser.add_argument("--spool", type=Path, required=True)
     parser.add_argument("--port", type=int, default=18443)
     parser.add_argument("--api-port", type=int, default=18081)
     parser.add_argument("--web-port", type=int, default=15173)
     parser.add_argument("--shutdown-file", type=Path)
+    parser.add_argument("--http", action="store_true", help="loopback development HTTP transport")
     args = parser.parse_args()
     try:
         spool = guarded_spool(args.spool)
-        if any(
-            not 1 <= port <= 65535 for port in (args.port, args.api_port, args.web_port)
-        ):
+        if any(not 1 <= port <= 65535 for port in (args.port, args.api_port, args.web_port)):
             raise ProxyError("invalid gateway or upstream port")
         if args.shutdown_file is not None and (
             not args.shutdown_file.is_absolute()
@@ -189,13 +240,17 @@ def main() -> int:
             or args.shutdown_file.exists()
         ):
             raise ProxyError("shutdown marker must be a new file in this run directory")
-        certificate, private_key = create_certificate(spool.parent)
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.load_cert_chain(str(certificate), str(private_key))
         LocalProxy.api_port = args.api_port
         LocalProxy.web_port = args.web_port
+        LocalProxy.forwarded_scheme = "http" if args.http else "https"
+        LocalProxy.shutdown_file = args.shutdown_file
         server = ThreadingHTTPServer(("127.0.0.1", args.port), LocalProxy)
-        server.socket = context.wrap_socket(server.socket, server_side=True)
+        server.daemon_threads = True
+        if not args.http:
+            certificate, private_key = create_certificate(spool.parent)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.load_cert_chain(str(certificate), str(private_key))
+            server.socket = context.wrap_socket(server.socket, server_side=True)
         if args.shutdown_file is None:
             server.serve_forever()
         else:
@@ -210,7 +265,7 @@ def main() -> int:
                 thread.join(timeout=2)
         return 0
     except (MailboxError, ProxyError, OSError, ssl.SSLError) as error:
-        print(f"current slice HTTPS proxy: {error}", file=sys.stderr)
+        sys.stderr.write(f"current slice loopback proxy unavailable: {type(error).__name__}\n")
         return 1
 
 

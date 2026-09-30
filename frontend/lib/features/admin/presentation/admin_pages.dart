@@ -8,6 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:haruka/core/auth/auth_controller.dart';
 import 'package:haruka/core/api/request_ids.dart';
 import 'package:haruka/core/telemetry/telemetry.dart';
+import 'package:haruka/core/api/auth_models.dart';
+import 'package:haruka/features/admin/presentation/governance_overview_page.dart';
+import 'package:haruka/features/admin/presentation/menu_governance_page.dart';
+import 'package:haruka/features/admin/presentation/role_governance_page.dart';
+import 'package:haruka/features/admin/presentation/user_governance_page.dart';
 import 'package:haruka/features/auth/account_pages.dart';
 
 import 'package:haruka/app/motion.dart';
@@ -471,7 +476,12 @@ class _AdminShell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, bounds) {
         final narrow = bounds.maxWidth < 960;
-        final rail = _AdminSidebar(section: section, state: state, liveAuth: liveAuth);
+        final rail = _AdminSidebar(
+          section: section,
+          state: state,
+          liveAuth: liveAuth,
+          sections: liveAuth == null ? _AdminShell.sections : _liveSections(liveAuth!),
+        );
         final permitted = liveAuth == null
             ? state!.canSection(section)
             : section == 'policy'
@@ -555,7 +565,52 @@ class _AdminShell extends StatelessWidget {
                                               'policy' => _AdminCard(
                                                 child: Text(strings.authNoAdminPermission),
                                               ),
+                                              'users'
+                                                  when liveAuth!.access?.allows(
+                                                        'admin.user.read',
+                                                      ) ==
+                                                      true =>
+                                                AdminUserGovernance(auth: liveAuth!),
+                                              'users' => _AdminCard(
+                                                child: Text(strings.authNoAdminPermission),
+                                              ),
+                                              'roles'
+                                                  when liveAuth!.access?.allows(
+                                                        'admin.role.read',
+                                                      ) ==
+                                                      true =>
+                                                AdminRoleGovernance(auth: liveAuth!),
+                                              'roles' => _AdminCard(
+                                                child: Text(strings.authNoAdminPermission),
+                                              ),
+                                              'menus'
+                                                  when liveAuth!.access?.allows(
+                                                        'admin.menu.read',
+                                                      ) ==
+                                                      true =>
+                                                AdminMenuGovernance(auth: liveAuth!),
+                                              'menus' => _AdminCard(
+                                                child: Text(strings.authNoAdminPermission),
+                                              ),
                                               'security' => _AdminLiveSecurity(auth: liveAuth!),
+                                              'overview'
+                                                  when liveAuth!.access?.allows(
+                                                        'admin.dashboard.view',
+                                                      ) ==
+                                                      true =>
+                                                AdminGovernanceOverview(auth: liveAuth!),
+                                              'overview' => _AdminCard(
+                                                child: Text(strings.authNoAdminPermission),
+                                              ),
+                                              'audit'
+                                                  when liveAuth!.access?.allows(
+                                                        'admin.audit.read',
+                                                      ) ==
+                                                      true =>
+                                                AdminAuditEvents(auth: liveAuth!),
+                                              'audit' => _AdminCard(
+                                                child: Text(strings.authNoAdminPermission),
+                                              ),
                                               _ => const _AdminCard(child: Text('此功能尚未开放。')),
                                             }
                                           : switch (section) {
@@ -591,12 +646,41 @@ class _AdminShell extends StatelessWidget {
   }
 }
 
+/// First published admin section in the access projection. Security remains when
+/// the projection has no admin page, matching the preview landing rule.
+String firstLiveAdminSection(Iterable<String> routeKeys) {
+  final known = {for (final item in _AdminShell.sections) item.$1};
+  for (final key in routeKeys) {
+    if (known.contains(key)) return key;
+  }
+  return 'security';
+}
+
+List<(String, IconData)> _liveSections(AuthController auth) {
+  final known = {for (final item in _AdminShell.sections) item.$1: item.$2};
+  final seen = <String>{};
+  final items = [
+    for (final item in auth.access?.navigation ?? const <NavigationItem>[])
+      if (known[item.routeKey] != null && seen.add(item.routeKey))
+        (item.routeKey, known[item.routeKey]!),
+  ];
+  if (seen.add('security')) items.add(('security', known['security']!));
+  return items;
+}
+
 class _AdminSidebar extends StatelessWidget {
-  const _AdminSidebar({required this.section, this.state, this.liveAuth, this.onNavigate});
+  const _AdminSidebar({
+    required this.section,
+    this.state,
+    this.liveAuth,
+    this.onNavigate,
+    this.sections = _AdminShell.sections,
+  });
   final String section;
   final AdminPreviewState? state;
   final AuthController? liveAuth;
   final ValueChanged<String>? onNavigate;
+  final List<(String, IconData)> sections;
 
   @override
   Widget build(BuildContext context) {
@@ -630,7 +714,7 @@ class _AdminSidebar extends StatelessWidget {
             Expanded(
               child: ListView(
                 children: [
-                  for (final (id, icon) in _AdminShell.sections)
+                  for (final (id, icon) in sections)
                     if (liveAuth != null || state!.canSection(id))
                       Padding(
                         padding: const EdgeInsets.only(bottom: 7),
@@ -1593,38 +1677,7 @@ class _AdminLivePolicy extends StatelessWidget {
   const _AdminLivePolicy();
 
   @override
-  Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 900),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final editor = _AdminCard(child: const AdminPolicyEditor());
-          final scope = _AdminCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(strings.mockAdminCurrentPolicy, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 18),
-                const Text('当前仅开放注册开关。邮箱验证与找回策略由服务端配置。'),
-              ],
-            ),
-          );
-          if (constraints.maxWidth < 700) {
-            return Column(children: [editor, const SizedBox(height: 16), scope]);
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 3, child: editor),
-              const SizedBox(width: 22),
-              Expanded(flex: 2, child: scope),
-            ],
-          );
-        },
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const AdminPolicyEditor();
 }
 
 class _AdminLiveSecurity extends ConsumerWidget {

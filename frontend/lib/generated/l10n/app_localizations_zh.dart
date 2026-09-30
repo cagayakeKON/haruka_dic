@@ -259,7 +259,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authRecoveryHint => '输入注册邮箱，我们会受理找回请求。受理不代表邮件已送达。';
 
   @override
+  String get authRecoveryManualHint => '提交后由管理员核验身份。通过后你会得到一次性恢复码，再用它设置新密码。';
+
+  @override
+  String get authRecoveryAwaitReview => '申请已受理。请等待管理员核验，核验通过后使用一次性恢复码设置新密码。受理不代表已经核验。';
+
+  @override
   String get authRequestRecovery => '提交申请';
+
+  @override
+  String get authRequestManualRecovery => '申请人工恢复';
 
   @override
   String get authHeroLogin => '欢迎回来。';
@@ -538,7 +547,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authAdminPolicy => '注册策略';
 
   @override
-  String get authAdminPolicyHint => '现有账号仍可登录与邮件找回；新账号注册由上方开关控制。';
+  String get authAdminPolicyHint => '切换注册或找回方式不会改变已有账号状态，也不会取消已经发出的挑战。';
 
   @override
   String get authRegistrationEnabled => '允许新账号注册';
@@ -572,6 +581,120 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authStillPending => '邮箱仍待验证。请先打开邮件中的验证链接。';
+
+  @override
+  String get authPendingApproval => '邮箱已验证，正在等待管理员审批。';
+
+  @override
+  String get authApprovalRejected => '注册申请已被拒绝。';
+
+  @override
+  String get authApprovalRequired => '提交后需要管理员审批，通过前不能登录。';
+
+  @override
+  String get adminPolicyOpen => '开放注册';
+
+  @override
+  String get adminPolicyRecoveryEither => '邮件或人工';
+
+  @override
+  String get adminPolicyRecoveryDisabled => '关闭找回';
+
+  @override
+  String get adminRecoveryRequests => '人工恢复';
+
+  @override
+  String get adminRecoveryIssue => '核验签发';
+
+  @override
+  String get adminRecoveryReject => '拒绝恢复';
+
+  @override
+  String get adminRecoveryInPerson => '当面核验';
+
+  @override
+  String get adminRecoveryKnownChannel => '已知渠道核验';
+
+  @override
+  String get adminRecoveryTokenOnce => '一次性恢复码只显示这一次。请交给账号持有人，管理员不能代设密码。';
+
+  @override
+  String get adminRecoveryTokenHidden => '恢复码不会再次显示。';
+
+  @override
+  String get adminRecoveryRequested => '待核验';
+
+  @override
+  String get adminRecoveryIssued => '已签发';
+
+  @override
+  String get adminRecoveryRejected => '已拒绝';
+
+  @override
+  String get adminRecoveryConsumed => '已使用';
+
+  @override
+  String get adminRecoveryExpired => '已过期';
+
+  @override
+  String get adminGovernanceActive => '可登录账号';
+
+  @override
+  String get adminGovernancePending => '待启用账号';
+
+  @override
+  String get adminGovernanceDisabled => '已停用账号';
+
+  @override
+  String get adminGovernanceApprovals => '待审批';
+
+  @override
+  String get adminGovernanceRoles => '启用角色';
+
+  @override
+  String get adminGovernanceRecoveries => '待核验恢复';
+
+  @override
+  String get adminGovernanceRevision => '授权版本';
+
+  @override
+  String get adminGovernanceLater => '任务、存储和模型用量仍未开放。';
+
+  @override
+  String get adminAuditEmpty => '还没有审计记录';
+
+  @override
+  String get adminAuditDetail => '审计详情';
+
+  @override
+  String get adminAuditReason => '原因';
+
+  @override
+  String get adminAuditRequest => '请求';
+
+  @override
+  String get adminAuditMore => '加载更多';
+
+  @override
+  String get adminAuditResultAll => '全部结果';
+
+  @override
+  String get adminAuditCommitted => '已提交';
+
+  @override
+  String get adminAuditAccepted => '已受理';
+
+  @override
+  String get adminAuditDenied => '已拒绝';
+
+  @override
+  String get adminAuditFailed => '失败';
+
+  @override
+  String get adminUserApprove => '通过审批';
+
+  @override
+  String get adminUserReject => '拒绝申请';
 
   @override
   String get authSignedOutLocally => '本机登录已清除，但无法确认服务端会话已撤销。重新登录后可在设备会话中撤销它。';
@@ -4214,4 +4337,175 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mockSettingClose => '关闭';
+
+  @override
+  String get adminRoleCreate => '创建角色';
+
+  @override
+  String get adminRoleCode => '代码';
+
+  @override
+  String get adminRoleName => '名称';
+
+  @override
+  String get adminRoleDescription => '描述';
+
+  @override
+  String get adminRoleEnabled => '启用';
+
+  @override
+  String get adminRoleDisabled => '已停用';
+
+  @override
+  String get adminRoleSaveMetadata => '保存名称';
+
+  @override
+  String get adminRoleSaveGrants => '保存授权';
+
+  @override
+  String get adminRoleSaveParents => '保存继承';
+
+  @override
+  String get adminRoleSaveBoundaries => '保存授予上限';
+
+  @override
+  String get adminRoleDelete => '删除角色';
+
+  @override
+  String get adminRoleDeleteConfirm => '只删除没有成员、也不是其他角色上级的空角色。';
+
+  @override
+  String get adminRoleParents => '继承的上级角色';
+
+  @override
+  String get adminRoleParentHint => '停用的上级不会继续提供权限。';
+
+  @override
+  String get adminRoleGrants => '直接授权';
+
+  @override
+  String get adminRoleUnset => '未配置';
+
+  @override
+  String get adminRoleAllow => '允许';
+
+  @override
+  String get adminRoleDeny => '拒绝';
+
+  @override
+  String get adminRoleBothEffects => '允许并拒绝';
+
+  @override
+  String get adminRoleBoundaries => '授予上限';
+
+  @override
+  String get adminRoleAffected => '受影响账号';
+
+  @override
+  String get adminRoleReload => '重新加载';
+
+  @override
+  String get adminRoleEmpty => '还没有角色';
+
+  @override
+  String get adminRoleCodeInvalid => '代码需以小写字母开头，并且只含小写字母、数字和下划线';
+
+  @override
+  String get adminRoleNameInvalid => '请填写 1 到 100 个字符的名称';
+
+  @override
+  String get adminRoleDescriptionInvalid => '描述不能超过 2000 个字符';
+
+  @override
+  String get adminRoleNoCatalog => '没有权限目录读取权，不能编辑授权矩阵。';
+
+  @override
+  String get adminRoleAssignRole => '可分配角色';
+
+  @override
+  String get adminRoleAssignPermission => '可授予权限';
+
+  @override
+  String get adminRoleManageRole => '可管理账号角色';
+
+  @override
+  String get adminRoleUnassigned => '可管理未分配账号';
+
+  @override
+  String get adminRoleAddBoundary => '添加上限';
+
+  @override
+  String get adminUserCreate => '创建账号';
+
+  @override
+  String get adminUserEmpty => '没有匹配的账号';
+
+  @override
+  String get adminUserPendingGrant => '待授权';
+
+  @override
+  String get adminUserDisabled => '已停用';
+
+  @override
+  String get adminUserLocked => '已锁定';
+
+  @override
+  String get adminUserDisplayName => '显示名';
+
+  @override
+  String get adminUserNoPassword => '创建后不会生成可复制的密码。';
+
+  @override
+  String get adminUserEnable => '启用';
+
+  @override
+  String get adminUserDisable => '停用';
+
+  @override
+  String get adminUserRoles => '角色';
+
+  @override
+  String get adminUserSaveRoles => '保存角色';
+
+  @override
+  String get adminUserSessions => '会话';
+
+  @override
+  String get adminUserRevoke => '撤销';
+
+  @override
+  String get adminUserRevokeAll => '撤销全部会话';
+
+  @override
+  String get adminMenuHidden => '已隐藏';
+
+  @override
+  String get adminMenuHide => '隐藏菜单';
+
+  @override
+  String get adminMenuHideNote => '隐藏菜单不会停用功能访问。';
+
+  @override
+  String get adminMenuFeatureNote => '停用功能访问需要在角色权限中撤销页面权限。';
+
+  @override
+  String get adminMenuOpenRoles => '前往角色权限';
+
+  @override
+  String get adminMenuGroup => '添加分组';
+
+  @override
+  String get adminMenuTop => '顶层';
+
+  @override
+  String get adminMenuExtra => '附加显示条件';
+
+  @override
+  String get adminMenuPreview => '预览导航';
+
+  @override
+  String get adminMenuSave => '保存';
+
+  @override
+  String get adminMenuCode => '代码';
 }

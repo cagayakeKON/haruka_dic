@@ -1,4 +1,4 @@
-// GENERATED from config/ui_test_ids.json; sha256:ec1af47f609188ab93ae1f3853f419cbe551b1d5e200982e70918b06315ab669. Do not edit.
+// GENERATED from config/ui_test_ids.json; sha256:0bbab0d630c15eda97fe8667dcaa768e24306e9187cc05bd09e8df9ea6ff32f1. Do not edit.
 abstract final class UiTestIds {
   static const accountChangePassword = "client.account.password.submit";
   static const accountConfirmPassword = "client.account.password.confirm";
@@ -12,17 +12,31 @@ abstract final class UiTestIds {
   static const activationResendEmail = "client.auth.activation_resend.email";
   static const activationResendPage = "client.auth.activation_resend.page";
   static const activationResendSubmit = "client.auth.activation_resend.submit";
+  static const adminAuditDialog = "admin.audit.events.dialog";
+  static const adminAuditPage = "admin.audit.events.page";
+  static const adminGovernancePage = "admin.governance.summary.page";
   static const adminLoginEmail = "admin.auth.login.email";
   static const adminLoginPage = "admin.auth.login.page";
   static const adminLoginPassword = "admin.auth.login.password";
   static const adminLoginSubmit = "admin.auth.login.submit";
+  static const adminMenuDialog = "admin.menu.governance.dialog";
+  static const adminMenuSave = "admin.menu.governance.save";
+  static const adminMenusPage = "admin.menu.governance.page";
   static const adminPage = "admin.shell.home.page";
   static const adminPolicyPage = "admin.auth.policy.page";
   static const adminRegistrationSave = "admin.auth.policy.save";
   static const adminRegistrationToggle = "admin.auth.policy.registration_toggle";
+  static const adminRoleCreate = "admin.role.governance.create";
+  static const adminRoleDialog = "admin.role.governance.dialog";
+  static const adminRoleSave = "admin.role.governance.save";
+  static const adminRolesPage = "admin.role.governance.page";
   static const adminSecurityPassword = "admin.account.security.password";
   static const adminSecuritySessions = "admin.account.security.sessions";
   static const adminSignOut = "admin.auth.policy.sign_out";
+  static const adminUserCreate = "admin.user.governance.create";
+  static const adminUserDialog = "admin.user.governance.dialog";
+  static const adminUserSave = "admin.user.governance.save";
+  static const adminUsersPage = "admin.user.governance.page";
   static const authActionError = "client.auth.action.error";
   static const authBackLogin = "client.auth.frame.back_login";
   static const authFormError = "client.auth.form.error";
@@ -96,21 +110,18 @@ abstract final class UiTestIds {
     }
     return "client.reference.chapter.block." + blockId.toLowerCase();
   }
-
   static String referenceCollectionRow(String collectionId) {
     if (!RegExp(r'^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$').hasMatch(collectionId)) {
       throw ArgumentError.value(collectionId, "collectionId", 'Expected UUID');
     }
     return "client.reference.collections.row." + collectionId.toLowerCase();
   }
-
   static String referenceMaterialRow(String materialId) {
     if (!RegExp(r'^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$').hasMatch(materialId)) {
       throw ArgumentError.value(materialId, "materialId", 'Expected UUID');
     }
     return "client.reference.materials.row." + materialId.toLowerCase();
   }
-
   static String sessionRevoke(String sessionId) {
     if (!RegExp(r'^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$').hasMatch(sessionId)) {
       throw ArgumentError.value(sessionId, "sessionId", 'Expected UUID');

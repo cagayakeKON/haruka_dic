@@ -11,9 +11,17 @@ import '../../shared/identified.dart';
 import 'auth_frame.dart';
 
 class RecoveryRequestPage extends StatefulWidget {
-  const RecoveryRequestPage({required this.onSubmit, this.admin = false, super.key});
+  const RecoveryRequestPage({
+    required this.onSubmit,
+    this.onManual,
+    this.emailChannel = true,
+    this.admin = false,
+    super.key,
+  });
 
   final Future<void> Function(String email) onSubmit;
+  final Future<void> Function(String email)? onManual;
+  final bool emailChannel;
   final bool admin;
 
   @override
@@ -32,14 +40,19 @@ class _RecoveryRequestPageState extends State<RecoveryRequestPage> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit({bool manual = false}) async {
     if (_busy || !_form.currentState!.validate()) return;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await widget.onSubmit(_email.text.trim());
+      final email = _email.text.trim();
+      if (manual) {
+        await widget.onManual!(email);
+      } else {
+        await widget.onSubmit(email);
+      }
     } on Object catch (error) {
       if (mounted) setState(() => _error = _safeError(context, error));
     } finally {
@@ -54,7 +67,7 @@ class _RecoveryRequestPageState extends State<RecoveryRequestPage> {
       id: UiTestIds.recoveryRequestPage,
       title: strings.authRecoveryTitle,
       heroTitle: strings.authHeroRecovery,
-      description: strings.authRecoveryHint,
+      description: widget.emailChannel ? strings.authRecoveryHint : strings.authRecoveryManualHint,
       backLocation: widget.admin ? AppRoutes.adminLogin : AppRoutes.login,
       child: AutofillGroup(
         child: Form(
@@ -80,32 +93,45 @@ class _RecoveryRequestPageState extends State<RecoveryRequestPage> {
                     ),
                     validator: (value) =>
                         value == null || value.trim().isEmpty ? strings.authRequired : null,
-                    onFieldSubmitted: (_) => _submit(),
+                    onFieldSubmitted: (_) => _submit(manual: !widget.emailChannel),
                   ),
                 ),
               ),
               if (_error != null) ...[const SizedBox(height: 16), _FormError(message: _error!)],
               const SizedBox(height: 24),
-              Identified(
-                id: UiTestIds.recoveryRequestSubmit,
-                merge: true,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    minimumSize: Size.fromHeight(MediaQuery.sizeOf(context).width >= 760 ? 48 : 54),
-                    visualDensity: VisualDensity.standard,
-                  ),
-                  onPressed: _busy ? null : _submit,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_busy ? strings.authRequestingRecovery : strings.authRequestRecovery),
-                      const SizedBox(width: 10),
-                      const Icon(Icons.arrow_forward, size: 18),
-                    ],
+              if (widget.emailChannel)
+                Identified(
+                  id: UiTestIds.recoveryRequestSubmit,
+                  merge: true,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: Size.fromHeight(
+                        MediaQuery.sizeOf(context).width >= 760 ? 48 : 54,
+                      ),
+                      visualDensity: VisualDensity.standard,
+                    ),
+                    onPressed: _busy ? null : () => _submit(),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_busy ? strings.authRequestingRecovery : strings.authRequestRecovery),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.arrow_forward, size: 18),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              if (widget.onManual != null) ...[
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size.fromHeight(MediaQuery.sizeOf(context).width >= 760 ? 48 : 54),
+                  ),
+                  onPressed: _busy ? null : () => _submit(manual: true),
+                  child: Text(strings.authRequestManualRecovery),
+                ),
+              ],
             ],
           ),
         ),
@@ -143,10 +169,14 @@ class _ActivationPageState extends State<ActivationPage> {
     try {
       final status = await widget.onStatus();
       if (mounted) {
+        final strings = AppLocalizations.of(context);
         setState(
-          () => _message = status.active
-              ? AppLocalizations.of(context).authVerified
-              : AppLocalizations.of(context).authStillPending,
+          () => _message = switch (status.state) {
+            'active' => strings.authVerified,
+            'pending_approval' => strings.authPendingApproval,
+            'rejected' => strings.authApprovalRejected,
+            _ => strings.authStillPending,
+          },
         );
       }
     } on Object catch (error) {

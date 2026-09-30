@@ -34,6 +34,7 @@ EVENTS = frozenset(
         "auth.policy.updated",
         "auth.verification.request.accepted",
         "auth.recovery.request.accepted",
+        "auth.recovery.manual.accepted",
         "auth.cache_invalidation.deferred",
         "collection.saved",
         "profile.updated",

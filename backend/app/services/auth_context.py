@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.contracts.errors import ErrorCode
 from app.domain.errors import AppError
 from app.domain.scope import Audience, ScopeContext
-from app.repositories.identity import matching_role_permissions, permission_catalog, scope_roots
+from app.repositories.identity import permission_catalog, scope_roots
+from app.services.authorization import require_effective_permissions
 
 
 async def verify_scope_in_transaction(
@@ -74,13 +75,8 @@ async def require_permissions(
         for code in codes
     ):
         raise AppError(ErrorCode.PERMISSION_DENIED)
-    rows = await matching_role_permissions(session, user_id=user_id, codes=codes)
-    for code in codes:
-        catalog = catalogs[code]
-        effects = [
-            effect
-            for permission, effect, scope in rows
-            if permission == code and scope == catalog.data_scope
-        ]
-        if "deny" in effects or "allow" not in effects:
-            raise AppError(ErrorCode.PERMISSION_DENIED)
+    await require_effective_permissions(
+        session,
+        user_id=user_id,
+        requirements=tuple((code, catalogs[code].data_scope) for code in codes),
+    )

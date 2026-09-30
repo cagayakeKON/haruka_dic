@@ -526,6 +526,7 @@ class RegistrationPage extends StatefulWidget {
     required this.onBackToLogin,
     required this.passwordMinLength,
     required this.passwordMaxLength,
+    this.approvalRequired = false,
     super.key,
   });
 
@@ -533,6 +534,7 @@ class RegistrationPage extends StatefulWidget {
   final VoidCallback onBackToLogin;
   final int passwordMinLength;
   final int passwordMaxLength;
+  final bool approvalRequired;
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
@@ -623,6 +625,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.approvalRequired) ...[
+              Text(strings.authApprovalRequired),
+              const SizedBox(height: 16),
+            ],
             AuthField(
               label: wide ? strings.mockAuthDesktopEmail : strings.authEmail,
               child: Identified(

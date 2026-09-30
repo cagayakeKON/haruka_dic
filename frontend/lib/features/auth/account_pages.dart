@@ -56,7 +56,6 @@ final class _IdentityDialogScope {
     required this.sessionRef,
     required this.actionEpoch,
     required this.authzUserVersion,
-    required this.authzPolicyVersion,
     required this.securityEpoch,
   });
 
@@ -68,7 +67,6 @@ final class _IdentityDialogScope {
   final String sessionRef;
   final int actionEpoch;
   final int authzUserVersion;
-  final int authzPolicyVersion;
   final int? securityEpoch;
 
   bool sameIdentity(_IdentityDialogScope? other) =>
@@ -81,7 +79,6 @@ final class _IdentityDialogScope {
       sessionRef == other.sessionRef &&
       actionEpoch == other.actionEpoch &&
       authzUserVersion == other.authzUserVersion &&
-      authzPolicyVersion == other.authzPolicyVersion &&
       securityEpoch == other.securityEpoch;
 
   static _IdentityDialogScope? capture(BuildContext context, {required bool admin}) {
@@ -101,7 +98,6 @@ final class _IdentityDialogScope {
       sessionRef: access.sessionRef,
       actionEpoch: auth.actionEpoch,
       authzUserVersion: access.authzVersion.user,
-      authzPolicyVersion: access.authzVersion.policy,
       securityEpoch: access.securityEpoch,
     );
   }
@@ -117,7 +113,6 @@ final class _IdentityDialogScope {
         access?.userId == userId &&
         access?.sessionRef == sessionRef &&
         access?.authzVersion.user == authzUserVersion &&
-        access?.authzVersion.policy == authzPolicyVersion &&
         access?.securityEpoch == securityEpoch &&
         access?.audience == (admin ? 'admin' : 'client');
   }
@@ -820,8 +815,10 @@ class _AdminPolicyEditorState extends ConsumerState<AdminPolicyEditor> {
   Future<AdminPolicy>? _policy;
   bool _readAllowed = false;
   AdminPolicy? _loaded;
-  bool _enabled = false;
+  String _draft = 'closed';
+  String _recovery = 'email';
   bool _busy = false;
+  bool _conflict = false;
   String? _error;
 
   @override
@@ -837,8 +834,10 @@ class _AdminPolicyEditorState extends ConsumerState<AdminPolicyEditor> {
     _scope = scope;
     _readAllowed = scope != null && _auth.access?.allows('admin.auth_policy.read') == true;
     _loaded = null;
-    _enabled = false;
+    _draft = 'closed';
+    _recovery = 'email';
     _busy = false;
+    _conflict = false;
     _error = null;
     _policy = _readAllowed ? _auth.adminPolicy() : null;
   }
@@ -872,16 +871,25 @@ class _AdminPolicyEditorState extends ConsumerState<AdminPolicyEditor> {
       _error = null;
     });
     try {
-      final updated = await _auth.updateAdminPolicy(_enabled, loaded.revision);
+      final updated = await _auth.updateAdminPolicy(
+        _draft,
+        loaded.revision,
+        recoveryMode: _recovery == loaded.recoveryMode ? null : _recovery,
+      );
       if (mounted && scope.isCurrent) {
         setState(() {
           _loaded = updated;
-          _enabled = updated.registrationEnabled;
+          _draft = updated.registrationMode;
+          _recovery = updated.recoveryMode;
+          _conflict = false;
         });
       }
     } on ApiFailure catch (error) {
       if (mounted && scope.isCurrent) {
-        setState(() => _error = ApiCatalog.message(AppLocalizations.of(context), error.code));
+        setState(() {
+          _error = ApiCatalog.message(AppLocalizations.of(context), error.code);
+          _conflict = error.code == 'REVISION_CONFLICT';
+        });
       }
     } finally {
       if (mounted && scope.isCurrent) setState(() => _busy = false);
@@ -898,71 +906,251 @@ class _AdminPolicyEditorState extends ConsumerState<AdminPolicyEditor> {
     final strings = AppLocalizations.of(context);
     return Identified(
       id: UiTestIds.adminPolicyPage,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(strings.authAdminPolicyHint),
-          const SizedBox(height: 24),
-          if (_policy == null)
-            Text(strings.authNoAdminPermission)
-          else
-            FutureBuilder<AdminPolicy>(
-              key: ObjectKey(scope),
-              future: _policy,
-              builder: (context, snapshot) {
-                if (!scope.isCurrent) return const SizedBox.shrink();
-                if (snapshot.hasError) return Text(strings.authUnavailable);
-                if (!snapshot.hasData) return const CircularProgressIndicator();
-                if (_loaded == null) {
-                  _loaded = snapshot.data;
-                  _enabled = snapshot.data!.registrationEnabled;
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Identified(
-                      id: UiTestIds.adminRegistrationToggle,
-                      merge: true,
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(strings.authRegistrationEnabled)),
-                          Switch(
-                            value: _enabled,
-                            onChanged:
-                                _auth.access?.allows('admin.auth_policy.update') == true && !_busy
-                                ? (value) => setState(() => _enabled = value)
-                                : null,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_policy == null)
+              Text(strings.authNoAdminPermission)
+            else
+              FutureBuilder<AdminPolicy>(
+                key: ObjectKey(scope),
+                future: _policy,
+                builder: (context, snapshot) {
+                  if (!scope.isCurrent) return const SizedBox.shrink();
+                  if (snapshot.hasError) return Text(strings.authUnavailable);
+                  if (!snapshot.hasData) return const CircularProgressIndicator();
+                  if (_loaded == null) {
+                    _loaded = snapshot.data;
+                    _draft = snapshot.data!.registrationMode;
+                    _recovery = snapshot.data!.recoveryMode;
+                  }
+                  final canUpdate = _auth.access?.allows('admin.auth_policy.update') == true;
+                  final changed =
+                      _draft != _loaded!.registrationMode || _recovery != _loaded!.recoveryMode;
+                  final editor = _PolicyCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(strings.authAdminPolicyHint),
+                        const SizedBox(height: 18),
+                        Identified(
+                          id: UiTestIds.adminRegistrationToggle,
+                          merge: true,
+                          child: DropdownButtonFormField<String>(
+                            key: ValueKey(_draft),
+                            initialValue: _draft,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: strings.mockAdminRegistrationMode,
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'closed',
+                                child: Text(strings.mockAdminClosedExample),
+                              ),
+                              DropdownMenuItem(
+                                value: 'approval',
+                                child: Text(strings.mockAdminApprovalExample),
+                              ),
+                              DropdownMenuItem(value: 'open', child: Text(strings.adminPolicyOpen)),
+                            ],
+                            onChanged: !canUpdate || _busy
+                                ? null
+                                : (value) {
+                                    if (value != null) setState(() => _draft = value);
+                                  },
                           ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          '${strings.mockAdminEmailVerification}：${strings.mockAdminVerifyWhenEnabled}',
+                        ),
+                        const SizedBox(height: 18),
+                        DropdownButtonFormField<String>(
+                          key: ValueKey('recovery-$_recovery'),
+                          initialValue: _recovery,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: strings.mockAdminAccountRecovery,
+                            border: const OutlineInputBorder(),
+                          ),
+                          items: [
+                            for (final mode in const [
+                              'email',
+                              'manual',
+                              'email_or_manual',
+                              'disabled',
+                            ])
+                              DropdownMenuItem(
+                                value: mode,
+                                child: Text(_recoveryLabel(strings, mode)),
+                              ),
+                          ],
+                          onChanged: !canUpdate || _busy
+                              ? null
+                              : (value) {
+                                  if (value != null) setState(() => _recovery = value);
+                                },
+                        ),
+                        if (_error != null) ...[const SizedBox(height: 8), Text(_error!)],
+                        if (_conflict)
+                          TextButton(
+                            onPressed: _busy ? null : _reload,
+                            child: Text(strings.adminRoleReload),
+                          ),
+                        const SizedBox(height: 18),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton(
+                            onPressed: canUpdate && !_busy && changed
+                                ? () => _preview(strings)
+                                : null,
+                            child: Text(strings.mockAdminPreviewPolicy),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  final current = _PolicyCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.mockAdminCurrentPolicy,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 18),
+                        Text(_registrationLabel(strings, _loaded!.registrationMode)),
+                        const SizedBox(height: 11),
+                        Text(strings.mockAdminVerifyWhenEnabled),
+                        const SizedBox(height: 11),
+                        Text(_recoveryLabel(strings, _loaded!.recoveryMode)),
+                      ],
+                    ),
+                  );
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth < 700) {
+                        return Column(children: [editor, const SizedBox(height: 16), current]);
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: editor),
+                          const SizedBox(width: 22),
+                          Expanded(flex: 2, child: current),
                         ],
-                      ),
-                    ),
-                    if (_error != null) ...[const SizedBox(height: 8), Text(_error!)],
-                    const SizedBox(height: 20),
-                    Identified(
-                      id: UiTestIds.adminRegistrationSave,
-                      merge: true,
-                      child: FilledButton(
-                        onPressed:
-                            _auth.access?.allows('admin.auth_policy.update') == true && !_busy
-                            ? _save
-                            : null,
-                        child: Text(strings.authSavePolicy),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 12),
-          Text(strings.authEmailVerificationFact),
-          const SizedBox(height: 10),
-          Text(
-            '${strings.authMailRecoveryFact}：${_auth.policy?.recoveryEnabled == true ? strings.authAvailable : strings.authUnavailableShort}',
-          ),
-        ],
+                      );
+                    },
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
+
+  Future<void> _reload() async {
+    final scope = _scope;
+    if (_busy || scope == null || !scope.isCurrent) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _conflict = false;
+    });
+    try {
+      final fresh = await _auth.adminPolicy();
+      if (mounted && scope.isCurrent) {
+        setState(() {
+          _loaded = fresh;
+          _draft = fresh.registrationMode;
+          _recovery = fresh.recoveryMode;
+        });
+      }
+    } on ApiFailure catch (error) {
+      if (mounted && scope.isCurrent) {
+        setState(() => _error = ApiCatalog.message(AppLocalizations.of(context), error.code));
+      }
+    } finally {
+      if (mounted && scope.isCurrent) setState(() => _busy = false);
+    }
+  }
+
+  void _preview(AppLocalizations strings) {
+    final draft = _draft;
+    final recovery = _recovery;
+    unawaited(
+      showHarukaDialog<void>(
+        context: context,
+        animationStyle: HarukaMotion.dialogStyle(context),
+        builder: (context) => AlertDialog(
+          title: Text(strings.mockAdminPolicyPreviewTitle),
+          content: SizedBox(
+            width: 440,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${strings.mockAdminRegistrationMode}: ${_registrationLabel(strings, draft)}'),
+                const SizedBox(height: 12),
+                Text(
+                  '${strings.mockAdminEmailVerification}: ${strings.mockAdminVerifyWhenEnabled}',
+                ),
+                const SizedBox(height: 12),
+                Text('${strings.mockAdminAccountRecovery}: ${_recoveryLabel(strings, recovery)}'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(strings.mockAdminClose),
+            ),
+            Identified(
+              id: UiTestIds.adminRegistrationSave,
+              merge: true,
+              child: FilledButton(
+                onPressed: _busy
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        unawaited(_save());
+                      },
+                child: Text(strings.mockAdminApplyPolicy),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _registrationLabel(AppLocalizations strings, String mode) => switch (mode) {
+  'approval' => strings.mockAdminApprovalExample,
+  'open' => strings.adminPolicyOpen,
+  _ => strings.mockAdminClosedExample,
+};
+
+String _recoveryLabel(AppLocalizations strings, String mode) => switch (mode) {
+  'manual' => strings.mockAdminManualRecovery,
+  'email_or_manual' => strings.adminPolicyRecoveryEither,
+  'disabled' => strings.adminPolicyRecoveryDisabled,
+  _ => strings.mockAdminEmailRecovery,
+};
+
+class _PolicyCard extends StatelessWidget {
+  const _PolicyCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).colorScheme.surfaceContainerLowest,
+    borderRadius: BorderRadius.circular(18),
+    child: Padding(padding: const EdgeInsets.all(26), child: child),
+  );
 }

@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.contracts.export import canonical_json
+from app.contracts.navigation import PUBLISHED_PAGES
 from app.contracts.permissions import ADMIN_CODES, CLIENT_CODES, ROLE_TEMPLATES, permission_document
 from app.domain.email_address import normalize_email as normalize_single_email
 from app.maintenance.migrations import locked_connection
@@ -26,6 +27,7 @@ from app.models import (
     AuthPolicy,
     Library,
     Menu,
+    MenuPermission,
     OutboxEvent,
     PermissionCatalog,
     Role,
@@ -136,7 +138,10 @@ async def apply_seed(settings: MaintenanceSettings) -> InitializationResult:
             previous = await _applied_seed(session)
             if previous is not None:
                 _validate_seed(previous)
-                return InitializationResult(False, revision.revision)
+                if not await _ensure_published_menus(session):
+                    return InitializationResult(False, revision.revision)
+                await _record_change(session, revision, "menu.updated")
+                return InitializationResult(True, revision.revision)
             await _create_catalogs(session)
             await _record_change(session, revision, "seed.applied")
             session.add(SeedVersion(code=SEED_CODE, version=SEED_VERSION, payload_sha256=digest))
@@ -191,16 +196,47 @@ async def _create_catalogs(session: AsyncSession) -> None:
         )
     menu = await session.scalar(select(Menu).where(Menu.code == "administration").with_for_update())
     if menu is None:
+        menu = Menu(
+            code="administration",
+            route_key="/admin",
+            audience="admin",
+            title="administration",
+            permission_match="all",
+            sort_order=0,
+            enabled=False,
+            revision=1,
+        )
+        session.add(menu)
+        await session.flush()
+        session.add(MenuPermission(menu_id=menu.id, permission_code="admin.login"))
+    await _ensure_published_menus(session)
+
+
+async def _ensure_published_menus(session: AsyncSession) -> bool:
+    """Insert catalog pages whose code is absent. Existing rows, links and titles stay."""
+    inserted = False
+    for page in PUBLISHED_PAGES:
+        existing = await session.scalar(
+            select(Menu.id).where(Menu.code == page.code).with_for_update()
+        )
+        if existing is not None:
+            continue
         session.add(
             Menu(
-                code="administration",
-                route_key="/admin",
-                audience="admin",
-                permission_code="admin.login",
-                enabled=False,
+                code=page.code,
+                route_key=page.route_key,
+                component_key=page.component_key,
+                audience=page.audience,
+                title=page.title,
+                icon_key=page.icon_key,
+                sort_order=page.sort_order,
+                permission_match="all",
+                enabled=True,
                 revision=1,
             )
         )
+        inserted = True
+    return inserted
 
 
 def normalize_email(email: str) -> tuple[str, str]:

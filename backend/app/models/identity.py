@@ -24,6 +24,10 @@ class User(IdentityMixin, TimestampMixin, Base):
             "client_security_epoch >= 0 AND admin_security_epoch >= 0",
             name="security_epochs_nonnegative",
         ),
+        CheckConstraint(
+            "approval_status IN ('not_required', 'pending', 'approved', 'rejected')",
+            name="approval_status",
+        ),
         Index(
             "ix_users_status_created_at_id",
             "status",
@@ -92,6 +96,13 @@ class User(IdentityMixin, TimestampMixin, Base):
         DateTime(timezone=True),
         nullable=True,
         comment="账号限时锁定截止",
+        info=column_info("identity service"),
+    )
+    approval_status: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        server_default=text("'not_required'"),
+        comment="审批状态；既有账号回填为不需要审批",
         info=column_info("identity service"),
     )
     client_security_epoch: Mapped[int] = mapped_column(

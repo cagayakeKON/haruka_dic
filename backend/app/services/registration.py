@@ -2,6 +2,7 @@
 
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 from uuid import UUID
 
 from pydantic import SecretStr
@@ -35,11 +36,18 @@ from app.repositories.identity import (
 )
 from app.schemas.auth import ActivationStatusRead, MailAccepted
 from app.services.auth_crypto import AuthCrypto, hash_password, new_opaque_token
-from app.services.auth_policy import mail_ready, validate_public_registration_role
+from app.services.auth_policy import (
+    EMAIL_RECOVERY_MODES,
+    MANUAL_RECOVERY_MODES,
+    RECOVERY_MODES,
+    mail_ready,
+    validate_public_registration_role,
+)
 from app.services.security_events import append_identity_event
 
 _VERIFY_TTL = timedelta(hours=24)
 _RECOVERY_TTL = timedelta(minutes=30)
+_MANUAL_REVIEW_TTL = timedelta(hours=24)
 _RESEND_COOLDOWN = timedelta(seconds=60)
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,13 +81,44 @@ def email_identity(email: str) -> tuple[str, str]:
         raise AppError(ErrorCode.INPUT_INVALID) from None
 
 
+def record_email_verification(user: User, now: datetime) -> None:
+    """Store the verification time. Activate only when approval is not still blocking."""
+    user.email_verified_at = now
+    if user.status == "pending" and user.approval_status in {"not_required", "approved"}:
+        user.status = "active"
+
+
+def activation_progress(
+    user: User,
+) -> tuple[
+    Literal["pending_email", "pending_approval", "rejected", "active"],
+    Literal["verify_email"] | None,
+]:
+    if user.approval_status == "rejected":
+        return "rejected", None
+    if user.email_verified_at is None:
+        return "pending_email", "verify_email"
+    if user.approval_status == "pending" or user.status != "active":
+        return "pending_approval", None
+    return "active", None
+
+
+def pending_login_action(user: User) -> Literal["verify_email", "await_approval", "rejected"]:
+    state, _action = activation_progress(user)
+    if state == "rejected":
+        return "rejected"
+    if state == "pending_email":
+        return "verify_email"
+    return "await_approval"
+
+
 async def _policy(session: AsyncSession, *, lock: bool = False) -> AuthPolicy:
     policy = await registration_policy(session, for_update=lock)
     if (
         policy is None
-        or policy.registration_mode not in {"closed", "open"}
+        or policy.registration_mode not in {"closed", "approval", "open"}
         or not policy.require_email_verification
-        or policy.recovery_mode != "email"
+        or policy.recovery_mode not in RECOVERY_MODES
     ):
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     return policy
@@ -146,7 +185,7 @@ async def register(runtime: Runtime, *, email: str, password: SecretStr) -> Mail
     except Exception:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
 
-    if public_policy.registration_mode != "open":
+    if public_policy.registration_mode not in {"open", "approval"}:
         raise AppError(ErrorCode.PERMISSION_DENIED)
     if not mail_ready(runtime):
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
@@ -158,7 +197,7 @@ async def register(runtime: Runtime, *, email: str, password: SecretStr) -> Mail
             if revision is None:
                 raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
             policy = await _policy(session, lock=True)
-            if policy.registration_mode != "open":
+            if policy.registration_mode not in {"open", "approval"}:
                 raise AppError(ErrorCode.PERMISSION_DENIED)
             role = await validate_public_registration_role(session, policy.default_role_id)
             existing = await user_by_email(session, normalized, for_update=True)
@@ -169,6 +208,9 @@ async def register(runtime: Runtime, *, email: str, password: SecretStr) -> Mail
                 email_normalized=normalized,
                 password_hash=password_hash,
                 status="pending",
+                approval_status="pending"
+                if policy.registration_mode == "approval"
+                else "not_required",
                 authz_version=1,
                 password_version=1,
                 security_epoch=0,
@@ -240,10 +282,10 @@ async def activation_status(runtime: Runtime, *, continuation: str) -> Activatio
                 raise AppError(ErrorCode.RESOURCE_EXPIRED)
             if user.status == "active" and user.email_verified_at is None:
                 raise AppError(ErrorCode.RESOURCE_EXPIRED)
-        pending = user.status == "pending"
+        state, action = activation_progress(user)
         return ActivationStatusRead(
-            state="pending_email" if pending else "active",
-            action_required="verify_email" if pending else None,
+            state=state,
+            action_required=action,
             expires_at=datetime.now(UTC) + timedelta(seconds=ttl),
         )
     except AppError:
@@ -259,7 +301,9 @@ async def request_challenge(runtime: Runtime, *, email: str, purpose: str) -> Ma
     crypto = AuthCrypto.from_settings(runtime.settings)
     try:
         async with runtime.resources.database.sessions() as session, session.begin():
-            await _policy(session)
+            policy = await _policy(session)
+            if purpose == "password_recovery" and policy.recovery_mode not in EMAIL_RECOVERY_MODES:
+                raise AppError(ErrorCode.PERMISSION_DENIED)
             user = await user_by_email(session, normalized, for_update=True)
             if user is not None and (
                 (purpose == "email_verify" and user.status == "pending")
@@ -317,8 +361,7 @@ async def verify_email(runtime: Runtime, *, token: SecretStr) -> None:
                 != crypto.digest("email-target", user.email_normalized)
             ):
                 raise AppError(ErrorCode.RESOURCE_EXPIRED)
-            user.status = "active"
-            user.email_verified_at = now
+            record_email_verification(user, now)
             user.revision += 1
             challenge.consumed_at = now
             revision.revision += 1
@@ -340,62 +383,150 @@ async def verify_email(runtime: Runtime, *, token: SecretStr) -> None:
     _LOGGER.info("auth.email.verified", extra=_identity_log_extra(user.id))
 
 
+async def request_manual_recovery(runtime: Runtime, *, email: str) -> MailAccepted:
+    """Accept one manual recovery request without returning or mailing a token."""
+    if runtime.resources is None or not runtime.ready:
+        raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
+    crypto = AuthCrypto.from_settings(runtime.settings)
+    try:
+        async with runtime.resources.database.sessions() as session, session.begin():
+            await open_manual_recovery(session, crypto=crypto, email=email, now=datetime.now(UTC))
+        _LOGGER.info("auth.recovery.manual.accepted", extra=_identity_log_extra())
+        return MailAccepted(next_step="await_review")
+    except AppError:
+        raise
+    except Exception:
+        raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
+
+
+async def open_manual_recovery(
+    session: AsyncSession, *, crypto: AuthCrypto, email: str, now: datetime
+) -> None:
+    """Keep at most one open manual request. Unknown emails stay indistinguishable."""
+    _, normalized = email_identity(email)
+    revision = await global_revision_for_update(session)
+    policy = await _policy(session, lock=True)
+    if revision is None:
+        raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
+    if policy.recovery_mode not in MANUAL_RECOVERY_MODES:
+        raise AppError(ErrorCode.PERMISSION_DENIED)
+    user = await user_by_email(session, normalized, for_update=True)
+    if user is None or user.status != "active":
+        return
+    current = await latest_challenge_for_update(session, user_id=user.id, purpose="manual_recovery")
+    if (
+        current is not None
+        and current.consumed_at is None
+        and current.revoked_at is None
+        and current.expires_at > now
+    ):
+        return
+    token = new_opaque_token()
+    challenge = AuthChallenge(
+        user_id=user.id,
+        purpose="manual_recovery",
+        audience="client",
+        token_digest=crypto.digest("challenge-manual_recovery", token),
+        digest_key_version=crypto.digest_key_version,
+        security_epoch=user.security_epoch,
+        password_version=user.password_version,
+        target_email_digest=crypto.digest("email-target", user.email_normalized),
+        expires_at=now + _MANUAL_REVIEW_TTL,
+        failed_attempts=0,
+    )
+    session.add(challenge)
+    await session.flush()
+    revision.revision += 1
+    await append_identity_event(
+        session,
+        action="recovery.requested",
+        authorization_revision=revision.revision,
+        actor="manual-recovery",
+        actor_user_id=None,
+        audience="client",
+        target_type="challenge",
+        target_id=challenge.id,
+        result="accepted",
+    )
+
+
 async def complete_recovery(runtime: Runtime, *, token: SecretStr, new_password: SecretStr) -> None:
-    """Consume one mail challenge and revoke every previous session atomically."""
+    """Consume one recovery challenge and revoke every previous session atomically."""
     resources = runtime.resources
     if resources is None or not runtime.ready:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     crypto = AuthCrypto.from_settings(runtime.settings)
-    digest = crypto.digest("challenge-password_recovery", token.get_secret_value())
     password_hash = await hash_password(new_password)
     try:
         async with resources.database.sessions() as session, session.begin():
-            candidate = await challenge_identity_by_digest(
+            await consume_recovery(
                 session,
-                key_version=crypto.digest_key_version,
-                digest=digest,
-                purpose="password_recovery",
-            )
-            if candidate is None:
-                raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
-            revision = await global_revision_for_update(session)
-            user = await user_for_challenge_for_update(session, candidate[1])
-            challenge = await challenge_by_id_for_update(session, candidate[0])
-            now = datetime.now(UTC)
-            if revision is None or user is None or challenge is None or user.status != "active":
-                raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
-            if (
-                challenge.consumed_at is not None
-                or challenge.revoked_at is not None
-                or challenge.expires_at <= now
-                or challenge.security_epoch != user.security_epoch
-                or challenge.password_version != user.password_version
-                or challenge.target_email_digest
-                != crypto.digest("email-target", user.email_normalized)
-            ):
-                raise AppError(ErrorCode.RESOURCE_EXPIRED)
-            sessions = await active_sessions_for_recovery(session, user_id=user.id)
-            user.password_hash = password_hash
-            user.password_version += 1
-            user.security_epoch += 1
-            user.revision += 1
-            challenge.consumed_at = now
-            for active in sessions:
-                active.revoked_at = now
-                active.revoke_reason_code = "password_recovery"
-            await append_identity_event(
-                session,
-                action="password.recovered",
-                authorization_revision=revision.revision,
-                actor="password-recovery",
-                actor_user_id=None,
-                audience="client",
-                target_type="user",
-                target_id=user.id,
-                result="committed",
+                crypto=crypto,
+                token=token.get_secret_value(),
+                password_hash=password_hash,
+                now=datetime.now(UTC),
             )
     except AppError:
         raise
     except Exception:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
-    _LOGGER.info("auth.password.recovered", extra=_identity_log_extra(user.id))
+    _LOGGER.info("auth.password.recovered", extra=_identity_log_extra())
+
+
+async def consume_recovery(
+    session: AsyncSession,
+    *,
+    crypto: AuthCrypto,
+    token: str,
+    password_hash: str,
+    now: datetime,
+) -> None:
+    candidate = None
+    matched: Literal["password_recovery", "manual_recovery"] | None = None
+    for purpose in ("password_recovery", "manual_recovery"):
+        found = await challenge_identity_by_digest(
+            session,
+            key_version=crypto.digest_key_version,
+            digest=crypto.digest(f"challenge-{purpose}", token),
+            purpose=purpose,
+        )
+        if found is not None:
+            candidate = found
+            matched = purpose
+            break
+    if candidate is None or matched is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
+    revision = await global_revision_for_update(session)
+    user = await user_for_challenge_for_update(session, candidate[1])
+    challenge = await challenge_by_id_for_update(session, candidate[0])
+    if revision is None or user is None or challenge is None or user.status != "active":
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
+    if (
+        challenge.consumed_at is not None
+        or challenge.revoked_at is not None
+        or challenge.expires_at <= now
+        or challenge.security_epoch != user.security_epoch
+        or challenge.password_version != user.password_version
+        or challenge.target_email_digest != crypto.digest("email-target", user.email_normalized)
+    ):
+        raise AppError(ErrorCode.RESOURCE_EXPIRED)
+    sessions = await active_sessions_for_recovery(session, user_id=user.id)
+    user.password_hash = password_hash
+    user.password_version += 1
+    user.security_epoch += 1
+    user.revision += 1
+    challenge.consumed_at = now
+    for active in sessions:
+        active.revoked_at = now
+        active.revoke_reason_code = "password_recovery"
+    await append_identity_event(
+        session,
+        action="recovery.completed" if matched == "manual_recovery" else "password.recovered",
+        authorization_revision=revision.revision,
+        actor="manual-recovery" if matched == "manual_recovery" else "password-recovery",
+        actor_user_id=None,
+        audience="client",
+        target_type="user",
+        target_id=user.id,
+        result="committed",
+    )

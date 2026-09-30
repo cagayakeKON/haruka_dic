@@ -2,7 +2,7 @@
 
 PLAN2范围补充：本页closed/open、默认关闭和“不提供审批/人工恢复”的限制描述B1最小管理合同，保持不变；B2b补齐原型审批注册与人工恢复策略的真实管理操作、用户端流程及安全交付，见[账号分界](accounts.md)。分别冻结操作权限/授予边界、expected_revision/策略快照、审批决定/身份核验/一次性挑战交付/撤销/审计及失败用例，不允许一个策略开关伪装整个能力完成，不自动改变当前部署策略。
 
-状态：设计基线 v0.1，2026-09-22，未实现。管理端推荐 Flutter Web，权限规则由 [RBAC](../architecture/authorization.md) 与 [权限目录](../contracts/permissions.md) 定义；本篇负责页面操作与失败处理。
+状态：设计基线 v0.1。身份治理的管理操作已有实现和切片复核，正式 Web 对照未做，见[实现记录](../delivery/reviews/2026-09-29-identity-governance-implementation.md)。任务、用量和诊断查询仍未开放。管理端为 Flutter Web，权限规则由 [RBAC](../architecture/authorization.md) 与 [权限目录](../contracts/permissions.md) 定义；本篇负责页面操作与失败处理。
 
 ## 1. 范围、入口与权限
 
@@ -73,7 +73,7 @@ role.create只允许空角色；同时设置初始allow/deny/继承需要role.pe
 
 ### 2.6 审计与诊断
 
-审计可按时间/动作/操作者/目标/结果分页查询，详情展示安全权限差异、revision、原因分类与request/operation ID。应用无编辑/删除审计按钮；首版不提供批量导出审计文件，保持用户导出范围为单词CSV。
+审计可按时间/动作/操作者/目标/结果分页查询，详情展示 revision、原因分类、request/operation ID，以及清洗后的短标量变更摘要。权限标识列表不进入该摘要。应用无编辑/删除审计按钮；首版不提供批量导出审计文件，保持用户导出范围为单词CSV。
 
 诊断接口只允许服务端固定Haruka查询模板和时间/条数上限，DTO脱敏，不接收任意LogQL或其他项目名。Grafana入口仅在运维另行授权时可用，Haruka角色不映射成Grafana管理员。日志接收和管理前端埋点与同一个 [观测规范](../operations/observability.md) 对齐。
 

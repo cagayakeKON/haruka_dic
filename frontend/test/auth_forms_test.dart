@@ -114,6 +114,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('manual recovery submits the review request from the keyboard', (tester) async {
+    String? emailed;
+    String? manual;
+    await tester.pumpWidget(
+      _host(
+        RecoveryRequestPage(
+          emailChannel: false,
+          onSubmit: (email) async => emailed = email,
+          onManual: (email) async => manual = email,
+        ),
+      ),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey(UiTestIds.recoveryRequestEmail)),
+      'person@example.test',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(emailed, isNull);
+    expect(manual, 'person@example.test');
+  });
+
   testWidgets('primary login action keeps prototype height under compact platform density', (
     tester,
   ) async {

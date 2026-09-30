@@ -38,6 +38,13 @@ final class AuthRepository {
     expectedStatus: 202,
   )).data;
 
+  Future<MailReceipt> requestManualRecovery(String email) async => (await api.postJson(
+    '/api/v1/auth/recovery/manual',
+    {'email': email},
+    MailReceipt.fromJson,
+    expectedStatus: 202,
+  )).data;
+
   Future<void> verifyEmail(String token) =>
       api.postEmpty('/api/v1/auth/email/verify', {'token': token});
 
@@ -152,13 +159,374 @@ final class AuthRepository {
       (await api.getJson('/api/v1/admin/auth-policy', AdminPolicy.fromJson, headers: headers)).data;
 
   Future<AdminPolicy> updateAdminPolicy(
-    bool open,
+    String registrationMode,
     int revision,
+    Map<String, String> headers, {
+    String? recoveryMode,
+  }) async => (await api.patchJson(
+    '/api/v1/admin/auth-policy',
+    {
+      'registration_mode': registrationMode,
+      'expected_revision': revision,
+      'recovery_mode': ?recoveryMode,
+    },
+    AdminPolicy.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<List<RoleRead>> adminRoles(Map<String, String> headers) async {
+    final roles = <RoleRead>[];
+    final seen = <String>{};
+    String? cursor;
+    while (true) {
+      final page = await api.getPage(
+        '/api/v1/admin/roles?limit=100'
+        '${cursor == null ? '' : '&cursor=${Uri.encodeQueryComponent(cursor)}'}',
+        RoleRead.fromJson,
+        headers: headers,
+      );
+      roles.addAll(page.data);
+      final next = page.nextCursor;
+      if (next == null || !seen.add(next) || seen.length > 20) {
+        return List.unmodifiable(roles);
+      }
+      cursor = next;
+    }
+  }
+
+  Future<RoleRead> adminRole(String roleId, Map<String, String> headers) async =>
+      (await api.getJson('/api/v1/admin/roles/$roleId', RoleRead.fromJson, headers: headers)).data;
+
+  Future<List<PermissionCatalogRead>> adminPermissions(Map<String, String> headers) async =>
+      (await api.getJson(
+        '/api/v1/admin/permissions',
+        PermissionCatalogRead.list,
+        headers: headers,
+      )).data;
+
+  Future<List<GrantBoundaryRead>> adminGrantBoundaries(
+    String roleId,
+    Map<String, String> headers,
+  ) async => (await api.getJson(
+    '/api/v1/admin/roles/$roleId/grant-boundaries',
+    GrantBoundaryRead.list,
+    headers: headers,
+  )).data;
+
+  Future<AuthorizationWriteResult> createAdminRole(
+    String code,
+    String name,
+    String? description,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/roles',
+    {'code': code, 'name': name, 'description': description},
+    AuthorizationWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AuthorizationWriteResult> updateAdminRole(
+    String roleId,
+    int revision,
+    String name,
+    String? description,
     Map<String, String> headers,
   ) async => (await api.patchJson(
-    '/api/v1/admin/auth-policy',
-    {'registration_mode': open ? 'open' : 'closed', 'expected_revision': revision},
-    AdminPolicy.fromJson,
+    '/api/v1/admin/roles/$roleId',
+    {'expected_revision': revision, 'name': name, 'description': description},
+    AuthorizationWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AuthorizationWriteResult> setAdminRoleEnabled(
+    String roleId,
+    int revision,
+    bool enabled,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/roles/$roleId/enabled',
+    {'expected_revision': revision, 'enabled': enabled},
+    AuthorizationWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AuthorizationWriteResult> replaceAdminRoleGrants(
+    String roleId,
+    int revision,
+    List<RoleGrantRead> grants,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/roles/$roleId/grants',
+    {
+      'expected_revision': revision,
+      'grants': [
+        for (final grant in grants)
+          {
+            'permission_code': grant.permissionCode,
+            'effect': grant.effect,
+            'data_scope': grant.dataScope,
+          },
+      ],
+    },
+    AuthorizationWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AuthorizationWriteResult> replaceAdminRoleParents(
+    String roleId,
+    int revision,
+    List<String> parentRoleIds,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/roles/$roleId/inheritance',
+    {'expected_revision': revision, 'parent_role_ids': parentRoleIds},
+    AuthorizationWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AuthorizationWriteResult> deleteAdminRole(
+    String roleId,
+    int revision,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/roles/$roleId/deletion',
+    {'expected_revision': revision},
+    AuthorizationWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AuthorizationWriteResult> replaceAdminGrantBoundaries(
+    String roleId,
+    int revision,
+    List<GrantBoundaryRead> boundaries,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/roles/$roleId/grant-boundaries',
+    {
+      'expected_revision': revision,
+      'boundaries': [
+        for (final boundary in boundaries)
+          {
+            'boundary_kind': boundary.boundaryKind,
+            'target_role_id': boundary.targetRoleId,
+            'permission_code': boundary.permissionCode,
+            'data_scope': boundary.dataScope,
+          },
+      ],
+    },
+    AuthorizationWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<List<GovernedAccountRead>> adminAccounts(Map<String, String> headers) async {
+    final accounts = <GovernedAccountRead>[];
+    final seen = <String>{};
+    String? cursor;
+    while (true) {
+      final page = await api.getPage(
+        '/api/v1/admin/users?limit=100'
+        '${cursor == null ? '' : '&cursor=${Uri.encodeQueryComponent(cursor)}'}',
+        GovernedAccountRead.fromJson,
+        headers: headers,
+      );
+      accounts.addAll(page.data);
+      final next = page.nextCursor;
+      if (next == null || !seen.add(next) || seen.length > 20) {
+        return List.unmodifiable(accounts);
+      }
+      cursor = next;
+    }
+  }
+
+  Future<GovernedAccountRead> adminAccount(String userId, Map<String, String> headers) async =>
+      (await api.getJson(
+        '/api/v1/admin/users/$userId',
+        GovernedAccountRead.fromJson,
+        headers: headers,
+      )).data;
+
+  Future<GovernanceSummaryRead> adminGovernanceSummary(Map<String, String> headers) async =>
+      (await api.getJson(
+        '/api/v1/admin/governance-summary',
+        GovernanceSummaryRead.fromJson,
+        headers: headers,
+      )).data;
+
+  Future<PageResponse<AuditEventRead>> adminAuditEvents(
+    Map<String, String> headers, {
+    String? cursor,
+    String? result,
+  }) {
+    final query = [
+      'limit=50',
+      if (cursor != null) 'cursor=${Uri.encodeQueryComponent(cursor)}',
+      if (result != null) 'result=${Uri.encodeQueryComponent(result)}',
+    ].join('&');
+    return api.getPage(
+      '/api/v1/admin/audit-events?$query',
+      AuditEventRead.fromJson,
+      headers: headers,
+    );
+  }
+
+  Future<AccountCeilingsRead> adminAccountCeilings(Map<String, String> headers) async =>
+      (await api.getJson(
+        '/api/v1/admin/account-ceilings',
+        AccountCeilingsRead.fromJson,
+        headers: headers,
+      )).data;
+
+  Future<AccountWriteResult> createAdminAccount(
+    String email,
+    String? displayName,
+    List<String> roleIds,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/users',
+    {'email': email, 'display_name': displayName, 'role_ids': roleIds},
+    AccountWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AccountWriteResult> setAdminAccountStatus(
+    String userId,
+    int revision,
+    String status,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/users/$userId/status',
+    {'expected_revision': revision, 'status': status},
+    AccountWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AccountWriteResult> decideAdminApproval(
+    String userId,
+    int revision,
+    String decision,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/users/$userId/approval',
+    {'expected_revision': revision, 'decision': decision},
+    AccountWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AccountWriteResult> replaceAdminAccountRoles(
+    String userId,
+    int revision,
+    List<String> roleIds,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/users/$userId/roles',
+    {'expected_revision': revision, 'role_ids': roleIds},
+    AccountWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<List<ManualRecoveryRead>> adminRecoveryRequests(
+    String userId,
+    Map<String, String> headers,
+  ) async => (await api.getJson(
+    '/api/v1/admin/users/$userId/recovery-requests',
+    ManualRecoveryRead.list,
+    headers: headers,
+  )).data;
+
+  Future<ManualRecoveryDecisionResult> decideAdminRecovery(
+    String userId,
+    String challengeId,
+    int revision,
+    String decision,
+    String? verificationMethod,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/users/$userId/recovery-decisions',
+    {
+      'challenge_id': challengeId,
+      'expected_revision': revision,
+      'decision': decision,
+      'verification_method': ?verificationMethod,
+    },
+    ManualRecoveryDecisionResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<List<AccountSessionRead>> adminAccountSessions(
+    String userId,
+    Map<String, String> headers,
+  ) async => (await api.getJson(
+    '/api/v1/admin/users/$userId/sessions',
+    AccountSessionRead.list,
+    headers: headers,
+  )).data;
+
+  Future<List<MenuRead>> adminMenus(Map<String, String> headers) async =>
+      (await api.getJson('/api/v1/admin/menus', MenuRead.list, headers: headers)).data;
+
+  Future<MenuCatalogRead> adminMenuCatalog(Map<String, String> headers) async => (await api.getJson(
+    '/api/v1/admin/menu-catalog',
+    MenuCatalogRead.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<MenuWriteResult> createAdminMenuGroup(
+    String code,
+    String audience,
+    String title,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/menus',
+    {'code': code, 'audience': audience, 'title': title, 'parent_menu_id': null, 'sort_order': 0},
+    MenuWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<MenuWriteResult> replaceAdminMenuLayout(
+    List<MenuRead> items,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/menus/layout',
+    {
+      'items': [
+        for (final item in items)
+          {
+            'menu_id': item.id,
+            'expected_revision': item.revision,
+            'title': item.title,
+            'parent_menu_id': item.parentMenuId,
+            'sort_order': item.sortOrder,
+            'icon_key': item.iconKey,
+            'enabled': item.enabled,
+            'permission_match': item.permissionMatch,
+            'permission_codes': item.permissionCodes,
+          },
+      ],
+    },
+    MenuWriteResult.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<MenuPreviewRead> previewAdminMenus(
+    String userId,
+    String audience,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/menus/preview',
+    {'user_id': userId, 'audience': audience},
+    MenuPreviewRead.fromJson,
+    headers: headers,
+  )).data;
+
+  Future<AccountWriteResult> revokeAdminAccountSessions(
+    String userId,
+    int revision,
+    Map<String, Object?> body,
+    Map<String, String> headers,
+  ) async => (await api.postJson(
+    '/api/v1/admin/users/$userId/session-revocations',
+    body,
+    AccountWriteResult.fromJson,
     headers: headers,
   )).data;
 

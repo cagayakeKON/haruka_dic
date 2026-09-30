@@ -583,6 +583,7 @@ GoRouter createRouter(
             ? RegistrationPage(
                 passwordMinLength: auth.policy!.passwordMinLength,
                 passwordMaxLength: auth.policy!.passwordMaxLength,
+                approvalRequired: auth.policy!.approvalRequired,
                 onBackToLogin: () => context.go(AppRoutes.login),
                 onRegister: (email, password) async {
                   final router = GoRouter.of(context);
@@ -628,6 +629,24 @@ GoRouter createRouter(
               )
             : RecoveryRequestPage(
                 admin: state.uri.queryParameters['from'] == 'admin',
+                emailChannel:
+                    auth.policy!.recoveryMode == 'email' ||
+                    auth.policy!.recoveryMode == 'email_or_manual',
+                onManual:
+                    auth.policy!.recoveryMode == 'manual' ||
+                        auth.policy!.recoveryMode == 'email_or_manual'
+                    ? (email) async {
+                        final router = GoRouter.of(context);
+                        final attemptEpoch = auth.actionEpoch;
+                        await auth.requestManualRecovery(email);
+                        if (auth.actionEpoch == attemptEpoch) {
+                          final from = state.uri.queryParameters['from'] == 'admin'
+                              ? 'from=admin&'
+                              : '';
+                          router.go('/recovery-received?${from}channel=manual');
+                        }
+                      }
+                    : null,
                 onSubmit: (email) async {
                   final router = GoRouter.of(context);
                   final attemptEpoch = auth.actionEpoch;
@@ -647,7 +666,9 @@ GoRouter createRouter(
       path: AppRoutes.recoveryReceived,
       builder: (context, state) => AuthResultPage(
         title: AppLocalizations.of(context).authRecoveryReceived,
-        message: AppLocalizations.of(context).authRecoveryReceivedHint,
+        message: state.uri.queryParameters['channel'] == 'manual'
+            ? AppLocalizations.of(context).authRecoveryAwaitReview
+            : AppLocalizations.of(context).authRecoveryReceivedHint,
         backLocation: state.uri.queryParameters['from'] == 'admin'
             ? AppRoutes.adminLogin
             : AppRoutes.login,
@@ -924,12 +945,14 @@ GoRouter createRouter(
       ),
     ..._adminRoutes(
       config.platform == AppPlatform.web,
-      (context, state) => _watchAuth(
-        auth,
-        () => auth.isAuthenticated && auth.admin
+      (context, state) => _watchAuth(auth, () {
+        final section =
+            state.pathParameters['section'] ??
+            firstLiveAdminSection(auth.access?.navigation.map((item) => item.routeKey) ?? const []);
+        return auth.isAuthenticated && auth.admin
             ? AdminPage(
-                key: _accountScope(auth, 'admin-${state.pathParameters['section'] ?? 'policy'}'),
-                section: state.pathParameters['section'] ?? 'policy',
+                key: _accountScope(auth, 'admin-$section'),
+                section: section,
                 liveAuth: auth,
               )
             : auth.phase == AuthPhase.starting || auth.phase == AuthPhase.unavailable
@@ -977,10 +1000,16 @@ GoRouter createRouter(
                     },
                     operationId: operationId,
                   );
-                  router.go(AppRoutes.admin);
+                  router.go(
+                    AppRoutes.adminSectionPath(
+                      firstLiveAdminSection(
+                        auth.access?.navigation.map((item) => item.routeKey) ?? const [],
+                      ),
+                    ),
+                  );
                 },
-              ),
-      ),
+              );
+      }),
       (context, state) => _watchAuth(
         auth,
         () => auth.isAuthenticated && auth.admin

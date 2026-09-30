@@ -52,6 +52,7 @@ const _unboundMethods = <String, Set<String>>{
   '/api/v1/auth/email/resend': {'POST'},
   '/api/v1/auth/email/verify': {'POST'},
   '/api/v1/auth/recovery/request': {'POST'},
+  '/api/v1/auth/recovery/manual': {'POST'},
   '/api/v1/auth/recovery/complete': {'POST'},
   '/api/v1/auth/activation/status': {'GET'},
   '/api/v1/auth/login': {'POST'},

@@ -50,6 +50,7 @@ from app.services.auth_policy import read_admin_policy, read_public_policy, upda
 from app.services.registration import activation_status as read_activation_status
 from app.services.registration import complete_recovery as consume_password_recovery
 from app.services.registration import email_identity, register, request_challenge
+from app.services.registration import request_manual_recovery as accept_manual_recovery
 from app.services.registration import verify_email as consume_email_verification
 from app.services.sessions import (
     change_password,
@@ -226,6 +227,27 @@ async def request_recovery(
     _, normalized = email_identity(payload.email)
     await rate_limit(request, runtime, purpose="recovery", identity=normalized)
     receipt = await request_challenge(runtime, email=payload.email, purpose="password_recovery")
+    return SuccessResponse[MailAccepted](
+        data=receipt, meta=ResponseMeta(request_id=get_request_id(request))
+    )
+
+
+@router.post(
+    "/auth/recovery/manual",
+    operation_id="request_manual_recovery",
+    status_code=202,
+    response_model=SuccessResponse[MailAccepted],
+    responses=COMMON,
+    openapi_extra={"x-haruka-access": "public-manual-recovery"},
+)
+async def request_manual_recovery(
+    request: Request, payload: EmailRequest
+) -> SuccessResponse[MailAccepted]:
+    runtime = require_runtime(request)
+    require_public_write(request, runtime)
+    _, normalized = email_identity(payload.email)
+    await rate_limit(request, runtime, purpose="recovery", identity=normalized)
+    receipt = await accept_manual_recovery(runtime, email=payload.email)
     return SuccessResponse[MailAccepted](
         data=receipt, meta=ResponseMeta(request_id=get_request_id(request))
     )

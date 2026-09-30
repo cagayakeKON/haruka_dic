@@ -2,10 +2,10 @@
   "excluded_internal_tables": [
     "alembic_version"
   ],
-  "migration_revision": "0006_avatar_assets",
+  "migration_revision": "0007_authorization_governance",
   "schema_version": 1,
   "source": "backend/app/models",
-  "source_sha256": "f188b097bec15ea5bc584294101b05818f72886f4abbaa4745cfb2c5880f335c",
+  "source_sha256": "472d03887c53a1eda81af131b90399085ecc0766465547896b20c6da48646fb7",
   "tables": [
     {
       "columns": [
@@ -244,7 +244,7 @@
       "comment": "受控维护与身份安全追加审计，不包含密码、邮箱或私有材料",
       "constraints": [
         {
-          "definition": "action IN ('seed.applied', 'admin.created', 'auth_policy.updated', 'account.registered', 'email.verified', 'password.recovered', 'password.changed', 'session.created', 'session.revoked', 'refresh.replayed', 'auth.login.denied')",
+          "definition": "action IN ('account.registered', 'admin.created', 'auth.login.denied', 'auth_policy.updated', 'authorization.denied', 'email.verified', 'grant_boundary.updated', 'menu.updated', 'password.changed', 'password.recovered', 'recovery.accepted', 'recovery.challenge_issued', 'recovery.completed', 'recovery.rejected', 'recovery.requested', 'recovery.verified', 'refresh.replayed', 'role.created', 'role.deleted', 'role.inheritance_changed', 'role.permission_assigned', 'role.updated', 'seed.applied', 'session.created', 'session.revoked', 'user.approved', 'user.created', 'user.disabled', 'user.enabled', 'user.rejected', 'user.role_assigned', 'user.role_removed', 'user.updated')",
           "kind": "check",
           "name": "ck_admin_audit_events_action"
         },
@@ -480,7 +480,7 @@
           "name": "ck_auth_policies_code"
         },
         {
-          "definition": "recovery_mode IN ('disabled', 'email')",
+          "definition": "recovery_mode IN ('disabled', 'email', 'manual', 'email_or_manual')",
           "kind": "check",
           "name": "ck_auth_policies_recovery_mode"
         },
@@ -2855,6 +2855,136 @@
     {
       "columns": [
         {
+          "comment": "已锁定菜单",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked menu"
+          },
+          "name": "menu_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "附加显示所需的已注册权限",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked permission catalog"
+          },
+          "name": "permission_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "菜单附加显示权限；不能降低页面最低权限",
+      "constraints": [
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_menu_permission_links"
+        },
+        {
+          "definition": [
+            "menu_id",
+            "permission_code"
+          ],
+          "kind": "unique",
+          "name": "uq_menu_permission_links_menu_id_permission_code"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "permission_code",
+            "menu_id"
+          ],
+          "metadata": {
+            "purpose": "menus affected by a permission change"
+          },
+          "name": "ix_menu_permission_links_permission_menu",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authenticated admin menu service"
+        ],
+        "deletion_policy": "restrict until the menu condition is explicitly removed",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "menu_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.authorization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "menus.id",
+            "tests": "tests/unit/test_authorization.py"
+          },
+          {
+            "column": "permission_code",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.authorization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "permission_catalog.code",
+            "tests": "tests/unit/test_authorization.py"
+          }
+        ],
+        "module": "authorization",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "menu_permission_links"
+    },
+    {
+      "columns": [
+        {
           "comment": "菜单代码",
           "default": null,
           "metadata": {
@@ -2867,14 +2997,26 @@
           "type": "VARCHAR(64)"
         },
         {
-          "comment": "前端已注册路由键",
+          "comment": "前端已注册路由键；分组可为空",
           "default": null,
           "metadata": {
             "sensitivity": "internal",
             "source": "release route registry"
           },
           "name": "route_key",
-          "nullable": false,
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "已发布组件键；分组可为空",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release component registry"
+          },
+          "name": "component_key",
+          "nullable": true,
           "primary_key": false,
           "type": "VARCHAR(64)"
         },
@@ -2891,16 +3033,64 @@
           "type": "VARCHAR(10)"
         },
         {
-          "comment": "显示所需权限；不代替接口授权",
+          "comment": "同受众父菜单；空表示顶层",
           "default": null,
           "metadata": {
             "sensitivity": "internal",
-            "source": "locked permission catalog"
+            "source": "locked menu"
           },
-          "name": "permission_code",
+          "name": "parent_menu_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "菜单标题",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled admin"
+          },
+          "name": "title",
           "nullable": false,
           "primary_key": false,
           "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "已发布图标键",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release icon registry"
+          },
+          "name": "icon_key",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(64)"
+        },
+        {
+          "comment": "同级显示顺序",
+          "default": "0",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled admin"
+          },
+          "name": "sort_order",
+          "nullable": false,
+          "primary_key": false,
+          "type": "INTEGER"
+        },
+        {
+          "comment": "附加显示条件的all或any匹配",
+          "default": "'all'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled policy"
+          },
+          "name": "permission_match",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(3)"
         },
         {
           "comment": "菜单是否提供可用入口",
@@ -2971,9 +3161,19 @@
           "name": "ck_menus_audience"
         },
         {
+          "definition": "permission_match IN ('all', 'any')",
+          "kind": "check",
+          "name": "ck_menus_permission_match"
+        },
+        {
           "definition": "revision >= 1",
           "kind": "check",
           "name": "ck_menus_revision_positive"
+        },
+        {
+          "definition": "sort_order >= 0",
+          "kind": "check",
+          "name": "ck_menus_sort_order_nonnegative"
         },
         {
           "definition": [
@@ -2990,7 +3190,21 @@
           "name": "uq_menus_code"
         }
       ],
-      "indexes": [],
+      "indexes": [
+        {
+          "columns": [
+            "audience",
+            "parent_menu_id",
+            "sort_order",
+            "id"
+          ],
+          "metadata": {
+            "purpose": "ordered navigation for one audience"
+          },
+          "name": "ix_menus_audience_parent_sort",
+          "unique": false
+        }
+      ],
       "metadata": {
         "allowed_entrances": [
           "controlled maintenance initialization"
@@ -2999,14 +3213,14 @@
         "lifecycle": "mutable",
         "logical_relations": [
           {
-            "column": "permission_code",
+            "column": "parent_menu_id",
             "deletion": "restrict",
-            "nullable": false,
+            "nullable": true,
             "parent_lock": "authorization_revisions.global serializes all changes before locking target parent rows; advisory lock protects an absent global row",
             "scope_rule": "controlled maintenance metadata only; no private content access",
             "service": "app.services.initialization",
             "state_rule": "existing active parent at write; immutable ownership",
-            "target": "permission_catalog.code",
+            "target": "menus.id",
             "tests": "tests/integration/test_initialization.py"
           }
         ],
@@ -3750,6 +3964,503 @@
         "scope_kind": "system_catalog"
       },
       "name": "permission_catalog"
+    },
+    {
+      "columns": [
+        {
+          "comment": "依赖其他权限的已注册权限",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release catalog"
+          },
+          "name": "permission_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "必须同时成立的已注册权限",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "release catalog"
+          },
+          "name": "required_permission_code",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "发布注册的静态权限依赖；不表达运行时复合条件",
+      "constraints": [
+        {
+          "definition": "permission_code <> required_permission_code",
+          "kind": "check",
+          "name": "ck_permission_dependency_links_distinct_permissions"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_permission_dependency_links"
+        },
+        {
+          "definition": [
+            "permission_code",
+            "required_permission_code"
+          ],
+          "kind": "unique",
+          "name": "uq_permission_dependency_links_pair"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "required_permission_code",
+            "permission_code"
+          ],
+          "metadata": {
+            "purpose": "permission retirement impact"
+          },
+          "name": "ix_permission_dependency_links_required",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "release seed"
+        ],
+        "deletion_policy": "restrict while a published dependency remains",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "permission_code",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.initialization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "permission_catalog.code",
+            "tests": "tests/unit/test_authorization.py"
+          },
+          {
+            "column": "required_permission_code",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.initialization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "permission_catalog.code",
+            "tests": "tests/unit/test_authorization.py"
+          }
+        ],
+        "module": "authorization",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "permission_dependency_links"
+    },
+    {
+      "columns": [
+        {
+          "comment": "形成上限的操作者角色",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked role"
+          },
+          "name": "grantor_role_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "assign_role、assign_permission、manage_account_role或manage_unassigned_accounts",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "controlled grant"
+          },
+          "name": "boundary_kind",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(32)"
+        },
+        {
+          "comment": "可分配或可管理成员的目标角色",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked role"
+          },
+          "name": "target_role_id",
+          "nullable": true,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "可配置到角色上的已注册权限",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked permission catalog"
+          },
+          "name": "permission_code",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(100)"
+        },
+        {
+          "comment": "可配置权限的数据范围",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked permission catalog"
+          },
+          "name": "data_scope",
+          "nullable": true,
+          "primary_key": false,
+          "type": "VARCHAR(24)"
+        },
+        {
+          "comment": "授予上限并发版本",
+          "default": "1",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "authorization transaction"
+          },
+          "name": "revision",
+          "nullable": false,
+          "primary_key": false,
+          "type": "BIGINT"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "委派管理员的授予上限；不能借此提高自身权限",
+      "constraints": [
+        {
+          "definition": "(boundary_kind IN ('assign_role', 'manage_account_role') AND target_role_id IS NOT NULL AND permission_code IS NULL AND data_scope IS NULL) OR (boundary_kind = 'assign_permission' AND target_role_id IS NULL AND permission_code IS NOT NULL AND data_scope IN ('self', 'platform_metadata')) OR (boundary_kind = 'manage_unassigned_accounts' AND target_role_id IS NULL AND permission_code IS NULL AND data_scope IS NULL)",
+          "kind": "check",
+          "name": "ck_role_grant_boundaries_boundary_shape"
+        },
+        {
+          "definition": "revision >= 1",
+          "kind": "check",
+          "name": "ck_role_grant_boundaries_revision_positive"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_role_grant_boundaries"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "target_role_id",
+            "grantor_role_id"
+          ],
+          "metadata": {
+            "purpose": "grant boundary impact when a role changes"
+          },
+          "name": "ix_role_grant_boundaries_target_grantor",
+          "unique": false
+        },
+        {
+          "columns": [
+            "grantor_role_id",
+            "boundary_kind",
+            "permission_code",
+            "data_scope"
+          ],
+          "metadata": {
+            "purpose": "one permission ceiling per grantor"
+          },
+          "name": "uq_role_grant_boundaries_permission",
+          "unique": true
+        },
+        {
+          "columns": [
+            "grantor_role_id",
+            "boundary_kind",
+            "target_role_id"
+          ],
+          "metadata": {
+            "purpose": "one role assignment ceiling per grantor"
+          },
+          "name": "uq_role_grant_boundaries_role_target",
+          "unique": true
+        },
+        {
+          "columns": [
+            "grantor_role_id",
+            "boundary_kind"
+          ],
+          "metadata": {
+            "purpose": "one unassigned-account ceiling per grantor"
+          },
+          "name": "uq_role_grant_boundaries_unassigned",
+          "unique": true
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authenticated admin authorization service"
+        ],
+        "deletion_policy": "restrict until the ceiling is explicitly removed",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "grantor_role_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.authorization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "roles.id",
+            "tests": "tests/unit/test_authorization.py"
+          },
+          {
+            "column": "target_role_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": true,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.authorization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "roles.id",
+            "tests": "tests/unit/test_authorization.py"
+          },
+          {
+            "column": "permission_code",
+            "deletion": "restrict or explicitly detach",
+            "nullable": true,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.authorization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "permission_catalog.code",
+            "tests": "tests/unit/test_authorization.py"
+          }
+        ],
+        "module": "authorization",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "role_grant_boundaries"
+    },
+    {
+      "columns": [
+        {
+          "comment": "继承方角色",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked role"
+          },
+          "name": "child_role_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "被继承的父角色",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "locked role"
+          },
+          "name": "parent_role_id",
+          "nullable": false,
+          "primary_key": false,
+          "type": "UUID"
+        },
+        {
+          "comment": "服务端生成的稳定标识",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "server.uuid4"
+          },
+          "name": "id",
+          "nullable": false,
+          "primary_key": true,
+          "type": "UUID"
+        },
+        {
+          "comment": "本行创建时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "created_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "comment": "本行最近一次实际更新的时间，UTC",
+          "default": "now()",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "database.now"
+          },
+          "name": "updated_at",
+          "nullable": false,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "comment": "角色有向继承；无环和深度由授权事务校验",
+      "constraints": [
+        {
+          "definition": "child_role_id <> parent_role_id",
+          "kind": "check",
+          "name": "ck_role_inheritance_links_distinct_roles"
+        },
+        {
+          "definition": [
+            "id"
+          ],
+          "kind": "primary_key",
+          "name": "pk_role_inheritance_links"
+        },
+        {
+          "definition": [
+            "child_role_id",
+            "parent_role_id"
+          ],
+          "kind": "unique",
+          "name": "uq_role_inheritance_links_child_role_id_parent_role_id"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "parent_role_id",
+            "child_role_id"
+          ],
+          "metadata": {
+            "purpose": "upstream inheritance impact"
+          },
+          "name": "ix_role_inheritance_links_parent_child",
+          "unique": false
+        }
+      ],
+      "metadata": {
+        "allowed_entrances": [
+          "authenticated admin authorization service"
+        ],
+        "deletion_policy": "restrict until references are explicitly removed",
+        "lifecycle": "mutable",
+        "logical_relations": [
+          {
+            "column": "child_role_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.authorization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "roles.id",
+            "tests": "tests/unit/test_authorization.py"
+          },
+          {
+            "column": "parent_role_id",
+            "deletion": "restrict or explicitly detach",
+            "nullable": false,
+            "parent_lock": "authorization_revisions.global then stable role or menu parent rows",
+            "scope_rule": "resolve from the authenticated owner; never trust a client owner identifier",
+            "service": "app.services.authorization",
+            "state_rule": "check active parent and matching owner inside the write transaction",
+            "target": "roles.id",
+            "tests": "tests/unit/test_authorization.py"
+          }
+        ],
+        "module": "authorization",
+        "owner_column": null,
+        "scope_kind": "system_catalog"
+      },
+      "name": "role_inheritance_links"
     },
     {
       "columns": [
@@ -5459,7 +6170,7 @@
           "name": "ck_user_auth_challenges_failed_attempts_nonnegative"
         },
         {
-          "definition": "purpose IN ('email_verify', 'password_recovery', 'reauth')",
+          "definition": "purpose IN ('email_verify', 'password_recovery', 'reauth', 'manual_recovery')",
           "kind": "check",
           "name": "ck_user_auth_challenges_purpose"
         },
@@ -6710,6 +7421,18 @@
           "type": "TIMESTAMP WITH TIME ZONE"
         },
         {
+          "comment": "审批状态；既有账号回填为不需要审批",
+          "default": "'not_required'",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "identity service"
+          },
+          "name": "approval_status",
+          "nullable": false,
+          "primary_key": false,
+          "type": "VARCHAR(16)"
+        },
+        {
           "comment": "用户端持久撤销代次",
           "default": "0",
           "metadata": {
@@ -6772,6 +7495,11 @@
       ],
       "comment": "独立账号身份；注册与首管理员初始化分别受控",
       "constraints": [
+        {
+          "definition": "approval_status IN ('not_required', 'pending', 'approved', 'rejected')",
+          "kind": "check",
+          "name": "ck_users_approval_status"
+        },
         {
           "definition": "authz_version >= 1",
           "kind": "check",

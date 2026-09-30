@@ -25,10 +25,10 @@ def _opaque_token_input(value: SecretStr) -> SecretStr:
 
 class AuthPolicyRead(ApiModel):
     registration_enabled: bool
-    approval_required: Literal[False] = False
+    approval_required: bool
     email_verification_required: Literal[True] = True
     recovery_enabled: bool
-    recovery_mode: Literal["email"] = "email"
+    recovery_mode: Literal["disabled", "email", "manual", "email_or_manual"]
     action_link_base_url: str
     password_min_length: int = Field(ge=1)
     password_max_length: int = Field(ge=1)
@@ -41,15 +41,16 @@ class MetaRead(ApiModel):
 
 
 class AdminAuthPolicyRead(ApiModel):
-    registration_mode: Literal["closed", "open"]
+    registration_mode: Literal["closed", "approval", "open"]
     registration_enabled: bool
     email_verification_required: Literal[True] = True
-    recovery_mode: Literal["email"] = "email"
+    recovery_mode: Literal["disabled", "email", "manual", "email_or_manual"]
     revision: int = Field(ge=1)
 
 
 class AdminAuthPolicyUpdate(ApiModel):
-    registration_mode: Literal["closed", "open"]
+    registration_mode: Literal["closed", "approval", "open"]
+    recovery_mode: Literal["disabled", "email", "manual", "email_or_manual"] | None = None
     expected_revision: int = Field(ge=1)
 
 
@@ -71,7 +72,7 @@ class EmailRequest(ApiModel):
 
 class MailAccepted(ApiModel):
     state: Literal["accepted"] = "accepted"
-    next_step: Literal["verify_email", "check_email"]
+    next_step: Literal["verify_email", "check_email", "await_review"]
 
 
 class TokenRequest(ApiModel):
@@ -135,7 +136,7 @@ class NativeAuthenticated(ApiModel):
 
 class ActivationRequired(ApiModel):
     state: Literal["action_required"] = "action_required"
-    action_required: Literal["verify_email"] = "verify_email"
+    action_required: Literal["verify_email", "await_approval", "rejected"] = "verify_email"
     continuation_token: str
     continuation_expires_at: datetime
 
@@ -145,7 +146,7 @@ NativeLoginRead = Annotated[NativeAuthenticated | ActivationRequired, Field(disc
 
 
 class ActivationStatusRead(ApiModel):
-    state: Literal["pending_email", "active"]
+    state: Literal["pending_email", "pending_approval", "rejected", "active"]
     action_required: Literal["verify_email"] | None
     expires_at: datetime
 

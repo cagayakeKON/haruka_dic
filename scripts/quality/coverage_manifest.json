@@ -112,6 +112,34 @@
         "backend-foundation"
       ]
     },
+    "backend/app/api/audit_governance.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/user_governance.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/menu_governance.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/api/role_governance.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
     "backend/app/api/responses.py": {
       "language": "python",
       "kind": "core",
@@ -203,6 +231,13 @@
       "language": "python",
       "kind": "ordinary",
       "groups": []
+    },
+    "backend/app/contracts/navigation.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
     },
     "backend/app/contracts/permissions.py": {
       "language": "python",
@@ -380,6 +415,26 @@
       "kind": "ordinary",
       "groups": []
     },
+    "backend/app/schemas/audit_governance.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/user_governance.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/menu_governance.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "backend/app/schemas/role_governance.py": {
+      "language": "python",
+      "kind": "ordinary",
+      "groups": []
+    },
     "backend/app/schemas/responses.py": {
       "language": "python",
       "kind": "core",
@@ -408,6 +463,13 @@
       ]
     },
     "backend/app/services/auth_crypto.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/authorization.py": {
       "language": "python",
       "kind": "core",
       "groups": [
@@ -463,7 +525,35 @@
         "backend-foundation"
       ]
     },
+    "backend/app/services/menu_governance.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/role_governance.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
     "backend/app/services/security_events.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/audit_governance.py": {
+      "language": "python",
+      "kind": "core",
+      "groups": [
+        "backend-foundation"
+      ]
+    },
+    "backend/app/services/user_governance.py": {
       "language": "python",
       "kind": "core",
       "groups": [
@@ -676,6 +766,31 @@
       "groups": [
         "frontend-foundation"
       ]
+    },
+    "frontend/lib/features/admin/presentation/admin_pages.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/admin/presentation/governance_overview_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/admin/presentation/user_governance_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/admin/presentation/menu_governance_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
+    },
+    "frontend/lib/features/admin/presentation/role_governance_page.dart": {
+      "language": "flutter",
+      "kind": "ordinary",
+      "groups": []
     },
     "frontend/lib/features/auth/account_pages.dart": {
       "language": "flutter",

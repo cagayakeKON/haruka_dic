@@ -29,6 +29,10 @@ from app.schemas.auth import AdminAuthPolicyRead, AdminAuthPolicyUpdate, AuthPol
 from app.services.auth_context import ScopeContext, verify_scope_in_transaction
 
 _LOGGER = logging.getLogger(__name__)
+RECOVERY_MODES = frozenset({"disabled", "email", "manual", "email_or_manual"})
+EMAIL_RECOVERY_MODES = frozenset({"email", "email_or_manual"})
+MANUAL_RECOVERY_MODES = frozenset({"manual", "email_or_manual"})
+RecoveryMode = Literal["disabled", "email", "manual", "email_or_manual"]
 
 
 def mail_ready(runtime: Runtime) -> bool:
@@ -53,9 +57,14 @@ async def read_public_policy(runtime: Runtime) -> AuthPolicyRead:
     except Exception:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
     enabled = mail_ready(runtime)
+    offered = policy.registration_mode in {"open", "approval"}
+    mode = cast(RecoveryMode, policy.recovery_mode)
     return AuthPolicyRead(
-        registration_enabled=policy.registration_mode == "open" and enabled,
-        recovery_enabled=policy.recovery_mode == "email" and enabled,
+        registration_enabled=offered and enabled,
+        approval_required=policy.registration_mode == "approval",
+        recovery_enabled=mode in MANUAL_RECOVERY_MODES
+        or (mode in EMAIL_RECOVERY_MODES and enabled),
+        recovery_mode=mode,
         action_link_base_url=runtime.settings.public_base_url,
         password_min_length=15,
         password_max_length=128,
@@ -66,18 +75,21 @@ async def _registration_policy(session: AsyncSession) -> AuthPolicy:
     policy = await registration_policy(session)
     if (
         policy is None
-        or policy.registration_mode not in {"closed", "open"}
+        or policy.registration_mode not in {"closed", "approval", "open"}
         or not policy.require_email_verification
-        or policy.recovery_mode != "email"
+        or policy.recovery_mode not in RECOVERY_MODES
     ):
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     return policy
 
 
 def _admin_view(policy: AuthPolicy) -> AdminAuthPolicyRead:
+    mode = cast(Literal["closed", "approval", "open"], policy.registration_mode)
+    recovery = cast(RecoveryMode, policy.recovery_mode)
     return AdminAuthPolicyRead(
-        registration_mode=cast(Literal["closed", "open"], policy.registration_mode),
-        registration_enabled=policy.registration_mode == "open",
+        registration_mode=mode,
+        registration_enabled=mode != "closed",
+        recovery_mode=recovery,
         revision=policy.revision,
     )
 
@@ -109,7 +121,9 @@ async def update_admin_policy(
     resources = runtime.resources
     if resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
-    if payload.registration_mode == "open" and not mail_ready(runtime):
+    if payload.registration_mode in {"open", "approval"} and not mail_ready(runtime):
+        raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
+    if payload.recovery_mode in EMAIL_RECOVERY_MODES and not mail_ready(runtime):
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     try:
         async with resources.database.sessions() as session, session.begin():
@@ -129,17 +143,23 @@ async def update_admin_policy(
             if (
                 policy is None
                 or not policy.require_email_verification
-                or policy.recovery_mode != "email"
+                or policy.registration_mode not in {"closed", "approval", "open"}
+                or policy.recovery_mode not in RECOVERY_MODES
             ):
                 raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
             if policy.revision != payload.expected_revision:
                 raise AppError(ErrorCode.REVISION_CONFLICT)
-            if payload.registration_mode == "open":
+            next_recovery = payload.recovery_mode or policy.recovery_mode
+            registration_changed = policy.registration_mode != payload.registration_mode
+            recovery_changed = policy.recovery_mode != next_recovery
+            if not registration_changed and not recovery_changed:
+                return _admin_view(policy)
+            if registration_changed and payload.registration_mode in {"open", "approval"}:
                 # The public role remains non-protected and client-only at the point of opening.
                 await validate_public_registration_role(session, policy.default_role_id)
-            if policy.registration_mode == payload.registration_mode:
-                return _admin_view(policy)
+            # Existing accounts, approval snapshots, and in-flight challenges stay as stored.
             policy.registration_mode = payload.registration_mode
+            policy.recovery_mode = next_recovery
             policy.revision += 1
             policy.updated_at = datetime.now(UTC)
             revision.revision += 1
@@ -154,7 +174,10 @@ async def update_admin_policy(
                 target_code="registration",
                 result="committed",
                 payload_schema_version=1,
-                change_summary={"registration_mode": payload.registration_mode},
+                change_summary={
+                    "registration_mode": payload.registration_mode,
+                    "recovery_mode": next_recovery,
+                },
                 request_id=request_id,
                 operation_id=operation_id,
                 authorization_revision=revision.revision,

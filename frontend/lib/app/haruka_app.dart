@@ -380,6 +380,9 @@ class _HarukaAppState extends State<HarukaApp> {
                 reducedMotion: reduceMotion,
                 canReadMaterials: _auth.access?.allows('client.material.list') ?? false,
                 canReadCollections: _auth.access?.allows('client.collection.read') ?? false,
+                navigationRoutes: _auth.access == null
+                    ? null
+                    : {for (final item in _auth.access!.navigation) item.routeKey},
                 child: AnimatedBuilder(
                   animation: _cacheBinding.foregroundRevalidating,
                   builder: (context, _) {

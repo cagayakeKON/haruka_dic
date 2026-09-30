@@ -473,7 +473,8 @@ class AuthChallenge(IdentityMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("digest_key_version", "token_digest"),
         CheckConstraint(
-            "purpose IN ('email_verify', 'password_recovery', 'reauth')", name="purpose"
+            "purpose IN ('email_verify', 'password_recovery', 'reauth', 'manual_recovery')",
+            name="purpose",
         ),
         CheckConstraint("audience IN ('client', 'admin')", name="audience"),
         CheckConstraint("octet_length(token_digest) = 32", name="digest_length"),

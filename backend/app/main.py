@@ -10,6 +10,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app import __version__
+from app.api.audit_governance import router as audit_governance_router
 from app.api.authentication import router as authentication_router
 from app.api.avatar import router as avatar_router
 from app.api.body_limits import SelectedBodyLimitMiddleware
@@ -19,8 +20,11 @@ from app.api.exception_handlers import install_exception_handlers
 from app.api.frontend_telemetry import router as frontend_telemetry_router
 from app.api.health import router
 from app.api.learning_reference import router as learning_reference_router
+from app.api.menu_governance import router as menu_governance_router
 from app.api.profile import router as profile_router
 from app.api.responses import error_responses
+from app.api.role_governance import router as role_governance_router
+from app.api.user_governance import router as user_governance_router
 from app.bootstrap import bootstrap
 from app.core.settings import Settings, load_settings
 
@@ -70,6 +74,10 @@ def create_app(settings: Settings | None = None, *, schema_only: bool = False) -
     application.include_router(authentication_router)
     application.include_router(learning_reference_router)
     application.include_router(profile_router)
+    application.include_router(audit_governance_router)
+    application.include_router(menu_governance_router)
+    application.include_router(role_governance_router)
+    application.include_router(user_governance_router)
     application.include_router(avatar_router)
     application.include_router(client_cache_router)
     application.include_router(frontend_telemetry_router)

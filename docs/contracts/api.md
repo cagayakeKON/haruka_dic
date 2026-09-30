@@ -51,10 +51,10 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | 资源/方法 | 关键输入/返回与业务动作 | 权限/规范 |
 | --- | --- | --- |
 | GET meta；GET model-capabilities；GET language-capabilities | 公共instance_id/兼容版本/材料类型与格式能力；已登录者模型/声音/输出格式能力；版本化UI/学习/解释语言标识 | meta不带凭据探测；两个能力目录是client登录基础只读，不含Key/用户资料/管理字段；能力支持不代表个人获权或模型质量已验证 |
-| GET auth/policy；POST auth/register/login；POST auth/native/login | 安全公共策略；邮箱/密码；Web Cookie会话、原生token会话或受限continuation | 注册默认关闭、邮箱验证和邮件找回；不接受角色/状态。login固定Web，native/login仅Windows/Android且拒绝浏览器Origin/Fetch Metadata |
+| GET auth/policy；POST auth/register/login；POST auth/native/login | 安全公共策略；邮箱/密码；Web Cookie会话、原生token会话或受限continuation | 注册默认关闭。closed/open/approval 由策略 revision 切换，不改写已有账号状态。approval 注册记 pending，邮箱验证后仍待审批；拒绝保持不可登录。login固定Web，native/login仅Windows/Android且拒绝浏览器Origin/Fetch Metadata |
 | GET auth/csrf | 当前Web会话绑定的CSRF值 | 同源Cookie身份，不能当业务访问Token |
 | POST auth/refresh、auth/native/refresh；POST auth/logout；POST auth/password/change；GET auth/sessions；POST auth/sessions/{id}/revoke；POST auth/sessions/revoke-all | Web续期与原生轮换固定独立路径；本人退出、当前密码改密、会话治理；撤销/改密成功204 | 本人身份基础例外；同audience下验证。改密成功推进安全epoch并撤销client/admin全部会话，不接受资料字段作为恢复证据 |
-| POST auth/recovery/request/complete、auth/email/resend、auth/email/verify、auth/reauthenticate | 邮件一次性挑战/近期验证；请求受理202，验证/重置成功204 | 目的/到期/单次消费；注册关闭仍可验证/找回，通知配置缺失503；受理不等于送达；链接Token仅fragment，GET不消费 |
+| POST auth/recovery/request/manual/complete、auth/email/resend、auth/email/verify、auth/reauthenticate | 邮件或人工一次性挑战；请求受理202，重置成功204 | 邮件找回只在 email/email_or_manual 且邮件就绪时受理。人工申请不返回令牌；管理员用 admin.user.update 当面或已知渠道核验后签发一次恢复码，持有人自己完成并撤销旧会话。切换找回方式不改写账号、不取消在途挑战 |
 | GET me/access、admin/me/access | 最小user_id/instance_id/audience/session_ref、account_status、authz_version、权限/范围、nav、flags | 对应login；不要求profile.read，session_ref不是认证凭据，不返回全体用户策略 |
 | GET users/me/account | 当前登录邮箱、验证/账号状态、创建时间等本人身份摘要 | 本人有效client会话的身份基础读取；不要求profile.read，不返回密码哈希/角色明细/安全epoch，也不提供邮箱PATCH |
 | GET/PATCH users/me/profile | 本人显示名、可选出生年份/性别、资料完整度；field mask + expected_revision | profile.read/update；拒绝邮箱/角色/状态/权限及整数年龄写入，可选人口字段默认不进入AI |
@@ -118,8 +118,12 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET runs/{id}/events | Agent/解释的SSE文字、卡片及关联run状态；材料/通用任务进度使用jobs/events WebSocket | run类型所需read，不能只因有run_id放行 |
 | GET runs/{id}；POST runs/{id}/cancel | 持久运行快照/完整结果；取消意图 | 读需对应领域权限；取消需本人job.cancel，失去agent.use不妨碍仍获授权的停止操作 |
 | POST frontend-logs、admin/frontend-logs、frontend-logs/anonymous | 受众内批量/受限匿名，逐项接收结果 | 观测规范；不接收任意查询 |
-| admin/users、roles、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作；quotas只表示技术运行上限 | 管理工作流和admin对应动作、revision/审计；不提供商业套餐或金额字段 |
-| admin/sessions、resource-metadata、jobs、audit-events、diagnostics | 限定元数据查询、撤销/安全运维 | 不返回私有内容/Key、不接受任意LogQL |
+| admin/users、menus、auth-policy、quotas、model-catalog | 分页/详情/预览/显式写操作；用户审批决定；quotas只表示技术运行上限 | 管理工作流和admin对应动作、revision/审计；审批只处理 approval_status 不是 not_required 的账号。不提供商业套餐或金额字段。配额和模型目录仍按后续阶段接入 |
+| admin/roles、admin/roles/{id} 及 enabled、grants、inheritance、deletion、grant-boundaries；admin/permissions | 空角色创建、标题说明、启停、allow/deny、继承、删除和授予上限。创建不携带初始授权；启停在有效权限变化时另需 permission.assign；受保护角色另需 protected_role.manage。expected_revision 冲突返回当前版本，不合并。成功返回角色 revision、全局 authorization_revision、audit_id 和 affected_count | admin.role.*、admin.permission.read、admin.grant_boundary.*；授予上限未覆盖的权限或角色拒绝；不能借继承或改默认注册角色升权；最后可登录 super_admin 保留 |
+| admin/menus、menu-catalog、menus/layout、menus/preview、menus/{id}/deletion | 发布清单内的两端菜单可改标题、上级、顺序、图标、隐藏和附加显示条件。附加条件只能收紧页面最低权限。隐藏菜单不撤销页面权限。未知路由不能启用。分组无可见子项时不出现在导航。预览只返回目标账号的导航，不创建会话、不返回私人内容。 | admin.menu.read/update；预览另需 admin.user.read |
+| admin/users、status、roles、sessions、session-revocations、recovery-requests、recovery-decisions；admin/account-ceilings | 创建待授权账号时不接收、不返回密码。无角色创建只需 user.create；带角色另需 role.assign，且新角色及其父角色都在 assign_role 上限内。启停、改角色和撤销会话还要覆盖目标账号的全部直接角色及父角色（manage_account_role），无角色账号需要 manage_unassigned_accounts。不能改自己的绑定、状态或会话。禁用会推进三个安全代次并标记 PG 会话撤销。按端或全部撤销即使当时没有活动会话，也推进对应安全代次并写审计。人工恢复核验只接受当面或已知渠道，签发的恢复码只在当次响应出现，管理员不能代设密码。 | admin.user.*、admin.session.read/revoke；人工恢复决定使用 admin.user.update；受保护角色另需 protected_role.manage；越出上限、自操作和撤销最后一个可登录 super_admin 拒绝 |
+| GET admin/audit-events、GET admin/governance-summary | 审计按时间倒序分页，可按动作、结果、操作者和目标类型筛选。详情使用已加载行，含授权版本、原因、请求/操作标识，以及清洗后的短标量变更摘要；权限标识列表不在摘要中返回。概览只返回身份计数、待核验恢复数和授权版本。 | admin.audit.read / admin.dashboard.view；不返回邮箱、令牌、密码或私有内容；不提供修改、删除或导出 |
+| admin/sessions、resource-metadata、jobs、diagnostics | 限定元数据查询、撤销/安全运维 | 不返回私有内容/Key、不接受任意LogQL；任务运维和诊断查询尚未开放 |
 | GET admin/dashboard/model-usage | 按时间、供应商、模型、能力和状态的实例级Token/缓存等聚合 | admin.dashboard.view；不返回个人Key、Prompt、回复、私有材料或默认逐用户明细 |
 
 三类内容接口的语义和字段边界见 [三类材料契约](material-types.md)，源层与三类领域对象见 [解析数据结构](material-structures.md)，各专用路径由对应模块 schema 定义，不用大一统阅读 DTO。试卷准备响应必须把正式对象、AI候选、人工校对任务和冻结考试DTO分开；题面接口不返回隐藏听力稿、答案依据、候选内部证据或可推断答案的TTS文本。`model-capabilities` 只负责模型能力，材料支持组合随公共 `meta` 能力段返回，不携带私有数据或个人授权；UI 不用硬编码扩展名表越过后端检查。管理登录/续期/退出/本人安全流程用admin/auth镜像路径，固定admin受众；业务修改用户状态/角色/权限使用独立子资源，不能把通用PATCH映射任意ORM列。最终具体路由表在工程PR中从此契约展开并接受路由保护枚举检查。

@@ -151,6 +151,7 @@
     "auth.password.changed",
     "auth.password.recovered",
     "auth.policy.updated",
+    "auth.recovery.manual.accepted",
     "auth.recovery.request.accepted",
     "auth.register.submitted",
     "auth.registration.accepted",

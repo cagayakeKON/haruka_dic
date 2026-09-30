@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -16,7 +17,27 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, IdentityMixin, TimestampMixin, column_info, relation, table_info
+from app.contracts.audit_actions import audit_action_check_sql
+from app.models.base import (
+    Base,
+    IdentityMixin,
+    TimestampMixin,
+    business_relation,
+    business_table_info,
+    column_info,
+    relation,
+    table_info,
+)
+
+_AUTHZ_LOCK = "authorization_revisions.global then stable role or menu parent rows"
+_BOUNDARY_SHAPE = (
+    "(boundary_kind IN ('assign_role', 'manage_account_role') "
+    "AND target_role_id IS NOT NULL AND permission_code IS NULL AND data_scope IS NULL) "
+    "OR (boundary_kind = 'assign_permission' AND target_role_id IS NULL "
+    "AND permission_code IS NOT NULL AND data_scope IN ('self', 'platform_metadata')) "
+    "OR (boundary_kind = 'manage_unassigned_accounts' AND target_role_id IS NULL "
+    "AND permission_code IS NULL AND data_scope IS NULL)"
+)
 
 
 class PermissionCatalog(TimestampMixin, Base):
@@ -175,37 +196,303 @@ class UserRole(IdentityMixin, TimestampMixin, Base):
     )
 
 
+class RoleInheritance(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "role_inheritance_links"
+    __table_args__ = (
+        UniqueConstraint("child_role_id", "parent_role_id"),
+        CheckConstraint("child_role_id <> parent_role_id", name="distinct_roles"),
+        Index(
+            "ix_role_inheritance_links_parent_child",
+            "parent_role_id",
+            "child_role_id",
+            info={"purpose": "upstream inheritance impact"},
+        ),
+        {
+            "comment": "角色有向继承；无环和深度由授权事务校验",
+            "info": business_table_info(
+                "system_catalog",
+                module="authorization",
+                entrances=("authenticated admin authorization service",),
+                deletion="restrict until references are explicitly removed",
+                relations=(
+                    business_relation(
+                        "child_role_id",
+                        "roles.id",
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.authorization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                    business_relation(
+                        "parent_role_id",
+                        "roles.id",
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.authorization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                ),
+            ),
+        },
+    )
+    child_role_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="继承方角色",
+        info=column_info("locked role"),
+    )
+    parent_role_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="被继承的父角色",
+        info=column_info("locked role"),
+    )
+
+
+class RoleGrantBoundary(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "role_grant_boundaries"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="revision_positive"),
+        CheckConstraint(_BOUNDARY_SHAPE, name="boundary_shape"),
+        Index(
+            "uq_role_grant_boundaries_role_target",
+            "grantor_role_id",
+            "boundary_kind",
+            "target_role_id",
+            unique=True,
+            postgresql_where=text("target_role_id IS NOT NULL"),
+            info={"purpose": "one role assignment ceiling per grantor"},
+        ),
+        Index(
+            "uq_role_grant_boundaries_permission",
+            "grantor_role_id",
+            "boundary_kind",
+            "permission_code",
+            "data_scope",
+            unique=True,
+            postgresql_where=text("permission_code IS NOT NULL"),
+            info={"purpose": "one permission ceiling per grantor"},
+        ),
+        Index(
+            "uq_role_grant_boundaries_unassigned",
+            "grantor_role_id",
+            "boundary_kind",
+            unique=True,
+            postgresql_where=text("boundary_kind = 'manage_unassigned_accounts'"),
+            info={"purpose": "one unassigned-account ceiling per grantor"},
+        ),
+        Index(
+            "ix_role_grant_boundaries_target_grantor",
+            "target_role_id",
+            "grantor_role_id",
+            info={"purpose": "grant boundary impact when a role changes"},
+        ),
+        {
+            "comment": "委派管理员的授予上限；不能借此提高自身权限",
+            "info": business_table_info(
+                "system_catalog",
+                module="authorization",
+                entrances=("authenticated admin authorization service",),
+                deletion="restrict until the ceiling is explicitly removed",
+                relations=(
+                    business_relation(
+                        "grantor_role_id",
+                        "roles.id",
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.authorization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                    business_relation(
+                        "target_role_id",
+                        "roles.id",
+                        nullable=True,
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.authorization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                    business_relation(
+                        "permission_code",
+                        "permission_catalog.code",
+                        nullable=True,
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.authorization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                ),
+            ),
+        },
+    )
+    grantor_role_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="形成上限的操作者角色",
+        info=column_info("locked role"),
+    )
+    boundary_kind: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        comment="assign_role、assign_permission、manage_account_role或manage_unassigned_accounts",
+        info=column_info("controlled grant"),
+    )
+    target_role_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="可分配或可管理成员的目标角色",
+        info=column_info("locked role"),
+    )
+    permission_code: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="可配置到角色上的已注册权限",
+        info=column_info("locked permission catalog"),
+    )
+    data_scope: Mapped[str | None] = mapped_column(
+        String(24),
+        nullable=True,
+        comment="可配置权限的数据范围",
+        info=column_info("locked permission catalog"),
+    )
+    revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="授予上限并发版本",
+        info=column_info("authorization transaction"),
+    )
+
+
+class PermissionDependency(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "permission_dependency_links"
+    __table_args__ = (
+        UniqueConstraint(
+            "permission_code",
+            "required_permission_code",
+            name="uq_permission_dependency_links_pair",
+        ),
+        CheckConstraint(
+            "permission_code <> required_permission_code",
+            name="distinct_permissions",
+        ),
+        Index(
+            "ix_permission_dependency_links_required",
+            "required_permission_code",
+            "permission_code",
+            info={"purpose": "permission retirement impact"},
+        ),
+        {
+            "comment": "发布注册的静态权限依赖；不表达运行时复合条件",
+            "info": business_table_info(
+                "system_catalog",
+                module="authorization",
+                entrances=("release seed",),
+                deletion="restrict while a published dependency remains",
+                relations=(
+                    business_relation(
+                        "permission_code",
+                        "permission_catalog.code",
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.initialization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                    business_relation(
+                        "required_permission_code",
+                        "permission_catalog.code",
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.initialization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                ),
+            ),
+        },
+    )
+    permission_code: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        comment="依赖其他权限的已注册权限",
+        info=column_info("release catalog"),
+    )
+    required_permission_code: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        comment="必须同时成立的已注册权限",
+        info=column_info("release catalog"),
+    )
+
+
 class Menu(IdentityMixin, TimestampMixin, Base):
     __tablename__ = "menus"
     __table_args__ = (
         UniqueConstraint("code"),
         CheckConstraint("audience IN ('client', 'admin')", name="audience"),
         CheckConstraint("revision >= 1", name="revision_positive"),
+        CheckConstraint("sort_order >= 0", name="sort_order_nonnegative"),
+        CheckConstraint("permission_match IN ('all', 'any')", name="permission_match"),
+        Index(
+            "ix_menus_audience_parent_sort",
+            "audience",
+            "parent_menu_id",
+            "sort_order",
+            "id",
+            info={"purpose": "ordered navigation for one audience"},
+        ),
         {
             "comment": "绑定发布路由键的菜单目录；管理菜单按权限启用",
             "info": table_info(
                 "system_catalog",
-                relations=(relation("permission_code", "permission_catalog.code"),),
+                relations=(
+                    relation(
+                        "parent_menu_id",
+                        "menus.id",
+                        nullable=True,
+                    ),
+                ),
             ),
         },
     )
     code: Mapped[str] = mapped_column(
         String(64), nullable=False, comment="菜单代码", info=column_info("release menu catalog")
     )
-    route_key: Mapped[str] = mapped_column(
+    route_key: Mapped[str | None] = mapped_column(
         String(64),
-        nullable=False,
-        comment="前端已注册路由键",
+        nullable=True,
+        comment="前端已注册路由键；分组可为空",
         info=column_info("release route registry"),
+    )
+    component_key: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="已发布组件键；分组可为空",
+        info=column_info("release component registry"),
     )
     audience: Mapped[str] = mapped_column(
         String(10), nullable=False, comment="菜单受众", info=column_info("release menu catalog")
     )
-    permission_code: Mapped[str] = mapped_column(
-        String(100),
+    parent_menu_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=True,
+        comment="同受众父菜单；空表示顶层",
+        info=column_info("locked menu"),
+    )
+    title: Mapped[str] = mapped_column(
+        String(100), nullable=False, comment="菜单标题", info=column_info("controlled admin")
+    )
+    icon_key: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="已发布图标键",
+        info=column_info("release icon registry"),
+    )
+    sort_order: Mapped[int] = mapped_column(
+        Integer,
         nullable=False,
-        comment="显示所需权限；不代替接口授权",
-        info=column_info("locked permission catalog"),
+        server_default=text("0"),
+        comment="同级显示顺序",
+        info=column_info("controlled admin"),
+    )
+    permission_match: Mapped[str] = mapped_column(
+        String(3),
+        nullable=False,
+        server_default=text("'all'"),
+        comment="附加显示条件的all或any匹配",
+        info=column_info("controlled policy"),
     )
     enabled: Mapped[bool] = mapped_column(
         Boolean,
@@ -222,6 +509,56 @@ class Menu(IdentityMixin, TimestampMixin, Base):
     )
 
 
+class MenuPermission(IdentityMixin, TimestampMixin, Base):
+    __tablename__ = "menu_permission_links"
+    __table_args__ = (
+        UniqueConstraint("menu_id", "permission_code"),
+        Index(
+            "ix_menu_permission_links_permission_menu",
+            "permission_code",
+            "menu_id",
+            info={"purpose": "menus affected by a permission change"},
+        ),
+        {
+            "comment": "菜单附加显示权限；不能降低页面最低权限",
+            "info": business_table_info(
+                "system_catalog",
+                module="authorization",
+                entrances=("authenticated admin menu service",),
+                deletion="restrict until the menu condition is explicitly removed",
+                relations=(
+                    business_relation(
+                        "menu_id",
+                        "menus.id",
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.authorization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                    business_relation(
+                        "permission_code",
+                        "permission_catalog.code",
+                        parent_lock=_AUTHZ_LOCK,
+                        service="app.services.authorization",
+                        tests="tests/unit/test_authorization.py",
+                    ),
+                ),
+            ),
+        },
+    )
+    menu_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        nullable=False,
+        comment="已锁定菜单",
+        info=column_info("locked menu"),
+    )
+    permission_code: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        comment="附加显示所需的已注册权限",
+        info=column_info("locked permission catalog"),
+    )
+
+
 class AuthPolicy(TimestampMixin, Base):
     __tablename__ = "auth_policies"
     __table_args__ = (
@@ -229,7 +566,10 @@ class AuthPolicy(TimestampMixin, Base):
         CheckConstraint(
             "registration_mode IN ('closed', 'approval', 'open')", name="registration_mode"
         ),
-        CheckConstraint("recovery_mode IN ('disabled', 'email')", name="recovery_mode"),
+        CheckConstraint(
+            "recovery_mode IN ('disabled', 'email', 'manual', 'email_or_manual')",
+            name="recovery_mode",
+        ),
         CheckConstraint("revision >= 1", name="revision_positive"),
         {
             "comment": "注册策略；默认关闭注册，开放方式由受控策略决定",
@@ -340,13 +680,7 @@ class SeedVersion(TimestampMixin, Base):
 class AdminAuditEvent(IdentityMixin, TimestampMixin, Base):
     __tablename__ = "admin_audit_events"
     __table_args__ = (
-        CheckConstraint(
-            "action IN ('seed.applied', 'admin.created', 'auth_policy.updated', "
-            "'account.registered', 'email.verified', 'password.recovered', "
-            "'password.changed', 'session.created', 'session.revoked', "
-            "'refresh.replayed', 'auth.login.denied')",
-            name="action",
-        ),
+        CheckConstraint(audit_action_check_sql(), name="action"),
         CheckConstraint("authorization_revision >= 1", name="authorization_revision_positive"),
         CheckConstraint("payload_schema_version >= 1", name="payload_schema_version_positive"),
         CheckConstraint("audience IS NULL OR audience IN ('client', 'admin')", name="audience"),

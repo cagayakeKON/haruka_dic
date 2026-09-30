@@ -480,7 +480,9 @@ id映射API session_id/session_ref；不另存重复UUID列。CHECK受众/传输
 
 唯一 `(user_id,challenge_id)`；CHECK密文/keyring版本成对、正schema版本、非负次数、状态允许值；pending必须有密文。服务校验不晚于挑战期限，sent仅表示交付适配器已受理，不保证收件人收到。索引 `(status,next_attempt_at,id) WHERE status='pending'` 扫待发；`(expires_at,id)` 清密文。密文只包含发送所必需的地址/链接，Kafka/Outbox仅放本记录引用；只限本用途的Worker解密，不能进入日志。锁User→Challenge→Delivery，消费或失效后不再发送；已发/过期按短期保留策略清密文，不能为了重试永久保留原Token。邮箱验证/找回方式已确认；此表存在不代表实际邮件投递已验证。
 
-## 5. 完整授权与导航关系（拟新增）
+## 5. 完整授权与导航关系
+
+2026-09-29 起，`role_inheritance_links`、`role_grant_boundaries`、`permission_dependency_links`、`menu_permission_links`，以及菜单父级/标题/排序/组件键、`users.approval_status`、扩展后的 `recovery_mode` 和 `manual_recovery` 挑战用途，由迁移 `0007_authorization_governance` 实现。字段以模型与 [生成字典](../../contracts/database-schema.json) 为准；下面保留当时的设计说明。
 
 本节均为 `scope_kind=system_catalog`，无owner/user伪通配列；只允许发布注册、限定管理授权服务读写。所有关系新增/移除先锁authorization_revisions.global，再按稳定ID顺序锁相关User/Role/Menu等父行；同事务推进全局/用户版本、审计及Outbox。删除为限制删除或显式解除/迁移，不能配置ORM级联。
 

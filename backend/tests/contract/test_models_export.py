@@ -54,7 +54,7 @@ def test_export_is_offline_deterministic_and_contains_only_real_routes(
     assert "sentinel" not in first
     payload = json.loads(first)
     schema = payload["openapi.json"]
-    assert len(schema["paths"]) == 47
+    assert len(schema["paths"]) == 73
     assert {
         "/health/live",
         "/health/ready",

@@ -31,6 +31,7 @@ class ShellPresentationScope extends InheritedWidget {
     required this.reducedMotion,
     required this.canReadMaterials,
     required this.canReadCollections,
+    this.navigationRoutes,
     required super.child,
     super.key,
   });
@@ -41,6 +42,10 @@ class ShellPresentationScope extends InheritedWidget {
   final bool canReadMaterials;
   final bool canReadCollections;
 
+  /// Published routes currently visible to this account. Null keeps the full shell.
+
+  final Set<String>? navigationRoutes;
+
   static ShellPresentationScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ShellPresentationScope>();
 
@@ -50,8 +55,32 @@ class ShellPresentationScope extends InheritedWidget {
       activeLanguage != oldWidget.activeLanguage ||
       reducedMotion != oldWidget.reducedMotion ||
       canReadMaterials != oldWidget.canReadMaterials ||
-      canReadCollections != oldWidget.canReadCollections;
+      canReadCollections != oldWidget.canReadCollections ||
+      !_sameRoutes(navigationRoutes, oldWidget.navigationRoutes);
 }
+
+bool _sameRoutes(Set<String>? left, Set<String>? right) {
+  if (identical(left, right)) return true;
+  if (left == null || right == null || left.length != right.length) return false;
+  return left.containsAll(right);
+}
+
+bool _sectionShown(BuildContext context, PreviewSection section) {
+  final routes = ShellPresentationScope.maybeOf(context)?.navigationRoutes;
+  if (routes == null || section == PreviewSection.settings) return true;
+  return routes.contains(switch (section) {
+    PreviewSection.library => AppRoutes.materials,
+    PreviewSection.notebooks => AppRoutes.collections,
+    PreviewSection.query => AppRoutes.query,
+    PreviewSection.exercise => AppRoutes.exercise,
+    PreviewSection.settings => AppRoutes.settings,
+  });
+}
+
+List<PreviewSection> _shownSections(BuildContext context) => [
+  for (final section in PreviewSection.values)
+    if (_sectionShown(context, section)) section,
+];
 
 bool _sectionAvailable(BuildContext context, PreviewSection section) {
   final live = ShellPresentationScope.maybeOf(context);
@@ -113,8 +142,8 @@ Widget _identifyReferenceNav(BuildContext context, PreviewSection section, Widge
 
 Widget _identifyReaderBack(BuildContext context, String location, Widget child) =>
     _formalShell(context) && location.startsWith('/material/')
-        ? Identified(id: UiTestIds.referenceReaderBack, merge: true, child: child)
-        : child;
+    ? Identified(id: UiTestIds.referenceReaderBack, merge: true, child: child)
+    : child;
 
 /// Marks routed pages whose navigation is owned by the persistent app shell.
 class PreviewShellHost extends InheritedWidget {
@@ -438,7 +467,7 @@ class PreviewSideNavigation extends StatelessWidget {
                 ],
               ),
             ),
-            for (final section in PreviewSection.values)
+            for (final section in _shownSections(context))
               Padding(
                 padding: EdgeInsets.fromLTRB(rail ? 8 : 14, 2, rail ? 8 : 14, 2),
                 child: Tooltip(
@@ -838,36 +867,55 @@ class PreviewBottomNavigation extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
     final reducedMotion = _shellReducedMotion(context);
+    final shown = _shownSections(context);
+    if (shown.length < 2) {
+      final section = shown.isEmpty ? PreviewSection.settings : shown.single;
+      return SafeArea(
+        child: SizedBox(
+          height: 68,
+          child: TextButton.icon(
+            onPressed: () => onSelected(section),
+            icon: Icon(previewSectionIcons[section.index]),
+            label: Text(_mobileNavLabel(l10n, section)),
+          ),
+        ),
+      );
+    }
+    final selected = shown.indexOf(sectionFor(location));
     return NavigationBar(
       height: 68,
       animationDuration: HarukaMotion.reduced(context, reducedMotion: reducedMotion)
           ? Duration.zero
           : HarukaMotion.selection,
-      selectedIndex: sectionFor(location).index,
+      selectedIndex: selected < 0 ? shown.indexOf(PreviewSection.settings) : selected,
       onDestinationSelected: (index) {
-        final section = PreviewSection.values[index];
+        final section = shown[index];
         _navigateOrExplain(context, section, () => onSelected(section));
       },
       destinations: [
-        for (var index = 0; index < PreviewSection.values.length; index++)
+        for (final section in shown)
           NavigationDestination(
-            key: switch (_referenceNavId(context, PreviewSection.values[index])) {
+            key: switch (_referenceNavId(context, section)) {
               final id? => ValueKey(id),
               null => null,
             },
-            icon: switch (_referenceNavId(context, PreviewSection.values[index])) {
-              final id? => Identified(id: id, merge: true, child: Icon(previewSectionIcons[index])),
-              null => Icon(previewSectionIcons[index]),
-            },
-            selectedIcon: switch (_referenceNavId(context, PreviewSection.values[index])) {
+            icon: switch (_referenceNavId(context, section)) {
               final id? => Identified(
                 id: id,
                 merge: true,
-                child: Icon(previewSectionIcons[index], color: colors.primary),
+                child: Icon(previewSectionIcons[section.index]),
               ),
-              null => Icon(previewSectionIcons[index], color: colors.primary),
+              null => Icon(previewSectionIcons[section.index]),
             },
-            label: _mobileNavLabel(l10n, PreviewSection.values[index]),
+            selectedIcon: switch (_referenceNavId(context, section)) {
+              final id? => Identified(
+                id: id,
+                merge: true,
+                child: Icon(previewSectionIcons[section.index], color: colors.primary),
+              ),
+              null => Icon(previewSectionIcons[section.index], color: colors.primary),
+            },
+            label: _mobileNavLabel(l10n, section),
           ),
       ],
     );
@@ -967,26 +1015,22 @@ class DesktopPreviewShell extends StatelessWidget {
                           ],
                         ),
                       ),
-                      for (var index = 0; index < PreviewSection.values.length; index++)
+                      for (final item in _shownSections(context))
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
                           child: TextButton.icon(
-                            onPressed: () => navigateSection(
-                              context,
-                              PreviewSection.values[index],
-                              onNavigate: onNavigate,
-                            ),
-                            icon: Icon(previewSectionIcons[index], size: 20),
+                            onPressed: () => navigateSection(context, item, onNavigate: onNavigate),
+                            icon: Icon(previewSectionIcons[item.index], size: 20),
                             label: Align(
                               alignment: Alignment.centerLeft,
-                              child: Text(_sectionLabel(l10n, PreviewSection.values[index])),
+                              child: Text(_sectionLabel(l10n, item)),
                             ),
                             style: TextButton.styleFrom(
                               minimumSize: const Size(double.infinity, 44),
-                              foregroundColor: section.index == index
+                              foregroundColor: section == item
                                   ? colors.primary
                                   : colors.onSurfaceVariant,
-                              backgroundColor: section.index == index ? roles.selected : null,
+                              backgroundColor: section == item ? roles.selected : null,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),

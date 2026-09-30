@@ -17,14 +17,7 @@ from app.contracts.errors import ErrorCode
 from app.domain.correlation import current_correlation
 from app.domain.email_address import normalize_existing_login_email
 from app.domain.errors import AppError
-from app.models import (
-    AuthSession,
-    Menu,
-    PermissionCatalog,
-    Role,
-    RolePermission,
-    UserRole,
-)
+from app.models import AuthSession, PermissionCatalog
 from app.repositories.identity import (
     account_session_for_update,
     account_session_page,
@@ -44,7 +37,6 @@ from app.schemas.auth import (
     ActivationRequired,
     AuthzVersionRead,
     NativeAuthenticated,
-    NavigationRead,
     PermissionRead,
     SessionSummary,
     WebAuthenticated,
@@ -56,6 +48,9 @@ from app.services.auth_context import (
     verify_scope_in_transaction,
 )
 from app.services.auth_crypto import AuthCrypto, hash_password, new_opaque_token, verify_password
+from app.services.authorization import allowed_pairs, load_graph
+from app.services.menu_governance import project_navigation
+from app.services.registration import pending_login_action
 from app.services.security_events import append_identity_event
 
 _CLIENT_ABSOLUTE = timedelta(days=7)
@@ -108,7 +103,11 @@ def _csrf_token(crypto: AuthCrypto, user_id: UUID, session_id: UUID) -> str:
 
 
 async def _pending_continuation(
-    runtime: Runtime, crypto: AuthCrypto, *, user_id: UUID
+    runtime: Runtime,
+    crypto: AuthCrypto,
+    *,
+    user_id: UUID,
+    action: Literal["verify_email", "await_approval", "rejected"] = "verify_email",
 ) -> ActivationRequired:
     resources = runtime.resources
     if resources is None:
@@ -120,7 +119,11 @@ async def _pending_continuation(
         await resources.cache.client.set(key, str(user_id), ex=int(_CONTINUATION.total_seconds()))
     except Exception:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
-    return ActivationRequired(continuation_token=token, continuation_expires_at=deadline)
+    return ActivationRequired(
+        action_required=action,
+        continuation_token=token,
+        continuation_expires_at=deadline,
+    )
 
 
 def _session_keys(runtime: Runtime, scope: ScopeContext) -> tuple[str, str]:
@@ -168,6 +171,13 @@ async def issue_csrf(runtime: Runtime, scope: ScopeContext) -> str:
     return token
 
 
+def menu_visible(codes: list[str], match: str, allowed: set[str]) -> bool:
+    if not codes:
+        return False
+    visible = (code in allowed for code in codes)
+    return all(visible) if match == "all" else any(code in allowed for code in codes)
+
+
 async def read_access(runtime: Runtime, scope: ScopeContext) -> AccessRead:
     resources = runtime.resources
     if resources is None:
@@ -180,18 +190,8 @@ async def read_access(runtime: Runtime, scope: ScopeContext) -> AccessRead:
             audience=scope.audience,
             transport=scope.transport,
         )
-        rows = (
-            await session.execute(
-                select(
-                    RolePermission.permission_code,
-                    RolePermission.effect,
-                    RolePermission.data_scope,
-                )
-                .join(Role, Role.id == RolePermission.role_id)
-                .join(UserRole, UserRole.role_id == Role.id)
-                .where(UserRole.user_id == scope.user_id, Role.enabled.is_(True))
-            )
-        ).all()
+        graph = await load_graph(session, scope.user_id)
+        granted = allowed_pairs(graph, scope.user_id)
         catalogs = (
             await session.scalars(
                 select(PermissionCatalog).where(
@@ -203,32 +203,11 @@ async def read_access(runtime: Runtime, scope: ScopeContext) -> AccessRead:
         permissions = [
             PermissionRead(code=catalog.code, data_scope=catalog.data_scope)
             for catalog in catalogs
-            if "allow"
-            in {
-                effect
-                for code, effect, data_scope in rows
-                if code == catalog.code and data_scope == catalog.data_scope
-            }
-            and "deny"
-            not in {
-                effect
-                for code, effect, data_scope in rows
-                if code == catalog.code and data_scope == catalog.data_scope
-            }
+            if (catalog.code, catalog.data_scope) in granted
         ]
         permissions.sort(key=lambda item: item.code)
         allowed = {item.code for item in permissions}
-        menus = (
-            await session.scalars(
-                select(Menu).where(Menu.audience == scope.audience, Menu.enabled.is_(True))
-            )
-        ).all()
-        navigation = [
-            NavigationRead(key=menu.code, route_key=menu.route_key, title=menu.code)
-            for menu in menus
-            if menu.permission_code in allowed
-        ]
-        navigation.sort(key=lambda item: item.key)
+        navigation = await project_navigation(session, audience=scope.audience, allowed=allowed)
     return AccessRead(
         user_id=current.user_id,
         instance_id=runtime.settings.instance_id,
@@ -788,7 +767,9 @@ async def login(
         _log_login_result("rejected", audience)
         raise AppError(ErrorCode.AUTH_LOGIN_FAILED)
     if observed.status == "pending" and audience == "client":
-        continuation = await _pending_continuation(runtime, crypto, user_id=observed.id)
+        continuation = await _pending_continuation(
+            runtime, crypto, user_id=observed.id, action=pending_login_action(observed)
+        )
         _log_login_result("action_required", audience, observed.id)
         return LoginResult(response=continuation)
     if observed.status != "active":

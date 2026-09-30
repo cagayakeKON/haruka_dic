@@ -1,14 +1,14 @@
 # 功能与验收追踪
 
-状态：2026-09-29，PLAN2实施映射；B1账号与最小收藏已按[用户最终决定](reviews/2026-09-26-b1-implementation.md)验收通过，[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在旧错误视觉结论撤回、同一Flutter mock主界面完成接线与双端复核后按当期范围重新验收通过；B2b/c和后续业务未实现，阶段1未完成。产品范围由[产品总览](../product/overview.md)维护，阶段/状态见[路线图](roadmap.md)，当前手机/电脑所有操作见[UI-01～35清单](prototype-scope.md)。两份覆盖取并集；原型未画出的既有P0也必须实现。
+状态：2026-09-29，PLAN2实施映射；B1账号与最小收藏已按[用户最终决定](reviews/2026-09-26-b1-implementation.md)验收通过，[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在旧错误视觉结论撤回、同一Flutter mock主界面完成接线与双端复核后按当期范围重新验收通过；[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已有代码和切片复核，尚未做正式 Web/Android 对照，不签署验收；B2c和后续业务未实现，阶段1未完成。产品范围由[产品总览](../product/overview.md)维护，阶段/状态见[路线图](roadmap.md)，当前手机/电脑所有操作见[UI-01～35清单](prototype-scope.md)。两份覆盖取并集；原型未画出的既有P0也必须实现。
 
 ## 1. 功能与阶段
 
 | 功能入口 | 权威正文/契约 | 验收族 | 实施节点与完整收口 |
 | --- | --- | --- | --- |
-| 注册/激活/登录/恢复/本人安全 | [账号](../modules/accounts.md)、[认证](../architecture/authentication.md) | SCF-B1/ACC | B1保持原范围与SCF-B1-01～08；完整引导/资料ACC-11/12的B2a当期分支已重新验收通过；B2b补审批/人工恢复策略及用户流程，B1已选路径保持 |
+| 注册/激活/登录/恢复/本人安全 | [账号](../modules/accounts.md)、[认证](../architecture/authentication.md) | SCF-B1/ACC | B1保持原范围与SCF-B1-01～08；完整引导/资料ACC-11/12的B2a当期分支已重新验收通过；B2b审批/人工恢复已有实现和切片复核，正式 Web/Android 对照未做，见[实现记录](reviews/2026-09-29-identity-governance-implementation.md)；B1已选路径保持 |
 | 个人资料/头像/语言/实例/显示 | [设置](../modules/settings.md)、[API](../contracts/api.md) | PROFILE/SET/CACHE | B2a当期资料/设置/头像/语言/实例与对应缓存分支已重新验收通过；阅读/查询偏好先保存，M2/L2接消费；声音/两类缓存L4，CSV入口L3 |
-| 完整后台与RBAC | [后台](../modules/admin.md)、[授权](../architecture/authorization.md)、[权限](../contracts/permissions.md) | ADM/PERM | B2b身份治理；B2c任务/用量/能力；随M/L/P/E增加运维资源，R2完整候选联验 |
+| 完整后台与RBAC | [后台](../modules/admin.md)、[授权](../architecture/authorization.md)、[权限](../contracts/permissions.md) | ADM/PERM | B2b身份治理已有实现和切片复核，正式对照未做，见[实现记录](reviews/2026-09-29-identity-governance-implementation.md)；B2c任务/用量/能力；随M/L/P/E增加运维资源，R2完整候选联验 |
 | 本人Key、能力测试与模型用量 | [设置](../modules/settings.md)、[用量](../contracts/model-usage.md)、[任务](../architecture/data-jobs.md) | SCF-B2/SET/USAGE-01～09 | B2c正式单能力测试与attempt；各调用入口增量验证真实协议/unknown/null/缓存/聚合，R2汇总 |
 | 材料公共能力 | [材料](../modules/materials-reading.md)、[三类](../contracts/material-types.md)、[结构](../contracts/material-structures.md)、[出处](../contracts/content-locator.md) | MAT/READ/TYPE/MSTR | M1导入/书库/不可变源/删除；M2～M4专用流程，E2补冻结考试引用/GC |
 | 小说 | [小说](../modules/novels.md)、[章节准备](../contracts/novel-preparation.md) | NOV/NPREP-01～06 | M2结构/正文/NLP/ruby/位置/布局；L2点句与范围查询，L4音频，L5准备/连续朗读 |

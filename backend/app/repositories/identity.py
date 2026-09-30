@@ -13,10 +13,7 @@ from app.models import (
     AuthPolicy,
     AuthSession,
     PermissionCatalog,
-    Role,
-    RolePermission,
     User,
-    UserRole,
 )
 
 
@@ -201,19 +198,3 @@ async def permission_catalog(
         .execution_options(populate_existing=True)
     )
     return {row.code: row for row in rows.all()}
-
-
-async def matching_role_permissions(
-    session: AsyncSession, *, user_id: UUID, codes: tuple[str, ...]
-) -> list[tuple[str, str, str]]:
-    rows = await session.execute(
-        select(RolePermission.permission_code, RolePermission.effect, RolePermission.data_scope)
-        .join(Role, Role.id == RolePermission.role_id)
-        .join(UserRole, UserRole.role_id == Role.id)
-        .where(
-            UserRole.user_id == user_id,
-            Role.enabled.is_(True),
-            RolePermission.permission_code.in_(codes),
-        )
-    )
-    return [(code, effect, scope) for code, effect, scope in rows.all()]

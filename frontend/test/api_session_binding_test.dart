@@ -118,11 +118,21 @@ void main() {
     expect(adapter.calls, 0);
     expect((await api.getJson('/api/v1/me/access', (value) => value)).data, {'ok': true});
     expect(adapter.calls, 1);
+    expect(
+      (await api.postJson(
+        '/api/v1/auth/recovery/manual',
+        const {'email': 'person@example.test'},
+        (value) => value,
+        expectedStatus: 200,
+      )).data,
+      {'ok': true},
+    );
+    expect(adapter.calls, 2);
     await expectLater(
       api.postJson('/api/v1/me/access', const {}, (value) => value),
       throwsA(isA<ApiFailure>().having((error) => error.code, 'code', 'AUTH_SCOPE_REQUIRED')),
     );
-    expect(adapter.calls, 1);
+    expect(adapter.calls, 2);
   });
 
   test('strict private JSON, 204 and binary calls use the confirmed session', () async {

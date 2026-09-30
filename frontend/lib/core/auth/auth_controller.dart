@@ -207,6 +207,17 @@ final class AuthController extends ChangeNotifier {
     if (receipt.nextStep != 'check_email') throw const ApiFailure(code: 'INVALID_RESPONSE');
   }
 
+  Future<void> requestManualRecovery(String email) async {
+    _assertNotSwitching();
+    final current = _epoch;
+    final endpoint = repository.api.endpoint;
+    await repository.verifyInstance();
+    _assertCurrent(current, endpoint);
+    final receipt = await repository.requestManualRecovery(email);
+    if (current != _epoch || _disposed) throw const ApiFailure(code: 'SESSION_INVALID');
+    if (receipt.nextStep != 'await_review') throw const ApiFailure(code: 'INVALID_RESPONSE');
+  }
+
   Future<void> verifyEmail(String token) async {
     _assertNotSwitching();
     final current = _epoch;
@@ -678,6 +689,7 @@ final class AuthController extends ChangeNotifier {
       if (current != _epoch || _access?.userId != userId) {
         throw const ApiFailure(code: 'SESSION_INVALID');
       }
+      if (write) unawaited(verifyCurrentAccess());
       return result;
     } on ApiFailure catch (error) {
       if (error.code == 'ACCESS_EXPIRED' && config.platform != AppPlatform.web) {
@@ -698,6 +710,7 @@ final class AuthController extends ChangeNotifier {
           if (current != _epoch || _access?.userId != userId) {
             throw const ApiFailure(code: 'SESSION_INVALID');
           }
+          if (write) unawaited(verifyCurrentAccess());
           return result;
         } on ApiFailure catch (refreshError) {
           if (_isUnauthenticated(refreshError)) {
@@ -868,6 +881,162 @@ final class AuthController extends ChangeNotifier {
 
   Future<AdminPolicy> adminPolicy() => _authorized((headers) => repository.adminPolicy(headers));
 
-  Future<AdminPolicy> updateAdminPolicy(bool open, int revision) =>
-      _authorized((headers) => repository.updateAdminPolicy(open, revision, headers), write: true);
+  Future<AdminPolicy> updateAdminPolicy(
+    String registrationMode,
+    int revision, {
+    String? recoveryMode,
+  }) => _authorized(
+    (headers) => repository.updateAdminPolicy(
+      registrationMode,
+      revision,
+      headers,
+      recoveryMode: recoveryMode,
+    ),
+    write: true,
+  );
+
+  Future<List<RoleRead>> adminRoles() =>
+      authorizedRead((headers) => repository.adminRoles(headers));
+
+  Future<RoleRead> adminRole(String roleId) =>
+      authorizedRead((headers) => repository.adminRole(roleId, headers));
+
+  Future<List<PermissionCatalogRead>> adminPermissions() =>
+      authorizedRead((headers) => repository.adminPermissions(headers));
+
+  Future<List<GrantBoundaryRead>> adminGrantBoundaries(String roleId) =>
+      authorizedRead((headers) => repository.adminGrantBoundaries(roleId, headers));
+
+  Future<AuthorizationWriteResult> createAdminRole(String code, String name, String? description) =>
+      authorizedWrite((headers) => repository.createAdminRole(code, name, description, headers));
+
+  Future<AuthorizationWriteResult> updateAdminRole(
+    String roleId,
+    int revision,
+    String name,
+    String? description,
+  ) => authorizedWrite(
+    (headers) => repository.updateAdminRole(roleId, revision, name, description, headers),
+  );
+
+  Future<AuthorizationWriteResult> setAdminRoleEnabled(String roleId, int revision, bool enabled) =>
+      authorizedWrite(
+        (headers) => repository.setAdminRoleEnabled(roleId, revision, enabled, headers),
+      );
+
+  Future<AuthorizationWriteResult> replaceAdminRoleGrants(
+    String roleId,
+    int revision,
+    List<RoleGrantRead> grants,
+  ) => authorizedWrite(
+    (headers) => repository.replaceAdminRoleGrants(roleId, revision, grants, headers),
+  );
+
+  Future<AuthorizationWriteResult> replaceAdminRoleParents(
+    String roleId,
+    int revision,
+    List<String> parentRoleIds,
+  ) => authorizedWrite(
+    (headers) => repository.replaceAdminRoleParents(roleId, revision, parentRoleIds, headers),
+  );
+
+  Future<AuthorizationWriteResult> deleteAdminRole(String roleId, int revision) =>
+      authorizedWrite((headers) => repository.deleteAdminRole(roleId, revision, headers));
+
+  Future<AuthorizationWriteResult> replaceAdminGrantBoundaries(
+    String roleId,
+    int revision,
+    List<GrantBoundaryRead> boundaries,
+  ) => authorizedWrite(
+    (headers) => repository.replaceAdminGrantBoundaries(roleId, revision, boundaries, headers),
+  );
+
+  Future<List<GovernedAccountRead>> adminAccounts() =>
+      authorizedRead((headers) => repository.adminAccounts(headers));
+
+  Future<GovernedAccountRead> adminAccount(String userId) =>
+      authorizedRead((headers) => repository.adminAccount(userId, headers));
+
+  Future<AccountCeilingsRead> adminAccountCeilings() =>
+      authorizedRead((headers) => repository.adminAccountCeilings(headers));
+
+  Future<GovernanceSummaryRead> adminGovernanceSummary() =>
+      authorizedRead((headers) => repository.adminGovernanceSummary(headers));
+
+  Future<PageResponse<AuditEventRead>> adminAuditEvents({String? cursor, String? result}) =>
+      authorizedRead(
+        (headers) => repository.adminAuditEvents(headers, cursor: cursor, result: result),
+      );
+
+  Future<AccountWriteResult> createAdminAccount(
+    String email,
+    String? displayName,
+    List<String> roleIds,
+  ) => authorizedWrite(
+    (headers) => repository.createAdminAccount(email, displayName, roleIds, headers),
+  );
+
+  Future<AccountWriteResult> setAdminAccountStatus(String userId, int revision, String status) =>
+      authorizedWrite(
+        (headers) => repository.setAdminAccountStatus(userId, revision, status, headers),
+      );
+
+  Future<AccountWriteResult> decideAdminApproval(String userId, int revision, String decision) =>
+      authorizedWrite(
+        (headers) => repository.decideAdminApproval(userId, revision, decision, headers),
+      );
+
+  Future<AccountWriteResult> replaceAdminAccountRoles(
+    String userId,
+    int revision,
+    List<String> roleIds,
+  ) => authorizedWrite(
+    (headers) => repository.replaceAdminAccountRoles(userId, revision, roleIds, headers),
+  );
+
+  Future<List<ManualRecoveryRead>> adminRecoveryRequests(String userId) =>
+      authorizedRead((headers) => repository.adminRecoveryRequests(userId, headers));
+
+  Future<ManualRecoveryDecisionResult> decideAdminRecovery(
+    String userId,
+    String challengeId,
+    int revision,
+    String decision,
+    String? verificationMethod,
+  ) => authorizedWrite(
+    (headers) => repository.decideAdminRecovery(
+      userId,
+      challengeId,
+      revision,
+      decision,
+      verificationMethod,
+      headers,
+    ),
+  );
+
+  Future<List<AccountSessionRead>> adminAccountSessions(String userId) =>
+      authorizedRead((headers) => repository.adminAccountSessions(userId, headers));
+
+  Future<List<MenuRead>> adminMenus() =>
+      authorizedRead((headers) => repository.adminMenus(headers));
+
+  Future<MenuCatalogRead> adminMenuCatalog() =>
+      authorizedRead((headers) => repository.adminMenuCatalog(headers));
+
+  Future<MenuWriteResult> createAdminMenuGroup(String code, String audience, String title) =>
+      authorizedWrite((headers) => repository.createAdminMenuGroup(code, audience, title, headers));
+
+  Future<MenuWriteResult> replaceAdminMenuLayout(List<MenuRead> items) =>
+      authorizedWrite((headers) => repository.replaceAdminMenuLayout(items, headers));
+
+  Future<MenuPreviewRead> previewAdminMenus(String userId, String audience) =>
+      authorizedWrite((headers) => repository.previewAdminMenus(userId, audience, headers));
+
+  Future<AccountWriteResult> revokeAdminAccountSessions(
+    String userId,
+    int revision,
+    Map<String, Object?> body,
+  ) => authorizedWrite(
+    (headers) => repository.revokeAdminAccountSessions(userId, revision, body, headers),
+  );
 }

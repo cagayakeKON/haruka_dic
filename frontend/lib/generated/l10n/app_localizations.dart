@@ -590,11 +590,29 @@ abstract class AppLocalizations {
   /// **'输入注册邮箱，我们会受理找回请求。受理不代表邮件已送达。'**
   String get authRecoveryHint;
 
+  /// No description provided for @authRecoveryManualHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'提交后由管理员核验身份。通过后你会得到一次性恢复码，再用它设置新密码。'**
+  String get authRecoveryManualHint;
+
+  /// No description provided for @authRecoveryAwaitReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'申请已受理。请等待管理员核验，核验通过后使用一次性恢复码设置新密码。受理不代表已经核验。'**
+  String get authRecoveryAwaitReview;
+
   /// No description provided for @authRequestRecovery.
   ///
   /// In zh, this message translates to:
   /// **'提交申请'**
   String get authRequestRecovery;
+
+  /// No description provided for @authRequestManualRecovery.
+  ///
+  /// In zh, this message translates to:
+  /// **'申请人工恢复'**
+  String get authRequestManualRecovery;
 
   /// No description provided for @authHeroLogin.
   ///
@@ -1139,7 +1157,7 @@ abstract class AppLocalizations {
   /// No description provided for @authAdminPolicyHint.
   ///
   /// In zh, this message translates to:
-  /// **'现有账号仍可登录与邮件找回；新账号注册由上方开关控制。'**
+  /// **'切换注册或找回方式不会改变已有账号状态，也不会取消已经发出的挑战。'**
   String get authAdminPolicyHint;
 
   /// No description provided for @authRegistrationEnabled.
@@ -1207,6 +1225,234 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'邮箱仍待验证。请先打开邮件中的验证链接。'**
   String get authStillPending;
+
+  /// No description provided for @authPendingApproval.
+  ///
+  /// In zh, this message translates to:
+  /// **'邮箱已验证，正在等待管理员审批。'**
+  String get authPendingApproval;
+
+  /// No description provided for @authApprovalRejected.
+  ///
+  /// In zh, this message translates to:
+  /// **'注册申请已被拒绝。'**
+  String get authApprovalRejected;
+
+  /// No description provided for @authApprovalRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'提交后需要管理员审批，通过前不能登录。'**
+  String get authApprovalRequired;
+
+  /// No description provided for @adminPolicyOpen.
+  ///
+  /// In zh, this message translates to:
+  /// **'开放注册'**
+  String get adminPolicyOpen;
+
+  /// No description provided for @adminPolicyRecoveryEither.
+  ///
+  /// In zh, this message translates to:
+  /// **'邮件或人工'**
+  String get adminPolicyRecoveryEither;
+
+  /// No description provided for @adminPolicyRecoveryDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭找回'**
+  String get adminPolicyRecoveryDisabled;
+
+  /// No description provided for @adminRecoveryRequests.
+  ///
+  /// In zh, this message translates to:
+  /// **'人工恢复'**
+  String get adminRecoveryRequests;
+
+  /// No description provided for @adminRecoveryIssue.
+  ///
+  /// In zh, this message translates to:
+  /// **'核验签发'**
+  String get adminRecoveryIssue;
+
+  /// No description provided for @adminRecoveryReject.
+  ///
+  /// In zh, this message translates to:
+  /// **'拒绝恢复'**
+  String get adminRecoveryReject;
+
+  /// No description provided for @adminRecoveryInPerson.
+  ///
+  /// In zh, this message translates to:
+  /// **'当面核验'**
+  String get adminRecoveryInPerson;
+
+  /// No description provided for @adminRecoveryKnownChannel.
+  ///
+  /// In zh, this message translates to:
+  /// **'已知渠道核验'**
+  String get adminRecoveryKnownChannel;
+
+  /// No description provided for @adminRecoveryTokenOnce.
+  ///
+  /// In zh, this message translates to:
+  /// **'一次性恢复码只显示这一次。请交给账号持有人，管理员不能代设密码。'**
+  String get adminRecoveryTokenOnce;
+
+  /// No description provided for @adminRecoveryTokenHidden.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复码不会再次显示。'**
+  String get adminRecoveryTokenHidden;
+
+  /// No description provided for @adminRecoveryRequested.
+  ///
+  /// In zh, this message translates to:
+  /// **'待核验'**
+  String get adminRecoveryRequested;
+
+  /// No description provided for @adminRecoveryIssued.
+  ///
+  /// In zh, this message translates to:
+  /// **'已签发'**
+  String get adminRecoveryIssued;
+
+  /// No description provided for @adminRecoveryRejected.
+  ///
+  /// In zh, this message translates to:
+  /// **'已拒绝'**
+  String get adminRecoveryRejected;
+
+  /// No description provided for @adminRecoveryConsumed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已使用'**
+  String get adminRecoveryConsumed;
+
+  /// No description provided for @adminRecoveryExpired.
+  ///
+  /// In zh, this message translates to:
+  /// **'已过期'**
+  String get adminRecoveryExpired;
+
+  /// No description provided for @adminGovernanceActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'可登录账号'**
+  String get adminGovernanceActive;
+
+  /// No description provided for @adminGovernancePending.
+  ///
+  /// In zh, this message translates to:
+  /// **'待启用账号'**
+  String get adminGovernancePending;
+
+  /// No description provided for @adminGovernanceDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已停用账号'**
+  String get adminGovernanceDisabled;
+
+  /// No description provided for @adminGovernanceApprovals.
+  ///
+  /// In zh, this message translates to:
+  /// **'待审批'**
+  String get adminGovernanceApprovals;
+
+  /// No description provided for @adminGovernanceRoles.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用角色'**
+  String get adminGovernanceRoles;
+
+  /// No description provided for @adminGovernanceRecoveries.
+  ///
+  /// In zh, this message translates to:
+  /// **'待核验恢复'**
+  String get adminGovernanceRecoveries;
+
+  /// No description provided for @adminGovernanceRevision.
+  ///
+  /// In zh, this message translates to:
+  /// **'授权版本'**
+  String get adminGovernanceRevision;
+
+  /// No description provided for @adminGovernanceLater.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务、存储和模型用量仍未开放。'**
+  String get adminGovernanceLater;
+
+  /// No description provided for @adminAuditEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有审计记录'**
+  String get adminAuditEmpty;
+
+  /// No description provided for @adminAuditDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'审计详情'**
+  String get adminAuditDetail;
+
+  /// No description provided for @adminAuditReason.
+  ///
+  /// In zh, this message translates to:
+  /// **'原因'**
+  String get adminAuditReason;
+
+  /// No description provided for @adminAuditRequest.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求'**
+  String get adminAuditRequest;
+
+  /// No description provided for @adminAuditMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载更多'**
+  String get adminAuditMore;
+
+  /// No description provided for @adminAuditResultAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部结果'**
+  String get adminAuditResultAll;
+
+  /// No description provided for @adminAuditCommitted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已提交'**
+  String get adminAuditCommitted;
+
+  /// No description provided for @adminAuditAccepted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已受理'**
+  String get adminAuditAccepted;
+
+  /// No description provided for @adminAuditDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'已拒绝'**
+  String get adminAuditDenied;
+
+  /// No description provided for @adminAuditFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'失败'**
+  String get adminAuditFailed;
+
+  /// No description provided for @adminUserApprove.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过审批'**
+  String get adminUserApprove;
+
+  /// No description provided for @adminUserReject.
+  ///
+  /// In zh, this message translates to:
+  /// **'拒绝申请'**
+  String get adminUserReject;
 
   /// No description provided for @authSignedOutLocally.
   ///
@@ -8131,6 +8377,348 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'关闭'**
   String get mockSettingClose;
+
+  /// No description provided for @adminRoleCreate.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建角色'**
+  String get adminRoleCreate;
+
+  /// No description provided for @adminRoleCode.
+  ///
+  /// In zh, this message translates to:
+  /// **'代码'**
+  String get adminRoleCode;
+
+  /// No description provided for @adminRoleName.
+  ///
+  /// In zh, this message translates to:
+  /// **'名称'**
+  String get adminRoleName;
+
+  /// No description provided for @adminRoleDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'描述'**
+  String get adminRoleDescription;
+
+  /// No description provided for @adminRoleEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用'**
+  String get adminRoleEnabled;
+
+  /// No description provided for @adminRoleDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已停用'**
+  String get adminRoleDisabled;
+
+  /// No description provided for @adminRoleSaveMetadata.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存名称'**
+  String get adminRoleSaveMetadata;
+
+  /// No description provided for @adminRoleSaveGrants.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存授权'**
+  String get adminRoleSaveGrants;
+
+  /// No description provided for @adminRoleSaveParents.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存继承'**
+  String get adminRoleSaveParents;
+
+  /// No description provided for @adminRoleSaveBoundaries.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存授予上限'**
+  String get adminRoleSaveBoundaries;
+
+  /// No description provided for @adminRoleDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除角色'**
+  String get adminRoleDelete;
+
+  /// No description provided for @adminRoleDeleteConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'只删除没有成员、也不是其他角色上级的空角色。'**
+  String get adminRoleDeleteConfirm;
+
+  /// No description provided for @adminRoleParents.
+  ///
+  /// In zh, this message translates to:
+  /// **'继承的上级角色'**
+  String get adminRoleParents;
+
+  /// No description provided for @adminRoleParentHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'停用的上级不会继续提供权限。'**
+  String get adminRoleParentHint;
+
+  /// No description provided for @adminRoleGrants.
+  ///
+  /// In zh, this message translates to:
+  /// **'直接授权'**
+  String get adminRoleGrants;
+
+  /// No description provided for @adminRoleUnset.
+  ///
+  /// In zh, this message translates to:
+  /// **'未配置'**
+  String get adminRoleUnset;
+
+  /// No description provided for @adminRoleAllow.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许'**
+  String get adminRoleAllow;
+
+  /// No description provided for @adminRoleDeny.
+  ///
+  /// In zh, this message translates to:
+  /// **'拒绝'**
+  String get adminRoleDeny;
+
+  /// No description provided for @adminRoleBothEffects.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许并拒绝'**
+  String get adminRoleBothEffects;
+
+  /// No description provided for @adminRoleBoundaries.
+  ///
+  /// In zh, this message translates to:
+  /// **'授予上限'**
+  String get adminRoleBoundaries;
+
+  /// No description provided for @adminRoleAffected.
+  ///
+  /// In zh, this message translates to:
+  /// **'受影响账号'**
+  String get adminRoleAffected;
+
+  /// No description provided for @adminRoleReload.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新加载'**
+  String get adminRoleReload;
+
+  /// No description provided for @adminRoleEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有角色'**
+  String get adminRoleEmpty;
+
+  /// No description provided for @adminRoleCodeInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'代码需以小写字母开头，并且只含小写字母、数字和下划线'**
+  String get adminRoleCodeInvalid;
+
+  /// No description provided for @adminRoleNameInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写 1 到 100 个字符的名称'**
+  String get adminRoleNameInvalid;
+
+  /// No description provided for @adminRoleDescriptionInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'描述不能超过 2000 个字符'**
+  String get adminRoleDescriptionInvalid;
+
+  /// No description provided for @adminRoleNoCatalog.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有权限目录读取权，不能编辑授权矩阵。'**
+  String get adminRoleNoCatalog;
+
+  /// No description provided for @adminRoleAssignRole.
+  ///
+  /// In zh, this message translates to:
+  /// **'可分配角色'**
+  String get adminRoleAssignRole;
+
+  /// No description provided for @adminRoleAssignPermission.
+  ///
+  /// In zh, this message translates to:
+  /// **'可授予权限'**
+  String get adminRoleAssignPermission;
+
+  /// No description provided for @adminRoleManageRole.
+  ///
+  /// In zh, this message translates to:
+  /// **'可管理账号角色'**
+  String get adminRoleManageRole;
+
+  /// No description provided for @adminRoleUnassigned.
+  ///
+  /// In zh, this message translates to:
+  /// **'可管理未分配账号'**
+  String get adminRoleUnassigned;
+
+  /// No description provided for @adminRoleAddBoundary.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加上限'**
+  String get adminRoleAddBoundary;
+
+  /// No description provided for @adminUserCreate.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建账号'**
+  String get adminUserCreate;
+
+  /// No description provided for @adminUserEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有匹配的账号'**
+  String get adminUserEmpty;
+
+  /// No description provided for @adminUserPendingGrant.
+  ///
+  /// In zh, this message translates to:
+  /// **'待授权'**
+  String get adminUserPendingGrant;
+
+  /// No description provided for @adminUserDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已停用'**
+  String get adminUserDisabled;
+
+  /// No description provided for @adminUserLocked.
+  ///
+  /// In zh, this message translates to:
+  /// **'已锁定'**
+  String get adminUserLocked;
+
+  /// No description provided for @adminUserDisplayName.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示名'**
+  String get adminUserDisplayName;
+
+  /// No description provided for @adminUserNoPassword.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建后不会生成可复制的密码。'**
+  String get adminUserNoPassword;
+
+  /// No description provided for @adminUserEnable.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用'**
+  String get adminUserEnable;
+
+  /// No description provided for @adminUserDisable.
+  ///
+  /// In zh, this message translates to:
+  /// **'停用'**
+  String get adminUserDisable;
+
+  /// No description provided for @adminUserRoles.
+  ///
+  /// In zh, this message translates to:
+  /// **'角色'**
+  String get adminUserRoles;
+
+  /// No description provided for @adminUserSaveRoles.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存角色'**
+  String get adminUserSaveRoles;
+
+  /// No description provided for @adminUserSessions.
+  ///
+  /// In zh, this message translates to:
+  /// **'会话'**
+  String get adminUserSessions;
+
+  /// No description provided for @adminUserRevoke.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销'**
+  String get adminUserRevoke;
+
+  /// No description provided for @adminUserRevokeAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销全部会话'**
+  String get adminUserRevokeAll;
+
+  /// No description provided for @adminMenuHidden.
+  ///
+  /// In zh, this message translates to:
+  /// **'已隐藏'**
+  String get adminMenuHidden;
+
+  /// No description provided for @adminMenuHide.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏菜单'**
+  String get adminMenuHide;
+
+  /// No description provided for @adminMenuHideNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏菜单不会停用功能访问。'**
+  String get adminMenuHideNote;
+
+  /// No description provided for @adminMenuFeatureNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'停用功能访问需要在角色权限中撤销页面权限。'**
+  String get adminMenuFeatureNote;
+
+  /// No description provided for @adminMenuOpenRoles.
+  ///
+  /// In zh, this message translates to:
+  /// **'前往角色权限'**
+  String get adminMenuOpenRoles;
+
+  /// No description provided for @adminMenuGroup.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加分组'**
+  String get adminMenuGroup;
+
+  /// No description provided for @adminMenuTop.
+  ///
+  /// In zh, this message translates to:
+  /// **'顶层'**
+  String get adminMenuTop;
+
+  /// No description provided for @adminMenuExtra.
+  ///
+  /// In zh, this message translates to:
+  /// **'附加显示条件'**
+  String get adminMenuExtra;
+
+  /// No description provided for @adminMenuPreview.
+  ///
+  /// In zh, this message translates to:
+  /// **'预览导航'**
+  String get adminMenuPreview;
+
+  /// No description provided for @adminMenuSave.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存'**
+  String get adminMenuSave;
+
+  /// No description provided for @adminMenuCode.
+  ///
+  /// In zh, this message translates to:
+  /// **'代码'**
+  String get adminMenuCode;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

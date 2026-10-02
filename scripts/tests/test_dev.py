@@ -83,7 +83,7 @@ class ResultGates(unittest.TestCase):
             relative = "frontend/test/support/generated/api_compatibility_samples.dart"
             target = root / relative
             target.parent.mkdir(parents=True)
-            manifest = {"dart_api": {"test_fixture_output": relative}}
+            manifest: dict[str, object] = {"dart_api": {"test_fixture_output": relative}}
             with patch("scripts.dev.ROOT", root):
                 unknown = target.parent / "user_owned.txt"
                 unknown.write_text("preserve", encoding="utf-8")

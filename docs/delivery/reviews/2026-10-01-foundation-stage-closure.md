@@ -101,6 +101,18 @@ PROFILE-001另补两个真实账号不填写显示名的注册/验证/登录、�
 
 采集工具集中修复后，最小SQLite Chrome套件20个可见节点及首批七文件105个可见节点均完整成功、无失败/skip，采集与转换均退出0；SDK恢复及本工具Wasm清理有记录。新的真实分片绑定保留原四份报告，并按各自命中合并，见 `artifacts/stage1/wasm-batch1-native-bindings/plan.json`。当前严格门禁为Python11221/12612通过、后端核心9803/11071（88.55%）未达90%；Flutter28577/41364（69.09%）、核心8826/11408（77.37%）未达75%/85%，见 `artifacts/stage1/coverage-gate-credential-logs-wasm-one/result.json`。后端日志修复使路由源码变化，旧路由命中已从派生副本清除，新增当前源回归后还须补直接受影响的既有路由用例，不能平移旧行命中；前端其余三个原定批次仍待完成。源码、合法映射点和门槛没有为通过而缩减。
 
+## 2026-10-02 继续收口
+
+当前工作区以 `3998c05` 为基础继续阶段1收口，前后端并行，完成的任务由非作者子Agent定点review；不追加真实供应商调用。阶段1仍未签收，M1业务尚未开始。
+
+- 统一开发入口已支持 `check --stage foundation-stage-close --identity <候选身份> --report <报告>`，转交既有必需用例检查器；缺输入、缺矩阵及失败结果仍拒绝。实际29项测试及49个subtest通过，Ruff/check-format通过，独立任务review通过后本地提交 `4643460`。后续严格Pyright发现既有测试fixture字典类型推断问题，已补准确类型；该路径1项定点测试及Pyright通过，非作者定点复核通过。入口通过不代表阶段1业务矩阵通过。
+- 新检出发现 `0010`～`0013` 已应用迁移的原CRLF字节被Git转换为LF，与既有manifest不一致。保持manifest及已应用字节，四条精确Git属性使用 `whitespace=cr-at-eol -text`，不扩大到新迁移；真实Git导出正负例、原PG迁移节点和wheel资源分别验证。当前28项单测、19项PG测试及wheel内14份资源逐字节核对通过；首次基础设施未运行的连接失败报告保留，最终属性对应定点复核仍在完成。
+- 后端历史覆盖复用先按117个应用源、测试/资源源及原生节点集合核对，保留原报告身份。独立review发现派生integration报告遗漏8个零命中CLI源文件，已要求补完整文件集合并双向核对分母/命中；原始DATA不改，不为修报告重跑已通过业务。修订派生及完整覆盖门禁尚未签收。
+- 通知前后台读取次数的Chrome定点1项通过；原第三批7文件重新采集为60个可见业务节点全部通过、唯一done成功、原生退出0，SDK及采集资产恢复。该批真实转换后的Flutter整体为32814/41962（78.20%）、核心8855/11408（77.62%），核心仍低于85%，不签覆盖通过。其余既定批次和必要核心路径继续执行。
+- B1已接受的Android屏外列表/重启读回及Web读取Android所建同一收藏ID明确补入 `acceptance-boundaries.json`，仍为accepted-unexecuted，非作者已核对权威原文；不补测，不写成passed。
+
+本轮原生报告及review保存在当前工作区忽略目录 `artifacts/foundation-closure-root/`、`artifacts/foundation-closure-backend/`、`artifacts/foundation-closure-frontend/` 与 `artifacts/foundation-closure-review/`。具体报告保留源码、依赖及制品摘要；旧检出的原始证据仍保留，不把本段摘要作为310项断言签收。
+
 ## M1进入条件
 
 阶段1完整必需矩阵、覆盖门禁、全盘review和本地提交完成后再编写M1业务。M1范围为三步导入、不可变final文件/版本、类型分派、材料列表/搜索/筛选/详情/确认删除、有权任务进度和持久站内消息；三类专用阅读/结构解析留M2～M4。小说/课本沿已确认MD/EPUB基础范围，PDF、TXT和OCR仍属后续。2026-10-01用户明确选择试卷加入文本PDF、扫描PDF和图片，OPEN-01产品选择已关闭，M1纳入这些源文件的上传/验证/不可变发布及类型分派；OCR、题目校对与冻结按M4举证，不将上传成功冒充可读或ready。前后端继续由不同GPT-6.1 Sol Agent实现，共享契约先冻结；前端编码前须亲自操作已确认Flutter mock对应两端画面，完成后正式Web/Android实操及独立review；测试使用模拟供应商，不追加真实模型验证。

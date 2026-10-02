@@ -14,6 +14,16 @@
       "residual_limitation": "No native full-matrix or external SMTP success evidence"
     },
     {
+      "id": "account-final-collection-read-boundary",
+      "authority": "docs/delivery/reviews/2026-09-26-b1-implementation.md",
+      "decision": "Direct user final acceptance stopped the remaining repeated collection verification",
+      "original_status": "Android final save has UI feedback and one persisted PG row; additional list/restart/cross-platform reads were not completed",
+      "scope": "Android off-screen collection list and local restart readback; Web readback of the same collection ID created on Android",
+      "replacement_claim": "none; accepted unexecuted steps remain distinct from actual save and persistence evidence",
+      "current_policy": "Do not repeat these accepted remaining steps for B1 signoff",
+      "residual_limitation": "No executed success claim for these additional Android or cross-platform readback steps"
+    },
+    {
       "id": "model-authentication-rejection",
       "authority": "docs/delivery/reviews/2026-09-30-model-credentials-tasks.md",
       "decision_date": "2026-10-01",

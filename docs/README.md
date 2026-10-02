@@ -1,5 +1,7 @@
 # 文档导航
 
+当前开发：[M1实现方案](delivery/material-import-implementation.md)，依次完成协议与兼容迁移、真实导入与材料库、持久本人通知。
+
 2026-09-26实施入口：[PLAN2路线图](delivery/roadmap.md)保留B0/B1并重排后续阶段；[原型功能清单](delivery/prototype-scope.md)覆盖当前手机/电脑全部产品操作，[站内消息契约](contracts/notifications.md)补齐已读与跳转，[走查及review记录](delivery/reviews/2026-09-26-prototype-implementation-plan.md)记录本轮证据。
 
 阶段1的 [完整B0可重复工程基础已验收](delivery/reviews/2026-09-22-b0-acceptance.md)，覆盖Flutter/Python应用壳、锁定构建与开发命令、[本地基础设施](../dev/README.md)、迁移/初始化、契约和完整B0证据矩阵。[B1账号与收藏闭环](delivery/reviews/2026-09-26-b1-implementation.md)（含注册、邮箱激活和找回）已按用户最终验收决定通过；找回密码闭环只验Web，前端日志只验Web，Windows原生完整矩阵和Android找回完整闭环未完成且不补测，已有局部操作保留。本地隔离SMTP闭环获接受，外部SMTP未实测。未执行步骤不记成实测。[B2a本人资料与设置](delivery/reviews/2026-09-28-profile-settings-acceptance.md)已按当期范围重新验收通过：旧正式界面偏离已确认Flutter mock的视觉通过结论曾撤回，同界面接线与重复展示删除后，正式Web/Android实操、后端和隔离PG证据支撑本次结论。[B2b身份治理](delivery/reviews/2026-09-29-identity-governance-implementation.md)已有代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过。[B2c凭据与模型任务](delivery/reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，2026-10-01用户确认该结果并要求不再验证模型，B2c按此范围验收通过，模型可用性未验证。阶段1已完成，当前进入M1材料导入、材料库与通知实现。独立 [HTML原型](../prototype/README.md) 只提供早期流程与内存交互参考，不计入正式应用验收。

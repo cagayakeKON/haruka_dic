@@ -34,8 +34,8 @@ def dart_fixture(content: str, source_digest: str) -> str:
         f"// Source: samples.json; sha256:{source_digest}\n"
         "import 'dart:convert';\n\n"
         f"const String _apiCompatibilitySamplesBase64 =\n{literals};\n\n"
-        "String get apiCompatibilitySamplesJson =>\n"
-        "    utf8.decode(base64Decode(_apiCompatibilitySamplesBase64));\n"
+        "String get apiCompatibilitySamplesJson => "
+        "utf8.decode(base64Decode(_apiCompatibilitySamplesBase64));\n"
     )
 
 

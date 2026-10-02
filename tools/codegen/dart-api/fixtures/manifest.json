@@ -1,6 +1,6 @@
 {
   "dart_fixture": {
-    "sha256": "32c8f93ef662b466b56d1a7358f67dadc25772605198d6a0a508058d619db5a7",
+    "sha256": "e8dd5d1f07d430d4c5cb38a3e2ec6a5316b287928c8b81263f53df3d89a160ff",
     "source": "samples.json",
     "source_sha256": "71b187b902b498c107f3494fa57365239752ee5e7070f1bcef389c91fadc4a8a",
     "target": "frontend/test/support/generated/api_compatibility_samples.dart",

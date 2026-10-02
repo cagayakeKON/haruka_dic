@@ -941,5 +941,4 @@ const String _apiCompatibilitySamplesBase64 =
     'MTIzNC01Njc4LTcxMjMtODEyMy0xMjM0NTY3ODlhYmMiLAogICAgInN0YXR1cyI6ICJmdXR1cmVf'
     'c3RhdHVzIgogIH0KfQo=';
 
-String get apiCompatibilitySamplesJson =>
-    utf8.decode(base64Decode(_apiCompatibilitySamplesBase64));
+String get apiCompatibilitySamplesJson => utf8.decode(base64Decode(_apiCompatibilitySamplesBase64));

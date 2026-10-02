@@ -81,6 +81,7 @@ void main() {
     const requestId = '018f1234-1234-7123-8123-123456789abc';
     var accessCalls = 0;
     var uploads = 0;
+    var uploadedEvents = 0;
     ResponseBody jsonBody(Object value) => ResponseBody.fromString(
       jsonEncode(value),
       200,
@@ -118,6 +119,7 @@ void main() {
               utf8.decode((await stream!.toList()).expand((part) => part).toList()),
             ) as Map<String, dynamic>;
             final events = (body['events'] as List<dynamic>).cast<Map<String, dynamic>>();
+            uploadedEvents += events.length;
             return jsonBody({
               'data': {
                 'results': [
@@ -139,7 +141,16 @@ void main() {
     );
     expect(await auth.login('user@example.test', 'valid-test-password'), isTrue);
     final telemetry = Telemetry(config, api, auth, store: _MemoryStore());
-    api.beginRequestObservation = telemetry.beginHttpObservation;
+    final writeAccessObserved = Completer<void>();
+    api.beginRequestObservation = (operationId, clientRequestId) {
+      final observe = telemetry.beginHttpObservation(operationId, clientRequestId);
+      return (success, statusCode, elapsed, serverRequestId) {
+        observe?.call(success, statusCode, elapsed, serverRequestId);
+        if (accessCalls == 2 && !writeAccessObserved.isCompleted) {
+          writeAccessObserved.complete();
+        }
+      };
+    };
     addTearDown(() async {
       await telemetry.dispose();
       auth.dispose();
@@ -161,9 +172,13 @@ void main() {
     expect(uploads, 3);
     // Ordinary writes must retain their existing post-success access validation.
     await auth.authorizedWrite((headers) async => true);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await writeAccessObserved.future.timeout(const Duration(seconds: 10));
+    // A browser timer may already deliver the access event before a queue
+    // snapshot. Explicitly drain and inspect the accepted events instead.
+    await telemetry.flush();
     expect(accessCalls, 2);
-    expect(telemetry.queuedCount, greaterThan(0));
+    expect(uploadedEvents, greaterThan(45));
+    expect(telemetry.queuedCount, 0);
   });
 
   test('restored authenticated queue reports storage recovery without claiming a drop', () async {

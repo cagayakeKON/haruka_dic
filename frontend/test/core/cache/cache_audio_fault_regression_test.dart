@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show QueryExecutor, QueryInterceptor, ApplyInterceptor;
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/cache/audio_blob_store.dart';
 import 'package:haruka/core/cache/cache_audio_manager.dart';
 import 'package:haruka/core/cache/cache_database.dart';
 import 'package:haruka/core/cache/cache_models.dart';
 import 'package:haruka/core/cache/cache_partition_lock.dart';
-import 'package:path/path.dart' as path;
+
+import '../../support/test_database.dart';
 
 final class _Bytes implements AudioByteBackend {
   final data = <String, List<int>>{};
@@ -133,6 +132,7 @@ final class _PausePendingStateRead extends QueryInterceptor {
 }
 
 void main() {
+  setUpAll(initializeTestDatabase);
   final scope = CacheScope.confirmed(
     endpoint: Uri.parse('https://cache.example.test/api'),
     instanceId: 'test',
@@ -150,7 +150,7 @@ void main() {
   const sample = [1, 2, 3, 4];
 
   test('revocation ends a paused audio consumer and releases its read pin', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final changes = StreamController<void>.broadcast(sync: true);
     final epoch = await database.storageEpoch();
@@ -208,7 +208,7 @@ void main() {
   });
 
   test('failed deletion keeps staged bytes charged and clear pending', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes()..rejectDeletion = true;
     final epoch = await database.storageEpoch();
     final manager = CacheAudioManager(
@@ -254,7 +254,7 @@ void main() {
   });
 
   test('storage quota failure evicts one ready asset and retries the same chunk once', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final epoch = await database.storageEpoch();
     final manager = CacheAudioManager(
@@ -298,7 +298,7 @@ void main() {
   });
 
   test('promotion quota retry evicts only after releasing publish lock', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final epoch = await database.storageEpoch();
     final manager = CacheAudioManager(
@@ -340,7 +340,7 @@ void main() {
   });
 
   test('text clear cancels a stalled old-epoch transfer and releases its slot', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final changes = StreamController<void>.broadcast(sync: true);
     final chunks = StreamController<List<int>>();
@@ -386,10 +386,9 @@ void main() {
   });
 
   test('persistent epoch change rejects the next chunk without an invalidation hint', () async {
-    final directory = await Directory.systemTemp.createTemp('haruka-audio-epoch-');
-    final index = File(path.join(directory.path, 'index.sqlite'));
-    final database = CacheDatabase(NativeDatabase(index));
-    final external = CacheDatabase(NativeDatabase(index));
+    final index = await TestDatabaseFile.create('haruka-audio-epoch-');
+    final database = CacheDatabase(index.executor());
+    final external = CacheDatabase(index.executor());
     final backend = _Bytes();
     final chunks = StreamController<List<int>>();
     final oldEpoch = await database.storageEpoch();
@@ -428,12 +427,12 @@ void main() {
       await manager.close();
       await external.close();
       await database.close();
-      await directory.delete(recursive: true);
+      await index.close();
     }
   });
 
   test('old download cleanup cannot finish a newer clear generation', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final chunks = StreamController<List<int>>();
     final oldEpoch = await database.storageEpoch();
@@ -477,11 +476,10 @@ void main() {
   });
 
   test('pending read cannot finish a newer clear after waiting for its lock', () async {
-    final directory = await Directory.systemTemp.createTemp('haruka-audio-clear-race-');
-    final index = File(path.join(directory.path, 'index.sqlite'));
+    final index = await TestDatabaseFile.create('haruka-audio-clear-race-');
     final pause = _PausePendingStateRead();
-    final database = CacheDatabase(NativeDatabase(index).interceptWith(pause));
-    final external = CacheDatabase(NativeDatabase(index));
+    final database = CacheDatabase(index.executor().interceptWith(pause));
+    final external = CacheDatabase(index.executor());
     var epoch = await database.storageEpoch();
     final oldReference = AudioBlobStore(scope, _Bytes()).stageReference(epoch, 'old', 'old-asset');
     final manager = CacheAudioManager(
@@ -554,12 +552,12 @@ void main() {
       await manager.close();
       await external.close();
       await database.close();
-      await directory.delete(recursive: true);
+      await index.close();
     }
   });
 
   test('retired promoted bytes stay charged until deletion succeeds', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final store = AudioBlobStore(scope, backend);
     final oldEpoch = await database.storageEpoch();
@@ -609,7 +607,7 @@ void main() {
   });
 
   test('pending cleanup for one asset does not block another explicit download', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final store = AudioBlobStore(scope, backend);
     final oldEpoch = await database.storageEpoch();
@@ -680,7 +678,7 @@ void main() {
   });
 
   test('recovery hashes outside the publish lock and preserves a later ready asset', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     final backend = _Bytes();
     final epoch = await database.storageEpoch();
     final manager = CacheAudioManager(

@@ -18,6 +18,7 @@ int nestedBranch(bool selected) {
   int nested() {
     return 91;
   }
+
   if (selected) {
     return 7;
   }

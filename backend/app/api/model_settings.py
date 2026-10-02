@@ -1,6 +1,7 @@
 """Authorized provider/settings/tests/usage HTTP surfaces and job WebSocket."""
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -13,6 +14,7 @@ from app.api.responses import error_responses, get_request_id
 from app.api.security_guards import require_authenticated_native_write, require_session_csrf
 from app.bootstrap import Resources, Runtime
 from app.contracts.errors import ErrorCode
+from app.domain.correlation import current_log_context
 from app.domain.errors import AppError
 from app.models import AuthorizationRevision, User
 from app.models.model_tasks import (
@@ -57,6 +59,8 @@ from app.schemas.responses import ApiModel, ResponseMeta, SuccessResponse
 from app.services import model_configuration as config
 from app.services import model_tasks as tasks
 from app.services.governance_security import verify_admin_write
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["model-settings"])
 COMMON = error_responses(400, 401, 403, 404, 409, 422, 429, 500, 503)
@@ -122,6 +126,7 @@ async def create_credential(request: Request, payload: CredentialCreate):
     runtime, scope = await context(request, ("client.credential.manage",), write=True)
     async with resources(runtime).database.sessions() as session, session.begin():
         result = await config.add_credential(session, runtime, scope, payload)
+    logger.info("credential.created", extra=current_log_context())
     return response(request, result)
 
 
@@ -136,6 +141,7 @@ async def rotate(request: Request, credential_id: UUID, payload: CredentialRotat
     runtime, scope = await context(request, ("client.credential.manage",), write=True)
     async with resources(runtime).database.sessions() as session, session.begin():
         result = await config.rotate_credential(session, runtime, scope, credential_id, payload)
+    logger.info("credential.rotated", extra=current_log_context())
     return response(request, result)
 
 
@@ -152,6 +158,7 @@ async def revoke(request: Request, credential_id: UUID, payload: CredentialDelet
         result = await config.delete_credential(
             session, scope, credential_id, payload.expected_revision
         )
+    logger.info("credential.deleted", extra=current_log_context())
     return response(request, result)
 
 

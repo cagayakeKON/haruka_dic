@@ -74,7 +74,7 @@ uv run --locked ruff format --check .
 uv run --locked ruff check .
 ~~~
 
-本地显式修复可以运行 ruff check --fix 后再 format，必须审查差异；不默认启用 --unsafe-fixes。迁移和测试照常检查，只有上面的测试 assert 规则例外。
+本地显式修复可以运行 ruff check --fix 后再 format，必须审查差异；不默认启用 --unsafe-fixes。迁移和测试照常检查。2026-10-01 全量检查发现部分已应用迁移存在历史格式或导入排序差异；按[数据库规范](database.md)保持已应用字节不变，仅在真实pyproject中精确列出五个历史文件的formatter例外，以及其中三个文件的I001例外。它们仍接受语法、安全、类型及完整迁移manifest摘要检查；没有目录级豁免，新迁移执行正常规则。路径和实际结果见[阶段1收口记录](../delivery/reviews/2026-10-01-foundation-stage-closure.md)。测试assert的S101例外保持原范围。
 
 ## 3. Python：Pyright
 

@@ -160,4 +160,46 @@ void main() {
       5000,
     );
   });
+  test('native per-event queue survives restart and two writers do not overwrite', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final root = await Directory.systemTemp.createTemp('haruka-telemetry-test-');
+    const channel = MethodChannel('plugins.flutter.io/path_provider');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      channel,
+      (_) async => root.path,
+    );
+    addTearDown(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      );
+      await root.delete(recursive: true);
+    });
+    const scope = 'instance:user:client:session';
+    const session = '018f1234-1234-7123-8123-123456789abc';
+    Map<String, Object?> event(String id) => {'event_id': id, 'event': 'app.started'};
+    final a = PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef');
+    final b = PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef');
+    final first = event('018f1234-0000-7000-8000-000000000001');
+    final second = event('018f1234-0000-7000-8000-000000000002');
+    final third = event('018f1234-0000-7000-8000-000000000003');
+    await a.write(scope, TelemetrySnapshot(clientSessionId: session, events: [first]));
+    expect((await b.read(scope))!.events, hasLength(1));
+    await b.write(scope, TelemetrySnapshot(clientSessionId: session, events: [first, second]));
+    await a.write(scope, TelemetrySnapshot(clientSessionId: session, events: [first, third]));
+    final restart = PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef');
+    expect((await restart.read(scope))!.events.map((item) => item['event_id']).toSet(), {
+      first['event_id'],
+      second['event_id'],
+      third['event_id'],
+    });
+    await a.write(scope, TelemetrySnapshot(clientSessionId: session, events: [third]));
+    expect(
+      (await PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef').read(scope))!
+          .events
+          .map((item) => item['event_id'])
+          .toSet(),
+      {second['event_id'], third['event_id']},
+    );
+  });
 }

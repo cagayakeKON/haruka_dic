@@ -7,6 +7,7 @@ import 'package:haruka/features/library/presentation/material_pages.dart';
 import 'package:haruka/app/preview_shell.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   Future<void> openExam(WidgetTester tester, Size size) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;

@@ -8,8 +8,7 @@ DESIGN23按[提取契约](../contracts/source-extraction.md)持久化OCR完整�
 
 ## 当前实现边界（2026-09-30）
 
-[B2c](../delivery/reviews/2026-09-30-model-credentials-tasks.md)正在实现本人凭据单能力测试：接受事务写 Job/AiRun/Outbox，独立 Outbox→Kafka→Worker 消费，已知调用阶段可恢复发布，未知外部结果阻断自动外发。当前任务种类只覆盖 `credential_test`，并不代表下述材料、考试、学习结果或业务 TTS 聚合已实现。当前物理冻结字段与兼容扩展说明见[任务分册](database-learning.md#当前凭据测试与任务切片2026-09-30)，正式验收状态以交付记录为准。
-
+[B2c](../delivery/reviews/2026-09-30-model-credentials-tasks.md)已实现本人凭据单能力测试：接受事务写 Job/AiRun/Outbox，独立 Outbox→Kafka→Worker 消费，已知调用阶段可恢复发布，未知外部结果阻断自动外发。2026-10-01用户接受现有 `KEY_REJECTED` 并要求不再验证模型，本切片按此范围验收通过，未证明模型成功可用。当前任务种类只覆盖 `credential_test`，并不代表下述材料、考试、学习结果或业务 TTS 聚合已实现。当前物理冻结字段与兼容扩展说明见[任务分册](database-learning.md#当前凭据测试与任务切片2026-09-30)，正式验收状态以交付记录为准。
 
 ## 1. 通用数据规则
 

@@ -1,4 +1,674 @@
 {
+  "admin_menu_catalog": {
+    "data": {
+      "icons": [
+        "book",
+        "exercise",
+        "grid",
+        "layers",
+        "library",
+        "notebooks",
+        "person",
+        "query",
+        "schedule",
+        "settings",
+        "shield",
+        "spark"
+      ],
+      "pages": [
+        {
+          "audience": "admin",
+          "code": "models",
+          "component_key": "admin.models",
+          "floor": [
+            "admin.model_catalog.read"
+          ],
+          "icon_key": "spark",
+          "route_key": "models",
+          "sort_order": 85,
+          "title": "模型目录"
+        },
+        {
+          "audience": "admin",
+          "code": "limits",
+          "component_key": "admin.limits",
+          "floor": [
+            "admin.quota.read"
+          ],
+          "icon_key": "settings",
+          "route_key": "limits",
+          "sort_order": 86,
+          "title": "技术限额"
+        },
+        {
+          "audience": "admin",
+          "code": "overview",
+          "component_key": "admin.overview",
+          "floor": [
+            "admin.dashboard.view"
+          ],
+          "icon_key": "grid",
+          "route_key": "overview",
+          "sort_order": 10,
+          "title": "概览"
+        },
+        {
+          "audience": "admin",
+          "code": "users",
+          "component_key": "admin.users",
+          "floor": [
+            "admin.user.read"
+          ],
+          "icon_key": "person",
+          "route_key": "users",
+          "sort_order": 20,
+          "title": "用户与会话"
+        },
+        {
+          "audience": "admin",
+          "code": "roles",
+          "component_key": "admin.roles",
+          "floor": [
+            "admin.role.read"
+          ],
+          "icon_key": "shield",
+          "route_key": "roles",
+          "sort_order": 30,
+          "title": "角色与权限"
+        },
+        {
+          "audience": "admin",
+          "code": "menus",
+          "component_key": "admin.menus",
+          "floor": [
+            "admin.menu.read"
+          ],
+          "icon_key": "layers",
+          "route_key": "menus",
+          "sort_order": 40,
+          "title": "菜单"
+        },
+        {
+          "audience": "admin",
+          "code": "policy",
+          "component_key": "admin.policy",
+          "floor": [
+            "admin.auth_policy.read"
+          ],
+          "icon_key": "settings",
+          "route_key": "policy",
+          "sort_order": 50,
+          "title": "注册策略"
+        },
+        {
+          "audience": "admin",
+          "code": "jobs",
+          "component_key": "admin.jobs",
+          "floor": [
+            "admin.job.read"
+          ],
+          "icon_key": "schedule",
+          "route_key": "jobs",
+          "sort_order": 60,
+          "title": "资源任务"
+        },
+        {
+          "audience": "admin",
+          "code": "audit",
+          "component_key": "admin.audit",
+          "floor": [
+            "admin.audit.read"
+          ],
+          "icon_key": "book",
+          "route_key": "audit",
+          "sort_order": 70,
+          "title": "审计"
+        },
+        {
+          "audience": "admin",
+          "code": "usage",
+          "component_key": "admin.usage",
+          "floor": [
+            "admin.dashboard.view"
+          ],
+          "icon_key": "spark",
+          "route_key": "usage",
+          "sort_order": 80,
+          "title": "用量"
+        },
+        {
+          "audience": "client",
+          "code": "library",
+          "component_key": "client.library",
+          "floor": [
+            "client.material.list"
+          ],
+          "icon_key": "library",
+          "route_key": "/reference/materials",
+          "sort_order": 10,
+          "title": "书库"
+        },
+        {
+          "audience": "client",
+          "code": "notebooks",
+          "component_key": "client.notebooks",
+          "floor": [
+            "client.vocabulary_notebook.read"
+          ],
+          "icon_key": "notebooks",
+          "route_key": "/collections",
+          "sort_order": 20,
+          "title": "单词本"
+        },
+        {
+          "audience": "client",
+          "code": "query",
+          "component_key": "client.query",
+          "floor": [
+            "client.agent.read"
+          ],
+          "icon_key": "query",
+          "route_key": "/query",
+          "sort_order": 30,
+          "title": "查询"
+        },
+        {
+          "audience": "client",
+          "code": "exercise",
+          "component_key": "client.exercise",
+          "floor": [
+            "client.practice.read"
+          ],
+          "icon_key": "exercise",
+          "route_key": "/exercise",
+          "sort_order": 40,
+          "title": "习题"
+        },
+        {
+          "audience": "client",
+          "code": "settings",
+          "component_key": "client.settings",
+          "floor": [
+            "client.profile.read"
+          ],
+          "icon_key": "settings",
+          "route_key": "/settings",
+          "sort_order": 50,
+          "title": "设置"
+        }
+      ],
+      "permission_codes": [
+        {
+          "audience": "admin",
+          "code": "admin.audit.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.auth_policy.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.auth_policy.update"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.dashboard.view"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.diagnostics.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.grant_boundary.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.grant_boundary.update"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.job.cancel"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.job.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.job.retry"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.login"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.menu.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.menu.update"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.model_catalog.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.model_catalog.update"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.permission.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.protected_role.manage"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.quota.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.quota.update"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.resource_metadata.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.role.create"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.role.delete"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.role.permission.assign"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.role.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.role.update"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.session.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.session.revoke"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.user.approve"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.user.create"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.user.disable"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.user.enable"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.user.read"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.user.role.assign"
+        },
+        {
+          "audience": "admin",
+          "code": "admin.user.update"
+        },
+        {
+          "audience": "client",
+          "code": "client.agent.delete"
+        },
+        {
+          "audience": "client",
+          "code": "client.agent.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.agent.use"
+        },
+        {
+          "audience": "client",
+          "code": "client.ai.explain"
+        },
+        {
+          "audience": "client",
+          "code": "client.ai.feedback"
+        },
+        {
+          "audience": "client",
+          "code": "client.bookmark.create"
+        },
+        {
+          "audience": "client",
+          "code": "client.bookmark.delete"
+        },
+        {
+          "audience": "client",
+          "code": "client.bookmark.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.collection.create"
+        },
+        {
+          "audience": "client",
+          "code": "client.collection.delete"
+        },
+        {
+          "audience": "client",
+          "code": "client.collection.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.collection.update"
+        },
+        {
+          "audience": "client",
+          "code": "client.credential.manage"
+        },
+        {
+          "audience": "client",
+          "code": "client.credential.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.credential.test"
+        },
+        {
+          "audience": "client",
+          "code": "client.diagnosis.generate"
+        },
+        {
+          "audience": "client",
+          "code": "client.diagnosis.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam.edit"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam.import"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam.list"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam_grade.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam_grade.regrade"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam_grade.request"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam_session.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam_session.save"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam_session.start"
+        },
+        {
+          "audience": "client",
+          "code": "client.exam_session.submit"
+        },
+        {
+          "audience": "client",
+          "code": "client.job.cancel"
+        },
+        {
+          "audience": "client",
+          "code": "client.job.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.job.retry"
+        },
+        {
+          "audience": "client",
+          "code": "client.login"
+        },
+        {
+          "audience": "client",
+          "code": "client.material.analyze"
+        },
+        {
+          "audience": "client",
+          "code": "client.material.delete"
+        },
+        {
+          "audience": "client",
+          "code": "client.material.import"
+        },
+        {
+          "audience": "client",
+          "code": "client.material.list"
+        },
+        {
+          "audience": "client",
+          "code": "client.material.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.material.reparse"
+        },
+        {
+          "audience": "client",
+          "code": "client.material.update"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.answer"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.generate"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.grade.request"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.mistake.favorite"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.mistake.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.review.request"
+        },
+        {
+          "audience": "client",
+          "code": "client.practice.start"
+        },
+        {
+          "audience": "client",
+          "code": "client.profile.avatar.update"
+        },
+        {
+          "audience": "client",
+          "code": "client.profile.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.profile.update"
+        },
+        {
+          "audience": "client",
+          "code": "client.reading.progress.update"
+        },
+        {
+          "audience": "client",
+          "code": "client.speech.generate"
+        },
+        {
+          "audience": "client",
+          "code": "client.speech.play"
+        },
+        {
+          "audience": "client",
+          "code": "client.vocabulary.csv.export"
+        },
+        {
+          "audience": "client",
+          "code": "client.vocabulary.csv.import"
+        },
+        {
+          "audience": "client",
+          "code": "client.vocabulary.photo.import"
+        },
+        {
+          "audience": "client",
+          "code": "client.vocabulary_notebook.create"
+        },
+        {
+          "audience": "client",
+          "code": "client.vocabulary_notebook.delete"
+        },
+        {
+          "audience": "client",
+          "code": "client.vocabulary_notebook.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.vocabulary_notebook.update"
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "admin_menu_preview": {
+    "data": {
+      "navigation": [
+        {
+          "icon_customized": false,
+          "icon_key": "spark",
+          "key": "models",
+          "route_key": "models",
+          "title": "模型目录",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "settings",
+          "key": "limits",
+          "route_key": "limits",
+          "title": "技术限额",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "grid",
+          "key": "overview",
+          "route_key": "overview",
+          "title": "概览",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "person",
+          "key": "users",
+          "route_key": "users",
+          "title": "用户与会话",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "shield",
+          "key": "roles",
+          "route_key": "roles",
+          "title": "角色与权限",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "layers",
+          "key": "menus",
+          "route_key": "menus",
+          "title": "菜单",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "settings",
+          "key": "policy",
+          "route_key": "policy",
+          "title": "注册策略",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "schedule",
+          "key": "jobs",
+          "route_key": "jobs",
+          "title": "资源任务",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "book",
+          "key": "audit",
+          "route_key": "audit",
+          "title": "审计",
+          "title_customized": false
+        },
+        {
+          "icon_customized": false,
+          "icon_key": "spark",
+          "key": "usage",
+          "route_key": "usage",
+          "title": "用量",
+          "title_customized": false
+        }
+      ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
   "admin_model_catalog_patch": {
     "data": {
       "default_provider": "openrouter",
@@ -77,6 +747,29 @@
       "sequence": 4,
       "state": "queued",
       "updated_at": "2026-09-30T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "admin_role_with_parent": {
+    "data": {
+      "code": "sample_auditor",
+      "description": "Synthetic contract sample",
+      "enabled": true,
+      "grants": [],
+      "id": "018f1234-5678-7123-8123-123456789abc",
+      "member_count": 0,
+      "name": "Sample auditor",
+      "parents": [
+        {
+          "code": "client_readonly",
+          "enabled": true,
+          "role_id": "018f1234-5678-7123-8123-123456789abd"
+        }
+      ],
+      "protected": false,
+      "revision": 2
     },
     "meta": {
       "request_id": "018f1234-1234-7123-8123-123456789abc"

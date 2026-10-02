@@ -2,7 +2,7 @@
   "schema_version": 1,
   "scope": "account-and-learning",
   "sha256": {
-    "database-schema.json": "5a4f9678b37ebca432f97116cc7f11acce2525da3a435cf2be36c0f43f789aa9",
+    "database-schema.json": "cb33092071f6dc077ab31af2452ba029fc4f7c31343ec2316bb235bf7da01ec1",
     "errors.json": "bb97cb0cc9b0a08f1ce9f5cc5f4c670efba72cfdcba95f47fd9a75f78122c1e9",
     "openapi.json": "88597e86813da382df215064d4b39b449382a47586378ff2caa2036dfd41b0c4",
     "permissions.json": "2696d589228a89499eb49d580a9f3f9590fd749f4a50c0aca0bea5f562aa3162",

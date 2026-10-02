@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
+from app.maintenance.migrations import bundled_migration_head
 from app.models import Base
 
 
@@ -245,7 +246,7 @@ def database_document(metadata: MetaData | None = None) -> dict[str, object]:
     source = json.dumps(tables, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {
         "schema_version": 1,
-        "migration_revision": "0007_authorization_governance",
+        "migration_revision": bundled_migration_head(),
         "source": "backend/app/models",
         "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "excluded_internal_tables": ["alembic_version"],

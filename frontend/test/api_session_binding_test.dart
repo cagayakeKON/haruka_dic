@@ -10,7 +10,7 @@ import 'package:haruka/core/api/responses.dart';
 import 'package:haruka/core/config/app_config.dart';
 import 'package:haruka/core/cache/cache_read_retry.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
 
 const _userA = '018f1234-0000-7000-8000-000000000001';
 const _userB = '018f1234-0000-7000-8000-000000000002';

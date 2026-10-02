@@ -336,6 +336,86 @@ def compatibility_samples() -> dict[str, object]:
         **_settings_samples(),
         **_model_samples(),
         **_model_review_samples(),
+        **_governance_samples(),
+    }
+
+
+def _governance_samples() -> dict[str, object]:
+    """Published registries and frozen governance DTOs for cross-language consumers."""
+    from app.contracts.navigation import PUBLISHED_ICONS, PUBLISHED_PAGES
+    from app.contracts.permissions import ADMIN_CODES, CLIENT_CODES
+    from app.schemas.menu_governance import (
+        MenuCatalogPage,
+        MenuCatalogRead,
+        MenuPermissionChoice,
+        MenuPreviewRead,
+    )
+    from app.schemas.role_governance import RoleParentRead, RoleRead
+
+    meta = ResponseMeta(request_id=REQUEST_ID)
+    catalog = MenuCatalogRead(
+        pages=[
+            MenuCatalogPage(
+                **{
+                    name: getattr(page, name)
+                    for name in (
+                        "code",
+                        "audience",
+                        "route_key",
+                        "component_key",
+                        "floor",
+                        "icon_key",
+                        "title",
+                        "sort_order",
+                    )
+                }
+            )
+            for page in PUBLISHED_PAGES
+        ],
+        icons=sorted(PUBLISHED_ICONS),
+        permission_codes=sorted(
+            [MenuPermissionChoice(code=code, audience="admin") for code in ADMIN_CODES]
+            + [MenuPermissionChoice(code=code, audience="client") for code in CLIENT_CODES],
+            key=lambda choice: choice.code,
+        ),
+    )
+    preview = MenuPreviewRead(
+        navigation=[
+            NavigationRead(
+                key=page.code, route_key=page.route_key, title=page.title, icon_key=page.icon_key
+            )
+            for page in PUBLISHED_PAGES
+            if page.audience == "admin"
+        ]
+    )
+    role = RoleRead(
+        id=RESOURCE_ID,
+        code="sample_auditor",
+        name="Sample auditor",
+        description="Synthetic contract sample",
+        protected=False,
+        enabled=True,
+        revision=2,
+        grants=[],
+        parents=[
+            RoleParentRead(
+                role_id=UUID("018f1234-5678-7123-8123-123456789abd"),
+                code="client_readonly",
+                enabled=True,
+            )
+        ],
+        member_count=0,
+    )
+    return {
+        "admin_menu_catalog": SuccessResponse[MenuCatalogRead](data=catalog, meta=meta).model_dump(
+            mode="json"
+        ),
+        "admin_menu_preview": SuccessResponse[MenuPreviewRead](data=preview, meta=meta).model_dump(
+            mode="json"
+        ),
+        "admin_role_with_parent": SuccessResponse[RoleRead](data=role, meta=meta).model_dump(
+            mode="json"
+        ),
     }
 
 

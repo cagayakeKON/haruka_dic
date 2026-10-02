@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,12 +11,10 @@ import 'package:haruka/core/api/wire.dart';
 import 'package:haruka/core/auth/auth_repository.dart';
 import 'package:haruka/core/config/app_config.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
 
 void main() {
-  final samples = wireObject(
-    jsonDecode(File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync()),
-  );
+  final samples = wireObject(jsonDecode(apiCompatibilitySamplesJson));
 
   test('activation uses the opaque Bearer continuation without a session', () async {
     const token = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';

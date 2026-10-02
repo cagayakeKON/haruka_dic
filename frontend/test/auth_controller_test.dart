@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
+
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -13,7 +15,7 @@ import 'package:haruka/core/auth/auth_sync.dart';
 import 'package:haruka/core/auth/credential_vault.dart';
 import 'package:haruka/core/config/app_config.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
 
 final class _MemoryVault implements CredentialVault {
   RefreshCredential? current;
@@ -96,9 +98,7 @@ void main() {
   const csrfB = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
   const sessionA = '018f1234-0000-7000-8000-000000000002';
   const sessionB = '018f1234-0000-7000-8000-000000000003';
-  final samples = jsonDecode(
-    File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
   final config = AppConfig.parse(
     platform: AppPlatform.windows,
     environment: 'dev',

@@ -116,9 +116,11 @@ class HarukaDialogSurface extends StatelessWidget {
               ),
               if (description != null) ...[
                 const SizedBox(height: 2),
-                Text(description!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                )),
+                Text(
+                  description!,
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
               ],
               const SizedBox(height: 12),
               Flexible(

@@ -1,6 +1,6 @@
 # Haruka 前端
 
-单个 Flutter 工程包含 Windows、Web、Android 宿主、紧凑/宽屏布局、公开配置校验和中文 ARB 本地化。环境页可显式检查真实后端就绪状态。当前工作区还包含阶段 1 账号与参考学习切片的实现候选：真实注册、邮箱验证与找回、登录与本人安全操作、Web 管理注册策略、已发布文字选区查询与收藏，以及受限前端遥测。候选仍需按交付矩阵完成三端验收；完整材料阅读、导入、NLP、AI生成和 TTS 不因这些参考流程而视为已交付。
+单个 Flutter 工程包含 Windows、Web、Android 宿主、紧凑/宽屏布局、公开配置校验和中文 ARB 本地化。环境页可显式检查真实后端就绪状态。阶段1已实现账号与收藏、本人资料/头像/设置、身份治理、本人模型凭据和任务；当前正在完成[阶段1收口检查](../docs/delivery/reviews/2026-10-01-foundation-stage-closure.md)。真实模型测试三次 `KEY_REJECTED` 已获用户接受，不再验证模型，模型可用性仍未验证。正式业务按Web和Android必要路径验收，找回密码和前端日志只验Web，不安排Windows原生运行测试。完整材料阅读、导入、NLP、AI生成和TTS继续按后续切片交付；现有mock与参考学习流程不代表这些能力已实现。
 
 2026-09-26 [B0设计对齐](../docs/delivery/reviews/2026-09-26-b0-design-alignment.md)记录当时的账号/角色/授权结构、权限目录与基础壳验收；原 B0 完整矩阵保留历史候选身份，不代替当前切片的最终验收。
 
@@ -34,7 +34,7 @@ flutter build web --target=lib/main_preview.dart --output=build/web-preview --no
 | --- | --- | --- |
 | `HARUKA_ENV` | 默认 `dev` | 显式 `production` |
 | `HARUKA_INSTANCE_ID` | 默认 `haruka-local-dev`；隔离测试仅接受 `haruka-test-` 加 32 位小写十六进制且与服务 `/meta` 精确匹配 | 必填且不能为开发/测试实例 |
-| `HARUKA_API_BASE_URL` | Windows/Web 默认 `http://127.0.0.1:8000`；Android 显式传入清单内的地址。测试实例仅允许清单列出的同源 Web HTTPS、Windows 回环和 Android 模拟器地址 | 必填 HTTPS Origin，拒绝凭据、查询参数、路径和回环地址 |
+| `HARUKA_API_BASE_URL` | Windows/Web 默认 `http://127.0.0.1:8000`；Android 显式传入清单内的地址。测试实例仅允许清单列出的同源Web HTTP/HTTPS、Windows回环和Android模拟器地址；本轮开发实操使用 `http://localhost:18443` | 必填 HTTPS Origin，拒绝凭据、查询参数、路径和回环地址 |
 
 配置只包含公开身份，不接收密码、Token、供应商 Key。无效配置显示不可用页，不发起请求、不回退其他服务。Android flavor 必须与环境一致，dev 与 production 使用不同 applicationId。Windows 区分窗口标题与 AppUserModelID；两环境的文件名均为 `haruka.exe`，最终安装格式、安装目录、签名及升级隔离尚未验收。Android dev release 仅使用开发签名，production 不配置发布签名。
 

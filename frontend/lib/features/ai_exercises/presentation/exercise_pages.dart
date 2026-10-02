@@ -94,8 +94,10 @@ class DesktopExerciseView extends StatelessWidget {
         style: Theme.of(context).textTheme.headlineMedium,
       ),
       const SizedBox(height: 18),
-      Text(AppLocalizations.of(context).mockExerciseExisting,
-          style: Theme.of(context).textTheme.titleLarge),
+      Text(
+        AppLocalizations.of(context).mockExerciseExisting,
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
       const SizedBox(height: 10),
       HarukaSurface(
         padding: EdgeInsets.zero,
@@ -174,35 +176,48 @@ class _GenerateExerciseCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
-              child: Row(children: [
-                Container(
-                  width: 42, height: 42,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: roles.signal.withValues(alpha: .22),
-                    borderRadius: BorderRadius.circular(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: roles.signal.withValues(alpha: .22),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.auto_awesome_outlined, color: scheme.onPrimary, size: 22),
                   ),
-                  child: Icon(Icons.auto_awesome_outlined, color: scheme.onPrimary, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppLocalizations.of(context).mockExerciseGenerate,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: scheme.onPrimary, fontSize: 22)),
-                    Text(AppLocalizations.of(context).mockExerciseSourceDescription,
-                        style: TextStyle(color: scheme.onPrimary.withValues(alpha: .84),
-                            fontSize: 14)),
-                  ],
-                )),
-                const SizedBox(width: 12),
-                Text(AppLocalizations.of(context).mockExerciseSelectSource,
-                    style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w600)),
-                const SizedBox(width: 6),
-                Icon(Icons.arrow_forward, color: scheme.onPrimary, size: 18),
-              ]),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).mockExerciseGenerate,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(color: scheme.onPrimary, fontSize: 22),
+                        ),
+                        Text(
+                          AppLocalizations.of(context).mockExerciseSourceDescription,
+                          style: TextStyle(
+                            color: scheme.onPrimary.withValues(alpha: .84),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context).mockExerciseSelectSource,
+                    style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(Icons.arrow_forward, color: scheme.onPrimary, size: 18),
+                ],
+              ),
             ),
           ),
         ),
@@ -232,9 +247,8 @@ class _GenerateExerciseCard extends StatelessWidget {
                 SizedBox(height: compact ? 8 : 10),
                 Text(
                   AppLocalizations.of(context).mockExerciseGenerate,
-                  style:
-                      Theme.of(context).textTheme.titleLarge
-                          ?.copyWith(color: scheme.onPrimary, fontSize: 22),
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(color: scheme.onPrimary, fontSize: 22),
                 ),
                 if (compact) ...[
                   const SizedBox(height: 4),
@@ -309,19 +323,32 @@ class PracticePage extends StatelessWidget {
                   onTap: submitted ? null : () => store.chooseAnswer(i),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-                    child: Row(children: [
-                      Expanded(child: Text('${String.fromCharCode(65 + i)}  ${options[i]}',
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
-                      if (submitted && store.selectedAnswer == i)
-                        Icon(Icons.check_circle, size: 20,
-                            color: Theme.of(context).colorScheme.primary),
-                      if (submitted && i == 0) ...[
-                        const SizedBox(width: 8),
-                        Text(strings.mockLearningResultReference(options[i]),
-                            style: TextStyle(fontSize: 13,
-                                color: Theme.of(context).colorScheme.primary)),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${String.fromCharCode(65 + i)}  ${options[i]}',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                          ),
+                        ),
+                        if (submitted && store.selectedAnswer == i)
+                          Icon(
+                            Icons.check_circle,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        if (submitted && i == 0) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            strings.mockLearningResultReference(options[i]),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ],
-                    ]),
+                    ),
                   ),
                 ),
               ),

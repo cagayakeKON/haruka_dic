@@ -13,6 +13,7 @@ import 'package:haruka/features/settings/presentation/profile_page.dart';
 import 'package:haruka/features/settings/presentation/settings_repository_scope.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   Future<PreviewFixtureStore> launch(WidgetTester tester, Size size) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;

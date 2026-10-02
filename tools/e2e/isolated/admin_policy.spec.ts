@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import {
+  commitPolicyPreview,
+  openPolicyEditor,
+  preserveAccountUiEvidence,
+  selectRegistrationMode,
+  type RegistrationMode,
+} from "./account_ui.js";
 
 const root = path.resolve("../..");
 const runId = process.env.HARUKA_TEST_RUN_ID;
@@ -9,9 +16,14 @@ if (!runId || !/^[0-9a-f]{32}$/.test(runId)) {
 }
 const runDir = path.join(root, "dev", ".local", "b1", runId);
 
+test.afterEach(async ({ page }, info) => {
+  await preserveAccountUiEvidence(page, info);
+});
+
 test("administrator saves registration policy and reads the persisted state", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   const id = (value: string) => page.getByTestId(value);
   const fillPrivate = async (fieldId: string, value: string) => {
     try {
@@ -41,32 +53,24 @@ test("administrator saves registration policy and reads the persisted state", as
   );
   await id("admin.auth.login.submit").click();
   expect((await loginResponse).status()).toBe(200);
-  await expect(id("admin.auth.policy.page")).toBeVisible();
+  await openPolicyEditor(page);
 
   const toggle = id("admin.auth.policy.registration_toggle");
-  const switchNode = async () =>
-    (await toggle.locator('[role="switch"]').count())
-      ? toggle.locator('[role="switch"]')
-      : toggle;
-  const currentState = async () => {
-    const state = await (await switchNode()).getAttribute("aria-checked");
-    expect(["true", "false"]).toContain(state);
-    return state === "true";
+  const currentState = async (): Promise<RegistrationMode> => {
+    const label = await toggle.innerText();
+    if (label.includes("开放注册")) return "open";
+    if (label.includes("需审批")) return "approval";
+    expect(label).toContain("关闭新注册");
+    return "closed";
   };
-  const saveAndReadBack = async (enabled: boolean) => {
-    if ((await currentState()) !== enabled) await toggle.click();
-    const saved = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === "/api/v1/admin/auth-policy" &&
-        response.request().method() === "PATCH",
-    );
-    await id("admin.auth.policy.save").click();
-    expect((await saved).status()).toBe(200);
+  const saveAndReadBack = async (mode: RegistrationMode) => {
+    await selectRegistrationMode(page, mode);
+    await commitPolicyPreview(page);
     await page.reload();
-    await expect(id("admin.auth.policy.page")).toBeVisible();
-    expect(await currentState()).toBe(enabled);
+    await expect(toggle).toBeVisible();
+    expect(await currentState()).toBe(mode);
   };
   const initialState = await currentState();
-  await saveAndReadBack(!initialState);
+  await saveAndReadBack(initialState === "open" ? "closed" : "open");
   await saveAndReadBack(initialState);
 });

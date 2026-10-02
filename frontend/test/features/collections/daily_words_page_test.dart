@@ -68,7 +68,7 @@ void main() {
       audience: 'client',
       sessionRef: 'session-a',
     );
-    if (!coldAttach) await cache.attach(scope);
+    if (!coldAttach) await tester.runAsync(() => cache.attach(scope));
 
     final store = PreviewFixtureStore()..timezone = 'Pacific/Honolulu';
     final settingsSource = MockSettingsSource();
@@ -122,7 +122,7 @@ void main() {
     addTearDown(() async {
       catalog.dispose();
       settings.dispose();
-      await cache.closeScope();
+      await tester.runAsync(() => cache.closeScope());
       store.dispose();
     });
 
@@ -194,19 +194,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DatePickerDialog), findsOneWidget);
 
-    await cache.closeScope();
+    await tester.runAsync(() => cache.closeScope());
     await tester.pumpAndSettle();
     expect(find.byType(DatePickerDialog), findsNothing);
     expect(find.text('境界'), findsNothing);
     expect(find.text('2026-09-28'), findsNothing);
 
-    await cache.attach(
-      CacheScope.confirmed(
-        endpoint: Uri.parse('https://daily-words.example/api'),
-        instanceId: 'daily-words-test',
-        userId: 'account-b',
-        audience: 'client',
-        sessionRef: 'session-b',
+    await tester.runAsync(
+      () => cache.attach(
+        CacheScope.confirmed(
+          endpoint: Uri.parse('https://daily-words.example/api'),
+          instanceId: 'daily-words-test',
+          userId: 'account-b',
+          audience: 'client',
+          sessionRef: 'session-b',
+        ),
       ),
     );
     await tester.pumpAndSettle();

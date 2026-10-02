@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,9 +11,7 @@ import 'package:haruka/core/api/responses.dart';
 import 'package:haruka/core/api/wire.dart';
 
 void main() {
-  final samples = wireObject(
-    jsonDecode(File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync()),
-  );
+  final samples = wireObject(jsonDecode(apiCompatibilitySamplesJson));
   test('model settings concrete projection preserves unbound capabilities', () {
     final settings = SuccessResponse<PersonalModelSettings>.fromJson(
       samples['model_settings'],

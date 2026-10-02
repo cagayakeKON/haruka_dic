@@ -186,6 +186,10 @@ void main() {
     verifyNever(source.fetchCollections(any, any));
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
+    expect(find.text('entries:3'), findsOneWidget);
+    verifyNever(source.fetchCollections(any, any));
+    await tester.pump(const Duration(seconds: 30));
+    await tester.pump();
     expect(find.text('entries:4'), findsOneWidget);
     verify(source.fetchCollections(any, any)).called(1);
   });

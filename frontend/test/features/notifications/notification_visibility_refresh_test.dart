@@ -58,6 +58,7 @@ class _CountingNotificationRepository extends ChangeNotifier implements Notifica
 }
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('notification dialog does not gate or refetch a visible notification', (
     tester,
   ) async {
@@ -141,6 +142,8 @@ void main() {
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
+      expect(repository.refreshCount, 3);
+      await tester.pump(const Duration(seconds: 30));
       expect(repository.refreshCount, 4);
     } finally {
       debugDefaultTargetPlatformOverride = null;
@@ -187,48 +190,56 @@ void main() {
     }
   });
 
-  testWidgets('foreground revalidation hides a stale private notification until it finishes', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final repository = _CountingNotificationRepository()
-      ..visibleItems = [
-        NotificationRecord(
-          id: 'private-notice',
-          title: 'Old private title',
-          detail: 'Old private detail',
-          route: 'novel',
-          resourceId: 'material-1',
-          resourceRevision: 1,
-          createdAt: DateTime.utc(2026, 9, 27),
-        ),
-      ];
-    addTearDown(repository.dispose);
-    await tester.pumpWidget(buildTestPreviewApp(notificationRepository: repository));
-    await tester.pumpAndSettle();
-    final router = GoRouter.of(tester.element(find.byType(PreviewPageFrame).first));
-    router.go(AppRoutes.mockNotifications);
-    await tester.pumpAndSettle();
-    expect(find.text('Old private title'), findsOneWidget);
+  testWidgets(
+    'foreground return preserves private notifications until periodic data revalidation',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _CountingNotificationRepository()
+        ..visibleItems = [
+          NotificationRecord(
+            id: 'private-notice',
+            title: 'Old private title',
+            detail: 'Old private detail',
+            route: 'novel',
+            resourceId: 'material-1',
+            resourceRevision: 1,
+            createdAt: DateTime.utc(2026, 9, 27),
+          ),
+        ];
+      addTearDown(repository.dispose);
+      await tester.pumpWidget(buildTestPreviewApp(notificationRepository: repository));
+      await tester.pumpAndSettle();
+      final router = GoRouter.of(tester.element(find.byType(PreviewPageFrame).first));
+      router.go(AppRoutes.mockNotifications);
+      await tester.pumpAndSettle();
+      expect(find.text('Old private title'), findsOneWidget);
 
-    final pending = Completer<void>();
-    repository.pendingRefresh = pending;
-    repository.clearOnRefresh = false;
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-    expect(find.text('Old private title'), findsNothing);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      final pending = Completer<void>();
+      repository.pendingRefresh = pending;
+      repository.clearOnRefresh = false;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(find.text('Old private title'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(repository.refreshCount, 1);
+      await tester.pump(const Duration(seconds: 30));
+      expect(
+        repository.refreshCount,
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android ? 3 : 2,
+        reason: 'The page has one periodic read; only native Android adds the notification badge',
+      );
 
-    repository.visibleItems = const [];
-    pending.complete();
-    await tester.pumpAndSettle();
-    expect(find.text('Old private title'), findsNothing);
-    expect(find.text('暂无消息'), findsOneWidget);
-  });
+      repository.visibleItems = const [];
+      pending.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Old private title'), findsNothing);
+      expect(find.text('暂无消息'), findsOneWidget);
+    },
+  );
 
   testWidgets('returning to the notification route gates stale details during revalidation', (
     tester,

@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import cast
 from uuid import uuid4
 
 import pytest
@@ -11,9 +12,16 @@ from app.contracts.errors import ERRORS, ErrorCode
 from app.contracts.export import canonical_json, documents
 from app.core.settings import load_settings
 from app.domain.errors import AppError
+from app.maintenance.migrations import load_migration_resources
 from app.schemas.responses import ApiError, PageMeta, PageResponse, RevisionConflictDetails
 
 pytestmark = pytest.mark.contract
+
+
+def test_exported_database_revision_matches_verified_migration_bundle() -> None:
+    backend = Path(__file__).resolve().parents[2]
+    database = cast(dict[str, object], documents()["database-schema.json"])
+    assert database["migration_revision"] == load_migration_resources(backend / "alembic").head
 
 
 @pytest.mark.parametrize(("has_more", "cursor"), [(True, None), (True, ""), (False, "opaque")])
@@ -54,7 +62,7 @@ def test_export_is_offline_deterministic_and_contains_only_real_routes(
     assert "sentinel" not in first
     payload = json.loads(first)
     schema = payload["openapi.json"]
-    assert len(schema["paths"]) == 73
+    assert len(schema["paths"]) == 94
     assert {
         "/health/live",
         "/health/ready",

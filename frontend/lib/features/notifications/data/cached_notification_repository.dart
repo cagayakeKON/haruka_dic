@@ -258,8 +258,9 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
   @override
   Future<void> markRead(String id) async {
     if (_mutating) throw const CacheBlocked('mutation_in_progress');
-    if (!_cache.dependenciesSafe({notificationListDependency}))
+    if (!_cache.dependenciesSafe({notificationListDependency})) {
       throw const CacheBlocked('invalidation_not_durable');
+    }
     _discardForeignSnapshot();
     if (_status != NotificationListStatus.ready ||
         _snapshot == null ||
@@ -270,8 +271,9 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
     notifyListeners();
     try {
       await waitForReadiness();
-      if (!_publicationCurrent || !_cache.dependenciesSafe({notificationListDependency}))
+      if (!_publicationCurrent || !_cache.dependenciesSafe({notificationListDependency})) {
         throw const CacheBlocked('scope_changed');
+      }
       await readSource(id);
       if (!_publicationCurrent) throw const CacheBlocked('scope_changed');
       await _invalidateCommittedList();
@@ -284,8 +286,9 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
   @override
   Future<void> markAllRead() async {
     if (_mutating) throw const CacheBlocked('mutation_in_progress');
-    if (!_cache.dependenciesSafe({notificationListDependency}))
+    if (!_cache.dependenciesSafe({notificationListDependency})) {
       throw const CacheBlocked('invalidation_not_durable');
+    }
     _discardForeignSnapshot();
     final snapshot = _snapshot;
     if (_status != NotificationListStatus.ready || snapshot == null) {
@@ -295,8 +298,9 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
     notifyListeners();
     try {
       await waitForReadiness();
-      if (!_publicationCurrent || !_cache.dependenciesSafe({notificationListDependency}))
+      if (!_publicationCurrent || !_cache.dependenciesSafe({notificationListDependency})) {
         throw const CacheBlocked('scope_changed');
+      }
       await readAllSource(snapshot.snapshotToken);
       if (!_publicationCurrent) throw const CacheBlocked('scope_changed');
       await _invalidateCommittedList();

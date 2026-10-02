@@ -1,14 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/api/learning_models.dart';
 import 'package:haruka/core/api/responses.dart';
 
 void main() {
-  final samples = jsonDecode(
-    File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
 
   test('persisted card, read-only resolve and collection share source identity', () {
     final card = SuccessResponse.fromJson(samples['learning_word_card'], WordCard.fromJson).data;

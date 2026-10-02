@@ -819,13 +819,17 @@
     },
     "frontend/lib/features/collections/reference_controller.dart": {
       "language": "flutter",
-      "kind": "ordinary",
-      "groups": []
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
     },
     "frontend/lib/features/collections/reference_feature_scope.dart": {
       "language": "flutter",
-      "kind": "ordinary",
-      "groups": []
+      "kind": "core",
+      "groups": [
+        "frontend-foundation"
+      ]
     },
     "frontend/lib/features/collections/reference_repository.dart": {
       "language": "flutter",
@@ -1155,10 +1159,9 @@
     },
     "frontend/lib/core/cache/audio_blob_backend.dart": {
       "language": "flutter",
-      "kind": "core",
-      "groups": [
-        "frontend-foundation"
-      ]
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only Dart export directives; platform implementations remain independently inventoried."
     },
     "frontend/lib/core/cache/audio_blob_backend_native.dart": {
       "language": "flutter",
@@ -1232,10 +1235,9 @@
     },
     "frontend/lib/core/cache/cache_entry_lock.dart": {
       "language": "flutter",
-      "kind": "core",
-      "groups": [
-        "frontend-foundation"
-      ]
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only Dart export directives; platform implementations remain independently inventoried."
     },
     "frontend/lib/core/cache/cache_entry_lock_native.dart": {
       "language": "flutter",
@@ -1253,10 +1255,9 @@
     },
     "frontend/lib/core/cache/cache_invalidation_channel.dart": {
       "language": "flutter",
-      "kind": "core",
-      "groups": [
-        "frontend-foundation"
-      ]
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only Dart export directives; platform implementations remain independently inventoried."
     },
     "frontend/lib/core/cache/cache_invalidation_channel_native.dart": {
       "language": "flutter",
@@ -1288,10 +1289,9 @@
     },
     "frontend/lib/core/cache/cache_partition_lock.dart": {
       "language": "flutter",
-      "kind": "core",
-      "groups": [
-        "frontend-foundation"
-      ]
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only Dart export directives; platform implementations remain independently inventoried."
     },
     "frontend/lib/core/cache/cache_partition_lock_native.dart": {
       "language": "flutter",
@@ -1835,8 +1835,9 @@
     },
     "frontend/lib/shared/domain/learning_records.dart": {
       "language": "flutter",
-      "kind": "ordinary",
-      "groups": []
+      "kind": "declaration",
+      "groups": [],
+      "reason": "Only Dart export directives; platform implementations remain independently inventoried."
     },
     "frontend/lib/shared/presentation/components.dart": {
       "language": "flutter",
@@ -1868,7 +1869,9 @@
       "required_prefixes": [
         "frontend/lib/core/",
         "frontend/lib/main.dart",
-        "frontend/lib/app/haruka_app.dart"
+        "frontend/lib/app/haruka_app.dart",
+        "frontend/lib/features/collections/reference_controller.dart",
+        "frontend/lib/features/collections/reference_feature_scope.dart"
       ]
     }
   },

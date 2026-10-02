@@ -2,7 +2,7 @@
   "excluded_internal_tables": [
     "alembic_version"
   ],
-  "migration_revision": "0007_authorization_governance",
+  "migration_revision": "0013_outbox_delivery_lease",
   "schema_version": 1,
   "source": "backend/app/models",
   "source_sha256": "bc58043af10956dc4c7bcde7e33a71226aa8b2d30742adf7f38ab3d05d1ef263",

@@ -135,8 +135,9 @@ final class CachedMaterialCatalog extends ChangeNotifier implements MaterialCata
 
   @override
   List<MaterialSummary> filterMaterials(MaterialCatalogQuery query) {
-    if (status != MaterialCatalogStatus.ready && status != MaterialCatalogStatus.stale)
+    if (status != MaterialCatalogStatus.ready && status != MaterialCatalogStatus.stale) {
       return const [];
+    }
     final term = query.normalizedSearch;
     return [
       for (final item in _items)
@@ -204,10 +205,12 @@ final class CachedMaterialCatalog extends ChangeNotifier implements MaterialCata
 
   @override
   Future<void> importMaterial(LearningMaterialType type, String title, String language) async {
-    if (!_cache.accessReady || !_cache.dependenciesSafe({materialCatalogDependency}))
+    if (!_cache.accessReady || !_cache.dependenciesSafe({materialCatalogDependency})) {
       throw const CacheBlocked('identity_unconfirmed');
-    if (status == MaterialCatalogStatus.stale)
+    }
+    if (status == MaterialCatalogStatus.stale) {
       throw const CacheBlocked('catalog_revalidation_required');
+    }
     final generation = _cache.accountGeneration;
     final binding = _cache.scope?.binding;
     try {
@@ -234,8 +237,9 @@ final class CachedMaterialCatalog extends ChangeNotifier implements MaterialCata
 
   @override
   Future<void> deleteMaterial(String id) async {
-    if (!_cache.accessReady || !_cache.dependenciesSafe({materialCatalogDependency}))
+    if (!_cache.accessReady || !_cache.dependenciesSafe({materialCatalogDependency})) {
       throw const CacheBlocked('identity_unconfirmed');
+    }
     if (status != MaterialCatalogStatus.ready || findById(id) == null) {
       throw const CacheBlocked('catalog_revalidation_required');
     }

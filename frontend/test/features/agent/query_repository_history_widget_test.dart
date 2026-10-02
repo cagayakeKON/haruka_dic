@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/app/preview_app.dart';
@@ -48,6 +47,7 @@ class _EmptyTargetSettingsSource implements SettingsSource {
 }
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('query without accepted settings never submits fixture-backed success', (
     tester,
   ) async {
@@ -163,7 +163,7 @@ void main() {
         settingsCacheAdapter: PreviewSettingsCacheAdapter(
           coordinator: CacheCoordinator(
             openBackend: (_) async {
-              final executor = NativeDatabase.memory();
+              final executor = memoryTestDatabase();
               return OpenedCacheBackend(
                 executor: executor,
                 mode: CacheStorageMode.memoryOnly,

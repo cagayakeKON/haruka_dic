@@ -3,7 +3,15 @@
 from copy import deepcopy
 
 import pytest
-from sqlalchemy import Column, ForeignKeyConstraint, Index, Integer, MetaData, Table
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    MetaData,
+    Table,
+)
 
 from app.models import Base
 from app.models.base import identifier
@@ -15,7 +23,7 @@ pytestmark = pytest.mark.unit
 def test_dictionary_is_nonempty_deterministic_and_has_no_foreign_keys() -> None:
     first = database_document()
     assert first == database_document()
-    assert len(Base.metadata.tables) == 33
+    assert len(Base.metadata.tables) == 44
     assert all(not table.foreign_keys for table in Base.metadata.tables.values())
     assert first["source_sha256"]
     name = "ix_" + "column_" * 20
@@ -75,6 +83,17 @@ def test_dictionary_changes_when_authoritative_field_changes() -> None:
     metadata = MetaData(naming_convention=Base.metadata.naming_convention)
     for table in Base.metadata.tables.values():
         copied = table.to_metadata(metadata)
+        # SQLAlchemy reapplies naming conventions when copying CHECK constraints.
+        # Preserve reviewed names; the tested change is the column comment only.
+        for constraint in copied.constraints:
+            if isinstance(constraint, CheckConstraint):
+                original = next(
+                    item
+                    for item in table.constraints
+                    if isinstance(item, CheckConstraint)
+                    and str(item.sqltext) == str(constraint.sqltext)
+                )
+                constraint.name = original.name
         original_indexes = {index.name: index for index in table.indexes}
         for index in copied.indexes:
             index.info = deepcopy(original_indexes[index.name].info)

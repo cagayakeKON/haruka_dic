@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 import 'package:integration_test/integration_test.dart';
 
-import '../test_support/controls_app.dart';
+import '../test/support/controls_app.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

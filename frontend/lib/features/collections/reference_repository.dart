@@ -85,11 +85,7 @@ final class ReferenceRepository {
       },
       CollectionRead.fromJson,
       acceptedStatuses: const {200, 201},
-      headers: {
-        ...headers,
-        'Idempotency-Key': idempotencyKey,
-        'X-Operation-ID': idempotencyKey,
-      },
+      headers: {...headers, 'Idempotency-Key': idempotencyKey, 'X-Operation-ID': idempotencyKey},
     );
     final collection = response.data;
     if (collection.cardId != card.id || collection.cardRevision != card.revision) {

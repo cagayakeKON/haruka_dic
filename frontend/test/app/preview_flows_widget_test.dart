@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:drift/native.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,6 +48,7 @@ class _CountingMaterialRemote implements CacheRemote<List<MaterialSummary>> {
 }
 
 void main() {
+  setUpAll(initializeTestDatabase);
   Future<void> pumpMock(WidgetTester tester, Size size) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -193,7 +193,7 @@ void main() {
     final remote = _CountingMaterialRemote(FixtureMaterialRemote(store));
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase.memory(),
+        executor: memoryTestDatabase(),
         mode: CacheStorageMode.memoryOnly,
         closeOwner: () async {},
       ),
@@ -204,16 +204,18 @@ void main() {
       importSource: (type, title, language) async => store.importMaterial(type, title, language),
       deleteSource: (id) async => store.deleteMaterial(id),
     );
-    await cache.attach(
-      CacheScope.confirmed(
-        endpoint: Uri.parse('https://preview.example/api'),
-        instanceId: 'preview-test',
-        userId: 'preview-user',
-        audience: 'client',
-        sessionRef: 'preview-session',
+    await tester.runAsync(
+      () => cache.attach(
+        CacheScope.confirmed(
+          endpoint: Uri.parse('https://preview.example/api'),
+          instanceId: 'preview-test',
+          userId: 'preview-user',
+          audience: 'client',
+          sessionRef: 'preview-session',
+        ),
       ),
     );
-    await catalog.refresh();
+    await tester.runAsync(() => catalog.refresh());
     await tester.pumpWidget(buildTestPreviewApp(materialCatalog: catalog));
     await tester.pumpAndSettle();
     final card = find.byType(MobileMaterialCard).first;
@@ -240,7 +242,7 @@ void main() {
     expect(find.byType(HarukaDialogSurface), findsOneWidget);
     expect(find.text('材料已删除或不可读取'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
-    await cache.closeScope();
+    await tester.runAsync(() => cache.closeScope());
   });
 
   testWidgets('mobile navigation opens notebook and chooser dialog', (tester) async {
@@ -374,32 +376,46 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
     await tester.tap(find.widgetWithText(HarukaPill, '课本'));
     await tester.pumpAndSettle();
-    expect(find.text('1 份材料'), findsOneWidget);
+    expect(find.text('1 份材料'), findsNothing);
+    expect(find.text('日语的日常表达'), findsOneWidget);
+    expect(find.text('夏の手紙'), findsNothing);
     tester.view.physicalSize = const Size(760, 900);
     await tester.pumpAndSettle();
-    expect(find.byType(DesktopLibraryView), findsOneWidget);
+    expect(find.byType(MobileLibraryView), findsOneWidget);
+    await tester.tap(find.byTooltip('搜索材料'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '日语');
     await tester.pumpAndSettle();
-    expect(find.text('1 份材料'), findsOneWidget);
+    expect(find.text('1 份材料'), findsNothing);
+    expect(find.text('日语的日常表达'), findsOneWidget);
+    expect(find.text('夏の手紙'), findsNothing);
     expect(tester.takeException(), isNull);
     tester.view.physicalSize = const Size(390, 844);
     await tester.pumpAndSettle();
     expect(find.byType(MobileLibraryView), findsOneWidget);
-    expect(find.text('1 份材料'), findsOneWidget);
+    expect(find.text('1 份材料'), findsNothing);
+    expect(find.text('日语的日常表达'), findsOneWidget);
+    expect(find.text('夏の手紙'), findsNothing);
     tester.view.physicalSize = const Size(1440, 900);
     await tester.pumpAndSettle();
     expect(find.byType(DesktopLibraryView), findsOneWidget);
-    expect(find.text('1 份材料'), findsOneWidget);
+    expect(find.text('1 份材料'), findsNothing);
+    expect(find.text('日语的日常表达'), findsOneWidget);
+    expect(find.text('夏の手紙'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('desktop navigation opens distinct query and settings views', (tester) async {
     await pumpMock(tester, const Size(1440, 900));
-    await tester.tap(find.widgetWithText(TextButton, '查询').first);
+    await tester.tap(
+      find.descendant(of: find.byType(PreviewSideNavigation), matching: find.byTooltip('查询')).first,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(DesktopQueryView), findsOneWidget);
     expect(find.byType(MobileQueryView), findsNothing);
-    await tester.tap(find.widgetWithText(TextButton, '我的').first);
+    await tester.tap(
+      find.descendant(of: find.byType(PreviewSideNavigation), matching: find.byTooltip('我的')).first,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(DesktopSettingsView), findsOneWidget);
     expect(find.byType(MobileSettingsView), findsNothing);
@@ -419,7 +435,7 @@ void main() {
     addTearDown(store.dispose);
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase.memory(),
+        executor: memoryTestDatabase(),
         mode: CacheStorageMode.memoryOnly,
         closeOwner: () async {},
       ),
@@ -432,18 +448,20 @@ void main() {
     );
     addTearDown(() async {
       catalog.dispose();
-      await cache.closeScope();
+      await tester.runAsync(() => cache.closeScope());
     });
-    await cache.attach(
-      CacheScope.confirmed(
-        endpoint: Uri.parse('https://preview.example/api'),
-        instanceId: 'preview-test',
-        userId: 'preview-user',
-        audience: 'client',
-        sessionRef: 'preview-session',
+    await tester.runAsync(
+      () => cache.attach(
+        CacheScope.confirmed(
+          endpoint: Uri.parse('https://preview.example/api'),
+          instanceId: 'preview-test',
+          userId: 'preview-user',
+          audience: 'client',
+          sessionRef: 'preview-session',
+        ),
       ),
     );
-    await catalog.refresh();
+    await tester.runAsync(() => catalog.refresh());
     final router = GoRouter(
       initialLocation: AppRoutes.mockImport,
       routes: [
@@ -556,7 +574,11 @@ void main() {
 
   testWidgets('desktop notebook filters collection kind and opens details', (tester) async {
     await pumpMock(tester, const Size(1440, 900));
-    await tester.tap(find.widgetWithText(TextButton, '单词本').first);
+    await tester.tap(
+      find
+          .descendant(of: find.byType(PreviewSideNavigation), matching: find.byTooltip('单词本'))
+          .first,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(DesktopNotebooksView), findsOneWidget);
     await tester.tap(find.widgetWithText(HarukaPill, '语法'));
@@ -570,7 +592,13 @@ void main() {
 
   testWidgets('narrow desktop notebook search accepts continued keyboard input', (tester) async {
     await pumpMock(tester, const Size(760, 900));
-    await tester.tap(find.widgetWithText(TextButton, '单词本').first);
+    await tester.tap(
+      find
+          .descendant(of: find.byType(PreviewSideNavigation), matching: find.byTooltip('单词本'))
+          .first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('搜索收藏内容'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(TextField).first);
     for (final value in ['g', 'gl', 'gli']) {

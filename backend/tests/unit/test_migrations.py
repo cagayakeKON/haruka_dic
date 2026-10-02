@@ -7,7 +7,12 @@ from pathlib import Path
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from app.maintenance.migrations import MigrationError, load_migration_resources
+from app.maintenance import migrations
+from app.maintenance.migrations import (
+    MigrationError,
+    bundled_migration_head,
+    load_migration_resources,
+)
 from app.maintenance.schema import (
     EXPECTED_REVISION,
     SchemaMismatchError,
@@ -149,6 +154,68 @@ def test_manifest_rejects_multiple_heads(tmp_path: Path) -> None:
     manifest.write_text(json.dumps(document), encoding="utf-8")
     with pytest.raises(MigrationError, match="exactly"):
         load_migration_resources(root)
+
+
+def test_bundled_head_is_verified_and_independent_of_working_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    assert bundled_migration_head() == EXPECTED_REVISION
+
+
+def test_packaged_head_uses_manifest_inside_resource_context(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    package = tmp_path / "package"
+    package.mkdir()
+    resource_directory(package / "migration_bundle")
+
+    def package_files(anchor: str) -> Path:
+        assert anchor == "app.maintenance"
+        return package
+
+    monkeypatch.setattr("importlib.resources.files", package_files)
+    monkeypatch.chdir(tmp_path)
+    assert bundled_migration_head() == EXPECTED_REVISION
+
+
+def test_invalid_packaged_bundle_never_falls_back_to_valid_checkout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    package = tmp_path / "package"
+    package.mkdir()
+    bundle = resource_directory(package / "migration_bundle")
+    (bundle / "env.py").write_text("# unreviewed drift\n", encoding="utf-8")
+
+    def package_files(anchor: str) -> Path:
+        assert anchor == "app.maintenance"
+        return package
+
+    monkeypatch.setattr("importlib.resources.files", package_files)
+    with pytest.raises(MigrationError, match="hash"):
+        bundled_migration_head()
+
+
+def test_missing_editable_bundle_fails_closed_without_cwd_fallback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resource_directory(tmp_path / "alembic")
+
+    def package_files(anchor: str) -> Path:
+        assert anchor == "app.maintenance"
+        return tmp_path / "absent_package"
+
+    monkeypatch.setattr("importlib.resources.files", package_files)
+    monkeypatch.setattr(
+        migrations, "__file__", str(tmp_path / "absent_backend/app/maintenance/migrations.py")
+    )
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(MigrationError, match="absolute"):
+        bundled_migration_head()
 
 
 def test_constraint_baseline_rejects_missing_and_changed_model_pairing(

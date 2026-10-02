@@ -1383,6 +1383,3162 @@
         "safe_operation_request_job_run_correlation",
         "key_sample_reply_absent_from_logs"
       ]
+    },
+    {
+      "case_id": "foundation-profile-001",
+      "acceptance_refs": [
+        "PROFILE-001"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-profile-001:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-profile-002",
+      "acceptance_refs": [
+        "PROFILE-002"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-profile-002:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-profile-003",
+      "acceptance_refs": [
+        "PROFILE-003"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-profile-003:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-profile-004",
+      "acceptance_refs": [
+        "PROFILE-004"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-profile-004:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-profile-005",
+      "acceptance_refs": [
+        "PROFILE-005"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-profile-005:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-profile-006",
+      "acceptance_refs": [
+        "PROFILE-006"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-profile-006:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-set-001",
+      "acceptance_refs": [
+        "SET-001"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-001:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-set-002",
+      "acceptance_refs": [
+        "SET-002"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-002:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-set-003",
+      "acceptance_refs": [
+        "SET-003"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-003:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-set-004",
+      "acceptance_refs": [
+        "SET-004"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-004:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-set-005",
+      "acceptance_refs": [
+        "SET-005"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-005:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-set-006",
+      "acceptance_refs": [
+        "SET-006"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-006:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-set-007",
+      "acceptance_refs": [
+        "SET-007"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-007:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-set-008",
+      "acceptance_refs": [
+        "SET-008"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-008:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-set-009",
+      "acceptance_refs": [
+        "SET-009"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-set-009:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-01",
+      "acceptance_refs": [
+        "FCACHE-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-02",
+      "acceptance_refs": [
+        "FCACHE-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05",
+        "contract-subcheck-06"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-03",
+      "acceptance_refs": [
+        "FCACHE-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-04",
+      "acceptance_refs": [
+        "FCACHE-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-05",
+      "acceptance_refs": [
+        "FCACHE-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-07",
+      "acceptance_refs": [
+        "FCACHE-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-08",
+      "acceptance_refs": [
+        "FCACHE-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-09",
+      "acceptance_refs": [
+        "FCACHE-09"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-09:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-10",
+      "acceptance_refs": [
+        "FCACHE-10"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-10:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-13",
+      "acceptance_refs": [
+        "FCACHE-13"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-13:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-fcache-14",
+      "acceptance_refs": [
+        "FCACHE-14"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-fcache-14:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-01",
+      "acceptance_refs": [
+        "ADM-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-02",
+      "acceptance_refs": [
+        "ADM-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-03",
+      "acceptance_refs": [
+        "ADM-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-08",
+      "acceptance_refs": [
+        "ADM-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-04",
+      "acceptance_refs": [
+        "ADM-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-05",
+      "acceptance_refs": [
+        "ADM-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-06",
+      "acceptance_refs": [
+        "ADM-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-07",
+      "acceptance_refs": [
+        "ADM-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-adm-09",
+      "acceptance_refs": [
+        "ADM-09"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-adm-09:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-db-01",
+      "acceptance_refs": [
+        "DB-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04"
+      ]
+    },
+    {
+      "case_id": "foundation-db-02",
+      "acceptance_refs": [
+        "DB-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-db-03",
+      "acceptance_refs": [
+        "DB-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-db-04",
+      "acceptance_refs": [
+        "DB-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-db-05",
+      "acceptance_refs": [
+        "DB-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-db-06",
+      "acceptance_refs": [
+        "DB-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "collection-source-parent-reference-and-delete-two-order-pg-races",
+        "avatar-and-model-generation-late-publication-fences"
+      ]
+    },
+    {
+      "case_id": "foundation-db-07",
+      "acceptance_refs": [
+        "DB-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-db-08",
+      "acceptance_refs": [
+        "DB-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-db-09",
+      "acceptance_refs": [
+        "DB-09"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-09:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-credential-history-bounded-active-first-query",
+        "jobs-and-attempt-usage-bounded-filters-cursors-and-query-plans"
+      ]
+    },
+    {
+      "case_id": "foundation-db-10",
+      "acceptance_refs": [
+        "DB-10"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-10:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "actual-empty-and-historical-schema-upgrades-through-manifest-head",
+        "same-physical-connection-ddl-lock-and-disconnect-reacquisition",
+        "current-migration-failure-recovery-and-least-privilege"
+      ]
+    },
+    {
+      "case_id": "foundation-db-11",
+      "acceptance_refs": [
+        "DB-11"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-11:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-db-12",
+      "acceptance_refs": [
+        "DB-12"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-db-12:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-dat-01",
+      "acceptance_refs": [
+        "DAT-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-dat-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-dat-02",
+      "acceptance_refs": [
+        "DAT-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-dat-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-dat-03",
+      "acceptance_refs": [
+        "DAT-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-dat-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-dat-04",
+      "acceptance_refs": [
+        "DAT-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-dat-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-dat-06",
+      "acceptance_refs": [
+        "DAT-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-dat-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-dat-07",
+      "acceptance_refs": [
+        "DAT-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-dat-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-dat-08",
+      "acceptance_refs": [
+        "DAT-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-dat-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-api-01",
+      "acceptance_refs": [
+        "API-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05",
+        "contract-subcheck-06"
+      ]
+    },
+    {
+      "case_id": "foundation-api-02",
+      "acceptance_refs": [
+        "API-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05",
+        "contract-subcheck-06"
+      ]
+    },
+    {
+      "case_id": "foundation-api-03",
+      "acceptance_refs": [
+        "API-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05",
+        "contract-subcheck-06"
+      ]
+    },
+    {
+      "case_id": "foundation-api-04",
+      "acceptance_refs": [
+        "API-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05",
+        "contract-subcheck-06"
+      ]
+    },
+    {
+      "case_id": "foundation-api-05",
+      "acceptance_refs": [
+        "API-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05",
+        "contract-subcheck-06"
+      ]
+    },
+    {
+      "case_id": "foundation-api-06",
+      "acceptance_refs": [
+        "API-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05",
+        "contract-subcheck-06"
+      ]
+    },
+    {
+      "case_id": "foundation-api-07",
+      "acceptance_refs": [
+        "API-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-api-10",
+      "acceptance_refs": [
+        "API-10"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-10:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-api-08",
+      "acceptance_refs": [
+        "API-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-api-09",
+      "acceptance_refs": [
+        "API-09"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-api-09:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-01",
+      "acceptance_refs": [
+        "UIE-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-02",
+      "acceptance_refs": [
+        "UIE-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-03",
+      "acceptance_refs": [
+        "UIE-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-04",
+      "acceptance_refs": [
+        "UIE-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-05",
+      "acceptance_refs": [
+        "UIE-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-06",
+      "acceptance_refs": [
+        "UIE-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-07",
+      "acceptance_refs": [
+        "UIE-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-uie-08",
+      "acceptance_refs": [
+        "UIE-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-uie-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-01",
+      "acceptance_refs": [
+        "TDS-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-02",
+      "acceptance_refs": [
+        "TDS-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-03",
+      "acceptance_refs": [
+        "TDS-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-04",
+      "acceptance_refs": [
+        "TDS-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04",
+        "contract-subcheck-05"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-05",
+      "acceptance_refs": [
+        "TDS-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-06",
+      "acceptance_refs": [
+        "TDS-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-07",
+      "acceptance_refs": [
+        "TDS-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-08",
+      "acceptance_refs": [
+        "TDS-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-09",
+      "acceptance_refs": [
+        "TDS-09"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-09:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-tds-10",
+      "acceptance_refs": [
+        "TDS-10"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-tds-10:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-01",
+      "acceptance_refs": [
+        "FLT-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-02",
+      "acceptance_refs": [
+        "FLT-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-03",
+      "acceptance_refs": [
+        "FLT-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-04",
+      "acceptance_refs": [
+        "FLT-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03",
+        "contract-subcheck-04"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-05",
+      "acceptance_refs": [
+        "FLT-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-06",
+      "acceptance_refs": [
+        "FLT-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-07",
+      "acceptance_refs": [
+        "FLT-07"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-07:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-flt-08",
+      "acceptance_refs": [
+        "FLT-08"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-flt-08:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02",
+        "contract-subcheck-03"
+      ]
+    },
+    {
+      "case_id": "foundation-design-01",
+      "acceptance_refs": [
+        "DESIGN-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-design-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-design-02",
+      "acceptance_refs": [
+        "DESIGN-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-design-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-design-03",
+      "acceptance_refs": [
+        "DESIGN-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-design-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-design-04",
+      "acceptance_refs": [
+        "DESIGN-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-design-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-design-05",
+      "acceptance_refs": [
+        "DESIGN-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-design-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-design-06",
+      "acceptance_refs": [
+        "DESIGN-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-design-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01",
+        "contract-subcheck-02"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-1",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-1"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-1:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "web-release-normal-levels-business-events-and-grafana-correlation"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-2",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-2"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-2:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "credential-task-api-worker-attempt-job-orm-pg-correlation"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-3",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-3"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-3:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-api-worker-outbox-manage-gateway-and-infra-source-inventory",
+        "haruka-collection-without-myhome-data-mutation"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-4",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-4"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-4:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "pg-sql-success-failure-lock-wait-and-connection-fault",
+        "parameters-content-and-secret-sentinels-absent"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-5",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-5"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-5:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "anonymous-startup-and-login-failure-restricted-telemetry",
+        "trusted-receiver-identity-and-private-event-rejection"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-6",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-6"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-6:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "admin-web-normal-error-and-permission-events",
+        "audience-queues-and-revoked-private-events"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-7",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-7"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-7:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "authorization-change-audit-version-and-business-transaction-consistency",
+        "audit-db-failure-rollback-and-bounded-log-outage-recovery",
+        "no-arbitrary-shared-log-diagnostic-access"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-8",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-8"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-8:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "bounded-retry-429-5xx-duplicates-malformed-full-queue",
+        "restart-and-account-switch-queue-ownership"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-9",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-9"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-9:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "web-framework-and-async-error-boundary-evidence",
+        "explicit-uncapturable-termination-and-native-log-limitations"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-10",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-10"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-10:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "log-receiver-outage-does-not-block-current-business",
+        "recoverable-window-and-no-recursive-upload-storm"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-11",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-11"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-11:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "persistent-attempt-only-aggregation-no-double-count",
+        "missing-usage-and-dropped-events-never-zero"
+      ]
+    },
+    {
+      "case_id": "foundation-docs-operations-observability-md-9-item-12",
+      "acceptance_refs": [
+        "docs/operations/observability.md#9-item-12"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-docs-operations-observability-md-9-item-12:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-web-log-arrival-and-configured-retention-evidence",
+        "production-capacity-and-seven-day-load-measurements-explicitly-pending"
+      ]
+    },
+    {
+      "case_id": "foundation-perm-01",
+      "acceptance_refs": [
+        "PERM-01"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-perm-01:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-perm-02",
+      "acceptance_refs": [
+        "PERM-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-perm-02:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-perm-03",
+      "acceptance_refs": [
+        "PERM-03"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-perm-03:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-perm-04",
+      "acceptance_refs": [
+        "PERM-04"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-perm-04:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-perm-05",
+      "acceptance_refs": [
+        "PERM-05"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-perm-05:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-perm-06",
+      "acceptance_refs": [
+        "PERM-06"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-perm-06:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "contract-subcheck-01"
+      ]
+    },
+    {
+      "case_id": "foundation-client-profile-web",
+      "acceptance_refs": [
+        "PROFILE-001",
+        "PROFILE-002",
+        "PROFILE-003",
+        "PROFILE-004",
+        "PROFILE-005",
+        "PROFILE-006"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "http",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-web",
+      "nodes": [
+        "foundation-client-profile-web:web"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-client-actions-and-state",
+        "account-and-permission-isolation",
+        "dialog-focus-lifecycle-and-no-background-reload"
+      ]
+    },
+    {
+      "case_id": "foundation-client-set-web",
+      "acceptance_refs": [
+        "SET-001",
+        "SET-002",
+        "SET-003",
+        "SET-004",
+        "SET-005",
+        "SET-006",
+        "SET-007",
+        "SET-008",
+        "SET-009"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "http",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-web",
+      "nodes": [
+        "foundation-client-set-web:web"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-client-actions-and-state",
+        "account-and-permission-isolation",
+        "dialog-focus-lifecycle-and-no-background-reload"
+      ]
+    },
+    {
+      "case_id": "foundation-client-fcache-web",
+      "acceptance_refs": [
+        "FCACHE-01",
+        "FCACHE-02",
+        "FCACHE-03",
+        "FCACHE-04",
+        "FCACHE-05",
+        "FCACHE-07",
+        "FCACHE-08",
+        "FCACHE-09",
+        "FCACHE-10",
+        "FCACHE-13",
+        "FCACHE-14"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "http",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-web",
+      "nodes": [
+        "foundation-client-fcache-web:web"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-client-actions-and-state",
+        "account-and-permission-isolation",
+        "dialog-focus-lifecycle-and-no-background-reload"
+      ]
+    },
+    {
+      "case_id": "foundation-client-shell-web",
+      "acceptance_refs": [
+        "UIE-01",
+        "UIE-02",
+        "UIE-03",
+        "FLT-01",
+        "FLT-02",
+        "DESIGN-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "client",
+      "transport": "http",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-web",
+      "nodes": [
+        "foundation-client-shell-web:web"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "confirmed-mock-comparison",
+        "real-input-and-return-paths",
+        "stable-scope-across-layout-and-dialogs"
+      ]
+    },
+    {
+      "case_id": "foundation-client-profile-android",
+      "acceptance_refs": [
+        "PROFILE-001",
+        "PROFILE-002",
+        "PROFILE-003",
+        "PROFILE-004",
+        "PROFILE-005",
+        "PROFILE-006"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-android",
+      "nodes": [
+        "foundation-client-profile-android:android"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-client-actions-and-state",
+        "account-and-permission-isolation",
+        "dialog-focus-lifecycle-and-no-background-reload"
+      ]
+    },
+    {
+      "case_id": "foundation-client-set-android",
+      "acceptance_refs": [
+        "SET-001",
+        "SET-002",
+        "SET-003",
+        "SET-004",
+        "SET-005",
+        "SET-006",
+        "SET-007",
+        "SET-008",
+        "SET-009"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-android",
+      "nodes": [
+        "foundation-client-set-android:android"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-client-actions-and-state",
+        "account-and-permission-isolation",
+        "dialog-focus-lifecycle-and-no-background-reload"
+      ]
+    },
+    {
+      "case_id": "foundation-client-fcache-android",
+      "acceptance_refs": [
+        "FCACHE-01",
+        "FCACHE-02",
+        "FCACHE-03",
+        "FCACHE-04",
+        "FCACHE-05",
+        "FCACHE-07",
+        "FCACHE-08",
+        "FCACHE-09",
+        "FCACHE-10",
+        "FCACHE-13",
+        "FCACHE-14"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-android",
+      "nodes": [
+        "foundation-client-fcache-android:android"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "current-client-actions-and-state",
+        "account-and-permission-isolation",
+        "dialog-focus-lifecycle-and-no-background-reload"
+      ]
+    },
+    {
+      "case_id": "foundation-client-shell-android",
+      "acceptance_refs": [
+        "UIE-02",
+        "UIE-04",
+        "UIE-05",
+        "FLT-01",
+        "FLT-02",
+        "DESIGN-01"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-android",
+      "nodes": [
+        "foundation-client-shell-android:android"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "confirmed-mock-comparison",
+        "real-input-and-return-paths",
+        "stable-scope-across-layout-and-dialogs"
+      ]
+    },
+    {
+      "case_id": "foundation-admin-web",
+      "acceptance_refs": [
+        "ADM-01",
+        "ADM-02",
+        "ADM-03",
+        "ADM-08",
+        "ADM-04",
+        "ADM-05",
+        "ADM-06",
+        "ADM-07",
+        "ADM-09",
+        "PERM-01",
+        "PERM-02",
+        "PERM-03",
+        "PERM-04",
+        "PERM-05",
+        "PERM-06"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "web",
+      "audience": "admin",
+      "transport": "http",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-web",
+      "nodes": [
+        "foundation-admin-web:web"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "real-governance-actions",
+        "ceilings-deny-and-last-admin-protection",
+        "policy-approval-manual-recovery",
+        "no-private-content-bypass"
+      ]
+    },
+    {
+      "case_id": "foundation-client-audience-android",
+      "acceptance_refs": [
+        "ADM-04",
+        "PERM-01",
+        "PERM-02"
+      ],
+      "layer": "platform",
+      "runner": "procedure",
+      "platform": "android",
+      "audience": "client",
+      "transport": "native",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-android",
+      "nodes": [
+        "foundation-client-audience-android:android"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "native-client-menu-and-approval-result",
+        "admin-audience-rejected-and-current-permission-enforced"
+      ]
+    },
+    {
+      "case_id": "foundation-baseline-applicability",
+      "acceptance_refs": [
+        "SCF-B0-01",
+        "SCF-B0-02",
+        "SCF-B0-03",
+        "SCF-B0-04",
+        "SCF-B0-05",
+        "SCF-B0-06",
+        "SCF-B0-07",
+        "SCF-B1-01",
+        "SCF-B1-02",
+        "SCF-B1-03",
+        "SCF-B1-04",
+        "SCF-B1-05",
+        "SCF-B1-06",
+        "SCF-B1-07",
+        "SCF-B1-08",
+        "SCF-B2-01",
+        "SCF-B2-02",
+        "SCF-B2-03",
+        "SCF-B2-04",
+        "SCF-B2-05",
+        "SCF-B2-06",
+        "SCF-B2-07",
+        "SCF-B2-08",
+        "TDS-01",
+        "TDS-02"
+      ],
+      "layer": "integration",
+      "runner": "procedure",
+      "platform": "host",
+      "audience": "harness",
+      "transport": "local",
+      "parameters": {
+        "scope": "delivered-foundation",
+        "provider": "no-new-live-calls"
+      },
+      "shard": "foundation-business-host",
+      "nodes": [
+        "foundation-baseline-applicability:host"
+      ],
+      "source": "tools/ci/foundation-business-procedures.json",
+      "assertions": [
+        "historical-acceptance-source-and-changed-footprint-reviewed",
+        "current-complete-native-collections-and-results",
+        "accepted-unexecuted-kept-separate",
+        "no-new-provider-calls"
+      ]
     }
   ],
   "scopes": {
@@ -1425,6 +4581,133 @@
       "SCF-B2-06",
       "SCF-B2-07",
       "SCF-B2-08"
+    ],
+    "foundation-stage-close": [
+      "foundation-profile-001",
+      "foundation-profile-002",
+      "foundation-profile-003",
+      "foundation-profile-004",
+      "foundation-profile-005",
+      "foundation-profile-006",
+      "foundation-set-001",
+      "foundation-set-002",
+      "foundation-set-003",
+      "foundation-set-004",
+      "foundation-set-005",
+      "foundation-set-006",
+      "foundation-set-007",
+      "foundation-set-008",
+      "foundation-set-009",
+      "foundation-fcache-01",
+      "foundation-fcache-02",
+      "foundation-fcache-03",
+      "foundation-fcache-04",
+      "foundation-fcache-05",
+      "foundation-fcache-07",
+      "foundation-fcache-08",
+      "foundation-fcache-09",
+      "foundation-fcache-10",
+      "foundation-fcache-13",
+      "foundation-fcache-14",
+      "foundation-adm-01",
+      "foundation-adm-02",
+      "foundation-adm-03",
+      "foundation-adm-08",
+      "foundation-adm-04",
+      "foundation-adm-05",
+      "foundation-adm-06",
+      "foundation-adm-07",
+      "foundation-adm-09",
+      "foundation-db-01",
+      "foundation-db-02",
+      "foundation-db-03",
+      "foundation-db-04",
+      "foundation-db-05",
+      "foundation-db-06",
+      "foundation-db-07",
+      "foundation-db-08",
+      "foundation-db-09",
+      "foundation-db-10",
+      "foundation-db-11",
+      "foundation-db-12",
+      "foundation-dat-01",
+      "foundation-dat-02",
+      "foundation-dat-03",
+      "foundation-dat-04",
+      "foundation-dat-06",
+      "foundation-dat-07",
+      "foundation-dat-08",
+      "foundation-api-01",
+      "foundation-api-02",
+      "foundation-api-03",
+      "foundation-api-04",
+      "foundation-api-05",
+      "foundation-api-06",
+      "foundation-api-07",
+      "foundation-api-10",
+      "foundation-api-08",
+      "foundation-api-09",
+      "foundation-uie-01",
+      "foundation-uie-02",
+      "foundation-uie-03",
+      "foundation-uie-04",
+      "foundation-uie-05",
+      "foundation-uie-06",
+      "foundation-uie-07",
+      "foundation-uie-08",
+      "foundation-tds-01",
+      "foundation-tds-02",
+      "foundation-tds-03",
+      "foundation-tds-04",
+      "foundation-tds-05",
+      "foundation-tds-06",
+      "foundation-tds-07",
+      "foundation-tds-08",
+      "foundation-tds-09",
+      "foundation-tds-10",
+      "foundation-flt-01",
+      "foundation-flt-02",
+      "foundation-flt-03",
+      "foundation-flt-04",
+      "foundation-flt-05",
+      "foundation-flt-06",
+      "foundation-flt-07",
+      "foundation-flt-08",
+      "foundation-design-01",
+      "foundation-design-02",
+      "foundation-design-03",
+      "foundation-design-04",
+      "foundation-design-05",
+      "foundation-design-06",
+      "foundation-docs-operations-observability-md-9-item-1",
+      "foundation-docs-operations-observability-md-9-item-2",
+      "foundation-docs-operations-observability-md-9-item-3",
+      "foundation-docs-operations-observability-md-9-item-4",
+      "foundation-docs-operations-observability-md-9-item-5",
+      "foundation-docs-operations-observability-md-9-item-6",
+      "foundation-docs-operations-observability-md-9-item-7",
+      "foundation-docs-operations-observability-md-9-item-8",
+      "foundation-docs-operations-observability-md-9-item-9",
+      "foundation-docs-operations-observability-md-9-item-10",
+      "foundation-docs-operations-observability-md-9-item-11",
+      "foundation-docs-operations-observability-md-9-item-12",
+      "foundation-perm-01",
+      "foundation-perm-02",
+      "foundation-perm-03",
+      "foundation-perm-04",
+      "foundation-perm-05",
+      "foundation-perm-06",
+      "foundation-client-profile-web",
+      "foundation-client-set-web",
+      "foundation-client-fcache-web",
+      "foundation-client-shell-web",
+      "foundation-client-profile-android",
+      "foundation-client-set-android",
+      "foundation-client-fcache-android",
+      "foundation-client-shell-android",
+      "foundation-admin-web",
+      "foundation-client-audience-android",
+      "foundation-baseline-applicability"
     ]
   }
 }

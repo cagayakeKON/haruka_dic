@@ -32,8 +32,7 @@ import 'package:mockito/src/dummies.dart' as _i7;
 /// A class which mocks [CacheRemote].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockMaterialRemote extends _i1.Mock
-    implements _i2.CacheRemote<List<_i3.MaterialSummary>> {
+class MockMaterialRemote extends _i1.Mock implements _i2.CacheRemote<List<_i3.MaterialSummary>> {
   @override
   _i4.Future<_i5.CacheValidation> validate(
     _i5.CacheResource? resource,
@@ -67,12 +66,11 @@ class MockMaterialRemote extends _i1.Mock
         Invocation.method(#fetch, [resource, cancel]),
       ),
     ),
-    returnValueForMissingStub:
-        _i4.Future<_i5.CachePayload<List<_i3.MaterialSummary>>>.value(
-          _i7.dummyValue<_i5.CachePayload<List<_i3.MaterialSummary>>>(
-            this,
-            Invocation.method(#fetch, [resource, cancel]),
-          ),
-        ),
+    returnValueForMissingStub: _i4.Future<_i5.CachePayload<List<_i3.MaterialSummary>>>.value(
+      _i7.dummyValue<_i5.CachePayload<List<_i3.MaterialSummary>>>(
+        this,
+        Invocation.method(#fetch, [resource, cancel]),
+      ),
+    ),
   ) as _i4.Future<_i5.CachePayload<List<_i3.MaterialSummary>>>);
 }

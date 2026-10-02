@@ -60,7 +60,10 @@ def configure_console() -> None:
     for stream in (sys.stdout, sys.stderr):
         if isinstance(stream, io.TextIOWrapper):
             stream.reconfigure(
-                encoding="utf-8", errors="backslashreplace", newline="\n", line_buffering=True
+                encoding="utf-8",
+                errors="backslashreplace",
+                newline="\n",
+                line_buffering=True,
             )
 
 
@@ -182,6 +185,7 @@ def run(
     cwd: Path = ROOT,
     timeout: int = 180,
     show_output: bool = True,
+    stdout_only: bool = False,
     environment: dict[str, str] | None = None,
 ) -> str:
     command = [*tool(name), *arguments]
@@ -220,7 +224,7 @@ def run(
         emit(output.rstrip())
     if completed.returncode:
         raise DevError(f"{name} failed with exit code {completed.returncode}")
-    return output
+    return completed.stdout if stdout_only else output
 
 
 def require_files(paths: Sequence[str]) -> None:
@@ -244,7 +248,10 @@ def validate_project_versions(manifest: dict[str, object], scopes: set[str]) -> 
         locked = json_object(packages.get("node_modules/markdownlint-cli2"))
         if any(engines.get(name) != manifest[name] for name in ("node", "npm")) or any(
             version != manifest["markdownlint_cli2"]
-            for version in (dependencies.get("markdownlint-cli2"), locked.get("version"))
+            for version in (
+                dependencies.get("markdownlint-cli2"),
+                locked.get("version"),
+            )
         ):
             raise DevError(
                 "Node/npm/Markdownlint declarations or lock differ from tools/toolchain.json"
@@ -300,9 +307,21 @@ def doctor(
     if "infra" in scopes:
         checks.extend(
             (
-                ("docker", ["version", "--format", "{{.Client.Version}}"], str(manifest["docker"])),
-                ("docker", ["version", "--format", "{{.Server.Version}}"], str(manifest["docker"])),
-                ("docker", ["compose", "version", "--short"], str(manifest["docker_compose"])),
+                (
+                    "docker",
+                    ["version", "--format", "{{.Client.Version}}"],
+                    str(manifest["docker"]),
+                ),
+                (
+                    "docker",
+                    ["version", "--format", "{{.Server.Version}}"],
+                    str(manifest["docker"]),
+                ),
+                (
+                    "docker",
+                    ["compose", "version", "--short"],
+                    str(manifest["docker_compose"]),
+                ),
             )
         )
     problems: list[str] = []
@@ -321,7 +340,15 @@ def doctor(
         try:
             expected = json_object(manifest["flutter"])
             actual = json_object(
-                json.loads(run(report, "flutter", ["--version", "--machine"], show_output=False))
+                json.loads(
+                    run(
+                        report,
+                        "flutter",
+                        ["--version", "--machine"],
+                        show_output=False,
+                        stdout_only=True,
+                    )
+                )
             )
             if any(
                 actual.get(key) != expected.get(field)
@@ -361,7 +388,8 @@ def doctor(
                 os.environ.get(
                     "ANDROID_HOME",
                     os.environ.get(
-                        "ANDROID_SDK_ROOT", str(Path.home() / "AppData/Local/Android/Sdk")
+                        "ANDROID_SDK_ROOT",
+                        str(Path.home() / "AppData/Local/Android/Sdk"),
                     ),
                 )
             )
@@ -408,7 +436,11 @@ def doctor(
     files: list[str] = []
     if "docs" in scopes:
         files.extend(
-            ["tools/node/package.json", "tools/node/package-lock.json", ".markdownlint-cli2.jsonc"]
+            [
+                "tools/node/package.json",
+                "tools/node/package-lock.json",
+                ".markdownlint-cli2.jsonc",
+            ]
         )
     if "backend" in scopes:
         files.extend(
@@ -440,7 +472,12 @@ def doctor(
     )
     if config is not None:
         runtime_doctor(
-            report, config, profile=profile, target=target, device=device, api_port=api_port
+            report,
+            config,
+            profile=profile,
+            target=target,
+            device=device,
+            api_port=api_port,
         )
 
 
@@ -501,7 +538,13 @@ def runtime_doctor(
                     "Android development requires an explicit --device; no implicit device selection"
                 )
             devices = json.loads(
-                run(report, "flutter", ["devices", "--machine"], show_output=False)
+                run(
+                    report,
+                    "flutter",
+                    ["devices", "--machine"],
+                    show_output=False,
+                    stdout_only=True,
+                )
             )
             if not is_json_list(devices) or not any(
                 is_json_object(item)
@@ -527,7 +570,10 @@ def runtime_doctor(
         },
     )
     report.record(
-        "runtime_configuration", "ready", environment=public.environment, namespace=public.namespace
+        "runtime_configuration",
+        "ready",
+        environment=public.environment,
+        namespace=public.namespace,
     )
     run(
         report,
@@ -584,7 +630,13 @@ def bootstrap(report: Report, scope: str) -> None:
             cwd=ROOT / "tools/node",
         )
     if "backend" in scopes:
-        run(report, "uv", ["sync", "--locked", "--group", "dev"], cwd=ROOT / "backend", timeout=600)
+        run(
+            report,
+            "uv",
+            ["sync", "--locked", "--group", "dev"],
+            cwd=ROOT / "backend",
+            timeout=600,
+        )
         install_bytecode_guard(ROOT)
         template = ROOT / "backend/.env.example"
         target = ROOT / "backend/.env"
@@ -718,7 +770,14 @@ def check_backend(report: Report) -> None:
     run(
         report,
         "uv",
-        ["run", "--locked", "pytest", "tests/unit", "tests/contract", f"--junitxml={report_path}"],
+        [
+            "run",
+            "--locked",
+            "pytest",
+            "tests/unit",
+            "tests/contract",
+            f"--junitxml={report_path}",
+        ],
         cwd=backend,
         timeout=300,
     )
@@ -795,7 +854,10 @@ def check_frontend(report: Report) -> None:
     if not {"lib", "test"}.issubset(targets):
         raise DevError("Frontend source and actual tests are required")
     run(
-        report, "dart", ["format", "--output=none", "--set-exit-if-changed", *targets], cwd=frontend
+        report,
+        "dart",
+        ["format", "--output=none", "--set-exit-if-changed", *targets],
+        cwd=frontend,
     )
     run(
         report,
@@ -975,7 +1037,11 @@ def check(
                 "scripts/pyrightconfig.json",
             ],
         )
-        output = run(report, "python", ["-m", "unittest", "discover", "-s", "scripts/tests", "-v"])
+        output = run(
+            report,
+            "python",
+            ["-m", "unittest", "discover", "-s", "scripts/tests", "-v"],
+        )
         report.record("tooling_test_results", "passed", passed=unittest_results(output))
     if stage in {"docs", "foundation"}:
         check_docs(report)
@@ -988,8 +1054,33 @@ def check(
     if stage == "foundation":
         codegen(report, write=False)
     report.record(
-        "acceptance_scope", "passed", scope=stage, full_milestone=False, ci_executed=False
+        "acceptance_scope",
+        "passed",
+        scope=stage,
+        full_milestone=False,
+        ci_executed=False,
     )
+
+
+def compatibility_test_fixture(manifest: dict[str, object]) -> Path:
+    dart_api = json_object(manifest.get("dart_api"))
+    relative = dart_api.get("test_fixture_output")
+    expected = "frontend/test/support/generated/api_compatibility_samples.dart"
+    if relative != expected:
+        raise DevError("Compatibility test fixture must use its registered test-only target")
+    target = ROOT / expected
+    for path in (target, *target.parents):
+        if path == ROOT.parent:
+            break
+        if path.is_symlink() or path.is_junction():
+            raise DevError("Managed test fixture targets must not be links")
+        if path.exists() and (
+            (path == target and not path.is_file()) or (path != target and not path.is_dir())
+        ):
+            raise DevError("Managed test fixture target has an invalid file type")
+    if target.parent.exists() and any(path.name != target.name for path in target.parent.iterdir()):
+        raise DevError("Unknown managed compatibility test fixtures")
+    return target
 
 
 def codegen(report: Report, *, write: bool) -> None:
@@ -1005,6 +1096,7 @@ def codegen(report: Report, *, write: bool) -> None:
     manifest = json_object(
         json.loads((ROOT / "tools/codegen/manifest.json").read_text(encoding="utf-8"))
     )
+    test_fixture = compatibility_test_fixture(manifest)
     outputs = string_list(manifest.get("backend_outputs"))
     if not outputs or not all(re.fullmatch(r"[a-z][a-z0-9-]*\.json", item) for item in outputs):
         raise DevError(
@@ -1028,7 +1120,15 @@ def codegen(report: Report, *, write: bool) -> None:
         run(
             report,
             "uv",
-            ["run", "--locked", "python", "-m", "app.contracts.export", "--output", str(target)],
+            [
+                "run",
+                "--locked",
+                "python",
+                "-m",
+                "app.contracts.export",
+                "--output",
+                str(target),
+            ],
             cwd=ROOT / "backend",
         )
         actual = {path.name for path in target.iterdir() if path.is_file()}
@@ -1053,7 +1153,8 @@ def codegen(report: Report, *, write: bool) -> None:
     )
     fixture_dir = ROOT / "tools/codegen/dart-api/fixtures"
     with tempfile.TemporaryDirectory(prefix="haruka-compatibility-") as temporary:
-        target = Path(temporary)
+        target = Path(temporary) / "fixtures"
+        dart_target = Path(temporary) / test_fixture.name
         run(
             report,
             "uv",
@@ -1067,10 +1168,14 @@ def codegen(report: Report, *, write: bool) -> None:
                 "tools.export_compatibility",
                 "--output",
                 str(target),
+                "--dart-output",
+                str(dart_target),
             ],
             cwd=ROOT / "backend",
         )
         expected = {"manifest.json", "openapi.json", "samples.json"}
+        if {path.name for path in target.iterdir()} != expected or not dart_target.is_file():
+            raise DevError("Compatibility exporter output differs from the managed manifest")
         existing = (
             {path.name for path in fixture_dir.iterdir() if path.is_file()}
             if fixture_dir.exists()
@@ -1091,6 +1196,15 @@ def codegen(report: Report, *, write: bool) -> None:
                 shutil.copyfile(target / name, destination)
             elif different:
                 raise DevError("Generated compatibility fixture drift: " + name)
+        different = (
+            not test_fixture.is_file() or test_fixture.read_bytes() != dart_target.read_bytes()
+        )
+        if write and different:
+            compatibility_test_fixture(manifest)
+            test_fixture.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(dart_target, test_fixture)
+        elif different:
+            raise DevError("Generated compatibility test fixture drift")
     report.record(
         "codegen",
         "passed",
@@ -1206,7 +1320,14 @@ def dev(report: Report, arguments: argparse.Namespace) -> None:
         if arguments.target == "web":
             flutter_arguments.append(f"--dart-define=HARUKA_API_BASE_URL={public.api_origin}")
             flutter_arguments.extend(
-                ["-d", "web-server", "--web-hostname", "localhost", "--web-port", "5173"]
+                [
+                    "-d",
+                    "web-server",
+                    "--web-hostname",
+                    "localhost",
+                    "--web-port",
+                    "5173",
+                ]
             )
         elif arguments.target == "android":
             flutter_arguments.extend(
@@ -1285,7 +1406,9 @@ def parser() -> argparse.ArgumentParser:
     for name in ("doctor", "bootstrap"):
         command = commands.add_parser(name)
         command.add_argument(
-            "--scope", choices=SCOPES if name == "doctor" else BOOTSTRAP_SCOPES, required=True
+            "--scope",
+            choices=SCOPES if name == "doctor" else BOOTSTRAP_SCOPES,
+            required=True,
         )
         if name == "doctor":
             command.add_argument(
@@ -1356,7 +1479,9 @@ def parser() -> argparse.ArgumentParser:
         help="bounded development smoke after startup; otherwise runs until Ctrl+C",
     )
     command.add_argument(
-        "--stop-file", type=Path, help="absolute future marker to stop only this development run"
+        "--stop-file",
+        type=Path,
+        help="absolute future marker to stop only this development run",
     )
     return result
 

@@ -33,42 +33,26 @@ import 'package:mockito/src/dummies.dart' as _i6;
 /// See the documentation for Mockito's code generation for more information.
 class MockSettingsSource extends _i1.Mock implements _i2.SettingsSource {
   @override
-  _i3.Future<_i4.SettingsSnapshot> fetch(
-    _i4.SettingsGroup? group,
-    _i5.CancelToken? cancel,
-  ) => (super.noSuchMethod(
-    Invocation.method(#fetch, [group, cancel]),
-    returnValue: _i3.Future<_i4.SettingsSnapshot>.value(
-      _i6.dummyValue<_i4.SettingsSnapshot>(
-        this,
+  _i3.Future<_i4.SettingsSnapshot> fetch(_i4.SettingsGroup? group, _i5.CancelToken? cancel) =>
+      (super.noSuchMethod(
         Invocation.method(#fetch, [group, cancel]),
-      ),
-    ),
-    returnValueForMissingStub: _i3.Future<_i4.SettingsSnapshot>.value(
-      _i6.dummyValue<_i4.SettingsSnapshot>(
-        this,
-        Invocation.method(#fetch, [group, cancel]),
-      ),
-    ),
-  ) as _i3.Future<_i4.SettingsSnapshot>);
+        returnValue: _i3.Future<_i4.SettingsSnapshot>.value(
+          _i6.dummyValue<_i4.SettingsSnapshot>(this, Invocation.method(#fetch, [group, cancel])),
+        ),
+        returnValueForMissingStub: _i3.Future<_i4.SettingsSnapshot>.value(
+          _i6.dummyValue<_i4.SettingsSnapshot>(this, Invocation.method(#fetch, [group, cancel])),
+        ),
+      ) as _i3.Future<_i4.SettingsSnapshot>);
 
   @override
-  _i3.Future<_i4.SettingsSnapshot> patch(
-    _i4.SettingsGroup? group,
-    _i4.SettingsPatch? patch,
-  ) => (super.noSuchMethod(
-    Invocation.method(#patch, [group, patch]),
-    returnValue: _i3.Future<_i4.SettingsSnapshot>.value(
-      _i6.dummyValue<_i4.SettingsSnapshot>(
-        this,
+  _i3.Future<_i4.SettingsSnapshot> patch(_i4.SettingsGroup? group, _i4.SettingsPatch? patch) =>
+      (super.noSuchMethod(
         Invocation.method(#patch, [group, patch]),
-      ),
-    ),
-    returnValueForMissingStub: _i3.Future<_i4.SettingsSnapshot>.value(
-      _i6.dummyValue<_i4.SettingsSnapshot>(
-        this,
-        Invocation.method(#patch, [group, patch]),
-      ),
-    ),
-  ) as _i3.Future<_i4.SettingsSnapshot>);
+        returnValue: _i3.Future<_i4.SettingsSnapshot>.value(
+          _i6.dummyValue<_i4.SettingsSnapshot>(this, Invocation.method(#patch, [group, patch])),
+        ),
+        returnValueForMissingStub: _i3.Future<_i4.SettingsSnapshot>.value(
+          _i6.dummyValue<_i4.SettingsSnapshot>(this, Invocation.method(#patch, [group, patch])),
+        ),
+      ) as _i3.Future<_i4.SettingsSnapshot>);
 }

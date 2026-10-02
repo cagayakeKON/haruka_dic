@@ -1,9 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { readFileSync, unlinkSync } from "node:fs";
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
+import {
+  commitPolicyPreview,
+  finishOptionalGuide,
+  openPolicyEditor,
+  preserveAccountUiEvidence,
+  selectRegistrationMode,
+  signOutCurrentAudience,
+} from "./account_ui.js";
 
 const root = path.resolve("../..");
 const runId = process.env.HARUKA_TEST_RUN_ID;
@@ -12,6 +20,10 @@ if (!runId || !/^[0-9a-f]{32}$/.test(runId)) {
 }
 const runDir = path.join(root, "dev", ".local", "b1", runId);
 const python = path.join(root, "backend", ".venv", "Scripts", "python.exe");
+
+test.afterEach(async ({ page }, info) => {
+  await preserveAccountUiEvidence(page, info);
+});
 
 async function privateMailLink(
   recipient: string,
@@ -54,6 +66,8 @@ async function privateMailLink(
 test("administrator opens registration and a user verifies email before login", async ({
   page,
 }) => {
+  test.setTimeout(360_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
   const id = (value: string) => page.getByTestId(value);
   const input = (value: string) => id(value).locator("input, textarea");
   const fillPrivate = async (fieldId: string, value: string) => {
@@ -79,25 +93,13 @@ test("administrator opens registration and a user verifies email before login", 
   await fillPrivate("admin.auth.login.email", adminEmail);
   await fillPrivate("admin.auth.login.password", adminPassword);
   await id("admin.auth.login.submit").click();
-  await expect(id("admin.auth.policy.page")).toBeVisible();
+  await openPolicyEditor(page);
   const registrationToggle = id("admin.auth.policy.registration_toggle");
-  const switchNode = registrationToggle.locator('[role="switch"]');
-  const switchState = await ((await switchNode.count())
-    ? switchNode.getAttribute("aria-checked")
-    : registrationToggle.getAttribute("aria-checked"));
-  expect(["true", "false"]).toContain(switchState);
-  if (switchState === "false") {
-    await registrationToggle.click();
-    const savedPolicy = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === "/api/v1/admin/auth-policy" &&
-        response.request().method() === "PATCH",
-    );
-    await id("admin.auth.policy.save").click();
-    expect((await savedPolicy).status()).toBe(200);
+  if (!(await registrationToggle.innerText()).includes("开放注册")) {
+    await selectRegistrationMode(page, "open");
+    await commitPolicyPreview(page);
   }
-  await id("admin.auth.policy.sign_out").click();
-  await expect(id("admin.auth.login.page")).toBeVisible({ timeout: 30_000 });
+  await signOutCurrentAudience(page, true);
 
   const email = `learner-${randomBytes(8).toString("hex")}@haruka.example.test`;
   const password = `Valid-${randomBytes(12).toString("hex")}`;
@@ -146,10 +148,13 @@ test("administrator opens registration and a user verifies email before login", 
   );
   await id("client.auth.login.submit").click();
   expect((await firstLogin).status()).toBe(200);
-  await expect(id("client.account.home.page")).toBeVisible({ timeout: 30_000 });
+  writeFileSync(
+    path.join(runDir, "account-ui-actor-a.json"),
+    JSON.stringify({ email, password }),
+  );
+  await finishOptionalGuide(page);
 
-  await id("client.account.home.sign_out").click();
-  await expect(id("client.auth.login.page")).toBeVisible();
+  await signOutCurrentAudience(page);
   await id("client.auth.login.recovery_link").click();
   await expect(id("client.auth.recovery_request.page")).toBeVisible();
   await fillPrivate("client.auth.recovery_request.email", email);
@@ -205,5 +210,9 @@ test("administrator opens registration and a user verifies email before login", 
   );
   await id("client.auth.login.submit").click();
   expect((await secondLogin).status()).toBe(200);
-  await expect(id("client.account.home.page")).toBeVisible({ timeout: 30_000 });
+  await finishOptionalGuide(page);
+  writeFileSync(
+    path.join(runDir, "account-ui-actor-a.json"),
+    JSON.stringify({ email, password: newPassword }),
+  );
 });

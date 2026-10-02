@@ -36,7 +36,6 @@ B0 时没有业务API，未注册的 `/api/v1/*` 返回统一404。当前身份�
 
 依赖精确锁在pyproject/uv.lock；PEP517构建闭包另行固定版本/哈希。日志使用logging的安全JSON出口，正常事件和错误都采集，SDK原始消息/SQL参数不输出；输出故障也不会回显原始record。HARUKA_LOG_FILE指定绝对基础路径，实际文件按服务和PID拆分，供 [dev/Alloy](../dev/README.md) 采集，避免多进程竞争同一轮转文件。个人AI/TTS客户端须后续按用户注入，本轮不创建全局模型客户端或进行供应商调用。
 
-
 模型凭据与任务运行采用本人密文、近期登录复核、行 revision CAS；模型设置共享本人 settings_revision。
 模型调用只由正式 Worker 消费已提交 Job/Outbox 发起。配置 `HARUKA_MODEL_EXECUTION_MODE=disabled|fake|live`，默认 disabled；fake 仅允许 dev/test。
 `HARUKA_CREDENTIAL_KEYRING` 为版本到 Fernet 密钥的 JSON 映射；`HARUKA_CREDENTIAL_ENCRYPTION_KEY_VERSION` 指定当前加密版本。

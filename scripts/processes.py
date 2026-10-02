@@ -28,6 +28,13 @@ from typing import TextIO
 MARKER = "@haruka-owned:"
 
 
+def supervisor_executable() -> Path:
+    """Use the Windows base interpreter when available, retaining a typed fallback."""
+    base: object = getattr(sys, "_base_executable", None)
+    selected = base if os.name == "nt" and isinstance(base, str) and base else sys.executable
+    return Path(selected).resolve()
+
+
 class ProcessError(Exception):
     """Safe process supervisor failure; never include captured application output."""
 
@@ -137,7 +144,7 @@ class WindowsJob:
             self.close()
             raise ProcessError("Could not configure the owned Windows Job")
 
-    def assign(self, pid: int) -> dict[str, object]:
+    def assign(self, pid: int, executable: Path) -> dict[str, object]:
         process: int | None = self.kernel.OpenProcess(0x0100 | 0x0001 | 0x1000, False, pid)
         if not process:
             raise ProcessError("Could not open the gated child for ownership")
@@ -155,7 +162,7 @@ class WindowsJob:
                 ctypes.byref(user),
             ):
                 raise ProcessError("Could not verify gated child identity")
-            if Path(name.value).resolve() != Path(sys.executable).resolve():
+            if Path(name.value).resolve() != executable.resolve():
                 raise ProcessError("Gated process executable does not match the runner")
             if not self.kernel.AssignProcessToJobObject(self.handle, process):
                 raise ProcessError("Could not assign the gated child to this run's Windows Job")
@@ -335,8 +342,13 @@ class ProcessOwner:
         # The supervisor has piped stdio and needs no console. DETACHED_PROCESS
         # prevents a late console-host helper from being mistaken for an app descendant.
         flags = subprocess.DETACHED_PROCESS if os.name == "nt" else 0
+        # This supervisor uses only stdlib. Avoid the Windows venv launcher,
+        # whose extra interpreter would be counted as an application descendant.
+        supervisor_path = supervisor_executable()
+        if not supervisor_path.is_file():
+            raise ProcessError("Owned process supervisor executable was not found")
         process = subprocess.Popen(  # noqa: S603 - fixed stdlib supervisor, no shell; command starts only after ownership.
-            [sys.executable, str(Path(__file__).resolve()), "--owned-child"],
+            [str(supervisor_path), str(Path(__file__).resolve()), "--owned-child"],
             cwd=cwd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -355,7 +367,7 @@ class ProcessOwner:
         )
         identity: dict[str, object] = {
             "pid": process.pid,
-            "executable": str(Path(sys.executable).resolve()),
+            "executable": str(supervisor_path),
             "started_at": datetime.datetime.now(datetime.UTC).isoformat(),
             "run_id": self.run_id,
             "namespace": self.namespace,
@@ -368,7 +380,7 @@ class ProcessOwner:
         try:
             job = windows_job()
             if job is not None:
-                identity.update(job.assign(process.pid))
+                identity.update(job.assign(process.pid, supervisor_path))
             child = OwnedProcess(name, process, identity, shutdown_file, job=job)
             self.children.append(child)
             if process.stdout is None:

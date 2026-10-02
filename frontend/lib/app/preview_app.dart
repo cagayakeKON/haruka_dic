@@ -45,6 +45,7 @@ import 'cache_blocked_screen.dart';
 /// Opt-in frontend preview. Production and B1 paths never instantiate this app.
 class PreviewHarukaApp extends StatefulWidget {
   const PreviewHarukaApp({
+    this.clock = DateTime.now,
     this.materialCatalog,
     this.queryResultRepository,
     this.collectionCatalog,
@@ -55,6 +56,7 @@ class PreviewHarukaApp extends StatefulWidget {
   });
 
   final MaterialCatalog? materialCatalog;
+  final DateTime Function() clock;
   final QueryResultRepository? queryResultRepository;
   final CollectionCatalog? collectionCatalog;
   final NotificationRepository? notificationRepository;
@@ -127,7 +129,7 @@ class _PreviewHarukaAppState extends State<PreviewHarukaApp> with WidgetsBinding
         readAllSource: notificationRemote.markAllRead,
         waitForReadiness: settingsCache.initialize,
       );
-  late final router = createPreviewRouter();
+  late final router = createPreviewRouter(clock: widget.clock);
 
   String _requireFixtureQueryScope() {
     final cache = settingsCache.coordinator;

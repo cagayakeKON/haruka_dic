@@ -61,12 +61,49 @@ class DocumentationChecks(unittest.TestCase):
 
 
 class ResultGates(unittest.TestCase):
-    def test_console_reconfigures_cp932_stdout_and_stderr_before_chinese_output(self) -> None:
+    def test_compatibility_fixture_rejects_unregistered_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch("scripts.dev.ROOT", Path(temporary)):
+                for target in (
+                    "../outside.dart",
+                    "frontend/lib/generated/api_compatibility_samples.dart",
+                    "frontend/test/support/generated/other.dart",
+                ):
+                    with self.subTest(target=target):
+                        with self.assertRaisesRegex(dev.DevError, "registered test-only"):
+                            dev.compatibility_test_fixture(
+                                {"dart_api": {"test_fixture_output": target}}
+                            )
+
+    def test_compatibility_fixture_rejects_unknown_files_and_nonregular_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            relative = "frontend/test/support/generated/api_compatibility_samples.dart"
+            target = root / relative
+            target.parent.mkdir(parents=True)
+            manifest = {"dart_api": {"test_fixture_output": relative}}
+            with patch("scripts.dev.ROOT", root):
+                unknown = target.parent / "user_owned.txt"
+                unknown.write_text("preserve", encoding="utf-8")
+                with self.assertRaisesRegex(dev.DevError, "Unknown managed"):
+                    dev.compatibility_test_fixture(manifest)
+                self.assertEqual(unknown.read_text(encoding="utf-8"), "preserve")
+                unknown.unlink()
+                target.mkdir()
+                with self.assertRaisesRegex(dev.DevError, "invalid file type"):
+                    dev.compatibility_test_fixture(manifest)
+
+    def test_console_reconfigures_cp932_stdout_and_stderr_before_chinese_output(
+        self,
+    ) -> None:
         stdout_bytes = io.BytesIO()
         stderr_bytes = io.BytesIO()
         stdout = io.TextIOWrapper(stdout_bytes, encoding="cp932")
         stderr = io.TextIOWrapper(stderr_bytes, encoding="cp932")
-        with patch("scripts.dev.sys.stdout", stdout), patch("scripts.dev.sys.stderr", stderr):
+        with (
+            patch("scripts.dev.sys.stdout", stdout),
+            patch("scripts.dev.sys.stderr", stderr),
+        ):
             dev.configure_console()
             dev.emit("目录检查失败")
             sys.stderr.write("错误输出\n")
@@ -82,14 +119,25 @@ class ResultGates(unittest.TestCase):
             (root / "frontend/tool").mkdir(parents=True)
             (root / "contracts").mkdir()
             (root / "tools/codegen/manifest.json").write_text(
-                json.dumps({"backend_outputs": ["openapi.json"]}), encoding="utf-8"
+                json.dumps(
+                    {
+                        "backend_outputs": ["openapi.json"],
+                        "dart_api": {
+                            "test_fixture_output": "frontend/test/support/generated/api_compatibility_samples.dart"
+                        },
+                    }
+                ),
+                encoding="utf-8",
             )
             (root / "frontend/tool/generate.py").write_text("", encoding="utf-8")
             target = root / "contracts/openapi.json"
             target.write_text('{"version":1}\n', encoding="utf-8")
 
             def export(
-                _report: dev.Report, name: str, arguments: Sequence[str], **_kwargs: object
+                _report: dev.Report,
+                name: str,
+                arguments: Sequence[str],
+                **_kwargs: object,
             ) -> str:
                 if "tools.check_registries" in arguments:
                     return ""
@@ -99,9 +147,13 @@ class ResultGates(unittest.TestCase):
                         if "tools.export_compatibility" in arguments
                         else ("openapi.json",)
                     )
+                    destination = Path(arguments[arguments.index("--output") + 1])
+                    destination.mkdir(parents=True, exist_ok=True)
                     for output in outputs:
-                        (Path(arguments[-1]) / output).write_text(
-                            '{"version":2}\n', encoding="utf-8"
+                        (destination / output).write_text('{"version":2}\n', encoding="utf-8")
+                    if "--dart-output" in arguments:
+                        Path(arguments[arguments.index("--dart-output") + 1]).write_text(
+                            "fixture\n", encoding="utf-8"
                         )
                 return ""
 
@@ -121,6 +173,15 @@ class ResultGates(unittest.TestCase):
                     {"manifest.json", "openapi.json", "samples.json"},
                 )
                 dev.codegen(dev.Report("codegen", "check"), write=False)
+                dart_fixture = (
+                    root / "frontend/test/support/generated/api_compatibility_samples.dart"
+                )
+                dart_fixture.write_text("manual drift\n", encoding="utf-8")
+                with self.assertRaisesRegex(dev.DevError, "test fixture drift"):
+                    dev.codegen(dev.Report("codegen", "check"), write=False)
+                self.assertEqual(dart_fixture.read_text(encoding="utf-8"), "manual drift\n")
+                dev.codegen(dev.Report("codegen", "write"), write=True)
+                self.assertEqual(dart_fixture.read_text(encoding="utf-8"), "fixture\n")
                 (fixtures / "samples.json").unlink()
                 with self.assertRaisesRegex(dev.DevError, "compatibility fixture drift"):
                     dev.codegen(dev.Report("codegen", "check"), write=False)
@@ -130,7 +191,8 @@ class ResultGates(unittest.TestCase):
                 with self.assertRaisesRegex(dev.DevError, "Unknown"):
                     dev.codegen(dev.Report("codegen", "write"), write=True)
                 self.assertEqual(
-                    (root / "contracts/unmanaged.txt").read_text(encoding="utf-8"), "keep"
+                    (root / "contracts/unmanaged.txt").read_text(encoding="utf-8"),
+                    "keep",
                 )
 
     def test_junit_rejects_empty_skipped_failure_and_invalid_reports(self) -> None:
@@ -151,7 +213,12 @@ class ResultGates(unittest.TestCase):
             self.assertEqual(dev.junit_results(report), 1)
 
     def test_flutter_rejects_empty_incomplete_skipped_or_failed_results(self) -> None:
-        success = {"type": "testDone", "result": "success", "skipped": False, "hidden": False}
+        success = {
+            "type": "testDone",
+            "result": "success",
+            "skipped": False,
+            "hidden": False,
+        }
         end = {"type": "done", "success": True}
         for events in (
             [],
@@ -163,11 +230,16 @@ class ResultGates(unittest.TestCase):
             with self.subTest(events=events), self.assertRaises(dev.DevError):
                 dev.flutter_results("\n".join(json.dumps(event) for event in events))
         self.assertEqual(
-            dev.flutter_results("\n".join(json.dumps(event) for event in [success, end])), 1
+            dev.flutter_results("\n".join(json.dumps(event) for event in [success, end])),
+            1,
         )
 
     def test_unittest_rejects_zero_or_skipped_tests(self) -> None:
-        for output in ("Ran 0 tests in 0.0s\nOK", "Ran 1 test in 0.0s\nOK (skipped=1)", ""):
+        for output in (
+            "Ran 0 tests in 0.0s\nOK",
+            "Ran 1 test in 0.0s\nOK (skipped=1)",
+            "",
+        ):
             with self.subTest(output=output), self.assertRaises(dev.DevError):
                 dev.unittest_results(output)
         self.assertEqual(dev.unittest_results("Ran 2 tests in 0.1s\nOK"), 2)
@@ -275,7 +347,10 @@ class ResultGates(unittest.TestCase):
             calls: list[list[str]] = []
 
             def gate(
-                _report: dev.Report, name: str, arguments: Sequence[str], **_kwargs: object
+                _report: dev.Report,
+                name: str,
+                arguments: Sequence[str],
+                **_kwargs: object,
             ) -> str:
                 self.assertEqual(name, "python")
                 calls.append(list(arguments))
@@ -293,7 +368,10 @@ class ResultGates(unittest.TestCase):
                 )
                 return ""
 
-            with patch("scripts.dev.ROOT", root), patch("scripts.dev.run", side_effect=gate):
+            with (
+                patch("scripts.dev.ROOT", root),
+                patch("scripts.dev.run", side_effect=gate),
+            ):
                 code = dev.main(
                     [
                         "check",
@@ -381,9 +459,14 @@ class ResultGates(unittest.TestCase):
                 self.assertEqual(command[command.index("--identity") + 1], str(identity.resolve()))
                 self.assertEqual(command[command.index("--report") + 1], str(evidence.resolve()))
 
-    def test_candidate_downstream_failure_and_missing_output_remain_failed(self) -> None:
+    def test_candidate_downstream_failure_and_missing_output_remain_failed(
+        self,
+    ) -> None:
         for gate_exit in (0, 1):
-            with self.subTest(gate_exit=gate_exit), tempfile.TemporaryDirectory() as temporary:
+            with (
+                self.subTest(gate_exit=gate_exit),
+                tempfile.TemporaryDirectory() as temporary,
+            ):
                 root = Path(temporary)
                 identity, evidence = root / "identity.json", root / "evidence.json"
                 identity.write_text("{}", encoding="utf-8")
@@ -414,7 +497,10 @@ class ResultGates(unittest.TestCase):
                 )
 
     def test_missing_executable_and_failed_subprocess_do_not_succeed(self) -> None:
-        with patch("scripts.dev.shutil.which", return_value=None), self.assertRaises(dev.DevError):
+        with (
+            patch("scripts.dev.shutil.which", return_value=None),
+            self.assertRaises(dev.DevError),
+        ):
             dev.tool("nonexistent")
         with self.assertRaises(dev.DevError):
             dev.run(
@@ -433,13 +519,18 @@ class ResultGates(unittest.TestCase):
         self.assertNotIn("fake-token", output)
         self.assertNotIn("fake-value", output)
         self.assertNotIn(str(dev.ROOT), output)
-        data = {"cwd": str(dev.ROOT), "arguments": ["token=fake-token", str(Path.home())]}
+        data = {
+            "cwd": str(dev.ROOT),
+            "arguments": ["token=fake-token", str(Path.home())],
+        }
         serialized = json.dumps(dev.redact_data(data))
         self.assertNotIn("fake-token", serialized)
         self.assertNotIn(json.dumps(str(dev.ROOT)), serialized)
         self.assertNotIn(json.dumps(str(Path.home())), serialized)
 
-    def test_saved_report_is_valid_json_after_nested_secret_and_path_redaction(self) -> None:
+    def test_saved_report_is_valid_json_after_nested_secret_and_path_redaction(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             report = dev.Report("test", "tooling")
@@ -471,7 +562,8 @@ class InfrastructureChecks(unittest.TestCase):
             with (
                 patch("scripts.dev.ROOT", root),
                 patch(
-                    "scripts.dev.load_toolchain", return_value={"python": sys.version.split()[0]}
+                    "scripts.dev.load_toolchain",
+                    return_value={"python": sys.version.split()[0]},
                 ),
                 patch("scripts.dev.doctor") as doctor,
                 patch("scripts.dev.run") as run,
@@ -479,10 +571,13 @@ class InfrastructureChecks(unittest.TestCase):
                 dev.infra(dev.Report("infra", "init"), "init")
                 doctor.assert_not_called()
                 self.assertEqual(
-                    run.call_args.args[1:3], ("python", [str(root / "dev/infra.py"), "init"])
+                    run.call_args.args[1:3],
+                    ("python", [str(root / "dev/infra.py"), "init"]),
                 )
 
-    def test_missing_infrastructure_script_and_unknown_action_cannot_launch(self) -> None:
+    def test_missing_infrastructure_script_and_unknown_action_cannot_launch(
+        self,
+    ) -> None:
         with (
             tempfile.TemporaryDirectory() as temporary,
             patch("scripts.dev.ROOT", Path(temporary)),
@@ -505,13 +600,18 @@ class InfrastructureChecks(unittest.TestCase):
                 self.subTest(daemon_result=type(daemon_result).__name__),
                 patch("scripts.dev.load_toolchain", return_value=manifest),
                 patch("scripts.dev.require_files"),
-                patch("scripts.dev.run", side_effect=["3.13.6", "29.5.2", daemon_result, "5.1.4"]),
+                patch(
+                    "scripts.dev.run",
+                    side_effect=["3.13.6", "29.5.2", daemon_result, "5.1.4"],
+                ),
                 patch("scripts.dev.emit"),
                 self.assertRaises(dev.DevError),
             ):
                 dev.doctor(dev.Report("doctor", "infra"), "infra")
 
-    def test_missing_test_target_never_falls_back_to_another_configuration(self) -> None:
+    def test_missing_test_target_never_falls_back_to_another_configuration(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             with (
                 patch("scripts.dev.ROOT", Path(temporary)),
@@ -521,7 +621,9 @@ class InfrastructureChecks(unittest.TestCase):
                 dev.check_infrastructure(dev.Report("check", "infrastructure"))
             run.assert_not_called()
 
-    def test_empty_or_skipped_infrastructure_unit_results_block_live_checks(self) -> None:
+    def test_empty_or_skipped_infrastructure_unit_results_block_live_checks(
+        self,
+    ) -> None:
         for output in ("Ran 0 tests in 0.0s\nOK", "Ran 1 test in 0.0s\nOK (skipped=1)"):
             with (
                 self.subTest(output=output),
@@ -534,7 +636,9 @@ class InfrastructureChecks(unittest.TestCase):
                 dev.check_infrastructure(dev.Report("check", "infrastructure"))
             infra.assert_not_called()
 
-    def test_child_environment_is_private_and_is_not_written_to_the_report(self) -> None:
+    def test_child_environment_is_private_and_is_not_written_to_the_report(
+        self,
+    ) -> None:
         report = dev.Report("test", "tooling")
         with patch.dict(os.environ, {"HARUKA_TEST_ENV_SENTINEL": "original"}):
             output = dev.run(
@@ -547,6 +651,27 @@ class InfrastructureChecks(unittest.TestCase):
             self.assertEqual(output.strip(), "fake-environment-secret")
             self.assertEqual(os.environ["HARUKA_TEST_ENV_SENTINEL"], "original")
         self.assertNotIn("fake-environment-secret", json.dumps(report.records))
+
+    def test_machine_stdout_is_separate_from_diagnostics_and_exit_status(self) -> None:
+        report = dev.Report("test", "tooling")
+        program = "import sys; print('{\"ready\":true}'); sys.stderr.write('diagnostic\\n')"
+        output = dev.run(
+            report,
+            "python",
+            ["-c", program],
+            show_output=False,
+            stdout_only=True,
+        )
+        self.assertEqual(json.loads(output), {"ready": True})
+        with self.assertRaises(dev.DevError):
+            dev.run(
+                report,
+                "python",
+                ["-c", program + "; sys.exit(7)"],
+                show_output=False,
+                stdout_only=True,
+            )
+        self.assertEqual(report.records[-1]["exit_code"], 7)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/async_frames.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/api/auth_models.dart';
@@ -18,7 +21,7 @@ import 'package:haruka/features/auth/account_pages.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 
-import '../../../test_support/sample_adapter.dart';
+import '../../support/sample_adapter.dart';
 
 final class _Vault implements CredentialVault {
   @override
@@ -53,6 +56,15 @@ ResponseBody _json(Object data) => ResponseBody.fromString(
 );
 
 void main() {
+  setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized().platformDispatcher.defaultRouteNameTestValue =
+        '/';
+  });
+  tearDown(() {
+    TestWidgetsFlutterBinding.ensureInitialized().platformDispatcher
+        .clearDefaultRouteNameTestValue();
+  });
+
   const instanceId = 'haruka-test-0123456789abcdef0123456789abcdef';
   const sessionA = '018f1234-0000-7000-8000-000000000002';
   const sessionB = '018f1234-0000-7000-8000-000000000003';
@@ -301,11 +313,11 @@ void main() {
       ),
     );
     await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     expect(find.byType(TextFormField), findsNWidgets(3));
     await tester.enterText(find.byType(TextFormField).first, 'synthetic-secret');
     await tester.runAsync(auth.logout);
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     expect(find.byType(TextFormField), findsNothing);
     expect(find.text('synthetic-secret'), findsNothing);
     expect(find.text('open'), findsOneWidget);
@@ -436,7 +448,7 @@ void main() {
       ),
     );
     await tester.runAsync(() => tester.tap(find.text('open sessions')));
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     final revokeKey = ValueKey<String>(UiTestIds.sessionRevoke(sessionB));
     for (var i = 0; i < 50 && find.byKey(revokeKey).evaluate().isEmpty; i++) {
       await tester.pump();
@@ -450,7 +462,7 @@ void main() {
     );
     expect(sessionsReads, 1);
     await tester.runAsync(() => tester.tap(find.byKey(revokeKey)));
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     for (var i = 0; i < 50 && sessionsReads < 2; i++) {
       await tester.pump();
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
@@ -473,7 +485,7 @@ void main() {
       () => sessionsFuture.timeout(const Duration(seconds: 2)),
     );
     expect(refreshed!.data.length, 1);
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     for (var i = 0; i < 50 && find.textContaining('Current browser').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));

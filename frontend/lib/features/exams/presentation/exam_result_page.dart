@@ -286,11 +286,15 @@ class _MobileScoreCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(AppLocalizations.of(context).mockLearningResultObjective,
-                    style: TextStyle(color: scheme.onPrimary)),
+                Text(
+                  AppLocalizations.of(context).mockLearningResultObjective,
+                  style: TextStyle(color: scheme.onPrimary),
+                ),
                 const SizedBox(height: 4),
-                Text(AppLocalizations.of(context).mockLearningResultCorrectCount,
-                    style: TextStyle(color: scheme.onPrimary.withValues(alpha: .85), fontSize: 13)),
+                Text(
+                  AppLocalizations.of(context).mockLearningResultCorrectCount,
+                  style: TextStyle(color: scheme.onPrimary.withValues(alpha: .85), fontSize: 13),
+                ),
               ],
             ),
           ),

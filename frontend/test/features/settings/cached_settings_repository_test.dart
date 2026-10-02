@@ -1,7 +1,8 @@
+import '../../support/test_database.dart';
+
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/cache/cache_backend.dart';
 import 'package:haruka/core/cache/cache_coordinator.dart';
@@ -20,6 +21,7 @@ import 'cached_settings_repository_test.mocks.dart';
 
 @GenerateNiceMocks([MockSpec<SettingsSource>()])
 void main() {
+  setUpAll(initializeTestDatabase);
   provideDummy<SettingsSnapshot>(
     SettingsSnapshot(group: SettingsGroup.profile, revision: 1, fields: const {}),
   );
@@ -27,7 +29,7 @@ void main() {
   Future<CacheCoordinator> attachedCache({bool preview = false, bool persistent = false}) async {
     final cache = CacheCoordinator(
       openBackend: (_) async {
-        final executor = NativeDatabase.memory();
+        final executor = memoryTestDatabase();
         return OpenedCacheBackend(
           executor: executor,
           mode: persistent ? CacheStorageMode.persistent : CacheStorageMode.memoryOnly,
@@ -54,7 +56,7 @@ void main() {
     () async {
       final cache = CacheCoordinator(
         openBackend: (_) async {
-          final executor = NativeDatabase.memory();
+          final executor = memoryTestDatabase();
           return OpenedCacheBackend(
             executor: executor,
             mode: CacheStorageMode.memoryOnly,
@@ -458,7 +460,7 @@ void main() {
   });
 
   test('confirmed PATCH stays committed when persistent invalidation fails', () async {
-    final executor = NativeDatabase.memory();
+    final executor = memoryTestDatabase();
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
         executor: executor,

@@ -40,8 +40,8 @@ def test_authentication_openapi_exposes_complete_source_and_nullable_legacy_veri
     assert "first_chapter_id" in schemas["MaterialSummary"]["required"]
     assert "source_locator" in schemas["NovelBlockRead"]["required"]
     assert "library_id" in schemas["NovelChapterRead"]["required"]
-    assert "email_verified_at" in schemas["AccountRead"]["properties"]
-    assert "anyOf" in schemas["AccountRead"]["properties"]["email_verified_at"]
+    assert "email_verified_at" in schemas["app__schemas__auth__AccountRead"]["properties"]
+    assert "anyOf" in schemas["app__schemas__auth__AccountRead"]["properties"]["email_verified_at"]
     token = schemas["TokenRequest"]["properties"]["token"]
     assert token["pattern"] == "^[A-Za-z0-9_-]{43}$"
     assert token["minLength"] == token["maxLength"] == 43

@@ -196,7 +196,7 @@ async def test_hiding_a_menu_keeps_the_page_permission(target: MaintenanceSettin
                 session, actor_id=admin.user_id, user_id=account.id, audience="admin"
             )
             assert all(item.route_key != "users" for item in preview)
-            assert all(not hasattr(item, "email") or item.email is None for item in preview)
+            assert all(not hasattr(item, "email") for item in preview)
             limited = await load_graph(session, account.id)
             assert allows(limited, account.id, "admin.user.read", "platform_metadata")
             current = next(menu for menu in tightened.menus if menu.code == "users")

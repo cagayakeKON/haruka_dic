@@ -1,9 +1,10 @@
+import '../../support/generated/api_compatibility_samples.dart';
+import '../../support/test_database.dart';
+
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:haruka/core/api/api_client.dart';
@@ -18,7 +19,7 @@ import 'package:haruka/core/cache/cache_models.dart';
 import 'package:haruka/core/cache/cache_session_binding.dart';
 import 'package:haruka/core/config/app_config.dart';
 
-import '../../../test_support/sample_adapter.dart';
+import '../../support/sample_adapter.dart';
 
 final class _NoSync implements AuthSync {
   @override
@@ -82,11 +83,10 @@ ResponseBody _jsonBody(Object value) => ResponseBody.fromString(
 );
 
 void main() {
+  setUpAll(initializeTestDatabase);
   TestWidgetsFlutterBinding.ensureInitialized();
   test('access distinguishes absent security epoch from valid zero', () {
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final sample = samples['auth_client_access_login_only'] as Map<String, dynamic>;
     final data = Map<String, dynamic>.from(sample['data'] as Map);
     data.remove('security_epoch');
@@ -103,9 +103,7 @@ void main() {
       instanceId: 'haruka-test-0123456789abcdef0123456789abcdef',
       apiBaseUrl: 'https://localhost:18443',
     );
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final access = samples['auth_client_access_login_only'] as Map<String, dynamic>;
     (access['data'] as Map<String, dynamic>)['security_epoch'] = 0;
     final login = samples['auth_web_authenticated'] as Map<String, dynamic>;
@@ -177,7 +175,7 @@ void main() {
     );
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase.memory(),
+        executor: memoryTestDatabase(),
         mode: CacheStorageMode.persistent,
         closeOwner: () async {},
       ),

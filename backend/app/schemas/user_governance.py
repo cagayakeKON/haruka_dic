@@ -14,7 +14,7 @@ _MAX_ROLES = 32
 class AccountCreate(ApiModel):
     email: str = Field(min_length=3, max_length=254)
     display_name: str | None = Field(default=None, max_length=100)
-    role_ids: list[UUID] = Field(default_factory=list, max_length=_MAX_ROLES)
+    role_ids: list[UUID] = Field(default_factory=list[UUID], max_length=_MAX_ROLES)
 
     @model_validator(mode="after")
     def _unique_roles(self) -> "AccountCreate":

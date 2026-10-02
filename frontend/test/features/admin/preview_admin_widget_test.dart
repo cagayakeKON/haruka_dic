@@ -11,6 +11,7 @@ import 'package:haruka/generated/l10n/app_localizations.dart';
 import '../../support/preview_test_app.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('persistent admin sidebar navigates once and keeps policy draft at rail widths', (
     tester,
   ) async {

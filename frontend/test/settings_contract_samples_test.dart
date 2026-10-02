@@ -1,5 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
+
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -12,9 +14,7 @@ import 'package:haruka/features/settings/domain/avatar_upload.dart';
 import 'package:haruka/features/settings/domain/settings_snapshot.dart';
 
 void main() {
-  final samples = wireObject(
-    jsonDecode(File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync()),
-  );
+  final samples = wireObject(jsonDecode(apiCompatibilitySamplesJson));
 
   Map<String, Object?> data(String key) => wireObject(wireObject(samples[key])['data']);
 

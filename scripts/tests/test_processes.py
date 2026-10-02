@@ -37,6 +37,23 @@ def write_config(root: Path) -> Path:
 
 
 class OwnedProcessChecks(unittest.TestCase):
+    def test_supervisor_interpreter_falls_back_when_base_is_missing_or_invalid(self) -> None:
+        with patch.dict(sys.__dict__):
+            sys.__dict__.pop("_base_executable", None)
+            self.assertEqual(processes.supervisor_executable(), Path(sys.executable).resolve())
+        for invalid in (None, "", 42):
+            with (
+                self.subTest(base=invalid),
+                patch.object(sys, "_base_executable", invalid, create=True),
+            ):
+                self.assertEqual(processes.supervisor_executable(), Path(sys.executable).resolve())
+
+    def test_supervisor_uses_existing_windows_base_interpreter(self) -> None:
+        base: object = getattr(sys, "_base_executable", None)
+        expected = base if os.name == "nt" and isinstance(base, str) and base else sys.executable
+        self.assertEqual(processes.supervisor_executable(), Path(expected).resolve())
+        self.assertTrue(processes.supervisor_executable().is_file())
+
     def test_graceful_parent_with_residual_descendant_is_forced_and_keeps_outsider(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -96,6 +113,17 @@ class OwnedProcessChecks(unittest.TestCase):
                     shutdown_file=root / "stop",
                 )
                 self.assertEqual(child.identity["namespace"], "haruka-test-process")
+                if os.name == "nt":
+                    base: object = getattr(sys, "_base_executable", None)
+                    expected = base if isinstance(base, str) and base else sys.executable
+                    self.assertEqual(
+                        Path(str(child.identity["executable"])),
+                        Path(expected).resolve(),
+                    )
+                    self.assertEqual(
+                        Path(str(child.identity["target_executable"])),
+                        Path(sys.executable).resolve(),
+                    )
                 wait_until(lambda: (child.collect(), child.target_pid is not None)[1])
                 results = owner.stop(grace_seconds=3)
                 self.assertEqual(results[0]["exit_code"], 0)

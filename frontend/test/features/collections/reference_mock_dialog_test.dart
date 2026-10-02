@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+
+import '../../support/generated/api_compatibility_samples.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,8 @@ import 'package:haruka/features/novels/presentation/selection_overlay.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 
-import '../../../test_support/sample_adapter.dart';
+import '../../support/sample_adapter.dart';
+import '../../support/async_frames.dart';
 
 final class _Vault implements CredentialVault {
   RefreshCredential? value;
@@ -61,9 +63,7 @@ final class _Sync implements AuthSync {
 }
 
 void main() {
-  final samples = jsonDecode(
-    File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
   final config = AppConfig.parse(
     platform: AppPlatform.windows,
     environment: 'dev',
@@ -254,6 +254,8 @@ void main() {
   testWidgets('published library keeps its list without read permission or another GET', (
     tester,
   ) async {
+    tester.binding.platformDispatcher.defaultRouteNameTestValue = '/';
+    addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -351,20 +353,37 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
+    await waitForAsyncState(
+      tester,
+      () => find.text(locator['source_title'] as String).evaluate().isNotEmpty,
+      reason: 'The current authorized library list must be visible',
+    );
     expect(find.text(locator['source_title'] as String), findsWidgets);
     expect(listGets, 1);
     await tester.tap(find.text(locator['source_title'] as String).first);
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
+    await waitForAsyncState(
+      tester,
+      () => find.byType(MaterialEntryPage).evaluate().isNotEmpty,
+      reason: 'The selected material route must complete before inspection',
+    );
     expect(find.byType(MaterialEntryPage), findsOneWidget);
     expect(chapterGets, 0);
     router.pop();
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
+    await waitForAsyncState(
+      tester,
+      () => find.text(locator['source_title'] as String).evaluate().isNotEmpty,
+      reason: 'The current authorized library list must be visible',
+    );
     expect(find.text(locator['source_title'] as String), findsWidgets);
     expect(listGets, 1, reason: 'returning from detail must retain the shared list');
   });
 
   testWidgets('published source navigation finds a material beyond the first page', (tester) async {
+    tester.binding.platformDispatcher.defaultRouteNameTestValue = '/';
+    addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -486,7 +505,14 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
+    await waitForAsyncState(
+      tester,
+      () =>
+          (reference.chapter?.blocks.isNotEmpty ?? false) &&
+          find.byType(MobileNovelView).evaluate().isNotEmpty,
+      reason: 'The authorized paginated source must publish its reader projection',
+    );
     expect(materialGets, 2, reason: 'a source link may target a later authorized page');
     expect(chapterGets, 1);
     expect(reference.chapter?.blocks.single.text, locator['quote']);

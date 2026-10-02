@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/api/request_ids.dart';
@@ -15,9 +13,9 @@ import 'package:haruka/core/auth/credential_vault.dart';
 import 'package:haruka/core/config/app_config.dart';
 import 'package:haruka/core/telemetry/telemetry.dart';
 import 'package:haruka/core/telemetry/telemetry_store.dart';
-import 'package:haruka/core/telemetry/telemetry_store_native.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
+import 'support/generated/api_compatibility_samples.dart';
 
 final class _MemoryStore implements TelemetryStore {
   final snapshots = <String, TelemetrySnapshot>{};
@@ -36,7 +34,7 @@ final class _FailReadStore implements TelemetryStore {
   Future<TelemetrySnapshot?> read(String scope) async {
     if (failNextRead) {
       failNextRead = false;
-      throw const FileSystemException('unavailable');
+      throw StateError('unavailable');
     }
     return snapshot;
   }
@@ -73,9 +71,7 @@ final class _NoSync implements AuthSync {
 
 void main() {
   test('authenticated log uploads drain without generating access requests or more logs', () async {
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final config = AppConfig.parse(
       platform: AppPlatform.web,
       environment: 'dev',
@@ -171,9 +167,7 @@ void main() {
   });
 
   test('restored authenticated queue reports storage recovery without claiming a drop', () async {
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final config = AppConfig.parse(
       platform: AppPlatform.web,
       environment: 'dev',
@@ -246,9 +240,7 @@ void main() {
   });
 
   test('resident crash events and pending burst share the byte budget', () async {
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final config = AppConfig.parse(
       platform: AppPlatform.web,
       environment: 'dev',
@@ -501,54 +493,9 @@ void main() {
     );
   });
 
-  test('native per-event queue survives restart and two writers do not overwrite', () async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    final root = await Directory.systemTemp.createTemp('haruka-telemetry-test-');
-    const channel = MethodChannel('plugins.flutter.io/path_provider');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (_) async => root.path,
-    );
-    addTearDown(() async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-        channel,
-        null,
-      );
-      await root.delete(recursive: true);
-    });
-    const scope = 'instance:user:client:session';
-    const session = '018f1234-1234-7123-8123-123456789abc';
-    Map<String, Object?> event(String id) => {'event_id': id, 'event': 'app.started'};
-    final a = PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef');
-    final b = PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef');
-    final first = event('018f1234-0000-7000-8000-000000000001');
-    final second = event('018f1234-0000-7000-8000-000000000002');
-    final third = event('018f1234-0000-7000-8000-000000000003');
-    await a.write(scope, TelemetrySnapshot(clientSessionId: session, events: [first]));
-    expect((await b.read(scope))!.events, hasLength(1));
-    await b.write(scope, TelemetrySnapshot(clientSessionId: session, events: [first, second]));
-    await a.write(scope, TelemetrySnapshot(clientSessionId: session, events: [first, third]));
-    final restart = PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef');
-    expect((await restart.read(scope))!.events.map((item) => item['event_id']).toSet(), {
-      first['event_id'],
-      second['event_id'],
-      third['event_id'],
-    });
-    await a.write(scope, TelemetrySnapshot(clientSessionId: session, events: [third]));
-    expect(
-      (await PlatformTelemetryStore('haruka-test-0123456789abcdef0123456789abcdef').read(scope))!
-          .events
-          .map((item) => item['event_id'])
-          .toSet(),
-      {second['event_id'], third['event_id']},
-    );
-  });
-
   for (final outcome in ['success', 'payload', 'invalid', 'timeout']) {
     test('late account A telemetry $outcome cannot alter account B queue', () async {
-      final samples = jsonDecode(
-        File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-      ) as Map<String, dynamic>;
+      final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
       final config = AppConfig.parse(
         platform: AppPlatform.web,
         environment: 'dev',

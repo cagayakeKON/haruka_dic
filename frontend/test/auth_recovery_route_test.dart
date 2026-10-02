@@ -14,7 +14,7 @@ import 'package:haruka/core/config/app_config.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
 
 final class _EmptyVault implements CredentialVault {
   @override

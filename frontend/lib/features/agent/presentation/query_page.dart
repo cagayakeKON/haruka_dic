@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'package:haruka/app/routes.dart';
 import 'package:haruka/app/page_route_activity.dart';
@@ -109,6 +110,8 @@ class _QueryPageState extends State<QueryPage> with WidgetsBindingObserver {
   bool imagePending = false;
   bool imageUnanalysed = false;
   bool queryPending = false;
+  bool _disposing = false;
+  bool _inputRebuildScheduled = false;
   late final QueryImagePort _imagePort = widget.imagePort ?? const SystemQueryImagePort();
   late final QueryPasteSource _pasteSource =
       widget.pasteSource ?? paste_adapter.createQueryPasteSource();
@@ -166,7 +169,7 @@ class _QueryPageState extends State<QueryPage> with WidgetsBindingObserver {
   }
 
   void _onResultsChanged() {
-    if (mounted) setState(() {});
+    if (!_disposing) _refreshInputState();
   }
 
   void _scheduleResultCheck() {
@@ -209,7 +212,20 @@ class _QueryPageState extends State<QueryPage> with WidgetsBindingObserver {
   }
 
   void _refreshInputState() {
-    if (mounted) setState(() {});
+    if (!mounted || _disposing) return;
+    // TextField may clear its composing range while the tree is being
+    // finalized. The parent is still mounted then, but cannot rebuild yet.
+    if (WidgetsBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      if (_inputRebuildScheduled) return;
+      _inputRebuildScheduled = true;
+      final draftEpoch = _draftEpoch;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _inputRebuildScheduled = false;
+        if (mounted && !_disposing && draftEpoch == _draftEpoch) setState(() {});
+      });
+      return;
+    }
+    setState(() {});
   }
 
   void _clearAccountDraft() {
@@ -244,6 +260,7 @@ class _QueryPageState extends State<QueryPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _disposing = true;
     _visibleResultTimer?.cancel();
     _cachedResults?.removeListener(_onResultsChanged);
     _cachedResults?.setVisible(false);

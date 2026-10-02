@@ -1,6 +1,7 @@
+import '../../support/test_database.dart';
+
 import 'dart:async';
 
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/cache/cache_backend.dart';
@@ -17,13 +18,14 @@ import 'package:mockito/mockito.dart';
 import 'cached_settings_repository_test.mocks.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('unchanged settings keep the mounted draft without periodic or return reads', (
     tester,
   ) async {
     final cache = (await tester.runAsync(() async {
       final cache = CacheCoordinator(
         openBackend: (_) async => OpenedCacheBackend(
-          executor: NativeDatabase.memory(),
+          executor: memoryTestDatabase(),
           mode: CacheStorageMode.memoryOnly,
           closeOwner: () async {},
         ),
@@ -132,7 +134,7 @@ void main() {
   testWidgets('initial read waits for the attached account scope', (tester) async {
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase.memory(),
+        executor: memoryTestDatabase(),
         mode: CacheStorageMode.memoryOnly,
         closeOwner: () async {},
       ),
@@ -206,7 +208,7 @@ void main() {
     final cache = (await tester.runAsync(() async {
       final cache = CacheCoordinator(
         openBackend: (_) async => OpenedCacheBackend(
-          executor: NativeDatabase.memory(),
+          executor: memoryTestDatabase(),
           mode: CacheStorageMode.memoryOnly,
           closeOwner: () async {},
         ),

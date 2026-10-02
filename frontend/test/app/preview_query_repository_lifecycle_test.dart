@@ -31,6 +31,7 @@ final class _InjectedQueryRepository extends ChangeNotifier implements QueryResu
 }
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('preview releases only the query repository it creates', (tester) async {
     await tester.pumpWidget(buildTestPreviewApp());
     await tester.pumpAndSettle();

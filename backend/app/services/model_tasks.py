@@ -802,10 +802,10 @@ async def _execute_job(
             stage.state = "committed"
             stage.result_refs = {"attempt_id": str(attempt_id), "status": attempt.status}
     await publish_recorded(runtime, identifier, inbox=inbox)
-    logger.info(
-        "credential.test.completed" if outcome else "credential.test.failed",
-        extra=current_log_context(),
-    )
+    if outcome:
+        logger.info("credential.test.completed", extra=current_log_context())
+    else:
+        logger.info("credential.test.failed", extra=current_log_context())
 
 
 async def publish_recorded(

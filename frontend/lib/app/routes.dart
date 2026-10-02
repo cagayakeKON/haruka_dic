@@ -157,7 +157,7 @@ GoRoute _previewRoute({
   },
 );
 
-GoRouter createPreviewRouter() {
+GoRouter createPreviewRouter({DateTime Function() clock = DateTime.now}) {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   return GoRouter(
     initialLocation: AppRoutes.mockLibrary,
@@ -218,7 +218,7 @@ GoRouter createPreviewRouter() {
       ),
       _previewRoute(
         path: AppRoutes.mockDailyWords,
-        builder: (context, state) => const DailyWordsPage(),
+        builder: (context, state) => DailyWordsPage(clock: clock),
       ),
       _previewRoute(
         path: AppRoutes.mockCollectionNew,

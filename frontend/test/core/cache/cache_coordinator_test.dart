@@ -1,22 +1,23 @@
+import '../../support/test_database.dart';
+
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show QueryExecutor, QueryInterceptor, ApplyInterceptor;
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/cache/cache_backend.dart';
 import 'package:haruka/core/cache/cache_coordinator.dart';
 import 'package:haruka/core/cache/cache_models.dart';
 import 'package:haruka/core/api/responses.dart';
-import 'package:sqlite3/sqlite3.dart' as sqlite;
 
 final class _Remote implements CacheRemote<Map<String, Object?>> {
   final pending = Completer<CachePayload<Map<String, Object?>>>();
+  final fetchStarted = Completer<void>();
   int fetches = 0;
   @override
   Future<CachePayload<Map<String, Object?>>> fetch(CacheResource resource, CancelToken cancel) {
     fetches++;
+    if (!fetchStarted.isCompleted) fetchStarted.complete();
     return pending.future;
   }
 
@@ -35,11 +36,13 @@ final class _ControlledRemote implements CacheRemote<Map<String, Object?>> {
   int fetches = 0;
   int validations = 0;
   final cancelTokens = <CancelToken>[];
+  final fetchStarted = Completer<void>();
 
   @override
   Future<CachePayload<Map<String, Object?>>> fetch(CacheResource resource, CancelToken cancel) {
     fetches++;
     cancelTokens.add(cancel);
+    if (!fetchStarted.isCompleted) fetchStarted.complete();
     return fetchResult(cancel);
   }
 
@@ -95,6 +98,7 @@ final class _PausePendingDeletionRead extends QueryInterceptor {
 }
 
 void main() {
+  setUpAll(initializeTestDatabase);
   final version = CacheVersion(resource: '1', representation: 'novel-v1', artifact: 'text-1');
   final resource = CacheResource(
     kind: 'material_content',
@@ -107,16 +111,19 @@ void main() {
     void Function(String, Map<String, Object?>)? onEvent,
     bool rejectBrokenPayload = false,
     QueryInterceptor? interceptor,
+    Future<OpenedCacheBackend> Function(String)? openBackend,
   }) {
     final cache = CacheCoordinator(
       onEvent: onEvent,
-      openBackend: (_) async => OpenedCacheBackend(
-        executor: interceptor == null
-            ? NativeDatabase.memory()
-            : NativeDatabase.memory().interceptWith(interceptor),
-        mode: CacheStorageMode.persistent,
-        closeOwner: () async {},
-      ),
+      openBackend:
+          openBackend ??
+          (_) async => OpenedCacheBackend(
+            executor: interceptor == null
+                ? memoryTestDatabase()
+                : memoryTestDatabase().interceptWith(interceptor),
+            mode: CacheStorageMode.persistent,
+            closeOwner: () async {},
+          ),
     );
     cache.register(
       CachePolicy<Map<String, Object?>>(
@@ -163,9 +170,8 @@ void main() {
   );
 
   test('damaged persistent index falls back to memory without changing the old file', () async {
-    final folder = await Directory.systemTemp.createTemp('haruka-cache-fallback-');
-    final file = File('${folder.path}${Platform.pathSeparator}index.sqlite');
-    final raw = sqlite.sqlite3.open(file.path);
+    final file = await TestDatabaseFile.create('haruka-cache-fallback-');
+    final raw = file.openRaw();
     raw.execute('CREATE TABLE original_marker (value TEXT NOT NULL)');
     raw.execute("INSERT INTO original_marker (value) VALUES ('keep')");
     raw.execute('PRAGMA user_version = 2');
@@ -175,7 +181,7 @@ void main() {
     final events = <String>[];
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase(file),
+        executor: file.executor(),
         mode: CacheStorageMode.persistent,
         closeOwner: () async {
           persistentClosed++;
@@ -184,7 +190,7 @@ void main() {
       openMemoryBackend: () async {
         memoryOpened++;
         return OpenedCacheBackend(
-          executor: NativeDatabase.memory(),
+          executor: memoryTestDatabase(),
           mode: CacheStorageMode.memoryOnly,
           degradedReason: 'persistent_schema_unavailable',
           closeOwner: () async {},
@@ -203,7 +209,7 @@ void main() {
     );
     addTearDown(() async {
       await cache.closeScope();
-      await folder.delete(recursive: true);
+      await file.close();
     });
 
     await cache.attach(scope('alice'));
@@ -238,7 +244,7 @@ void main() {
     final afterClear = await cache.read(resource: resource, remote: reply('after clear'));
     expect(afterClear.data?['text'], 'after clear');
     expect(afterClear.source, CacheSource.network);
-    final after = sqlite.sqlite3.open(file.path);
+    final after = file.openRaw();
     try {
       expect(after.select('PRAGMA user_version').single['user_version'], 2);
       expect(after.select('SELECT value FROM original_marker').single['value'], 'keep');
@@ -252,7 +258,7 @@ void main() {
     var memoryAttempts = 0;
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase.memory(setup: (db) => db.execute('PRAGMA user_version = 2')),
+        executor: memoryTestDatabase(setup: (db) => db.execute('PRAGMA user_version = 2')),
         mode: CacheStorageMode.persistent,
         closeOwner: () async {
           persistentClosed++;
@@ -352,10 +358,11 @@ void main() {
     await cache.attach(scope('alice'));
     final remote = _Remote();
     final lease = cache.beginRead(resource: resource, remote: remote);
-    await Future<void>.delayed(Duration.zero);
+    final rejected = expectLater(lease.future, throwsA(isA<CacheBlocked>()));
+    await remote.fetchStarted.future;
     await cache.applyCommittedMutation({'material:1'});
     remote.pending.complete(CachePayload(value: {'text': 'stale'}, version: version));
-    await expectLater(lease.future, throwsA(isA<CacheBlocked>()));
+    await rejected;
     lease.release();
   });
 
@@ -365,10 +372,11 @@ void main() {
     await cache.attach(scope('alice'));
     final remote = _Remote();
     final lease = cache.beginRead(resource: resource, remote: remote);
-    await Future<void>.delayed(Duration.zero);
+    final rejected = expectLater(lease.future, throwsA(isA<CacheBlocked>()));
+    await remote.fetchStarted.future;
     await cache.attach(scope('bob'));
     remote.pending.complete(CachePayload(value: {'text': 'alice private'}, version: version));
-    await expectLater(lease.future, throwsA(isA<CacheBlocked>()));
+    await rejected;
     lease.release();
     expect(cache.scope?.userId, 'bob');
   });
@@ -404,6 +412,65 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test(
+    'same instance and account at different valid endpoints cannot read each other cache',
+    () async {
+      final firstScope = scope('alice');
+      final secondScope = CacheScope.confirmed(
+        endpoint: Uri.parse('https://second-haruka.example/api'),
+        instanceId: firstScope.instanceId,
+        userId: firstScope.userId,
+        audience: firstScope.audience,
+        sessionRef: firstScope.sessionRef,
+        securityEpoch: firstScope.securityEpoch,
+        authzVersion: firstScope.authzVersion,
+        policyVersion: firstScope.policyVersion,
+      );
+      expect(secondScope.partition, isNot(firstScope.partition));
+      final files = <String, TestDatabaseFile>{};
+      final cache = coordinator(
+        openBackend: (partition) async {
+          final file = files[partition] ??= await TestDatabaseFile.create('endpoint-isolation-');
+          return OpenedCacheBackend(
+            executor: file.executor(),
+            mode: CacheStorageMode.persistent,
+            closeOwner: () async {},
+          );
+        },
+      );
+      addTearDown(() async {
+        await cache.closeScope();
+        for (final file in files.values) {
+          await file.close();
+        }
+      });
+      await cache.attach(firstScope);
+      await cache.read(
+        resource: resource,
+        remote: reply('first endpoint private', lease: grant(firstScope)),
+      );
+      await cache.attach(secondScope);
+      cache.enterOfflineForUnreachableNetwork();
+      final forbiddenFetch = reply('must not fetch');
+      await expectLater(
+        cache.read(resource: resource, remote: forbiddenFetch),
+        throwsA(isA<CacheBlocked>()),
+      );
+      expect(forbiddenFetch.fetches, 0);
+      expect((await cache.usage()).textEntries, 0);
+      await cache.attach(firstScope);
+      // Reattachment revalidates its old grant; the existing content remains.
+      final restoredRemote = reply('must not replace');
+      final original = await cache.read(resource: resource, remote: restoredRemote);
+      expect(original.data?['text'], 'first endpoint private');
+      expect(original.source, CacheSource.disk);
+      expect(restoredRemote.fetches, 0);
+      expect(restoredRemote.validations, 1);
+      expect((await cache.usage()).textEntries, 1);
+      expect(files, hasLength(2));
+    },
+  );
 
   test('policy revision change blocks the old grant and requires reattachment', () async {
     final cache = coordinator();
@@ -521,7 +588,8 @@ void main() {
           : pending.future,
     );
     final first = cache.beginRead(resource: resource, remote: remote);
-    await Future<void>.delayed(Duration.zero);
+    final rejected = expectLater(first.future, throwsA(isA<CacheBlocked>()));
+    await remote.fetchStarted.future;
     first.release();
     expect(remote.cancelTokens.first.isCancelled, true);
     // Complete the old request after starting a distinct read. The cancelled
@@ -530,7 +598,7 @@ void main() {
     final second = cache.beginRead(resource: resource, remote: secondRemote);
     expect((await second.future).data?['text'], 'fresh');
     pending.complete(CachePayload(value: {'text': 'late'}, version: version));
-    await expectLater(first.future, throwsA(isA<CacheBlocked>()));
+    await rejected;
     expect(remote.fetches, 1);
     expect(secondRemote.fetches, 1);
     second.release();

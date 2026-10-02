@@ -60,7 +60,9 @@ class ReleaseWebChecks(unittest.TestCase):
             previous.mkdir()
             (previous / "index.html").write_text("old release", encoding="utf-8")
             settings = SimpleNamespace(
-                instance_id=f"haruka-test-{run_id}", test_schema=schema
+                instance_id=f"haruka-test-{run_id}",
+                test_schema=schema,
+                public_base_url="http://localhost:18443",
             )
             with (
                 patch.object(isolated_app_run, "ROOT", workspace),

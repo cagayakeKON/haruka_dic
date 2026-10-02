@@ -200,7 +200,7 @@ markers = [
 
 ### 必需用例收集与结果门禁
 
-未来 scripts/quality/required_cases.json 保存版本化的功能/验收 ID → case_id → 所需平台/runner/传输方式/参数场景与执行层级映射，当前未创建。每个场景在进入相应功能交付范围时登记；代码建立后清单不能为空，不能因测试失败将必需场景改成可选。纯文档通道不要求尚不存在的应用清单。
+现有 scripts/quality/required_cases.json 保存版本化的功能/验收 ID → case_id → 所需平台/runner/传输方式/参数场景与执行层级映射；B0/B1/B2c已登记，阶段1收口补齐资料设置、身份治理及跨模块当期分支，进度见[收口记录](../../delivery/reviews/2026-10-01-foundation-stage-closure.md)。每个场景在进入相应功能交付范围时登记，不能因测试失败将必需场景改成可选。用户明确接受的未实测边界独立记录，不把接受决定改写成passed。
 
 CI 在测试收集和报告汇总两处执行独立检查：
 
@@ -237,7 +237,7 @@ Web integration_test 使用与锁定 SDK 配套的浏览器驱动；官方路线
 
 ### 覆盖率检查器合同
 
-工程初始化时实现独立的覆盖率门禁，未来 scripts/quality/coverage_manifest.json 记录手写源根目录、明确的生成物/无可执行语句例外、模块分类、核心组清单与阈值；当前不创建脚本或清单。必须满足：
+现有 scripts/quality/coverage.py 和 coverage_manifest.json 实现独立覆盖率门禁，记录手写源根目录、明确的生成物/无可执行语句例外、模块分类、核心组清单与阈值。大节点实际执行完整分母门禁，小阶段保留局部结果，不冒充全仓覆盖。必须满足：
 
 | 项目 | 必须行为 |
 | --- | --- |
@@ -250,6 +250,8 @@ Web integration_test 使用与锁定 SDK 配套的浏览器驱动；官方路线
 | 输出 | 提交/工具/清单版本、逐文件归属、分子/分母、未覆盖行/分支、总体/各组阈值及通过/失败原因，供 reviewer 复核 |
 
 Flutter 收集器处理实际取得的 hit map，不应假定 flutter test --coverage 自动为全部未加载库生成零覆盖记录，依据 [Flutter 官方覆盖收集实现](https://github.com/flutter/flutter/blob/master/packages/flutter_tools/lib/src/test/coverage_collector.dart)。阶段 1 需用“增加一个从未被测试导入的手写文件”证明上述门禁确实失败。
+
+锁定SDK的Chrome测试以 `--platform chrome` 明确选择平台，不用 `-d chrome` 冒充浏览器执行。现有[Web采集工具](../../../tools/coverage/README.md)保留原生JSON、逐套件CDP、源映射及源码身份；暂时的SDK兼容修改必须独占且恢复原字节。VM/DDC对同源的合法映射行不同，先用[归一化工具](../../../scripts/quality/flutter_lcov_normalization.py)保留真实行集合并集，各分片只保留自身实际命中，缺点补零，再交严格门禁。成功原生证明、LCOV与每份依赖摘要必须绑定；损坏映射、缺源码、失败或不完整的原生运行拒绝使用。不能删合法执行点、复制另一端命中或下降阈值。
 
 检查器还必须包含空/缺/损坏报告、无测试导入文件、未分类模块、空核心清单、未知路径、生成物假冒、多个分片重复计数、边界阈值及文件百分比平均会误放行等坏样本。检查器通过与业务覆盖达标分别记录，不宣称现有测试命令本身已经实现这些约束。
 

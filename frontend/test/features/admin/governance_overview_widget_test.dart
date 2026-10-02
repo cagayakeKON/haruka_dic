@@ -14,7 +14,7 @@ import 'package:haruka/core/config/app_config.dart';
 import 'package:haruka/features/admin/presentation/governance_overview_page.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 
-import '../../../test_support/sample_adapter.dart';
+import '../../support/sample_adapter.dart';
 
 final class _Vault implements CredentialVault {
   @override

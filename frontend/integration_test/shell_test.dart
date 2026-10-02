@@ -10,7 +10,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('SCF-FE-SMOKE integration: launch and navigate using real controls', (tester) async {
-    app.main();
+    await app.main();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey(UiTestIds.homePage)), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey(UiTestIds.environmentNavigation)));

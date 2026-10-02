@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "scope": "foundation-stage-close",
+  "policy": "Acceptance decisions remain separate from strict test statuses. No accepted unexecuted item is emitted as passed.",
+  "boundaries": [
+    {
+      "id": "account-historical-platform-boundary",
+      "authority": "docs/delivery/reviews/2026-09-26-b1-implementation.md",
+      "decision": "direct user final acceptance recorded in the authority",
+      "original_status": "not fully executed",
+      "scope": "Windows native full matrix, Android password recovery full loop, external SMTP",
+      "replacement_claim": "none; isolated SMTP was accepted and password recovery remains Web-only",
+      "current_policy": "No new Windows native interaction or Android password-recovery loop",
+      "residual_limitation": "No native full-matrix or external SMTP success evidence"
+    },
+    {
+      "id": "model-authentication-rejection",
+      "authority": "docs/delivery/reviews/2026-09-30-model-credentials-tasks.md",
+      "decision_date": "2026-10-01",
+      "decision": "Direct user confirms KEY_REJECTED is correct, accepts current scope, and prohibits additional model verification",
+      "original_status": "three real attempts failed with KEY_REJECTED; usage unavailable and token fields null",
+      "scope": "B2c user acceptance; no more real model calls",
+      "replacement_claim": "none; rejection handling has real evidence, model availability does not",
+      "residual_limitation": "Real text/vision/TTS successful protocols remain unverified"
+    }
+  ]
+}

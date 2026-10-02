@@ -459,7 +459,7 @@ async def complete_recovery(runtime: Runtime, *, token: SecretStr, new_password:
     password_hash = await hash_password(new_password)
     try:
         async with resources.database.sessions() as session, session.begin():
-            await consume_recovery(
+            recovered_user_id = await consume_recovery(
                 session,
                 crypto=crypto,
                 token=token.get_secret_value(),
@@ -470,7 +470,7 @@ async def complete_recovery(runtime: Runtime, *, token: SecretStr, new_password:
         raise
     except Exception:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE) from None
-    _LOGGER.info("auth.password.recovered", extra=_identity_log_extra())
+    _LOGGER.info("auth.password.recovered", extra=_identity_log_extra(recovered_user_id))
 
 
 async def consume_recovery(
@@ -480,7 +480,7 @@ async def consume_recovery(
     token: str,
     password_hash: str,
     now: datetime,
-) -> None:
+) -> UUID:
     candidate = None
     matched: Literal["password_recovery", "manual_recovery"] | None = None
     for purpose in ("password_recovery", "manual_recovery"):
@@ -530,3 +530,4 @@ async def consume_recovery(
         target_id=user.id,
         result="committed",
     )
+    return user.id

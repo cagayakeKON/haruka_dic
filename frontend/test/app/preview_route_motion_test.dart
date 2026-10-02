@@ -8,6 +8,7 @@ import 'package:haruka/app/routes.dart';
 import '../support/preview_test_app.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('preview routes animate and respect reduced motion', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

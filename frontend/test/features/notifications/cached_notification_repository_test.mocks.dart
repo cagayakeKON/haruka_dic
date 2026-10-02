@@ -9,8 +9,7 @@ import 'dart:async' as _i4;
 import 'package:dio/dio.dart' as _i6;
 import 'package:haruka/core/cache/cache_coordinator.dart' as _i2;
 import 'package:haruka/core/cache/cache_models.dart' as _i5;
-import 'package:haruka/features/notifications/data/notification_repository.dart'
-    as _i3;
+import 'package:haruka/features/notifications/data/notification_repository.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
 
@@ -62,19 +61,17 @@ class MockNotificationRemote extends _i1.Mock
     _i6.CancelToken? cancel,
   ) => (super.noSuchMethod(
     Invocation.method(#fetch, [resource, cancel]),
-    returnValue:
-        _i4.Future<_i5.CachePayload<_i3.NotificationListSnapshot>>.value(
-          _i7.dummyValue<_i5.CachePayload<_i3.NotificationListSnapshot>>(
-            this,
-            Invocation.method(#fetch, [resource, cancel]),
-          ),
-        ),
-    returnValueForMissingStub:
-        _i4.Future<_i5.CachePayload<_i3.NotificationListSnapshot>>.value(
-          _i7.dummyValue<_i5.CachePayload<_i3.NotificationListSnapshot>>(
-            this,
-            Invocation.method(#fetch, [resource, cancel]),
-          ),
-        ),
+    returnValue: _i4.Future<_i5.CachePayload<_i3.NotificationListSnapshot>>.value(
+      _i7.dummyValue<_i5.CachePayload<_i3.NotificationListSnapshot>>(
+        this,
+        Invocation.method(#fetch, [resource, cancel]),
+      ),
+    ),
+    returnValueForMissingStub: _i4.Future<_i5.CachePayload<_i3.NotificationListSnapshot>>.value(
+      _i7.dummyValue<_i5.CachePayload<_i3.NotificationListSnapshot>>(
+        this,
+        Invocation.method(#fetch, [resource, cancel]),
+      ),
+    ),
   ) as _i4.Future<_i5.CachePayload<_i3.NotificationListSnapshot>>);
 }

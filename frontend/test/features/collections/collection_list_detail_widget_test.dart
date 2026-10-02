@@ -6,6 +6,7 @@ import 'package:haruka/features/collections/presentation/word_detail_page.dart';
 import '../../support/preview_test_app.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('notebook row opens the same cached collection in mobile detail', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

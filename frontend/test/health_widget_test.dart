@@ -9,7 +9,7 @@ import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/config/app_config.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
 
 void main() {
   final config = AppConfig.parse(platform: AppPlatform.windows, environment: 'dev');

@@ -8,10 +8,8 @@ import 'dart:async' as _i3;
 
 import 'package:dio/dio.dart' as _i6;
 import 'package:haruka/core/cache/cache_models.dart' as _i4;
-import 'package:haruka/features/collections/data/collection_catalog.dart'
-    as _i2;
-import 'package:haruka/features/collections/domain/collection_entry.dart'
-    as _i5;
+import 'package:haruka/features/collections/data/collection_catalog.dart' as _i2;
+import 'package:haruka/features/collections/domain/collection_entry.dart' as _i5;
 import 'package:haruka/features/collections/domain/notebook_record.dart' as _i8;
 import 'package:haruka/features/collections/domain/vocabulary_csv.dart' as _i9;
 import 'package:mockito/mockito.dart' as _i1;
@@ -49,13 +47,12 @@ class MockCollectionSource extends _i1.Mock implements _i2.CollectionSource {
         Invocation.method(#fetchCollections, [resource, cancel]),
       ),
     ),
-    returnValueForMissingStub:
-        _i3.Future<_i4.CachePayload<List<_i5.CollectionEntry>>>.value(
-          _i7.dummyValue<_i4.CachePayload<List<_i5.CollectionEntry>>>(
-            this,
-            Invocation.method(#fetchCollections, [resource, cancel]),
-          ),
-        ),
+    returnValueForMissingStub: _i3.Future<_i4.CachePayload<List<_i5.CollectionEntry>>>.value(
+      _i7.dummyValue<_i4.CachePayload<List<_i5.CollectionEntry>>>(
+        this,
+        Invocation.method(#fetchCollections, [resource, cancel]),
+      ),
+    ),
   ) as _i3.Future<_i4.CachePayload<List<_i5.CollectionEntry>>>);
 
   @override
@@ -70,13 +67,12 @@ class MockCollectionSource extends _i1.Mock implements _i2.CollectionSource {
         Invocation.method(#fetchNotebooks, [resource, cancel]),
       ),
     ),
-    returnValueForMissingStub:
-        _i3.Future<_i4.CachePayload<_i2.NotebookListSnapshot>>.value(
-          _i7.dummyValue<_i4.CachePayload<_i2.NotebookListSnapshot>>(
-            this,
-            Invocation.method(#fetchNotebooks, [resource, cancel]),
-          ),
-        ),
+    returnValueForMissingStub: _i3.Future<_i4.CachePayload<_i2.NotebookListSnapshot>>.value(
+      _i7.dummyValue<_i4.CachePayload<_i2.NotebookListSnapshot>>(
+        this,
+        Invocation.method(#fetchNotebooks, [resource, cancel]),
+      ),
+    ),
   ) as _i3.Future<_i4.CachePayload<_i2.NotebookListSnapshot>>);
 
   @override
@@ -101,19 +97,12 @@ class MockCollectionSource extends _i1.Mock implements _i2.CollectionSource {
   ) as _i3.Future<_i8.NotebookRecord>);
 
   @override
-  _i3.Future<void> updateNotebook(
-    String? id, {
-    String? name,
-    String? description,
-  }) => (super.noSuchMethod(
-    Invocation.method(
-      #updateNotebook,
-      [id],
-      {#name: name, #description: description},
-    ),
-    returnValue: _i3.Future<void>.value(),
-    returnValueForMissingStub: _i3.Future<void>.value(),
-  ) as _i3.Future<void>);
+  _i3.Future<void> updateNotebook(String? id, {String? name, String? description}) =>
+      (super.noSuchMethod(
+        Invocation.method(#updateNotebook, [id], {#name: name, #description: description}),
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
 
   @override
   _i3.Future<void> deleteNotebook(String? id) => (super.noSuchMethod(
@@ -123,22 +112,19 @@ class MockCollectionSource extends _i1.Mock implements _i2.CollectionSource {
   ) as _i3.Future<void>);
 
   @override
-  _i3.Future<void> setCollectionNotebooks(
-    String? id,
-    Set<String>? notebookIds,
-  ) => (super.noSuchMethod(
-    Invocation.method(#setCollectionNotebooks, [id, notebookIds]),
-    returnValue: _i3.Future<void>.value(),
-    returnValueForMissingStub: _i3.Future<void>.value(),
-  ) as _i3.Future<void>);
-
-  @override
-  _i3.Future<void> addCollection(_i5.CollectionEntry? item) =>
+  _i3.Future<void> setCollectionNotebooks(String? id, Set<String>? notebookIds) =>
       (super.noSuchMethod(
-        Invocation.method(#addCollection, [item]),
+        Invocation.method(#setCollectionNotebooks, [id, notebookIds]),
         returnValue: _i3.Future<void>.value(),
         returnValueForMissingStub: _i3.Future<void>.value(),
       ) as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> addCollection(_i5.CollectionEntry? item) => (super.noSuchMethod(
+    Invocation.method(#addCollection, [item]),
+    returnValue: _i3.Future<void>.value(),
+    returnValueForMissingStub: _i3.Future<void>.value(),
+  ) as _i3.Future<void>);
 
   @override
   _i3.Future<void> updateCollection(
@@ -157,12 +143,11 @@ class MockCollectionSource extends _i1.Mock implements _i2.CollectionSource {
   ) as _i3.Future<void>);
 
   @override
-  _i3.Future<void> saveCollectionNotes(String? id, String? notes) =>
-      (super.noSuchMethod(
-        Invocation.method(#saveCollectionNotes, [id, notes]),
-        returnValue: _i3.Future<void>.value(),
-        returnValueForMissingStub: _i3.Future<void>.value(),
-      ) as _i3.Future<void>);
+  _i3.Future<void> saveCollectionNotes(String? id, String? notes) => (super.noSuchMethod(
+    Invocation.method(#saveCollectionNotes, [id, notes]),
+    returnValue: _i3.Future<void>.value(),
+    returnValueForMissingStub: _i3.Future<void>.value(),
+  ) as _i3.Future<void>);
 
   @override
   _i3.Future<_i9.VocabularyCsvImportOutcome> importVocabularyCsv(

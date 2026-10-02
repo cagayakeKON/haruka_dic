@@ -8,6 +8,7 @@ import 'package:haruka/app/routes.dart';
 import 'package:haruka/app/preview_shell.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('unknown settings deep link shows a visible unavailable state', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

@@ -39,18 +39,16 @@ class MockMaterialCatalog extends _i1.Mock implements _i2.MaterialCatalog {
   ) as _i2.MaterialCatalogStatus);
 
   @override
-  List<_i3.MaterialSummary> filterMaterials(_i2.MaterialCatalogQuery? query) =>
-      (super.noSuchMethod(
-        Invocation.method(#filterMaterials, [query]),
-        returnValue: <_i3.MaterialSummary>[],
-        returnValueForMissingStub: <_i3.MaterialSummary>[],
-      ) as List<_i3.MaterialSummary>);
+  List<_i3.MaterialSummary> filterMaterials(_i2.MaterialCatalogQuery? query) => (super.noSuchMethod(
+    Invocation.method(#filterMaterials, [query]),
+    returnValue: <_i3.MaterialSummary>[],
+    returnValueForMissingStub: <_i3.MaterialSummary>[],
+  ) as List<_i3.MaterialSummary>);
 
   @override
-  _i3.MaterialSummary? findById(String? id) => (super.noSuchMethod(
-    Invocation.method(#findById, [id]),
-    returnValueForMissingStub: null,
-  ) as _i3.MaterialSummary?);
+  _i3.MaterialSummary? findById(String? id) =>
+      (super.noSuchMethod(Invocation.method(#findById, [id]), returnValueForMissingStub: null)
+          as _i3.MaterialSummary?);
 
   @override
   _i4.Future<void> refresh({

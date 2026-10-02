@@ -51,8 +51,8 @@ Future<void> _pumpPage(
     routes: [GoRoute(path: '/', builder: (_, _) => page)],
   );
   addTearDown(router.dispose);
-  final harness = await CollectionCatalogTestHarness.create(store);
-  addTearDown(harness.close);
+  final harness = (await tester.runAsync(() => CollectionCatalogTestHarness.create(store)))!;
+  addTearDown(() => tester.runAsync(harness.close));
   await tester.pumpWidget(
     CollectionCatalogScope(
       catalog: harness.catalog,

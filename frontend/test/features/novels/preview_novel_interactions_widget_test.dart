@@ -19,6 +19,7 @@ import 'package:haruka/features/library/presentation/material_pages.dart';
 import 'package:haruka/features/novels/presentation/selection_overlay.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   Future<void> openNovel(WidgetTester tester, Size size) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -638,19 +639,19 @@ void main() {
     expect(find.byType(DesktopNovelPlaybackPanel), findsOneWidget);
     await tester.ensureVisible(find.byType(DesktopNovelPlaybackPanel));
     await tester.pump();
-    await tester.tap(find.widgetWithText(OutlinedButton, '暂停').last);
+    await tester.tap(find.byTooltip('暂停').last);
     await tester.pump();
     expect(
       tester.widget<DesktopNovelPlaybackPanel>(find.byType(DesktopNovelPlaybackPanel)).paused,
       isTrue,
     );
-    await tester.tap(find.widgetWithText(OutlinedButton, '继续').last);
+    await tester.tap(find.byTooltip('继续').last);
     await tester.pump();
     expect(
       tester.widget<DesktopNovelPlaybackPanel>(find.byType(DesktopNovelPlaybackPanel)).paused,
       isFalse,
     );
-    await tester.tap(find.widgetWithText(TextButton, '停止').last);
+    await tester.tap(find.byTooltip('停止').last);
     await tester.pump();
     expect(find.byType(DesktopNovelPlaybackPanel), findsNothing);
     expect(tester.takeException(), isNull);
@@ -662,7 +663,11 @@ void main() {
         .ancestor(of: find.text('第 3 章 / 12 章'), matching: find.byType(HarukaSurface))
         .first;
     final readingWidth = tester.getSize(reader).width;
-    expect(readingWidth, greaterThan(1000));
+    expect(
+      readingWidth,
+      inInclusiveRange(800, 900),
+      reason: 'Confirmed wide reader leaves a separate contents column',
+    );
     await tester.tap(find.widgetWithText(OutlinedButton, '连续朗读'));
     await tester.pump();
     final playerWidth = tester.getSize(find.byType(DesktopNovelPlaybackPanel)).width;

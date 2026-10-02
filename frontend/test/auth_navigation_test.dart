@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/async_frames.dart';
+
 import 'package:haruka/app/haruka_app.dart';
 import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/auth/auth_controller.dart';
@@ -23,7 +27,7 @@ import 'package:haruka/features/settings/presentation/settings_pages.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
 import 'features/settings/cached_settings_repository_test.mocks.dart';
 
 final class _EmptyVault implements CredentialVault {
@@ -51,6 +55,17 @@ final class _NoSync implements AuthSync {
 }
 
 void main() {
+  setUp(() {
+    // Each router is given an explicit starting location. A prior browser test
+    // must not supply a different platform deep link to the next test.
+    TestWidgetsFlutterBinding.ensureInitialized().platformDispatcher.defaultRouteNameTestValue =
+        '/';
+  });
+  tearDown(() {
+    TestWidgetsFlutterBinding.ensureInitialized().platformDispatcher
+        .clearDefaultRouteNameTestValue();
+  });
+
   testWidgets('client login waits for identity startup before accepting input', (tester) async {
     final config = AppConfig.parse(
       platform: AppPlatform.web,
@@ -164,9 +179,7 @@ void main() {
   });
 
   testWidgets('late password reset from A cannot navigate over newer login B', (tester) async {
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final config = AppConfig.parse(
       platform: AppPlatform.web,
       environment: 'dev',
@@ -271,7 +284,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     await tester.enterText(
       find.byKey(const ValueKey<String>(UiTestIds.recoveryCompletePassword)),
       'valid-test-password',
@@ -303,15 +316,13 @@ void main() {
       finishReset.complete(ResponseBody.fromString('', 204));
       await Future<void>.delayed(const Duration(milliseconds: 30));
     });
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     expect(router.routeInformationProvider.value.uri.path, '/account');
     expect(find.byKey(const ValueKey<String>(UiTestIds.accountPage)), findsOneWidget);
   });
 
   testWidgets('successful login navigates after auth notifier rebuilds its form', (tester) async {
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final config = AppConfig.parse(
       platform: AppPlatform.web,
       environment: 'dev',
@@ -403,7 +414,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     await tester.enterText(
       find.byKey(const ValueKey<String>(UiTestIds.loginEmail)),
       'user@example.test',
@@ -418,7 +429,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 20));
       }
     });
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     expect(auth.phase, AuthPhase.authenticated);
     expect(router.routeInformationProvider.value.uri.path, '/account');
     expect(find.byKey(const ValueKey<String>(UiTestIds.accountPage)), findsOneWidget);
@@ -429,9 +440,7 @@ void main() {
     testWidgets(
       'self session revoke ${logoutFails ? 'unknown remote result' : 'confirmed'} navigates after page disposal',
       (tester) async {
-        final samples = jsonDecode(
-          File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-        ) as Map<String, dynamic>;
+        final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
         final config = AppConfig.parse(
           platform: AppPlatform.web,
           environment: 'dev',
@@ -442,6 +451,7 @@ void main() {
         const sessionId = '018f1234-0000-7000-8000-000000000002';
         final finishLogout = Completer<ResponseBody>();
         var signedIn = false;
+        var logoutRequested = false;
         ResponseBody jsonBody(Object value, [int status = 200]) => ResponseBody.fromString(
           jsonEncode(value),
           status,
@@ -496,6 +506,7 @@ void main() {
                       'meta': {'request_id': requestId},
                     }, 401);
             case '/api/v1/auth/logout':
+              logoutRequested = true;
               return finishLogout.future;
           }
           throw StateError('Unexpected endpoint ${options.path}');
@@ -532,7 +543,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await settleAsyncFrames(tester);
         expect(find.byKey(const ValueKey<String>(UiTestIds.accountSessions)), findsOneWidget);
         final revokeId = UiTestIds.sessionRevoke(sessionId);
         for (
@@ -547,6 +558,11 @@ void main() {
         await tester.tap(find.byKey(ValueKey<String>(revokeId)));
         await tester.pump();
         expect(auth.isAuthenticated, isFalse);
+        await waitForAsyncState(
+          tester,
+          () => logoutRequested,
+          reason: 'The self revoke must start its remote logout before release',
+        );
         await tester.runAsync(() async {
           if (logoutFails) {
             finishLogout.complete(
@@ -564,7 +580,14 @@ void main() {
           }
           await Future<void>.delayed(const Duration(milliseconds: 30));
         });
-        await tester.pumpAndSettle();
+        await settleAsyncFrames(tester);
+        await waitForAsyncState(
+          tester,
+          () =>
+              router.routeInformationProvider.value.uri.path ==
+              (logoutFails ? '/signed-out-locally' : '/login'),
+          reason: 'The self revoke must reach its completed logout route',
+        );
         expect(
           router.routeInformationProvider.value.uri.path,
           logoutFails ? '/signed-out-locally' : '/login',
@@ -574,9 +597,7 @@ void main() {
   }
 
   testWidgets('settings security logout reaches login after its page is removed', (tester) async {
-    final samples = jsonDecode(
-      File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final config = AppConfig.parse(
       platform: AppPlatform.web,
       environment: 'dev',
@@ -587,6 +608,7 @@ void main() {
     const sessionId = '018f1234-0000-7000-8000-000000000002';
     final finishLogout = Completer<ResponseBody>();
     var signedIn = false;
+    var logoutRequested = false;
     final access =
         jsonDecode(jsonEncode(samples['auth_client_access_login_only'])) as Map<String, dynamic>;
     final permissions = (access['data'] as Map<String, dynamic>)['permissions'] as List<dynamic>;
@@ -644,6 +666,7 @@ void main() {
         case '/api/v1/users/me/account':
           return jsonBody(samples['auth_account_legacy_unverified'] as Object);
         case '/api/v1/auth/logout':
+          logoutRequested = true;
           return finishLogout.future;
       }
       throw StateError('Unexpected endpoint ${options.path}');
@@ -698,7 +721,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
     expect(router.routeInformationProvider.value.uri.path, '/settings/security');
     final logout = find.text('退出登录');
     expect(logout, findsOneWidget);
@@ -706,9 +729,19 @@ void main() {
     await tester.pump();
     expect(auth.isAuthenticated, isFalse);
     expect(find.text('退出登录'), findsNothing);
+    await waitForAsyncState(
+      tester,
+      () => logoutRequested,
+      reason: 'The settings logout must start its remote logout before release',
+    );
     finishLogout.complete(ResponseBody.fromString('', 204));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 30)));
-    await tester.pumpAndSettle();
+    await settleAsyncFrames(tester);
+    await waitForAsyncState(
+      tester,
+      () => router.routeInformationProvider.value.uri.path == '/login',
+      reason: 'The settings logout must reach its completed logout route',
+    );
     expect(router.routeInformationProvider.value.uri.path, '/login');
   });
 }

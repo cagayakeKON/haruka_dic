@@ -155,4 +155,4 @@ async def test_governance_migrations_preserve_existing_client_receipt(
         ).one()
         assert row == ("client", "collection_item", result_id, {"collection_id": "legacy"}, None)
     status = await upgrade_database(target, MIGRATIONS)
-    assert status.compatible and status.current_revision == "0009_governance_lookup"
+    assert status.compatible and status.current_revision == "0013_outbox_delivery_lease"

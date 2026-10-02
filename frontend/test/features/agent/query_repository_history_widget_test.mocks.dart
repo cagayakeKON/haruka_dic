@@ -32,8 +32,7 @@ import 'package:mockito/src/dummies.dart' as _i7;
 /// A class which mocks [QueryResultRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockQueryResultRepository extends _i1.Mock
-    implements _i2.QueryResultRepository {
+class MockQueryResultRepository extends _i1.Mock implements _i2.QueryResultRepository {
   @override
   List<_i3.QueryHistoryEntry> get history => (super.noSuchMethod(
     Invocation.getter(#history),
@@ -42,37 +41,24 @@ class MockQueryResultRepository extends _i1.Mock
   ) as List<_i3.QueryHistoryEntry>);
 
   @override
-  _i4.Future<_i5.LearningCard> submit(_i6.QueryRequest? request) =>
-      (super.noSuchMethod(
-        Invocation.method(#submit, [request]),
-        returnValue: _i4.Future<_i5.LearningCard>.value(
-          _i7.dummyValue<_i5.LearningCard>(
-            this,
-            Invocation.method(#submit, [request]),
-          ),
-        ),
-        returnValueForMissingStub: _i4.Future<_i5.LearningCard>.value(
-          _i7.dummyValue<_i5.LearningCard>(
-            this,
-            Invocation.method(#submit, [request]),
-          ),
-        ),
-      ) as _i4.Future<_i5.LearningCard>);
+  _i4.Future<_i5.LearningCard> submit(_i6.QueryRequest? request) => (super.noSuchMethod(
+    Invocation.method(#submit, [request]),
+    returnValue: _i4.Future<_i5.LearningCard>.value(
+      _i7.dummyValue<_i5.LearningCard>(this, Invocation.method(#submit, [request])),
+    ),
+    returnValueForMissingStub: _i4.Future<_i5.LearningCard>.value(
+      _i7.dummyValue<_i5.LearningCard>(this, Invocation.method(#submit, [request])),
+    ),
+  ) as _i4.Future<_i5.LearningCard>);
 
   @override
   _i4.Future<_i5.LearningCard> readSaved(String? id) => (super.noSuchMethod(
     Invocation.method(#readSaved, [id]),
     returnValue: _i4.Future<_i5.LearningCard>.value(
-      _i7.dummyValue<_i5.LearningCard>(
-        this,
-        Invocation.method(#readSaved, [id]),
-      ),
+      _i7.dummyValue<_i5.LearningCard>(this, Invocation.method(#readSaved, [id])),
     ),
     returnValueForMissingStub: _i4.Future<_i5.LearningCard>.value(
-      _i7.dummyValue<_i5.LearningCard>(
-        this,
-        Invocation.method(#readSaved, [id]),
-      ),
+      _i7.dummyValue<_i5.LearningCard>(this, Invocation.method(#readSaved, [id])),
     ),
   ) as _i4.Future<_i5.LearningCard>);
 }

@@ -13,7 +13,7 @@ import 'package:haruka/core/api/api_client.dart';
 import 'package:haruka/core/auth/auth_controller.dart';
 import 'package:haruka/core/config/app_config.dart';
 
-import '../../test_support/sample_adapter.dart';
+import '../support/sample_adapter.dart';
 
 void main() {
   testWidgets('security dialog preserves the matched page and immersive shell', (tester) async {

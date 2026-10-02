@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/generated/ui_test_ids.dart';
 
-import '../test_support/controls_app.dart';
+import 'support/controls_app.dart';
 
 void main() {
   testWidgets('control draft focus and identity survive adaptive reflow', (tester) async {

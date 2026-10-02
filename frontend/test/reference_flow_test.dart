@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ import 'package:haruka/features/collections/reference_controller.dart';
 import 'package:haruka/features/collections/reference_repository.dart';
 import 'package:haruka/features/collections/reference_selection.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
 
 final class _Vault implements CredentialVault {
   RefreshCredential? value;
@@ -50,9 +51,7 @@ final class _Sync implements AuthSync {
 }
 
 void main() {
-  final samples = jsonDecode(
-    File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
   final config = AppConfig.parse(
     platform: AppPlatform.windows,
     environment: 'dev',

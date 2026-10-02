@@ -8,12 +8,11 @@
 
 ## 当前本人模型配置切片（2026-09-30）
 
-[B2c 实施记录](../delivery/reviews/2026-09-30-model-credentials-tasks.md)对应的物理字段以[生成字典](../../contracts/database-schema.json)为准，当前尚未签署验收。已落地本人凭据、模型绑定、模型/声音目录、实例限额与本人覆盖；本册下方完整业务设计不因此全部变为已实现。
+[B2c 实施记录](../delivery/reviews/2026-09-30-model-credentials-tasks.md)对应的物理字段以[生成字典](../../contracts/database-schema.json)为准，2026-10-01用户接受现有 `KEY_REJECTED` 并要求不再验证模型，本切片按此范围验收通过，未证明模型成功可用。已落地本人凭据、模型绑定、模型/声音目录、实例限额与本人覆盖；本册下方完整业务设计不因此全部变为已实现。
 
 - 目录 `capabilities` 采用有限 JSONB 数组 `text/vision/tts`，服务与 PG CHECK 同时校验；没有并行的 `supports_*` 物理列。
 - 本人模型配置共用 `user_extensions.settings_revision`。固定凭据测试的语言、声音、格式在版本1绑定参数中冻结；`user_voice_bindings` 的分语言业务默认仍是后续真实朗读消费设计，不能把本次测试参数当成已实现的业务声音档案。
 - `credential_version` 与部署 `encryption_key_version` 独立。轮换、撤销和删除受本人锁、revision 与近期密码登录保护，管理接口不读取密文或个人 Key；部署历史密钥保留规则仍按恢复契约。
-
 
 ## 1. 已实现的 B0 基线：12张表
 

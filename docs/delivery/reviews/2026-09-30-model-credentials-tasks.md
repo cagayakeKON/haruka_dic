@@ -1,6 +1,6 @@
 # B2c 本人凭据与模型任务实施记录
 
-状态：当期工程实现、正式联调与两轮独立review完成，待用户验收；三项真实测试均 `KEY_REJECTED`，真实模型可用性未验证。所属阶段为阶段1的 B2c 小阶段，不以本记录替代阶段1完整矩阵或全盘 review。权威范围见[路线图](../roadmap.md)、[脚手架验收](../milestones/scaffold.md)、[个人设置](../../modules/settings.md)、[模型用量](../../contracts/model-usage.md)及[任务进度](../../contracts/job-progress.md)。
+状态：当期工程实现、正式联调与两轮独立review完成；2026-10-01 用户确认 `KEY_REJECTED` 是正确结果、不再验证模型，B2c按此范围验收通过。三项真实测试均认证拒绝，真实模型可用性未验证。所属阶段为阶段1的 B2c 小阶段，不以本记录替代阶段1完整矩阵或全盘 review；后续收口见[阶段1记录](2026-10-01-foundation-stage-closure.md)。权威范围见[路线图](../roadmap.md)、[脚手架验收](../milestones/scaffold.md)、[个人设置](../../modules/settings.md)、[模型用量](../../contracts/model-usage.md)及[任务进度](../../contracts/job-progress.md)。
 
 ## 1. 用户确认与实施边界
 
@@ -53,15 +53,12 @@
 - 最终日志修复后的正式构建再次实操：Web两项只读流程通过（45.2秒），用量逐字输入、菜单、布局和前后台操作仅在显式Apply发生一次业务读取；15秒静置只有一次日志上传，所有日志上传200。管理任务摘要dialog直接使用当前列表数据，无任务重读。Android新包 `44bf3cef199cc043909325447e390cb56d427987d6cb8e74a4ad67237a2810c9` 在恢复的既有 `Haruka_B0_API34` AVD上完成正式登录、读取已有结果及筛选/键盘/前后台草稿检查，四步均通过；不推定先前AVD名，不新增能力调用。证据为 `web-continuity-1790772622961.json`、`admin-model-1790772589452.json`、`android-model-final-read.json` 及相应脱敏截图。
 - 断言核对发现目录仍启用但revision已变时，旧任务没有版本屏障。服务端现于内部versioned `generation_config.catalog_revision` 冻结目录整数版本，受理/显式retry分别冻结当时版本，调用及发布前复核；旧pending缺少冻结值时拒绝，须显式retry。供应商 `model_revision` 原语义保持。修复前原生JUnit为2失败/3通过，修复后六项调用/发布边界、非法供应商/任意端点及四项直接恢复回归共11通过（91.32秒），Ruff/Pyright通过；基础设施不可用时的五项fixture error单独保留。见 `backend-fences-result.json`，没有迁移或公开DTO变化。
 
-
 - 真实 OpenRouter 测试由主 Agent 在正式 Web 单能力确认 dialog 分别提交一次。文本、视觉使用 `google/gemini-2.5-flash`，朗读使用 `google/gemini-3.8-flash-lite-tts`/Kore/ja/mp3；三个 Job 均形成一个真实 attempt，并以 `KEY_REJECTED` 封存失败，未重试。用量 `unavailable`、各 Token 分项为 null，未用零替代；保存本人 Key 和三项绑定前后真实 attempt 仍为零。`formal-before-live-calls.json` 至 `formal-after-live-tts.json` 保存受限事实投影，最终为真实3次、模拟4次；不保存秘密或供应商响应正文，不宣称模型可用。授权的三次额度已用尽，后续只读核对。
 - 正式混合历史显示暴露模拟/真实聚合缺少分组字段的问题。`UsageGroup.simulated` 现为必填布尔值，服务端按该字段分组，用量汇总和结果卡分别标明模拟，模拟成功不计为真实成功。新混合账本定点测试通过（1 passed，15.51秒），unknown/invalid两项回归通过；测试中的真实分组行仅是聚合夹具，不冒充供应商证据。Dart状态/展示13项、权威DTO样本4项通过，受影响静态检查通过。失败测试因夹具调用名拼写错误的原始报告仍保留。最终构建后两端只读核对另记。
 - 最新非 editable wheel 在独立虚拟环境重新安装，已安装服务源码指纹匹配；API、Worker、Outbox三个入口在checkout模块之外使用正式隔离资源完成启动/关闭，`package-smoke-usage-final.json` 全部通过。
 
-
 - 模拟分离修复后的最终正式 Web 两项只读流程通过（43.6秒），`web-continuity-1790775188613.json` 为7个terminal Job、真实3/模拟4、15秒静置1次日志上传及仅主动Apply读1次，管理摘要dialog证据 `admin-model-1790775154018.json`。Android `android-model-live-read.json` 在新包 `835f8420354d5d0754a739fe0be49248188d444b14fd560c743e90e434b1172e` 实际登录、读取三条真实失败引用及输入/前后台草稿检查全部通过；Flutter语义树包含屏幕外节点，因此另行逐屏实际滚动截图，并亲自核对TTS/视觉/文本失败及相邻模拟标记，不把XML匹配当成全部卡片可见。真实attempt仍3、模拟4，`formal-after-final-read.json` 证明只读没有新调用。
 - 主 Agent 再次亲自打开已确认 Flutter mock 的桌面及手机模型页，操作Key dialog及取消，随后操作最终正式两视口页面、返回和任务列表并实际滚动。同一外壳、导航、三能力卡片、按钮主次和dialog保持；真实凭据选择、声音/语言、版本及失败用量使卡片高度增加，是当期功能差异。无秘密截图 `root-final-model-desktop.png`、`root-final-model-mobile.png`、`root-final-real-tts-mobile.png`、`root-final-real-vision-text-mobile.png`（实际可见为文本及相邻模拟卡）与 `root-final-simulated-marker-mobile.png`；不以配色或编译替代直接对照。
-
 
 - 停止后的真实Key全窗口脱敏证明通过：本地47份日志105127行、Loki194802行，窗口从run创建前两分钟开始，最早本地事件仍在Loki中，完整查询没有截断；真实Key与日英固定朗读样本在两端均未出现。记录 `artifacts/dev/model-real-key-logs-55bcfa841a76405dbcde2f2949e2389b.json`。先前一分钟查询出现未完成，十秒连续窗口读出原十万行边界；为覆盖长时间跨端运行，将记录上限调整到有限二十万行，独立128MiB/单窗口满页/完整时间边界仍拒绝不完整证据。五项护栏/脱敏定点检查通过。Loki保留的历史采集行与当前本地文件行数不同，日志数量不作为模型调用数，调用权威为PG attempt。
 
@@ -70,7 +67,6 @@
 ## 4. Review、提交与剩余边界
 
 独立非作者 GPT-6.1 Sol Agent `/root/independent_review` 在两端实现、联调与日志核对完成后执行第1轮集中 review，结论为 changes-requested，当时未提交本阶段 commit。安全记录 `artifacts/model-settings-ui/independent-review-round1.json`：6项确定缺陷，53条断言中51条为有范围限制的组合证据支持，2条因取消恢复缺陷保留未通过；schema消费者尚未批准，不更新受审指纹。完成后记录 reviewer、缺陷与建议、集中修复及必要第二轮定点复核、实际 commit 哈希与未验证边界。不得以本切片局部通过宣称阶段1或全部 AI/TTS 已验收。
-
 
 第1轮集中修复清单（已完成定点验证，尚待第2轮独立复核）：
 
@@ -81,7 +77,6 @@
 - R1-05：混合用量未显示未知attempt次数，且未消费/显示进行中次数；分别说明已知、未知和进行中，不将部分合计冒充完整。
 - R1-06：凭据列表的旧撤销记录可挤出有效Key；保留本人隔离、有效Key上限与历史结果读取，明确列表历史边界。
 
-
 后端集中修复已完成，`review-fixes-backend.json` 与原生JUnit保留红绿证据：修复前2项失败，修复后5项通过（45.34秒），追加撤销后历史保留检查1项通过（13.99秒），五文件Ruff/Pyright通过。过期 `cancel_requested` 经实际Kafka Worker扫描推进fence、封存cancelled与unknown attempt，释放槽后新任务202，旧provider迟到不复活；run专属用量没有隐式30天截断，普通聚合仍保留时间筛选。凭据列表明确active优先，随后返回近期revoked，总计最多100项；有效凭据硬上限10，因此均在返回范围，不声称这是完整撤销历史列表，不删除历史数据。真实管理API目录回应和expected_revision-only重试/严格拒额外字段/已知Stage恢复仍仅1 attempt均已验证。尚待前端对应回归及同一独立reviewer第2轮定点复核。
 
 前端集中修复完成：目录PATCH正确消费完整 `ModelDirectory`，保存后直接更新当前投影；管理安全恢复只序列化 `expected_revision`，不产生新的模型测试意图；摘要消费进行中次数，混合指标分别展示已知及未知attempt数。后端单向生成8项新增管理动作/用量边界样本，Dart实际 `ApiClient`、认证和Widget消费者验证真实序列化及返回投影。13项状态、8项DTO/Widget和2项管理动作共23项必要用例完成：组合执行为21通过/2项fixture清理失败，修正fixture后只重跑管理2项并通过，不将原组合失败改记为成功；原日志保留。六文件analyze无问题，`review-fixes-frontend.json` 记录精确边界与源码摘要。
@@ -91,7 +86,6 @@
 正式Web管理目录定点操作中，取消为0PATCH/0额外目录GET，停用和恢复各200，完整投影正确回填、CAS版本推进，原enabled值恢复；该脚本随后在用量定位处失败，`review-fixes-catalog-ui.json` 只保留实际通过的目录步骤，不宣称整体通过。修正滚动定位后仅补只读用量流程，1项通过（5.2秒），没有重复目录PATCH；`review-fixes-usage-ui.json` 与两视口PNG经前端和主Agent亲看，进行中0、真实未知用量1次与模拟已知用量分开可见。此前失败定位均保留，没有改Flutter实现来适应测试。客户端关闭并正常停止隔离服务后，`formal-after-review-fixed-read.json` 再次核实真实3/模拟4，不增加供应商调用。真实Key全窗口脱敏证明的截止时间保持原证据，不将后续只读日志冒充已纳入该证明。
 
 最终冻结源码的六份契约导出逐字节一致；300个正式源码inventory-only检查通过，不执行覆盖率；23份本次相关Markdown的本地链接、锚点、围栏均无错误。`final-frozen-source-checks.json` 保存实际命令与证据摘要，排除用户所有的09-29记录改动。第二轮独立复核输入 `acceptance-review-round2-input.json` 绑定32份执行记录及53项断言，仍为待review声明，不是通过记录。
-
 
 ### 最终独立复核与收口
 

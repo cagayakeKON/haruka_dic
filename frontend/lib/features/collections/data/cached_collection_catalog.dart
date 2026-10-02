@@ -191,8 +191,9 @@ final class CachedCollectionCatalog extends ChangeNotifier implements Collection
       if (_disposed ||
           !_cache.accessReady ||
           _cache.scope?.binding != binding ||
-          _cache.accountGeneration != accountGeneration)
+          _cache.accountGeneration != accountGeneration) {
         return;
+      }
       if ((scopeChanged || readinessChanged || collectionsInvalidated) &&
           _collectionGeneration == scheduledCollectionGeneration &&
           _collectionStatus != CollectionCatalogStatus.initial &&
@@ -523,8 +524,9 @@ final class CachedCollectionCatalog extends ChangeNotifier implements Collection
     bool refreshNotebooksAfter = false,
   }) async {
     await _ready();
-    if (!_cache.dependenciesSafe(dependencies))
+    if (!_cache.dependenciesSafe(dependencies)) {
       throw const CacheBlocked('invalidation_not_durable');
+    }
     if ((dependencies.contains(collectionListDependency) &&
             (_collectionStatus == CollectionCatalogStatus.stale ||
                 _allCollectionStatus == CollectionCatalogStatus.stale)) ||
@@ -553,8 +555,9 @@ final class CachedCollectionCatalog extends ChangeNotifier implements Collection
       }
     }
 
-    if (!_cache.dependenciesSafe(dependencies))
+    if (!_cache.dependenciesSafe(dependencies)) {
       throw const CacheBlocked('invalidation_not_durable');
+    }
     final result = await commit();
     checkScope();
     _selfHandledInvalidationGeneration = _cache.invalidationGeneration + 1;

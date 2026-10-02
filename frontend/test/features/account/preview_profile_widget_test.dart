@@ -9,6 +9,7 @@ import 'package:haruka/app/preview_shell.dart';
 import 'package:haruka/dev/preview/fixture_store.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   Future<void> pumpMock(WidgetTester tester, Size size) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -44,7 +45,10 @@ void main() {
 
     final dropdowns = find.descendant(
       of: find.byType(ProfileFields),
-      matching: find.byType(DropdownButtonFormField<String>),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is DropdownButtonFormField<String> || widget is DropdownButtonFormField<String?>,
+      ),
     );
     await tester.ensureVisible(dropdowns.first);
     await tester.tap(dropdowns.first);
@@ -106,7 +110,9 @@ void main() {
     tester,
   ) async {
     await pumpMock(tester, const Size(1440, 900));
-    await tester.tap(find.widgetWithText(TextButton, '我的').first);
+    await tester.tap(
+      find.descendant(of: find.byType(PreviewSideNavigation), matching: find.byTooltip('我的')).first,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(DesktopSettingsView), findsOneWidget);
     await tester.tap(
@@ -116,7 +122,7 @@ void main() {
     expect(find.byType(DesktopProfileView), findsOneWidget);
     expect(find.byType(MobileProfileView), findsNothing);
     expect(find.byType(ProfileFields), findsOneWidget);
-    expect(find.byType(ProfileAvatarPrivacy), findsOneWidget);
+    expect(find.byType(ProfileAvatarPrivacy), findsNWidgets(2));
     final store = storeFor(tester);
     final nameField = find
         .descendant(of: find.byType(ProfileFields), matching: find.byType(TextField))

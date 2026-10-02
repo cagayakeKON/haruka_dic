@@ -1,5 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
+
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -9,13 +11,11 @@ import 'package:haruka/core/api/responses.dart';
 import 'package:haruka/core/api/wire.dart';
 import 'package:haruka/core/config/app_config.dart';
 
-import '../test_support/compatibility.dart';
-import '../test_support/sample_adapter.dart';
+import 'support/compatibility.dart';
+import 'support/sample_adapter.dart';
 
 void main() {
-  final samples = wireObject(
-    jsonDecode(File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync()),
-  );
+  final samples = wireObject(jsonDecode(apiCompatibilitySamplesJson));
   final config = AppConfig.parse(platform: AppPlatform.windows, environment: 'dev');
 
   test('API-09 Pydantic output preserves UUID UTC exact Decimal and optional tri-state', () {

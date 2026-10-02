@@ -1,10 +1,9 @@
 """Integration client that carries the confirmed session through private calls."""
 
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlsplit
 
 import httpx2 as httpx
-
 
 _BOUND_SOURCES = {
     ("POST", "/api/v1/auth/login"),
@@ -44,6 +43,8 @@ class BoundAsyncClient(httpx.AsyncClient):
         response = await super().request(method, url, headers=headers, **kwargs)
         if route in _BOUND_SOURCES and response.status_code == 200:
             data = response.json().get("data")
-            if isinstance(data, dict) and isinstance(data.get("session_ref"), str):
-                self._expected_session = data["session_ref"]
+            if isinstance(data, dict):
+                session_ref = cast(dict[str, object], data).get("session_ref")
+                if isinstance(session_ref, str):
+                    self._expected_session = session_ref
         return response

@@ -6,6 +6,7 @@ import '../../support/preview_test_app.dart';
 import 'package:haruka/features/library/presentation/material_pages.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('Android back returns from textbook unit to unit directory first', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

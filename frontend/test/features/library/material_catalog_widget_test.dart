@@ -20,6 +20,7 @@ import 'material_catalog_widget_test.mocks.dart';
 
 @GenerateNiceMocks([MockSpec<MaterialCatalog>()])
 void main() {
+  setUpAll(initializeTestDatabase);
   testWidgets('a dialog leaves authorized material rows mounted without another read', (
     tester,
   ) async {
@@ -229,74 +230,68 @@ void main() {
     verify(catalog.findById(material.id)).called(greaterThan(0));
   });
 
-  testWidgets('phone detail rechecks its filtered list without replacing the selected card', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final catalog = MockMaterialCatalog();
-    final material = MaterialSummary(
-      id: '11111111-1111-4111-8111-111111111111',
-      type: LearningMaterialType.novel,
-      title: '筛选后的小说',
-      language: 'ja',
-      status: 'readable',
-      revision: 3,
-      updatedAt: DateTime.utc(2026, 9, 27),
-      description: '授权详情',
-      cover: '书',
-    );
-    when(catalog.status).thenReturn(MaterialCatalogStatus.ready);
-    when(catalog.filterMaterials(any)).thenReturn([material]);
-    when(catalog.findById(material.id)).thenReturn(material);
-    when(
-      catalog.refresh(
-        query: anyNamed('query'),
-        force: anyNamed('force'),
-        preserveCurrent: anyNamed('preserveCurrent'),
-      ),
-    ).thenAnswer((_) async {});
-    await tester.pumpWidget(buildTestPreviewApp(materialCatalog: catalog));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('小说').first);
-    await tester.pumpAndSettle();
-    final card = tester.element(find.byType(MobileMaterialCard));
-    clearInteractions(catalog);
-    final pending = Completer<void>();
-    when(
-      catalog.refresh(
-        query: anyNamed('query'),
-        force: anyNamed('force'),
-        preserveCurrent: anyNamed('preserveCurrent'),
-      ),
-    ).thenAnswer((_) => pending.future);
-    await tester.tap(find.byTooltip('筛选后的小说更多操作'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('查看详情').last);
-    await tester.pump();
-    expect(tester.element(find.byType(MobileMaterialCard)), same(card));
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    verify(
-      catalog.refresh(
-        query: argThat(
-          isA<MaterialCatalogQuery>().having(
-            (query) => query.type,
-            'type',
-            LearningMaterialType.novel,
-          ),
-          named: 'query',
+  testWidgets(
+    'phone detail uses its authorized filtered list without replacing the selected card',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final catalog = MockMaterialCatalog();
+      final material = MaterialSummary(
+        id: '11111111-1111-4111-8111-111111111111',
+        type: LearningMaterialType.novel,
+        title: '筛选后的小说',
+        language: 'ja',
+        status: 'readable',
+        revision: 3,
+        updatedAt: DateTime.utc(2026, 9, 27),
+        description: '授权详情',
+        cover: '书',
+      );
+      when(catalog.status).thenReturn(MaterialCatalogStatus.ready);
+      when(catalog.filterMaterials(any)).thenReturn([material]);
+      when(catalog.findById(material.id)).thenReturn(material);
+      when(
+        catalog.refresh(
+          query: anyNamed('query'),
+          force: anyNamed('force'),
+          preserveCurrent: anyNamed('preserveCurrent'),
         ),
-        force: true,
-        preserveCurrent: true,
-      ),
-    ).called(1);
-    pending.complete();
-    await tester.pumpAndSettle();
-    expect(find.text('授权详情'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      ).thenAnswer((_) async {});
+      await tester.pumpWidget(buildTestPreviewApp(materialCatalog: catalog));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('小说').first);
+      await tester.pumpAndSettle();
+      final card = tester.element(find.byType(MobileMaterialCard));
+      clearInteractions(catalog);
+      final pending = Completer<void>();
+      when(
+        catalog.refresh(
+          query: anyNamed('query'),
+          force: anyNamed('force'),
+          preserveCurrent: anyNamed('preserveCurrent'),
+        ),
+      ).thenAnswer((_) => pending.future);
+      await tester.tap(find.byTooltip('筛选后的小说更多操作'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('查看详情').last);
+      await tester.pump();
+      expect(tester.element(find.byType(MobileMaterialCard)), same(card));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      verifyNever(
+        catalog.refresh(
+          query: anyNamed('query'),
+          force: anyNamed('force'),
+          preserveCurrent: anyNamed('preserveCurrent'),
+        ),
+      );
+      pending.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('授权详情'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('phone detail rejects a changed revision after the authorization read', (
     tester,
@@ -855,6 +850,9 @@ void main() {
       available = false;
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text(desktop ? '材料已删除' : '材料已删除或不可读取'), findsNothing);
+      await tester.pump(const Duration(seconds: 30));
       await tester.pumpAndSettle();
       expect(find.text(desktop ? '材料已删除' : '材料已删除或不可读取'), findsOneWidget);
       if (desktop) {

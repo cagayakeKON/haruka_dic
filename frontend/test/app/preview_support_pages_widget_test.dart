@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,8 @@ import 'package:haruka/app/routes.dart';
 import 'package:haruka/app/preview_shell.dart';
 import 'package:haruka/dev/preview/fixture_store.dart';
 import 'package:haruka/features/collections/presentation/daily_words_page.dart';
+import 'package:haruka/features/settings/presentation/settings_repository_scope.dart';
+import 'package:haruka/features/settings/domain/settings_snapshot.dart';
 import 'package:haruka/features/ai_exercises/presentation/exercise_support_pages.dart';
 import 'package:haruka/features/notifications/presentation/notifications_page.dart';
 import 'package:haruka/features/jobs/presentation/jobs_page.dart';
@@ -20,12 +24,13 @@ import 'package:haruka/features/library/presentation/material_catalog_scope.dart
 import '../features/library/material_catalog_widget_test.mocks.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   Future<PreviewFixtureStore> launch(WidgetTester tester, Size size, String path) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(buildTestPreviewApp());
+    await tester.pumpWidget(buildTestPreviewApp(clock: () => DateTime.utc(2026, 9, 27, 9)));
     await tester.pumpAndSettle();
     final context = tester.element(find.byType(PreviewPageFrame).first);
     final store = PreviewStoreScope.of(context);
@@ -61,27 +66,16 @@ void main() {
   });
 
   testWidgets('daily words uses the account timezone at a UTC day boundary', (tester) async {
-    final store = await launch(tester, const Size(390, 844), AppRoutes.mockDailyWords);
+    await launch(tester, const Size(390, 844), AppRoutes.mockDailyWords);
     expect(find.text('そっと'), findsOneWidget);
     expect(find.text('微笑む'), findsOneWidget);
-    store.updateProfileDetails(
-      name: store.displayName,
-      birthYear: store.birthYear,
-      gender: store.gender,
-      timezone: 'UTC',
-      allowProfileForAi: store.allowProfileForAi,
-    );
+    final settings = SettingsRepositoryScope.of(tester.element(find.byType(DailyWordsPage)));
+    unawaited(settings.save(SettingsGroup.preferences, {'timezone': 'UTC'}));
     await tester.pumpAndSettle();
     expect(find.text('そっと'), findsOneWidget);
     expect(find.text('微笑む'), findsNothing);
     expect(find.textContaining('UTC ·'), findsOneWidget);
-    store.updateProfileDetails(
-      name: store.displayName,
-      birthYear: store.birthYear,
-      gender: store.gender,
-      timezone: 'Asia/Shanghai',
-      allowProfileForAi: store.allowProfileForAi,
-    );
+    unawaited(settings.save(SettingsGroup.preferences, {'timezone': 'Asia/Shanghai'}));
     await tester.pumpAndSettle();
     expect(find.text('微笑む'), findsOneWidget);
     expect(find.textContaining('Asia/Shanghai ·'), findsOneWidget);

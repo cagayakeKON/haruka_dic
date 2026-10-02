@@ -91,6 +91,7 @@
       "backend/app/schemas/scalars.py"
     ],
     "generator": "backend/tools/export_compatibility.py",
+    "test_fixture_output": "frontend/test/support/generated/api_compatibility_samples.dart",
     "output": [
       "tools/codegen/dart-api/fixtures/openapi.json",
       "tools/codegen/dart-api/fixtures/samples.json",

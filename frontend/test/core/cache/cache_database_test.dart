@@ -1,12 +1,11 @@
-import 'dart:io';
+import '../../support/test_database.dart';
+
 import 'dart:convert';
 
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haruka/core/cache/cache_database.dart';
 import 'package:haruka/core/cache/cache_models.dart';
 import 'package:haruka/core/cache/cache_partition_lock.dart';
-import 'package:sqlite3/sqlite3.dart';
 
 Future<CachePublishStatus> publishAt(
   CacheDatabase database,
@@ -36,9 +35,10 @@ Future<CachePublishStatus> publishAt(
 );
 
 void main() {
+  setUpAll(initializeTestDatabase);
   test('corrupt text is observed without mutation and discarded by locked CAS', () async {
     var corruptions = 0;
-    final database = CacheDatabase(NativeDatabase.memory(), onCorruptEntry: () => corruptions++);
+    final database = CacheDatabase(memoryTestDatabase(), onCorruptEntry: () => corruptions++);
     addTearDown(database.close);
     final start = await database.snapshot('chapter', {'material:one'});
     final grant = CacheGrant(
@@ -109,10 +109,9 @@ void main() {
 
   for (final schema in [1, 2, 3]) {
     test('schema $schema text and audio remain readable after schema 4 migration', () async {
-      final directory = await Directory.systemTemp.createTemp('haruka-cache-migration-');
-      addTearDown(() => directory.delete(recursive: true));
-      final file = File('${directory.path}/cache.sqlite');
-      final original = CacheDatabase(NativeDatabase(file));
+      final file = await TestDatabaseFile.create('haruka-cache-migration-');
+      addTearDown(file.close);
+      final original = CacheDatabase(file.executor());
       final start = await original.snapshot('chapter', {'material:one'});
       expect(await publishAt(original, start, 'chapter', '朝の光'), CachePublishStatus.published);
       if (schema == 3) {
@@ -129,7 +128,7 @@ void main() {
       );
       await original.close();
 
-      final legacy = sqlite3.open(file.path);
+      final legacy = file.openRaw();
       final exact = cacheEntryKey(
         'chapter',
         const CacheVersion(resource: '7', representation: 'novel-v1', artifact: 'sha-a'),
@@ -167,7 +166,7 @@ void main() {
       legacy.execute('PRAGMA user_version = $schema');
       legacy.close();
 
-      final migrated = CacheDatabase(NativeDatabase(file));
+      final migrated = CacheDatabase(file.executor());
       addTearDown(migrated.close);
       expect((await migrated.entry('chapter'))?.payload['text'], '朝の光');
       if (schema == 3) {
@@ -196,7 +195,7 @@ void main() {
   }
 
   test('published text is guarded by storage and dependency epochs', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final start = await database.snapshot('entry', {'material:one'});
     expect(start.entry, isNull);
@@ -249,7 +248,7 @@ void main() {
   });
 
   test('publication CAS rejects a second writer from the same snapshot', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final snapshot = await database.snapshot('chapter', {'material:one'});
     expect(await publishAt(database, snapshot, 'chapter', 'first'), CachePublishStatus.published);
@@ -279,7 +278,7 @@ void main() {
   });
 
   test('offline grant follows the exact publication and is removed on revocation', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final snapshot = await database.snapshot('chapter', {'material:one'});
     final grant = CacheGrant(
@@ -315,7 +314,7 @@ void main() {
   });
 
   test('stale deletion cannot remove another writer publication or a new epoch', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final initial = await database.snapshot('chapter', {'material:one'});
     expect(await publishAt(database, initial, 'chapter', 'first'), CachePublishStatus.published);
@@ -352,7 +351,7 @@ void main() {
   });
 
   test('quota failure leaves existing publication intact and never reports ready', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     await database.setQuotas(textBytes: 30);
     final first = await database.snapshot('chapter', {'material:one'});
@@ -374,7 +373,7 @@ void main() {
   });
 
   test('text LRU evicts a free copy but preserves a pinned copy and its dependencies', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     await database.setQuotas(textBytes: 25);
     final first = await database.snapshot('first', {'material:one'});
@@ -416,7 +415,7 @@ void main() {
   });
 
   test('invalidation removes only entries depending on the changed source', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final chapter = await database.snapshot('chapter', {'material:one'});
     final other = await database.snapshot('other', {'material:two'});
@@ -432,7 +431,7 @@ void main() {
   });
 
   test('pinned invalidation revokes the head and grant before deferred byte removal', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final initial = await database.snapshot('chapter', {'material:one'});
     expect(await publishAt(database, initial, 'chapter', 'saved'), CachePublishStatus.published);
@@ -455,7 +454,7 @@ void main() {
   });
 
   test('a new required dependency can retire an old head and publish online', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final initial = await database.snapshot('chapter', {'material:one'});
     expect(await publishAt(database, initial, 'chapter', 'saved'), CachePublishStatus.published);
@@ -481,7 +480,7 @@ void main() {
   });
 
   test('a valid version JSON cannot impersonate another exact entry key', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final initial = await database.snapshot('chapter', {'material:one'});
     expect(await publishAt(database, initial, 'chapter', 'saved'), CachePublishStatus.published);
@@ -496,7 +495,7 @@ void main() {
   });
 
   test('clear changes epoch and removes entries without resetting source invalidation', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final initial = await database.snapshot('chapter', {'material:one'});
     expect(await publishAt(database, initial, 'chapter', 'saved'), CachePublishStatus.published);
@@ -510,7 +509,7 @@ void main() {
   });
 
   test('audio reservations share two slots and quota; stale epoch cannot publish', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     await database.setQuotas(audioBytes: 10);
     final epoch = await database.storageEpoch();
@@ -599,7 +598,7 @@ void main() {
   });
 
   test('text clear retires old download reservations but preserves ready audio', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     await database.setQuotas(audioBytes: 10);
     final oldEpoch = await database.storageEpoch();
@@ -713,7 +712,7 @@ void main() {
   });
 
   test('same audio asset cannot reserve two concurrent operation rows', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final epoch = await database.storageEpoch();
     final admitted = await Future.wait([
@@ -736,7 +735,7 @@ void main() {
   });
 
   test('a stale text-clear finisher cannot rewrite a newer clear state', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final oldEpoch = await database.clearText();
     final newEpoch = await database.beginClearAll();
@@ -754,7 +753,7 @@ void main() {
   });
 
   test('full clear fences publications and retains failed audio deletion for retry', () async {
-    final database = CacheDatabase(NativeDatabase.memory());
+    final database = CacheDatabase(memoryTestDatabase());
     addTearDown(database.close);
     final epoch = await database.storageEpoch();
     const digest = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';

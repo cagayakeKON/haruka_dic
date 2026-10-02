@@ -65,6 +65,8 @@ async def authorize_account_receipt(
     if user is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
     await _assert_manageable(session, actor_id, set(await _direct_role_ids(session, user_id)))
+
+
 _CLIENT_LOGIN = ("client.login", "self")
 _ADMIN_LOGIN = ("admin.login", "platform_metadata")
 

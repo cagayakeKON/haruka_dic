@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'support/generated/api_compatibility_samples.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,8 @@ import 'package:haruka/core/auth/credential_vault.dart';
 import 'package:haruka/core/config/app_config.dart';
 import 'package:haruka/features/admin/presentation/model_operations_page.dart';
 
-import '../test_support/sample_adapter.dart';
+import 'support/sample_adapter.dart';
+import 'support/async_frames.dart';
 
 final class _NoVault implements CredentialVault {
   @override
@@ -48,9 +50,7 @@ ResponseBody _json(Object value) => ResponseBody.fromString(
 );
 
 void main() {
-  final samples = jsonDecode(
-    File('../tools/codegen/dart-api/fixtures/samples.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
   final config = AppConfig.parse(
     platform: AppPlatform.web,
     environment: 'dev',
@@ -162,45 +162,65 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await settleAsyncFrames(tester);
+        await waitForAsyncState(
+          tester,
+          () => section == 'models'
+              ? find.byType(Switch).evaluate().isNotEmpty
+              : find.text('查看摘要').evaluate().isNotEmpty,
+          reason: 'The authorized administration projection must be ready before interaction',
+        );
         expect(businessReads, 1);
         if (section == 'models') {
           expect(tester.widget<Switch>(find.byType(Switch)).value, true);
           await tester.tap(find.byType(Switch));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           await tester.tap(find.widgetWithText(TextButton, '取消'));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           expect(mutations, isEmpty);
           expect(businessReads, 1);
           await tester.tap(find.byType(Switch));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           await tester.tap(find.widgetWithText(FilledButton, '提交变更'));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
+          await waitForAsyncState(
+            tester,
+            () =>
+                mutations.length == 1 &&
+                find.byType(Switch).evaluate().isNotEmpty &&
+                !tester.widget<Switch>(find.byType(Switch)).value,
+            reason: 'The confirmed catalog PATCH must publish its complete response projection',
+          );
           expect(mutations, [
             {'expected_revision': 1, 'enabled': false},
           ]);
           expect(tester.widget<Switch>(find.byType(Switch)).value, false);
           // Cancelling another confirmation preserves the updated directory without reads.
           await tester.tap(find.byType(Switch));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           await tester.tap(find.widgetWithText(TextButton, '取消'));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           expect(mutations, hasLength(1));
         } else {
           await tester.tap(find.text('查看摘要').first);
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           await tester.tap(find.text('恢复安全阶段'));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           await tester.tap(find.widgetWithText(FilledButton, '确认'));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
+          await waitForAsyncState(
+            tester,
+            () => mutations.length == 1 && find.text('已受理').evaluate().isNotEmpty,
+            reason: 'The safe retry must display the accepted response before inspection',
+          );
           expect(mutations.single, samples['admin_model_retry_request']);
           expect(mutations.single.keys, ['expected_revision']);
           expect(find.text('已受理'), findsOneWidget);
           await tester.tap(find.text('查看摘要').first);
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
           expect(find.text('恢复安全阶段'), findsNothing);
           await tester.tap(find.widgetWithText(TextButton, '关闭'));
-          await tester.pumpAndSettle();
+          await settleAsyncFrames(tester);
         }
         expect(businessReads, 1);
         expect(find.textContaining('INVALID_RESPONSE'), findsNothing);

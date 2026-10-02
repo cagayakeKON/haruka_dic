@@ -1,8 +1,9 @@
+import '../../support/test_database.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:drift/native.dart';
 import 'package:haruka/app/routes.dart';
 import 'package:haruka/app/query_prefill.dart';
 import 'package:haruka/app/theme.dart';
@@ -25,6 +26,7 @@ import 'package:haruka/features/collections/data/collection_catalog.dart';
 import 'collection_catalog_test_harness.dart';
 
 void main() {
+  setUpAll(initializeTestDatabase);
   Future<GoRouter> pumpPage(
     WidgetTester tester,
     PreviewFixtureStore store,
@@ -46,8 +48,8 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    final harness = await CollectionCatalogTestHarness.create(store);
-    addTearDown(harness.close);
+    final harness = (await tester.runAsync(() => CollectionCatalogTestHarness.create(store)))!;
+    addTearDown(() => tester.runAsync(harness.close));
     final app = CollectionCatalogScope(
       catalog: harness.catalog,
       child: PreviewStoreScope(
@@ -73,7 +75,7 @@ void main() {
     final adapter = PreviewSettingsCacheAdapter(
       coordinator: CacheCoordinator(
         openBackend: (_) async => OpenedCacheBackend(
-          executor: NativeDatabase.memory(),
+          executor: memoryTestDatabase(),
           mode: CacheStorageMode.memoryOnly,
           closeOwner: () async {},
         ),
@@ -128,7 +130,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('word detail opens as phone sheet and desktop dialog', (tester) async {
+  testWidgets('word detail opens as a dialog on phone and desktop', (tester) async {
     final store = PreviewFixtureStore();
     addTearDown(store.dispose);
     final id = store.collections.first.id;
@@ -145,7 +147,8 @@ void main() {
     await pumpPage(tester, store, launcher, const Size(390, 844));
     await tester.tap(find.text('打开词条'));
     await tester.pumpAndSettle();
-    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget);
     expect(find.byType(WordDetailDialog), findsOneWidget);
     expect(find.text('そっと'), findsOneWidget);
     await tester.tap(find.text('归入单词本'));

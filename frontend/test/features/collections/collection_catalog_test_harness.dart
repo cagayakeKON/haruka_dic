@@ -1,4 +1,5 @@
-import 'package:drift/native.dart';
+import '../../support/test_database.dart';
+
 import 'package:haruka/core/cache/cache_backend.dart';
 import 'package:haruka/core/cache/cache_coordinator.dart';
 import 'package:haruka/core/cache/cache_models.dart';
@@ -18,9 +19,10 @@ final class CollectionCatalogTestHarness {
     bool Function(String action)? permits,
     CollectionSource? source,
   }) async {
+    await initializeTestDatabase();
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase.memory(),
+        executor: memoryTestDatabase(),
         mode: CacheStorageMode.memoryOnly,
         closeOwner: () async {},
       ),

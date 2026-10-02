@@ -33,6 +33,19 @@ class MigrationError(RuntimeError):
     """Safe maintenance failure; retry is a new connection and a new lock acquisition."""
 
 
+def bundled_migration_head() -> str:
+    """Read the verified bundle inside its resource lifetime, independent of cwd."""
+    from importlib.resources import as_file, files
+
+    packaged = files("app.maintenance").joinpath("migration_bundle")
+    if packaged.is_dir():
+        with as_file(packaged) as directory:
+            return load_migration_resources(directory.absolute()).head
+    # Editable checkouts retain the original manifested bundle alongside app/.
+    # Missing/invalid resources still pass through the same strict loader.
+    return load_migration_resources(Path(__file__).resolve().parents[2] / "alembic").head
+
+
 @dataclass(frozen=True)
 class MigrationResources:
     directory: Path

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:drift/native.dart';
 
 import '../../support/preview_test_app.dart';
 
@@ -25,11 +24,15 @@ import 'package:haruka/features/collections/presentation/collection_catalog_scop
 import 'package:haruka/generated/l10n/app_localizations.dart';
 
 void main() {
-  Future<CachedSettingsRepository> preparedSettings(PreviewFixtureStore store) async {
+  setUpAll(initializeTestDatabase);
+  Future<CachedSettingsRepository> preparedSettings(
+    WidgetTester tester,
+    PreviewFixtureStore store,
+  ) async {
     final adapter = PreviewSettingsCacheAdapter(
       coordinator: CacheCoordinator(
         openBackend: (_) async {
-          final executor = NativeDatabase.memory();
+          final executor = memoryTestDatabase();
           return OpenedCacheBackend(
             executor: executor,
             mode: CacheStorageMode.memoryOnly,
@@ -38,16 +41,16 @@ void main() {
         },
       ),
     );
-    await adapter.initialize();
+    await tester.runAsync(() => adapter.initialize());
     final repository = CachedSettingsRepository(
       cache: adapter.coordinator,
       source: FixtureSettingsSource(store, adapter.coordinator),
     );
-    await repository.refresh(SettingsGroup.studyProfile);
-    await repository.refresh(SettingsGroup.preferences);
+    await tester.runAsync(() => repository.refresh(SettingsGroup.studyProfile));
+    await tester.runAsync(() => repository.refresh(SettingsGroup.preferences));
     addTearDown(() async {
       repository.dispose();
-      await adapter.coordinator.closeScope();
+      await tester.runAsync(() => adapter.coordinator.closeScope());
       adapter.dispose();
     });
     return repository;
@@ -58,7 +61,7 @@ void main() {
   ) async {
     final store = PreviewFixtureStore();
     addTearDown(store.dispose);
-    final settings = await preparedSettings(store);
+    final settings = await preparedSettings(tester, store);
     final first = Object();
     final second = Object();
     Widget result(Object identity) => SettingsRepositoryScope(
@@ -106,7 +109,7 @@ void main() {
     await tester.pumpWidget(result(second));
     expect(opacity('query-result-main-motion'), 0);
     store.updateAppearance(store.themeMode, true);
-    await settings.refresh(SettingsGroup.preferences, force: true);
+    await tester.runAsync(() => settings.refresh(SettingsGroup.preferences, force: true));
     await tester.pump();
     expect(opacity('query-result-main-motion'), 1);
     expect(opacity('query-result-body-motion'), 1);
@@ -120,9 +123,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final store = PreviewFixtureStore();
     addTearDown(store.dispose);
-    final settings = await preparedSettings(store);
+    final settings = await preparedSettings(tester, store);
     store.updateAppearance(store.themeMode, true);
-    await settings.refresh(SettingsGroup.preferences, force: true);
+    await tester.runAsync(() => settings.refresh(SettingsGroup.preferences, force: true));
     for (var index = 0; index < 3; index++) {
       await store.submit(QueryRequest(text: 'そっと $index'));
     }
@@ -241,7 +244,9 @@ void main() {
 
   testWidgets('desktop query uses a separate view and card before the next input', (tester) async {
     await pumpPreview(tester, const Size(1440, 900));
-    await tester.tap(find.widgetWithText(TextButton, '查询').first);
+    await tester.tap(
+      find.descendant(of: find.byType(PreviewSideNavigation), matching: find.byTooltip('查询')).first,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(DesktopQueryView), findsOneWidget);
     await tester.tap(find.text('そっと 是什么意思？'));
@@ -296,13 +301,13 @@ void main() {
     addTearDown(store.dispose);
     final cache = CacheCoordinator(
       openBackend: (_) async => OpenedCacheBackend(
-        executor: NativeDatabase.memory(),
+        executor: memoryTestDatabase(),
         mode: CacheStorageMode.memoryOnly,
         closeOwner: () async {},
       ),
     );
     final adapter = PreviewSettingsCacheAdapter(coordinator: cache);
-    await adapter.initialize();
+    await tester.runAsync(() => adapter.initialize());
     addTearDown(adapter.dispose);
     final router = GoRouter(
       routes: [
@@ -360,14 +365,16 @@ void main() {
     await tester.tap(find.text('Open query'));
     await tester.pumpAndSettle();
     expect(find.text(selectedText), findsOneWidget);
-    await cache.closeScope();
-    await cache.attach(
-      CacheScope.confirmed(
-        endpoint: Uri.parse('https://haruka.example/api'),
-        instanceId: 'instance-2',
-        userId: 'another-user',
-        audience: 'client',
-        sessionRef: 'another-session',
+    await tester.runAsync(() => cache.closeScope());
+    await tester.runAsync(
+      () => cache.attach(
+        CacheScope.confirmed(
+          endpoint: Uri.parse('https://haruka.example/api'),
+          instanceId: 'instance-2',
+          userId: 'another-user',
+          audience: 'client',
+          sessionRef: 'another-session',
+        ),
       ),
     );
     await tester.pumpAndSettle();

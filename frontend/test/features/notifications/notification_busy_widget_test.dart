@@ -11,6 +11,8 @@ void main() {
     title: 'Ready',
     detail: 'Finished',
     route: 'textbook',
+    resourceId: 'textbook-1',
+    resourceRevision: 1,
     createdAt: DateTime.utc(2026, 9, 27),
   );
 
@@ -22,6 +24,7 @@ void main() {
       var readAlls = 0;
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('zh'),
           theme: HarukaTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,

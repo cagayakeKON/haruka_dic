@@ -62,18 +62,20 @@ class DocumentationChecks(unittest.TestCase):
 
 class ResultGates(unittest.TestCase):
     def test_compatibility_fixture_rejects_unregistered_targets(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            with patch("scripts.dev.ROOT", Path(temporary)):
-                for target in (
-                    "../outside.dart",
-                    "frontend/lib/generated/api_compatibility_samples.dart",
-                    "frontend/test/support/generated/other.dart",
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch("scripts.dev.ROOT", Path(temporary)),
+        ):
+            for target in (
+                "../outside.dart",
+                "frontend/lib/generated/api_compatibility_samples.dart",
+                "frontend/test/support/generated/other.dart",
+            ):
+                with (
+                    self.subTest(target=target),
+                    self.assertRaisesRegex(dev.DevError, "registered test-only"),
                 ):
-                    with self.subTest(target=target):
-                        with self.assertRaisesRegex(dev.DevError, "registered test-only"):
-                            dev.compatibility_test_fixture(
-                                {"dart_api": {"test_fixture_output": target}}
-                            )
+                    dev.compatibility_test_fixture({"dart_api": {"test_fixture_output": target}})
 
     def test_compatibility_fixture_rejects_unknown_files_and_nonregular_target(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -292,14 +294,14 @@ class ResultGates(unittest.TestCase):
                 dev.bootstrap(dev.Report("bootstrap", "backend"), "backend")
 
     def test_milestones_never_pass_without_explicit_evidence(self) -> None:
-        for stage in ("B0", "B1", "B2c", "B2"):
+        for stage in ("B0", "B1", "B2c", "B2", "foundation-stage-close"):
             with self.subTest(stage=stage), self.assertRaises(dev.DevError):
                 dev.check(dev.Report("check", stage), stage)
 
     def test_candidate_requires_explicit_identity_and_reports_and_other_scopes_refuse_them(
         self,
     ) -> None:
-        for stage in ("B0", "B1", "B2c"):
+        for stage in ("B0", "B1", "B2c", "foundation-stage-close"):
             for identity, reports in (
                 (None, ()),
                 (Path("identity.json"), ()),
@@ -337,6 +339,12 @@ class ResultGates(unittest.TestCase):
                 run.assert_not_called()
 
     def test_candidate_cli_forwards_explicit_reports_and_scope(self) -> None:
+        self._assert_candidate_cli_forwards_explicit_reports_and_scope("B0")
+
+    def test_foundation_closure_cli_forwards_explicit_reports_and_scope(self) -> None:
+        self._assert_candidate_cli_forwards_explicit_reports_and_scope("foundation-stage-close")
+
+    def _assert_candidate_cli_forwards_explicit_reports_and_scope(self, stage: str) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             identity = root / "identity.json"
@@ -359,7 +367,7 @@ class ResultGates(unittest.TestCase):
                     json.dumps(
                         {
                             "passed": True,
-                            "scope": "B0",
+                            "scope": stage,
                             "phase": "result",
                             "identity": {"commit": "explicit-candidate"},
                         }
@@ -376,7 +384,7 @@ class ResultGates(unittest.TestCase):
                     [
                         "check",
                         "--stage",
-                        "B0",
+                        stage,
                         "--identity",
                         str(identity),
                         "--report",
@@ -389,7 +397,7 @@ class ResultGates(unittest.TestCase):
             self.assertEqual(len(calls), 1)
             command = calls[0]
             self.assertEqual(command[:2], ["-m", "scripts.quality.cases"])
-            self.assertEqual(command[command.index("--scope") + 1], "B0")
+            self.assertEqual(command[command.index("--scope") + 1], stage)
             self.assertEqual(command[command.index("--identity") + 1], str(identity.resolve()))
             self.assertEqual(
                 [command[index + 1] for index, value in enumerate(command) if value == "--report"],
@@ -410,7 +418,7 @@ class ResultGates(unittest.TestCase):
             self.assertTrue(all(path.read_text() == "{}" for path in reports))
 
     def test_account_candidate_rejects_incomplete_required_matrix(self) -> None:
-        for stage in ("B1", "B2c"):
+        for stage in ("B1", "B2c", "foundation-stage-close"):
             with tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 identity = root / "identity.json"

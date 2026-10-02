@@ -935,9 +935,10 @@ def check(
         raise DevError(
             f"{stage} has not passed its complete required evidence matrix. Use an explicit implemented local scope; a partial check does not sign off the milestone."
         )
-    if stage not in {"B0", "B1", "B2c"} and (identity is not None or evidence_reports):
+    evidence_scopes = {"B0", "B1", "B2c", "foundation-stage-close"}
+    if stage not in evidence_scopes and (identity is not None or evidence_reports):
         raise DevError("--identity and --report are accepted only for milestone checks")
-    if stage in {"B0", "B1", "B2c"}:
+    if stage in evidence_scopes:
         if identity is None or not evidence_reports:
             raise DevError(
                 f"{stage} requires an explicit --identity and one or more --report paths"
@@ -1444,18 +1445,19 @@ def parser() -> argparse.ArgumentParser:
             "B1",
             "B2c",
             "B2",
+            "foundation-stage-close",
         ),
         required=True,
     )
     command.add_argument(
-        "--identity", type=Path, help="B0/B1/B2c: explicit candidate evidence identity"
+        "--identity", type=Path, help="Evidence scopes: explicit candidate evidence identity"
     )
     command.add_argument(
         "--report",
         type=Path,
         action="append",
         default=[],
-        help="B0/B1/B2c: repeat for every evidence report",
+        help="Evidence scopes: repeat for every evidence report",
     )
     command = commands.add_parser("codegen")
     mode = command.add_mutually_exclusive_group()

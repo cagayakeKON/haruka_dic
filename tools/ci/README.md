@@ -31,6 +31,8 @@ python -m scripts.quality.cases --scope B0 --identity artifacts/run/identity.jso
 
 B2c 使用 [模型任务流程](model-task-procedures.json) 与 `required_cases.json` 的 `B2c` 范围登记八个 SCF 项、十二个 host/Web/Android 变体。`scripts/dev.py check --stage B2c --identity <候选身份> --report <报告>` 只消费明确报告，不重新执行测试或自动接受当前 HEAD。声明源和空报告不能作为通过证据；通过仅表示这个小阶段，不表示 B2 或阶段1完成。
 
+阶段1收口使用同一入口的 `--stage foundation-stage-close`，必须显式提供候选身份及全部报告；完整集合由 [业务程序清单](foundation-business-procedures.json) 和必需用例清单登记。入口只核对证据，不重新运行测试；业务矩阵通过、完整覆盖门禁及独立全盘 review 分别签收，任一单项不能替代阶段1整体完成。
+
 ## 覆盖分母
 
 [coverage_manifest.json](../../scripts/quality/coverage_manifest.json) 逐一登记所有 Python/Dart 手写源、核心分组和窄例外。新增源文件或核心路径漏登记立即失败。生成物只有在受管生成清单登记来源/生成器/精确输出时可排除；纯声明必须经 AST 或 Dart 指令检查。小阶段只运行 `--inventory-only` 及检查器坏样本，不为凑百分比触发全仓测试。

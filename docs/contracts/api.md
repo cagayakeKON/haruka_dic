@@ -68,6 +68,8 @@ Web采用 [账号流程](../modules/accounts.md) 的HttpOnly会话Cookie与CSRF/
 | GET/POST/PATCH/DELETE provider-credentials；POST {id}/test；GET {id}/tests/{run_id} | 本人掩码摘要列表active优先，随后近期revoked，总计最多100；增删轮换；显式单能力固定最小样本异步测试，202返回job_id/run_id，读取持久安全结果 | credential.read/manage/test；测试需test，结果需read及本人凭据/run归属；Job进度另验job.read与来源，永不GET明文 |
 | GET provider-credentials/{id}/deletion-impact | 当前revision、已绑定能力及未完成任务数，供本人撤销确认 | credential.read及本人归属；不返回其他用户、Key或任务私有正文。撤销DELETE带expected_revision，敏感凭据写操作复核近期密码登录及当前会话；过期返回安全重验要求 |
 | GET users/me/model-usage | 本人按时间范围、供应商、模型、能力、操作类型及必填simulated维度聚合的调用状态及input/output/cache等用量；真实与模拟分别汇总，可按有权run查询明细 | credential.read与self范围；未知分项为null，应用缓存命中不冒充模型调用，不返回Key/Prompt/回复；口径见[模型用量统计](model-usage.md) |
+| GET material-import-capabilities | 当前三类发布格式、ja/en、文件上限、意图期限及本人已用/预留/可用容量 | material.import；仅本人配额，不包含存储凭据或其他用户信息；格式支持不代表后续正文/试卷已准备 |
+| PUT uploads/{id}/content | 同实例相对URL及意图签发的短期能力请求头，受限流式写临时staging对象 | 只允许绑定本人、用途、意图代次和期限的上传；不携带Cookie/认证头，不允许跳转外部目标；final写权限只属于服务端。完成仍走下列鉴权确认接口 |
 | POST material-imports；POST uploads/{id}/complete | material_type/格式/用途/大小摘要/requested_stages；视觉OCR与进一步AI分析分别明确范围/上限；新上传或本人源文件重新处理 | material.import、目标试卷组合权限；视觉OCR另验analyze；复用验源material.read/配额，exam源还需exam.read+exam.edit；目标类型固定，完整校验才受理 |
 | GET/DELETE material-imports/{id} | 上传/受理状态；放弃未提交上传意图 | 本人material.import；已受理Job取消用job.cancel，不通过删除意图撤销已提交材料 |
 | GET materials、materials/{id}、materials/{id}/revisions；PATCH/DELETE materials/{id} | 三类筛选、共用元数据/状态与版本摘要；改标题/删除，不返回正文/答案、不允许PATCH类型 | material.list/read/update/delete；类型分派以三类材料契约为准 |

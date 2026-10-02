@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from urllib.parse import urlsplit
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx2 as httpx
 import pytest
@@ -22,7 +22,23 @@ from app.domain.errors import AppError
 from app.main import create_app
 from app.maintenance.avatar_gc import collect_avatar_garbage
 from app.maintenance.settings import MaintenanceSettings, create_maintenance_engine
-from app.models import AuthChallengeDelivery, AuthPolicy, User
+from app.models import (
+    AuthChallengeDelivery,
+    AuthPolicy,
+    AuthSession,
+    IdempotencyRecord,
+    Job,
+    JobStage,
+    Library,
+    Material,
+    MaterialImport,
+    MaterialImportIssue,
+    MaterialRevision,
+    MaterialSourceAsset,
+    User,
+    UserStorageReservation,
+    UserStorageState,
+)
 from app.models.avatar import FileObject, UploadIntent
 from app.services import avatar as avatar_service
 from app.services.auth_crypto import AuthCrypto
@@ -427,3 +443,242 @@ async def test_profile_avatar_isolation_revision_race_and_cleanup(
     assert "image_base64" not in rendered
     assert "profile-a-" not in rendered
     assert str(profile_operation_id) in rendered
+
+
+async def test_avatar_boundary_rejects_source_intent_and_gc_preserves_source_ledger(
+    identity_runtime: tuple[Runtime, MaintenanceSettings, str],
+) -> None:
+    runtime, maintenance, run_id = identity_runtime
+    assert runtime.resources is not None
+    async with runtime.resources.database.sessions() as session, session.begin():
+        policy = await session.get(AuthPolicy, "registration", with_for_update=True)
+        assert policy is not None
+        policy.registration_mode = "open"
+    email = f"purpose-{run_id}@haruka.example.test"
+    async for web, headers in _owner(runtime, maintenance, email):
+        raw = b"owned-source"
+        now = datetime.now(UTC)
+        source_id, intent_id, reservation_id, import_id, receipt_id, job_id = (
+            uuid4() for _ in range(6)
+        )
+        async with runtime.resources.database.sessions() as session, session.begin():
+            owner = await session.scalar(select(User).where(User.email_normalized == email))
+            assert owner is not None
+            library = await session.scalar(select(Library).where(Library.owner_user_id == owner.id))
+            auth = await session.scalar(
+                select(AuthSession).where(
+                    AuthSession.user_id == owner.id,
+                    AuthSession.audience == "client",
+                    AuthSession.transport == "web",
+                    AuthSession.revoked_at.is_(None),
+                )
+            )
+            assert library is not None and auth is not None
+            session.add(UserStorageState(user_id=owner.id, used_bytes=len(raw), reserved_bytes=0))
+            session.add(
+                UserStorageReservation(
+                    id=reservation_id,
+                    user_id=owner.id,
+                    target_kind="upload_intent",
+                    target_resource_id=intent_id,
+                    reserved_bytes=len(raw),
+                    committed_bytes=len(raw),
+                    status="committed",
+                    expires_at=now + timedelta(minutes=5),
+                )
+            )
+            session.add(
+                UploadIntent(
+                    id=intent_id,
+                    user_id=owner.id,
+                    purpose="primary_document",
+                    target_kind="material_import",
+                    target_resource_id=import_id,
+                    material_type="novel",
+                    original_filename="source.md",
+                    declared_format="md",
+                    expected_size_bytes=len(raw),
+                    expected_sha256=sha256(raw).digest(),
+                    status="completed",
+                    file_object_id=source_id,
+                    expires_at=now + timedelta(minutes=5),
+                    storage_reservation_id=reservation_id,
+                    staging_object_key=f"fixture/{run_id}/staging",
+                )
+            )
+            session.add(
+                FileObject(
+                    id=source_id,
+                    user_id=owner.id,
+                    upload_intent_id=intent_id,
+                    purpose="primary_document",
+                    media_type="text/markdown",
+                    format_code="md",
+                    size_bytes=len(raw),
+                    sha256=sha256(raw).digest(),
+                    validation_profile="material-source-v1",
+                    processor_version="immutable-source-v1",
+                    validated_at=now,
+                    retention_state="gc_pending",
+                    gc_not_before_at=now - timedelta(seconds=1),
+                    content=None,
+                    bucket_name="haruka-test-fixture",
+                    object_key=f"fixture/{run_id}/final",
+                )
+            )
+            material_id = uuid4()
+            session.add(
+                Material(
+                    id=material_id,
+                    owner_user_id=owner.id,
+                    library_id=library.id,
+                    material_type="novel",
+                    language="ja",
+                    title="Source fixture",
+                    source_status="parsing",
+                    primary_file_object_id=source_id,
+                    source_format="md",
+                    initial_job_id=job_id,
+                )
+            )
+            session.add(
+                Job(
+                    id=job_id,
+                    owner_user_id=owner.id,
+                    actor_user_id=owner.id,
+                    session_id=auth.id,
+                    transport="web",
+                    audience="client",
+                    operation_kind="material_import",
+                    operation_id=uuid4(),
+                    request_id=uuid4(),
+                    input_refs={"material_id": str(material_id)},
+                    input_digest=sha256(raw).digest(),
+                    idempotency_digest=sha256(import_id.bytes).digest(),
+                    credential_id=None,
+                    run_id=None,
+                )
+            )
+            session.add(
+                MaterialImport(
+                    id=import_id,
+                    owner_user_id=owner.id,
+                    library_id=library.id,
+                    material_type="novel",
+                    target_language="ja",
+                    primary_upload_intent_id=intent_id,
+                    schema_version=1,
+                    requested_stages={"extract": True, "analyze": False},
+                    status="accepted",
+                    idempotency_record_id=receipt_id,
+                    material_id=material_id,
+                    initial_job_id=job_id,
+                    expires_at=now + timedelta(minutes=5),
+                )
+            )
+            session.add(
+                IdempotencyRecord(
+                    id=receipt_id,
+                    owner_user_id=owner.id,
+                    library_id=library.id,
+                    audience="client",
+                    action_code="material.import",
+                    key_digest=sha256(import_id.bytes).digest(),
+                    request_digest=sha256(raw).digest(),
+                    state="committed",
+                    result_kind="material_import",
+                    result_id=import_id,
+                    response_schema_version=1,
+                    safe_response={"id": str(import_id)},
+                    http_status=201,
+                    expires_at=now + timedelta(days=1),
+                    operation_id=uuid4(),
+                )
+            )
+            candidate_id = uuid4()
+            session.add(
+                MaterialRevision(
+                    id=candidate_id,
+                    owner_user_id=owner.id,
+                    library_id=library.id,
+                    material_id=material_id,
+                    revision_number=1,
+                    status="building",
+                    material_type="novel",
+                    origin_job_id=job_id,
+                    processor_version="material-source-v1",
+                    text_protocol_version="canonical-text-v1",
+                    structure_status="building",
+                    input_delete_generation=0,
+                    published_at=None,
+                )
+            )
+            session.add(
+                MaterialSourceAsset(
+                    owner_user_id=owner.id,
+                    library_id=library.id,
+                    material_id=material_id,
+                    material_revision_id=candidate_id,
+                    file_object_id=source_id,
+                    purpose="primary_document",
+                    ordinal=1,
+                )
+            )
+            session.add(
+                JobStage(
+                    owner_user_id=owner.id,
+                    job_id=job_id,
+                    job_generation=1,
+                    stage_key="language_assessment",
+                    fence=0,
+                    state="committed",
+                    result_refs={
+                        "file_object_id": str(source_id),
+                        "input_digest": sha256(raw).hexdigest(),
+                    },
+                )
+            )
+            session.add(
+                MaterialImportIssue(
+                    owner_user_id=owner.id,
+                    library_id=library.id,
+                    material_id=material_id,
+                    material_revision_id=candidate_id,
+                    file_object_id=source_id,
+                    job_id=job_id,
+                    job_generation=1,
+                    input_delete_generation=0,
+                    input_digest=sha256(raw).digest(),
+                    stage_code="language_assessment",
+                    kind="language_confirmation_required",
+                    severity="blocking",
+                    status="open",
+                    source_refs={"file_object_id": str(source_id)},
+                    schema_version=1,
+                )
+            )
+        profile_before = (await web.get("/api/v1/users/me/profile")).json()["data"]
+        wrong = await web.post(
+            f"/api/v1/users/me/avatar-upload-intents/{intent_id}/complete",
+            json={
+                "expected_revision": profile_before["revision"],
+                "image_base64": base64.b64encode(raw).decode("ascii"),
+            },
+            headers=headers,
+        )
+        assert wrong.status_code == 404
+        assert wrong.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
+        assert (await web.get("/api/v1/users/me/profile")).json()["data"] == profile_before
+        assert await collect_avatar_garbage(
+            runtime.resources.database.sessions, now=now + timedelta(days=8)
+        ) == (0, 0)
+        async with runtime.resources.database.sessions() as session:
+            source = await session.get(FileObject, source_id)
+            intent = await session.get(UploadIntent, intent_id)
+            assert source is not None and source.object_key == f"fixture/{run_id}/final"
+            assert (
+                intent is not None
+                and intent.file_object_id == source.id
+                and intent.status == "completed"
+            )
+            assert await session.get(Material, material_id) is not None

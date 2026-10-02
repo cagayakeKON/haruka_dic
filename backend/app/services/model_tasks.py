@@ -76,11 +76,19 @@ def digest(value: object) -> bytes:
     ).digest()
 
 
+def model_references(job: Job) -> tuple[UUID, UUID]:
+    """The model executor never accepts a deterministic job or invented credential."""
+    if job.operation_kind != "credential_test" or job.credential_id is None or job.run_id is None:
+        raise AppError(ErrorCode.STATE_CONFLICT)
+    return job.credential_id, job.run_id
+
+
 def snapshot(job: Job) -> JobRead:
+    credential_id, run_id = model_references(job)
     return JobRead(
         id=job.id,
-        run_id=job.run_id,
-        credential_id=job.credential_id,
+        run_id=run_id,
+        credential_id=credential_id,
         state=job.state,
         revision=job.revision,
         generation=job.generation,
@@ -196,7 +204,10 @@ async def accept_test(
         if old.input_digest != digest(intended):
             raise AppError(ErrorCode.IDEMPOTENCY_CONFLICT)
         return TestAccepted(
-            job_id=old.id, run_id=old.run_id, generation=old.generation, state=old.state
+            job_id=old.id,
+            run_id=model_references(old)[1],
+            generation=old.generation,
+            state=old.state,
         )
     await check_capacity(session, scope.user_id)
     credential = await configuration.credential(
@@ -313,7 +324,11 @@ async def change_job(
             raise AppError(ErrorCode.STATE_CONFLICT)
         await check_capacity(session, scope.user_id)
         secret = await configuration.credential(
-            session, scope.user_id, credential_id or job.credential_id, lock=True, active=True
+            session,
+            scope.user_id,
+            credential_id or model_references(job)[0],
+            lock=True,
+            active=True,
         )
         model = await configuration.require_model(
             session,
@@ -539,6 +554,7 @@ async def execute_job(
         job = await session.get(Job, identifier)
         if job is None:
             return
+    model_references(job)
     request_token = request_id_context.set(job.request_id)
     operation_token = operation_id_context.set(job.operation_id)
     user_token = user_id_context.set(job.owner_user_id)
@@ -637,7 +653,7 @@ async def _execute_job(
         try:
             await worker_scope(session, runtime, job)
             secret = await configuration.credential(
-                session, job.owner_user_id, job.credential_id, lock=True, active=True
+                session, job.owner_user_id, model_references(job)[0], lock=True, active=True
             )
             if secret.credential_version != run.credential_version:
                 raise AppError(ErrorCode.KEY_REQUIRED)
@@ -708,7 +724,7 @@ async def _execute_job(
                 owner_user_id=owner,
                 job_id=job.id,
                 ai_run_id=run.id,
-                credential_id=job.credential_id,
+                credential_id=model_references(job)[0],
                 credential_version=run.credential_version,
                 provider=provider,
                 model_id=run.model_id,
@@ -846,7 +862,7 @@ async def publish_recorded(
         try:
             await worker_scope(session, runtime, job)
             secret = await configuration.credential(
-                session, job.owner_user_id, job.credential_id, lock=True, active=True
+                session, job.owner_user_id, model_references(job)[0], lock=True, active=True
             )
             if secret.credential_version != run.credential_version:
                 raise AppError(ErrorCode.KEY_REQUIRED)

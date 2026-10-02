@@ -23,7 +23,7 @@ pytestmark = pytest.mark.unit
 def test_dictionary_is_nonempty_deterministic_and_has_no_foreign_keys() -> None:
     first = database_document()
     assert first == database_document()
-    assert len(Base.metadata.tables) == 44
+    assert len(Base.metadata.tables) == 50
     assert all(not table.foreign_keys for table in Base.metadata.tables.values())
     assert first["source_sha256"]
     name = "ix_" + "column_" * 20

@@ -7,6 +7,7 @@ offers arbitrary user access. No public registration or recovery endpoint exists
 import asyncio
 import hashlib
 from dataclasses import dataclass
+from typing import cast
 from uuid import UUID
 
 from argon2 import PasswordHasher
@@ -42,6 +43,8 @@ LEGACY_SEED_CODE = "b0-identity-v3"
 LEGACY_SEED_DIGEST = "c34e28e2cb38b82eb6238479b63d8680a53cb97f0c06206bde99ffba2212918c"
 SEED_CODE = "identity-permissions-v3"
 SEED_VERSION = 3
+SOURCE_PERMISSION_SEED = "material-source-permissions-v1"
+SOURCE_PERMISSION_CODES = ("client.notification.read", "client.notification.update")
 
 
 class InitializationError(RuntimeError):
@@ -55,12 +58,31 @@ class InitializationResult:
     user_id: UUID | None = None
 
 
+def _identity_document() -> dict[str, object]:
+    # Preserve the already applied v3 payload; new vocabulary has its own ledger.
+    document = permission_document()
+    permissions = document["permissions"]
+    templates = document["role_templates"]
+    if not isinstance(permissions, list) or not isinstance(templates, dict):
+        raise InitializationError("permission release shape differs")
+    typed_permissions = cast(list[dict[str, object]], permissions)
+    typed_templates = cast(dict[str, list[str]], templates)
+    document["permissions"] = [
+        item for item in typed_permissions if item.get("code") not in SOURCE_PERMISSION_CODES
+    ]
+    document["role_templates"] = {
+        code: [grant for grant in grants if grant not in SOURCE_PERMISSION_CODES]
+        for code, grants in typed_templates.items()
+    }
+    return document
+
+
 def _seed_digest() -> str:
-    return hashlib.sha256(canonical_json(permission_document()).encode()).hexdigest()
+    return hashlib.sha256(canonical_json(_identity_document()).encode()).hexdigest()
 
 
 def _legacy_current_digest() -> str:
-    document = {**permission_document(), "catalog_version": LEGACY_SEED_CODE}
+    document = {**_identity_document(), "catalog_version": LEGACY_SEED_CODE}
     return hashlib.sha256(canonical_json(document).encode()).hexdigest()
 
 
@@ -138,14 +160,41 @@ async def apply_seed(settings: MaintenanceSettings) -> InitializationResult:
             previous = await _applied_seed(session)
             if previous is not None:
                 _validate_seed(previous)
-                if not await _ensure_published_menus(session):
+                extended = await _ensure_source_permissions(session)
+                menus_changed = await _ensure_published_menus(session)
+                if not (extended or menus_changed):
                     return InitializationResult(False, revision.revision)
-                await _record_change(session, revision, "menu.updated")
+                await _record_change(
+                    session, revision, "seed.applied" if extended else "menu.updated"
+                )
                 return InitializationResult(True, revision.revision)
             await _create_catalogs(session)
+            await _ensure_source_permissions(session)
             await _record_change(session, revision, "seed.applied")
             session.add(SeedVersion(code=SEED_CODE, version=SEED_VERSION, payload_sha256=digest))
             return InitializationResult(True, revision.revision)
+
+
+async def _ensure_source_permissions(session: AsyncSession) -> bool:
+    """Publish absent codes only; existing role grants and denials stay untouched."""
+    digest = hashlib.sha256(
+        canonical_json({"version": 1, "codes": SOURCE_PERMISSION_CODES}).encode()
+    ).hexdigest()
+    ledger = await session.get(SeedVersion, SOURCE_PERMISSION_SEED, with_for_update=True)
+    if ledger is not None:
+        if ledger.version != 1 or ledger.payload_sha256 != digest:
+            raise InitializationError("source permission seed differs from the applied release")
+        return False
+    for code in SOURCE_PERMISSION_CODES:
+        row = await session.get(PermissionCatalog, code, with_for_update=True)
+        if row is None:
+            session.add(
+                PermissionCatalog(code=code, audience="client", data_scope="self", enabled=True)
+            )
+        elif row.audience != "client" or row.data_scope != "self":
+            raise InitializationError("source permission semantics differ from the release")
+    session.add(SeedVersion(code=SOURCE_PERMISSION_SEED, version=1, payload_sha256=digest))
+    return True
 
 
 async def _create_catalogs(session: AsyncSession) -> None:

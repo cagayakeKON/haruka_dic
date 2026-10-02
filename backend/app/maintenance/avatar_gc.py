@@ -24,9 +24,12 @@ async def collect_avatar_garbage(
     cutoff = now or datetime.now(UTC)
     async with sessions() as session:
         pending = select(UploadIntent.user_id).where(
-            UploadIntent.status == "pending", UploadIntent.expires_at <= cutoff
+            UploadIntent.purpose == "avatar",
+            UploadIntent.status == "pending",
+            UploadIntent.expires_at <= cutoff,
         )
         released = select(FileObject.user_id).where(
+            FileObject.purpose == "avatar",
             FileObject.retention_state == "gc_pending",
             FileObject.gc_not_before_at <= cutoff,
         )
@@ -71,6 +74,7 @@ async def _collect_owner(
                     select(UploadIntent)
                     .where(
                         UploadIntent.user_id == user_id,
+                        UploadIntent.purpose == "avatar",
                         UploadIntent.status == "pending",
                         UploadIntent.expires_at <= cutoff,
                     )
@@ -89,9 +93,11 @@ async def _collect_owner(
                     .join(FileObject, FileObject.id == UploadIntent.file_object_id)
                     .where(
                         UploadIntent.user_id == user_id,
+                        UploadIntent.purpose == "avatar",
                         UploadIntent.status == "completed",
                         UploadIntent.file_object_id.is_not(None),
                         FileObject.user_id == user_id,
+                        FileObject.purpose == "avatar",
                         FileObject.retention_state == "gc_pending",
                         FileObject.gc_not_before_at <= cutoff,
                     )
@@ -110,6 +116,7 @@ async def _collect_owner(
                 .where(
                     FileObject.id == intent.file_object_id,
                     FileObject.user_id == user_id,
+                    FileObject.purpose == "avatar",
                     FileObject.retention_state == "gc_pending",
                     FileObject.gc_not_before_at <= cutoff,
                 )

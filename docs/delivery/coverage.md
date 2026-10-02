@@ -10,10 +10,10 @@
 | 个人资料/头像/语言/实例/显示 | [设置](../modules/settings.md)、[API](../contracts/api.md) | PROFILE/SET/CACHE | B2a当期资料/设置/头像/语言/实例与对应缓存分支已重新验收通过；阅读/查询偏好先保存，M2/L2接消费；声音/两类缓存L4，CSV入口L3 |
 | 完整后台与RBAC | [后台](../modules/admin.md)、[授权](../architecture/authorization.md)、[权限](../contracts/permissions.md) | ADM/PERM | B2b身份治理已有实现和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过，见[实现记录](reviews/2026-09-29-identity-governance-implementation.md)；B2c当期任务/用量/能力已按2026-10-01用户决定验收通过；随M/L/P/E增加运维资源，R2完整候选联验 |
 | 本人Key、能力测试与模型用量 | [设置](../modules/settings.md)、[用量](../contracts/model-usage.md)、[任务](../architecture/data-jobs.md) | SCF-B2/SET/USAGE-01～09 | B2c正式单能力测试与attempt已实现、独立review完成；真实3次均KEY_REJECTED，已按2026-10-01用户决定验收通过、停止真实模型验证；各调用入口增量验证真实协议/unknown/null/缓存/聚合，R2汇总 |
-| 材料公共能力 | [材料](../modules/materials-reading.md)、[三类](../contracts/material-types.md)、[结构](../contracts/material-structures.md)、[出处](../contracts/content-locator.md) | MAT/READ/TYPE/MSTR | M1导入/书库/不可变源/删除；M2～M4专用流程，E2补冻结考试引用/GC |
+| 材料公共能力 | [材料](../modules/materials-reading.md)、[三类](../contracts/material-types.md)、[结构](../contracts/material-structures.md)、[出处](../contracts/content-locator.md) | MAT/READ/TYPE/MSTR | M1三类MD/EPUB/PDF、试卷图片的导入/书库/不可变源/删除；M2～M4专用流程及MAT-P1-01已升级P0的PDF分支，E2补冻结考试引用/GC |
 | 小说 | [小说](../modules/novels.md)、[章节准备](../contracts/novel-preparation.md) | NOV/NPREP-01～06 | M2结构/正文/NLP/ruby/位置/布局；L2点句与范围查询，L4音频，L5准备/连续朗读 |
 | 课本 | [课本](../modules/textbooks.md)、[展示](../contracts/learning-presentation.md) | TBK/PRES | M3八类内容/顺序/关系/原文对照；L2/L4解释朗读；P1逐题作答反馈/重做/收藏 |
-| 视觉OCR与单图识词 | [视觉识别](../architecture/vision-recognition.md)、[收藏学习](../modules/vocabulary-practice.md) | OCR-01～05/PHOTO | M1/M4获准材料格式；L2图文查询，L3独立单图识词预览确认；分别取得模型/权限/平台证据 |
+| 视觉OCR与单图识词 | [视觉识别](../architecture/vision-recognition.md)、[收藏学习](../modules/vocabulary-practice.md) | OCR-01～05/PHOTO | M1三类PDF源层，M2～M4各自扫描PDF处理、M4另含试卷图片；L2图文查询，L3独立单图识词预览确认；分别取得模型/权限/平台证据 |
 | 收藏/词本/每日单词 | [收藏](../modules/vocabulary-practice.md)、[单词本](../modules/vocabulary-notebooks.md) | COL/VNB-01～12 | B1最小收藏不变；L1完整六类/手动/组织/日期历史；L2四卡片，L4词音；P3掌握，E2考试来源 |
 | 单词CSV | [CSV唯一协议](../contracts/vocabulary-csv.md) | CSV清单/VNB-09/VL交叉边界 | L3完整导入导出/三端文件；P3补真实学习证据并存回归，R1正式制品文件路径复验 |
 | 独立与上下文查询/卡片 | [查询](../modules/query.md)、[AI朗读](../modules/ai-speech.md)、[运行层](../architecture/agent-runtime.md) | QRY-01～10/AI/SEL/COL | L2文字/纯图/混合/四卡片含ExerciseCard、附件/拍照/粘贴、持久结果/SSE；P1/P4/E2补题目/诊断/复盘来源，不延迟独立查询 |

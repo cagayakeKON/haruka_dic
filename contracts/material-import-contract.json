@@ -1,0 +1,640 @@
+{
+  "$defs": {
+    "MaterialDelete": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "MaterialDelete",
+      "type": "object"
+    },
+    "MaterialImportCapabilitiesRead": {
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": {
+          "items": {
+            "$ref": "#/$defs/MaterialImportCapability"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "quota_bytes": {
+          "minimum": 0,
+          "title": "Quota Bytes",
+          "type": "integer"
+        },
+        "reserved_bytes": {
+          "minimum": 0,
+          "title": "Reserved Bytes",
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "upload_ttl_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Upload Ttl Seconds",
+          "type": "integer"
+        },
+        "used_bytes": {
+          "minimum": 0,
+          "title": "Used Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "capabilities",
+        "quota_bytes",
+        "used_bytes",
+        "reserved_bytes",
+        "upload_ttl_seconds"
+      ],
+      "title": "MaterialImportCapabilitiesRead",
+      "type": "object"
+    },
+    "MaterialImportCapability": {
+      "additionalProperties": false,
+      "properties": {
+        "formats": {
+          "items": {
+            "enum": [
+              "md",
+              "epub",
+              "pdf",
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "type": "string"
+          },
+          "title": "Formats",
+          "type": "array"
+        },
+        "languages": {
+          "items": {
+            "enum": [
+              "ja",
+              "en"
+            ],
+            "type": "string"
+          },
+          "title": "Languages",
+          "type": "array"
+        },
+        "material_type": {
+          "enum": [
+            "novel",
+            "textbook",
+            "exam"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        "max_size_bytes": {
+          "exclusiveMinimum": 0,
+          "title": "Max Size Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "material_type",
+        "formats",
+        "languages",
+        "max_size_bytes"
+      ],
+      "title": "MaterialImportCapability",
+      "type": "object"
+    },
+    "MaterialImportCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MaterialSourceFile"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "language": {
+          "enum": [
+            "ja",
+            "en"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "material_type": {
+          "enum": [
+            "novel",
+            "textbook",
+            "exam"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        "requested_stages": {
+          "$ref": "#/$defs/MaterialRequestedStages"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "source_material_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Material Id"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "material_type",
+        "language"
+      ],
+      "title": "MaterialImportCreate",
+      "type": "object"
+    },
+    "MaterialImportRead": {
+      "additionalProperties": false,
+      "properties": {
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Id"
+        },
+        "language": {
+          "enum": [
+            "ja",
+            "en"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "material_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Material Id"
+        },
+        "material_type": {
+          "enum": [
+            "novel",
+            "textbook",
+            "exam"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "awaiting_upload",
+            "verifying",
+            "accepted",
+            "cancelled",
+            "rejected",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "upload": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StagingUploadRead"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "material_type",
+        "language",
+        "status",
+        "expires_at"
+      ],
+      "title": "MaterialImportRead",
+      "type": "object"
+    },
+    "MaterialMetadataRead": {
+      "additionalProperties": false,
+      "properties": {
+        "analysis_status": {
+          "enum": [
+            "not_requested",
+            "pending",
+            "ready",
+            "failed"
+          ],
+          "title": "Analysis Status",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "delete_generation": {
+          "minimum": 0,
+          "title": "Delete Generation",
+          "type": "integer"
+        },
+        "first_chapter_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "First Chapter Id"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Job Id"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "enum": [
+                "ja",
+                "en"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Language"
+        },
+        "library_id": {
+          "format": "uuid",
+          "title": "Library Id",
+          "type": "string"
+        },
+        "material_type": {
+          "enum": [
+            "novel",
+            "textbook",
+            "exam"
+          ],
+          "title": "Material Type",
+          "type": "string"
+        },
+        "progress_percent": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Progress Percent"
+        },
+        "readable": {
+          "title": "Readable",
+          "type": "boolean"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "revision_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision Id"
+        },
+        "source_format": {
+          "anyOf": [
+            {
+              "enum": [
+                "md",
+                "epub",
+                "pdf",
+                "png",
+                "jpeg",
+                "webp"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Format"
+        },
+        "source_status": {
+          "enum": [
+            "parsing",
+            "readable",
+            "degraded",
+            "failed"
+          ],
+          "title": "Source Status",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "library_id",
+        "material_type",
+        "title",
+        "language",
+        "source_format",
+        "source_status",
+        "analysis_status",
+        "revision",
+        "delete_generation",
+        "revision_id",
+        "first_chapter_id",
+        "job_id",
+        "readable",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "MaterialMetadataRead",
+      "type": "object"
+    },
+    "MaterialRequestedStages": {
+      "additionalProperties": false,
+      "properties": {
+        "analyze": {
+          "const": false,
+          "default": false,
+          "title": "Analyze",
+          "type": "boolean"
+        },
+        "extract": {
+          "const": true,
+          "default": true,
+          "title": "Extract",
+          "type": "boolean"
+        }
+      },
+      "title": "MaterialRequestedStages",
+      "type": "object"
+    },
+    "MaterialSourceFile": {
+      "additionalProperties": false,
+      "properties": {
+        "filename": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Filename",
+          "type": "string"
+        },
+        "format": {
+          "enum": [
+            "md",
+            "epub",
+            "pdf",
+            "png",
+            "jpeg",
+            "webp"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "exclusiveMinimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "filename",
+        "format",
+        "size_bytes",
+        "sha256"
+      ],
+      "title": "MaterialSourceFile",
+      "type": "object"
+    },
+    "MaterialTitlePatch": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "title"
+      ],
+      "title": "MaterialTitlePatch",
+      "type": "object"
+    },
+    "StagingUploadRead": {
+      "additionalProperties": false,
+      "properties": {
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Headers",
+          "type": "object"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "method": {
+          "const": "PUT",
+          "default": "PUT",
+          "title": "Method",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "headers",
+        "expires_at"
+      ],
+      "title": "StagingUploadRead",
+      "type": "object"
+    },
+    "UploadComplete": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "UploadComplete",
+      "type": "object"
+    }
+  },
+  "models": {
+    "MaterialDelete": {
+      "$ref": "#/$defs/MaterialDelete"
+    },
+    "MaterialImportCapabilitiesRead": {
+      "$ref": "#/$defs/MaterialImportCapabilitiesRead"
+    },
+    "MaterialImportCreate": {
+      "$ref": "#/$defs/MaterialImportCreate"
+    },
+    "MaterialImportRead": {
+      "$ref": "#/$defs/MaterialImportRead"
+    },
+    "MaterialMetadataRead": {
+      "$ref": "#/$defs/MaterialMetadataRead"
+    },
+    "MaterialTitlePatch": {
+      "$ref": "#/$defs/MaterialTitlePatch"
+    },
+    "UploadComplete": {
+      "$ref": "#/$defs/UploadComplete"
+    }
+  },
+  "schema_version": 1,
+  "scope": "dto-definitions"
+}

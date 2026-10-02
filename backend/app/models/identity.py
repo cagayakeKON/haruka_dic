@@ -125,6 +125,7 @@ class Library(IdentityMixin, TimestampMixin, Base):
     __tablename__ = "libraries"
     __table_args__ = (
         UniqueConstraint("owner_user_id"),
+        CheckConstraint("notification_sequence >= 0", name="notification_sequence"),
         {
             "comment": "每个账号唯一的私有资料库根",
             "info": table_info(
@@ -139,4 +140,11 @@ class Library(IdentityMixin, TimestampMixin, Base):
         nullable=False,
         comment="服务根据已验证账号派生的库所有者",
         info=column_info("locked user", "personal_reference"),
+    )
+    notification_sequence: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("0"),
+        comment="本人通知在库根锁内分配的持久提交序号",
+        info=column_info("notification transaction"),
     )

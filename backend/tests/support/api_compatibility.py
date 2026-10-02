@@ -337,6 +337,120 @@ def compatibility_samples() -> dict[str, object]:
         **_model_samples(),
         **_model_review_samples(),
         **_governance_samples(),
+        **_material_import_samples(),
+    }
+
+
+def _material_import_samples() -> dict[str, object]:
+    """Actual DTOs generate source-only and legacy published consumer boundaries."""
+    from app.schemas.material_imports import (
+        MaterialImportCapabilitiesRead,
+        MaterialImportCapability,
+        MaterialImportRead,
+        MaterialMetadataRead,
+        StagingUploadRead,
+    )
+
+    at = datetime(2026, 10, 2, tzinfo=UTC)
+    expires = datetime(2099, 1, 1, tzinfo=UTC)
+    meta = ResponseMeta(request_id=REQUEST_ID)
+
+    def wrapped(value: ApiModel) -> object:
+        return SuccessResponse(data=value, meta=meta).model_dump(mode="json")
+
+    pending = MaterialImportRead(
+        id=RESOURCE_ID,
+        revision=1,
+        material_type="novel",
+        language="ja",
+        status="awaiting_upload",
+        expires_at=expires,
+        upload=StagingUploadRead(
+            id=REQUEST_ID,
+            url=f"/api/v1/uploads/{REQUEST_ID}/content",
+            headers={"X-Haruka-Upload-Grant": SAMPLE_NON_CREDENTIAL},
+            expires_at=expires,
+        ),
+    )
+    accepted = MaterialImportRead(
+        id=RESOURCE_ID,
+        revision=2,
+        material_type="novel",
+        language="ja",
+        status="accepted",
+        material_id=RESOURCE_ID,
+        job_id=REQUEST_ID,
+        expires_at=expires,
+    )
+    source_only = MaterialMetadataRead(
+        id=RESOURCE_ID,
+        library_id=REQUEST_ID,
+        material_type="exam",
+        title="合成试卷",
+        language="en",
+        source_format="pdf",
+        source_status="parsing",
+        analysis_status="not_requested",
+        revision=1,
+        delete_generation=0,
+        revision_id=None,
+        first_chapter_id=None,
+        job_id=REQUEST_ID,
+        readable=False,
+        created_at=at,
+        updated_at=at,
+    )
+    published = MaterialMetadataRead(
+        id=RESOURCE_ID,
+        library_id=REQUEST_ID,
+        material_type="novel",
+        title="既有小说",
+        language="ja",
+        source_format=None,
+        source_status="readable",
+        analysis_status="not_requested",
+        revision=1,
+        delete_generation=0,
+        revision_id=RESOURCE_ID,
+        first_chapter_id=REQUEST_ID,
+        job_id=None,
+        readable=True,
+        created_at=at,
+        updated_at=at,
+    )
+    return {
+        "material_import_pending": wrapped(pending),
+        "material_import_accepted": wrapped(accepted),
+        "material_metadata_pending": wrapped(source_only),
+        "material_metadata_published": wrapped(published),
+        "material_capabilities": wrapped(
+            MaterialImportCapabilitiesRead(
+                capabilities=[
+                    MaterialImportCapability(
+                        material_type="novel",
+                        formats=["md", "epub", "pdf"],
+                        languages=["ja", "en"],
+                        max_size_bytes=80 * 1024 * 1024,
+                    ),
+                    MaterialImportCapability(
+                        material_type="textbook",
+                        formats=["md", "epub", "pdf"],
+                        languages=["ja", "en"],
+                        max_size_bytes=80 * 1024 * 1024,
+                    ),
+                    MaterialImportCapability(
+                        material_type="exam",
+                        formats=["md", "epub", "pdf", "png", "jpeg", "webp"],
+                        languages=["ja", "en"],
+                        max_size_bytes=80 * 1024 * 1024,
+                    )
+                ],
+                quota_bytes=200 * 1024 * 1024,
+                used_bytes=0,
+                reserved_bytes=0,
+                upload_ttl_seconds=600,
+            )
+        ),
     }
 
 

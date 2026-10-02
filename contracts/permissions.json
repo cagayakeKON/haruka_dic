@@ -378,6 +378,16 @@
     },
     {
       "audience": "client",
+      "code": "client.notification.read",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
+      "code": "client.notification.update",
+      "data_scope": "self"
+    },
+    {
+      "audience": "client",
       "code": "client.practice.answer",
       "data_scope": "self"
     },
@@ -519,6 +529,7 @@
       "client.login",
       "client.material.list",
       "client.material.read",
+      "client.notification.read",
       "client.practice.read",
       "client.profile.read",
       "client.speech.play",
@@ -565,6 +576,8 @@
       "client.material.read",
       "client.material.reparse",
       "client.material.update",
+      "client.notification.read",
+      "client.notification.update",
       "client.practice.answer",
       "client.practice.generate",
       "client.practice.grade.request",

@@ -85,9 +85,22 @@ class Material(IdentityMixin, TimestampMixin, LibraryScopeMixin, Base):
 
     __tablename__ = "materials"
     __table_args__ = (
-        CheckConstraint("material_type IN ('novel')", name="learning_material_type"),
+        CheckConstraint(
+            "material_type IN ('novel','textbook','exam')", name="learning_material_type"
+        ),
         CheckConstraint("language IN ('ja', 'en')", name="learning_language"),
-        CheckConstraint("source_status IN ('published', 'sealed')", name="learning_source_status"),
+        CheckConstraint(
+            "source_status IN ('published','sealed','parsing','readable','degraded','failed')",
+            name="learning_source_status",
+        ),
+        CheckConstraint(
+            "title_origin IN ('filename','extracted','user') AND analysis_status IN ('not_requested','pending','ready','failed')",
+            name="source_metadata",
+        ),
+        CheckConstraint(
+            "(primary_file_object_id IS NULL AND source_format IS NULL AND material_type = 'novel' AND source_status IN ('published','sealed')) OR (primary_file_object_id IS NOT NULL AND source_format IS NOT NULL AND ((material_type IN ('novel','textbook') AND source_format IN ('md','epub','pdf')) OR (material_type = 'exam' AND source_format IN ('md','epub','pdf','png','jpeg','webp'))))",
+            name="source_file",
+        ),
         CheckConstraint("revision >= 1 AND delete_generation >= 0", name="learning_revisions"),
         Index(
             "ix_materials_learning_owner_type_created_id",
@@ -98,10 +111,32 @@ class Material(IdentityMixin, TimestampMixin, LibraryScopeMixin, Base):
             postgresql_where=text("deleted_at IS NULL"),
             info={"purpose": "bounded own source listing"},
         ),
+        Index(
+            "ix_materials_owner_library_type_updated",
+            "owner_user_id",
+            "library_id",
+            "material_type",
+            "updated_at",
+            "id",
+            postgresql_where=text("deleted_at IS NULL"),
+            info={"purpose": "stable safe metadata catalog by material type"},
+        ),
+        Index(
+            "ix_materials_owner_library_language_updated",
+            "owner_user_id",
+            "library_id",
+            "language",
+            "updated_at",
+            "id",
+            postgresql_where=text("deleted_at IS NULL"),
+            info={"purpose": "stable safe metadata catalog by declared language"},
+        ),
         {
             "comment": "current slice已发布的本人小说来源根；受控场景准备，正式上传在后续材料切片",
             "info": _table_info(
                 ("current_revision_id", "material_revisions.id", True),
+                ("primary_file_object_id", "file_objects.id", True),
+                ("initial_job_id", "jobs.id", True),
                 entrances=("controlled current slice source fixture", "future material import"),
                 deletion="tombstone first; preserve referenced snapshots and source versions",
             ),
@@ -137,6 +172,38 @@ class Material(IdentityMixin, TimestampMixin, LibraryScopeMixin, Base):
         comment="来源发布或封存状态",
         info=column_info("source publication"),
     )
+    title_origin: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        server_default=text("'user'"),
+        comment="标题来自filename extracted或user",
+        info=column_info("material import"),
+    )
+    source_format: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+        comment="验证源格式，旧受控小说无文件为空",
+        info=column_info("verified file object"),
+    )
+    primary_file_object_id: Mapped[UUID | None] = mapped_column(
+        PgUUID,
+        nullable=True,
+        comment="本人不可变主原件；旧受控小说为空",
+        info=column_info("verified file object"),
+    )
+    initial_job_id: Mapped[UUID | None] = mapped_column(
+        PgUUID,
+        nullable=True,
+        comment="源受理无模型Job；旧来源为空",
+        info=column_info("material acceptance"),
+    )
+    analysis_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        server_default=text("'not_requested'"),
+        comment="额外分析状态独立于源可用性",
+        info=column_info("material transaction"),
+    )
     revision: Mapped[int] = mapped_column(
         BigInteger,
         nullable=False,
@@ -170,16 +237,45 @@ class MaterialRevision(IdentityMixin, TimestampMixin, LibraryScopeMixin, Base):
             name="uq_learning_material_revision_number",
         ),
         CheckConstraint("revision_number >= 1", name="learning_revision_number"),
-        CheckConstraint("status IN ('published', 'sealed')", name="learning_status"),
         CheckConstraint(
-            "structure_status IN ('readable', 'degraded')", name="learning_structure_status"
+            "status IN ('building','published','failed','sealed')", name="learning_status"
+        ),
+        CheckConstraint(
+            "(material_type = 'exam' AND structure_status IS NULL AND structure_published_at IS NULL) OR (material_type IN ('novel','textbook') AND structure_status IS NOT NULL AND structure_status IN ('building','readable','degraded','failed'))",
+            name="learning_structure_status",
         ),
         CheckConstraint("input_delete_generation >= 0", name="learning_delete_generation"),
+        CheckConstraint(
+            "source_schema_version = 1 AND material_type IN ('novel','textbook','exam') AND (content_digest IS NULL OR octet_length(content_digest) = 32)",
+            name="source_contract",
+        ),
+        CheckConstraint(
+            "(origin_job_id IS NULL AND processor_version = 'legacy-novel-source-v1' AND material_type = 'novel' AND status IN ('published','sealed') AND published_at IS NOT NULL) OR (origin_job_id IS NOT NULL AND ((status IN ('building','failed') AND published_at IS NULL AND content_digest IS NULL) OR (status IN ('published','sealed') AND published_at IS NOT NULL AND content_digest IS NOT NULL)))",
+            name="source_publication",
+        ),
+        CheckConstraint(
+            "origin_job_id IS NULL OR structure_status IS NULL OR (structure_status IN ('building','failed') AND structure_published_at IS NULL) OR (structure_status IN ('readable','degraded') AND structure_published_at IS NOT NULL)",
+            name="structure_publication",
+        ),
+        Index(
+            "ix_material_revisions_owner_material_status",
+            "owner_user_id",
+            "library_id",
+            "material_id",
+            "status",
+            "id",
+            info={"purpose": "owned building source checkpoints"},
+        ),
         {
             "comment": "current slice不可变小说文字及已发布结构版本",
             "info": _table_info(
                 ("material_id", "materials.id", False),
-                entrances=("controlled current slice source fixture", "future source publication"),
+                ("origin_job_id", "jobs.id", True),
+                ("parent_revision_id", "material_revisions.id", True),
+                entrances=(
+                    "controlled current slice source fixture",
+                    "authorized source publication",
+                ),
                 deletion="retain while referenced; material tombstone blocks new references",
             ),
         },
@@ -208,10 +304,10 @@ class MaterialRevision(IdentityMixin, TimestampMixin, LibraryScopeMixin, Base):
         comment="规范文字偏移协议",
         info=column_info("content locator contract"),
     )
-    structure_status: Mapped[str] = mapped_column(
+    structure_status: Mapped[str | None] = mapped_column(
         String(24),
-        nullable=False,
-        comment="小说结构可读状态",
+        nullable=True,
+        comment="小说课本结构状态；试卷无通用结构",
         info=column_info("novel publication"),
     )
     input_delete_generation: Mapped[int] = mapped_column(
@@ -220,10 +316,52 @@ class MaterialRevision(IdentityMixin, TimestampMixin, LibraryScopeMixin, Base):
         comment="发布时材料删除代次",
         info=column_info("locked material"),
     )
-    published_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+    source_schema_version: Mapped[int] = mapped_column(
+        Integer,
         nullable=False,
-        comment="来源与结构实际发布时间",
+        server_default=text("1"),
+        comment="来源契约版本1",
+        info=column_info("source contract"),
+    )
+    processor_version: Mapped[str] = mapped_column(
+        String(80),
+        nullable=False,
+        server_default=text("'legacy-novel-source-v1'"),
+        comment="确定性源处理器版本；旧小说保留身份",
+        info=column_info("source pipeline"),
+    )
+    material_type: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        server_default=text("'novel'"),
+        comment="固定类型，由所属材料派生",
+        info=column_info("locked material"),
+    )
+    origin_job_id: Mapped[UUID | None] = mapped_column(
+        PgUUID,
+        nullable=True,
+        comment="新导入来源Job，旧受控小说无Job",
+        info=column_info("authorized source acceptance"),
+    )
+    parent_revision_id: Mapped[UUID | None] = mapped_column(
+        PgUUID, nullable=True, comment="同材料上一源版本", info=column_info("locked material")
+    )
+    content_digest: Mapped[bytes | None] = mapped_column(
+        LargeBinary,
+        nullable=True,
+        comment="已发布源结构摘要；候选为空",
+        info=column_info("validated source structure"),
+    )
+    structure_published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="新结构首次可读发布时间，独立于源发布",
+        info=column_info("type structure publication"),
+    )
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="来源实际发布UTC；building候选为空",
         info=column_info("source publication"),
     )
 
@@ -847,7 +985,7 @@ class IdempotencyRecord(IdentityMixin, TimestampMixin, Base):
             name="learning_result_pair",
         ),
         CheckConstraint(
-            "safe_response IS NOT NULL AND ((audience = 'client' AND result_kind = 'collection_item' AND result_id IS NOT NULL) OR (audience = 'admin' AND result_kind = 'governance_result' AND result_id IS NULL AND library_id IS NULL))",
+            "safe_response IS NOT NULL AND ((audience = 'client' AND result_kind IN ('collection_item','material_import') AND result_id IS NOT NULL AND library_id IS NOT NULL) OR (audience = 'admin' AND result_kind = 'governance_result' AND result_id IS NULL AND library_id IS NULL))",
             name="learning_committed_result",
         ),
         CheckConstraint(
@@ -892,16 +1030,21 @@ class IdempotencyRecord(IdentityMixin, TimestampMixin, Base):
                         service=_SERVICE + "; app.services.governance_receipts",
                         tests=_TESTS + "; backend/tests/integration/test_governance_security.py",
                     ),
-                    business_relation(
-                        "result_id",
-                        "collection_items.id",
-                        nullable=True,
-                        parent_lock="collection: "
-                        + _LOCK
-                        + "; governance: authorization_revisions → users → auth_sessions",
-                        service=_SERVICE + "; app.services.governance_receipts",
-                        tests=_TESTS + "; backend/tests/integration/test_governance_security.py",
-                    ),
+                    {
+                        **business_relation(
+                            "result_id",
+                            "collection_items.id",
+                            nullable=True,
+                            parent_lock="collection: "
+                            + _LOCK
+                            + "; governance: authorization_revisions → users → auth_sessions",
+                            service=_SERVICE + "; app.services.governance_receipts",
+                            tests=_TESTS
+                            + "; backend/tests/integration/test_governance_security.py",
+                        ),
+                        "alternative_targets": {"material_import": "material_imports.id"},
+                        "state_rule": "result_kind resolves collection_items or material_imports in the same authenticated owner library",
+                    },
                 ),
             ),
         },

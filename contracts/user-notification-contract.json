@@ -1,0 +1,261 @@
+{
+  "$defs": {
+    "NotificationsReadAll": {
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_token": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Snapshot Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "snapshot_token"
+      ],
+      "title": "NotificationsReadAll",
+      "type": "object"
+    },
+    "NotificationsReadAllResult": {
+      "additionalProperties": false,
+      "properties": {
+        "changed_count": {
+          "minimum": 0,
+          "title": "Changed Count",
+          "type": "integer"
+        },
+        "unread_count": {
+          "minimum": 0,
+          "title": "Unread Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "changed_count",
+        "unread_count"
+      ],
+      "title": "NotificationsReadAllResult",
+      "type": "object"
+    },
+    "UserNotificationPage": {
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "items": {
+            "$ref": "#/$defs/UserNotificationRead"
+          },
+          "title": "Data",
+          "type": "array"
+        },
+        "meta": {
+          "$ref": "#/$defs/UserNotificationPageMeta"
+        }
+      },
+      "required": [
+        "data",
+        "meta"
+      ],
+      "title": "UserNotificationPage",
+      "type": "object"
+    },
+    "UserNotificationPageMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "has_more": {
+          "title": "Has More",
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        },
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "snapshot_expires_at": {
+          "format": "date-time",
+          "title": "Snapshot Expires At",
+          "type": "string"
+        },
+        "snapshot_token": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Snapshot Token",
+          "type": "string"
+        },
+        "unread_count": {
+          "minimum": 0,
+          "title": "Unread Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "request_id",
+        "next_cursor",
+        "has_more",
+        "unread_count",
+        "snapshot_token",
+        "snapshot_expires_at"
+      ],
+      "title": "UserNotificationPageMeta",
+      "type": "object"
+    },
+    "UserNotificationRead": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "job_id": {
+          "format": "uuid",
+          "title": "Job Id",
+          "type": "string"
+        },
+        "message_code": {
+          "enum": [
+            "material.import.completed",
+            "material.import.failed",
+            "material.import.needs_review",
+            "notification.resource_unavailable"
+          ],
+          "title": "Message Code",
+          "type": "string"
+        },
+        "notification_kind": {
+          "enum": [
+            "completed",
+            "failed",
+            "needs_review"
+          ],
+          "title": "Notification Kind",
+          "type": "string"
+        },
+        "read_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Read At"
+        },
+        "resource_available": {
+          "title": "Resource Available",
+          "type": "boolean"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Resource Id"
+        },
+        "resource_kind": {
+          "const": "material",
+          "default": "material",
+          "title": "Resource Kind",
+          "type": "string"
+        },
+        "resource_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Resource Version"
+        },
+        "route_key": {
+          "anyOf": [
+            {
+              "const": "material",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Route Key"
+        },
+        "safe_parameters": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "maxProperties": 0,
+          "title": "Safe Parameters",
+          "type": "object"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "notification_kind",
+        "message_code",
+        "job_id",
+        "resource_id",
+        "resource_version",
+        "resource_available",
+        "route_key",
+        "created_at",
+        "read_at"
+      ],
+      "title": "UserNotificationRead",
+      "type": "object"
+    }
+  },
+  "models": {
+    "NotificationsReadAll": {
+      "$ref": "#/$defs/NotificationsReadAll"
+    },
+    "NotificationsReadAllResult": {
+      "$ref": "#/$defs/NotificationsReadAllResult"
+    },
+    "UserNotificationPage": {
+      "$ref": "#/$defs/UserNotificationPage"
+    },
+    "UserNotificationRead": {
+      "$ref": "#/$defs/UserNotificationRead"
+    }
+  },
+  "schema_version": 1,
+  "scope": "dto-definitions"
+}

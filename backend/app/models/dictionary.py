@@ -65,6 +65,25 @@ def _validate_relations(metadata: MetaData, table_name: str) -> None:
             key
         ].type.compile(dialect=dialect):
             raise ModelContractError("logical relation column types differ")
+        alternatives = relation.get("alternative_targets", {})
+        if not _record(alternatives):
+            raise ModelContractError("alternative relation targets must be structured")
+        for discriminator, alternate in alternatives.items():
+            if not discriminator or not isinstance(alternate, str):
+                raise ModelContractError("alternative relation targets must be registered")
+            alternate_parent, separator, alternate_key = alternate.partition(".")
+            if (
+                not separator
+                or alternate_parent not in metadata.tables
+                or alternate_key not in metadata.tables[alternate_parent].columns
+                or table.columns[column].type.compile(dialect=dialect)
+                != metadata.tables[alternate_parent]
+                .columns[alternate_key]
+                .type.compile(dialect=dialect)
+            ):
+                raise ModelContractError(
+                    "alternative relation target is absent or has a different type"
+                )
         registered.add(column)
     implied: set[str] = set()
     for column in table.columns:

@@ -10,7 +10,7 @@ import pytest
 import pytest_asyncio
 from argon2 import PasswordHasher
 from pydantic import SecretStr
-from sqlalchemy import func, select, text, update
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -140,7 +140,7 @@ async def test_legacy_seed_ledger_is_reused_without_duplicate_grants(
         )
         assert initialized.changed
         async with engine.connect() as connection:
-            assert await connection.scalar(select(func.count()).select_from(SeedVersion)) == 1
+            assert await connection.scalar(select(func.count()).select_from(SeedVersion)) == 2
         released = initialization.permission_document
         monkeypatch.setattr(
             initialization,
@@ -387,5 +387,78 @@ async def test_pg_constraints_and_explicit_update_paths(target: MaintenanceSetti
                             id=uuid4(), name="probe", enabled=True, protected=False, **values
                         )
                     )
+    finally:
+        await engine.dispose()
+
+
+async def test_source_permission_release_preserves_existing_role_grants(
+    target: MaintenanceSettings,
+) -> None:
+    assert (await apply_seed(target)).changed
+    engine = create_maintenance_engine(target)
+    try:
+        async with AsyncSession(engine) as session, session.begin():
+            learner = await session.scalar(select(Role).where(Role.code == "learner"))
+            assert learner is not None
+            learner.enabled = False
+            role_id = learner.id
+            # Model the already applied v3 catalog, without any new notification grants.
+            await session.execute(
+                delete(RolePermission).where(
+                    RolePermission.permission_code.in_(initialization.SOURCE_PERMISSION_CODES)
+                )
+            )
+            await session.execute(
+                delete(PermissionCatalog).where(
+                    PermissionCatalog.code.in_(initialization.SOURCE_PERMISSION_CODES)
+                )
+            )
+            await session.execute(
+                delete(SeedVersion).where(SeedVersion.code == initialization.SOURCE_PERMISSION_SEED)
+            )
+            session.add(
+                RolePermission(
+                    role_id=role_id,
+                    permission_code="client.material.import",
+                    effect="deny",
+                    data_scope="self",
+                )
+            )
+        assert (await apply_seed(target)).changed
+        assert not (await apply_seed(target)).changed
+        async with AsyncSession(engine) as session:
+            learner = await session.get(Role, role_id)
+            assert learner is not None and not learner.enabled
+            assert (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(PermissionCatalog)
+                    .where(PermissionCatalog.code.in_(initialization.SOURCE_PERMISSION_CODES))
+                )
+                == 2
+            )
+            assert (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(RolePermission)
+                    .where(
+                        RolePermission.permission_code.in_(initialization.SOURCE_PERMISSION_CODES)
+                    )
+                )
+                == 0
+            )
+            assert (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(RolePermission)
+                    .where(
+                        RolePermission.role_id == role_id,
+                        RolePermission.permission_code == "client.material.import",
+                        RolePermission.effect == "deny",
+                    )
+                )
+                == 1
+            )
+            # The existing legacy-ledger test above verifies the immutable release digest.
     finally:
         await engine.dispose()

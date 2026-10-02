@@ -327,6 +327,11 @@ class Job(IdentityMixin, TimestampMixin, Base):
             "state IN ('queued','running','retry_wait','blocked','succeeded','failed','cancel_requested','cancelled')",
             name="state",
         ),
+        CheckConstraint(
+            "(operation_kind = 'credential_test' AND credential_id IS NOT NULL AND run_id IS NOT NULL) OR "
+            "(operation_kind = 'material_import' AND credential_id IS NULL AND run_id IS NULL)",
+            name="operation_references",
+        ),
         UniqueConstraint("owner_user_id", "idempotency_digest"),
         Index("ix_jobs_owner_state", "owner_user_id", "state", "created_at", "id"),
         Index("ix_jobs_lease", "state", "lease_expires_at"),
@@ -347,11 +352,17 @@ class Job(IdentityMixin, TimestampMixin, Base):
     audience: Mapped[str] = mapped_column(
         String(16), nullable=False, comment="受理受众", info=column_info("authenticated scope")
     )
-    credential_id: Mapped[UUID] = mapped_column(
-        PgUUID, nullable=False, comment="本人凭据引用", info=column_info("locked credential")
+    credential_id: Mapped[UUID | None] = mapped_column(
+        PgUUID,
+        nullable=True,
+        comment="模型任务本人凭据；确定性材料任务为空",
+        info=column_info("locked credential"),
     )
-    run_id: Mapped[UUID] = mapped_column(
-        PgUUID, nullable=False, comment="运行引用", info=column_info("job transaction")
+    run_id: Mapped[UUID | None] = mapped_column(
+        PgUUID,
+        nullable=True,
+        comment="模型运行引用；确定性材料任务为空",
+        info=column_info("job transaction"),
     )
     operation_kind: Mapped[str] = mapped_column(
         String(64), nullable=False, comment="受控动作", info=column_info("job transaction")

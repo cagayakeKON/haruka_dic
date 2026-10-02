@@ -68,6 +68,8 @@ CLIENT_CODES = tuple(
         "client.job.read",
         "client.job.cancel",
         "client.job.retry",
+        "client.notification.read",
+        "client.notification.update",
     ]
 )
 
@@ -132,6 +134,7 @@ ROLE_TEMPLATES = MappingProxyType(
                 "client.profile.read",
                 "client.credential.read",
                 "client.job.read",
+                "client.notification.read",
                 "client.vocabulary.csv.export",
             ]
         ),

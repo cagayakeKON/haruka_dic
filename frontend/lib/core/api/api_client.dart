@@ -340,9 +340,18 @@ final class ApiClient {
   }
 
   /// Native transport semantics are explicit, never decoded as JSON envelopes.
-  Future<void> deleteEmpty(String path, {CancelToken? cancelToken}) async {
+  Future<void> deleteEmpty(
+    String path, {
+    CancelToken? cancelToken,
+    Map<String, String>? headers,
+  }) async {
     final bindingGeneration = _bindingGeneration;
-    final response = await _request(path, method: 'DELETE', cancelToken: cancelToken);
+    final response = await _request(
+      path,
+      method: 'DELETE',
+      cancelToken: cancelToken,
+      headers: headers,
+    );
     _ensureCurrentGeneration(path, bindingGeneration, method: 'DELETE');
     if (response.statusCode != 204 || (response.data != null && response.data != '')) {
       throw const ApiFailure(code: 'INVALID_RESPONSE');

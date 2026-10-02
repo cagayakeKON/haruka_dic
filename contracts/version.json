@@ -2,10 +2,12 @@
   "schema_version": 1,
   "scope": "account-and-learning",
   "sha256": {
-    "database-schema.json": "cb33092071f6dc077ab31af2452ba029fc4f7c31343ec2316bb235bf7da01ec1",
+    "database-schema.json": "d6ee57070df09efdda00d66b71280d5e0497ec9e9bcf0e351d36a42eb0a71956",
     "errors.json": "bb97cb0cc9b0a08f1ce9f5cc5f4c670efba72cfdcba95f47fd9a75f78122c1e9",
+    "material-import-contract.json": "081483b46d9649766f3df21cbab4b17ba17167d4ef0b9e7c1f6ae916db8898de",
     "openapi.json": "88597e86813da382df215064d4b39b449382a47586378ff2caa2036dfd41b0c4",
-    "permissions.json": "2696d589228a89499eb49d580a9f3f9590fd749f4a50c0aca0bea5f562aa3162",
-    "telemetry.json": "3f1297bc62959ae94764bf576384fbdaf357b8b26ecfe45c7fd065b8d88a8cf2"
+    "permissions.json": "cae5338603f7ddd6ded39d69a0b925b039135298a03f393fa3125a0357e7c4c4",
+    "telemetry.json": "3f1297bc62959ae94764bf576384fbdaf357b8b26ecfe45c7fd065b8d88a8cf2",
+    "user-notification-contract.json": "8dcecbf8002f28f3829f4a50a9c362d65107f67915a8195370485620a50bd306"
   }
 }

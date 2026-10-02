@@ -122,3 +122,26 @@ def test_default_web_origin_matches_backend_template() -> None:
     settings = load_settings(root / "backend/.env.example")
     assert isinstance(web_origin, str)
     assert web_origin in settings.allowed_origins
+
+
+def test_material_and_notification_dto_exports_resolve_without_route_claims() -> None:
+    payload = documents()
+    for name in ("material-import-contract.json", "user-notification-contract.json"):
+        document = cast(dict[str, object], payload[name])
+        assert document["scope"] == "dto-definitions"
+        encoded = json.loads(canonical_json(document))
+        for reference in encoded["models"].values():
+            parts = reference["$ref"].removeprefix("#/").split("/")
+            target = encoded
+            for part in parts:
+                target = target[part]
+            assert target["type"] == "object"
+    material = json.loads(canonical_json(payload["material-import-contract.json"]))["$defs"]
+    assert {"file", "source_material_id", "requested_stages"} <= set(
+        material["MaterialImportCreate"]["properties"]
+    )
+    assert material["MaterialRequestedStages"]["properties"]["analyze"]["const"] is False
+    notifications = json.loads(canonical_json(payload["user-notification-contract.json"]))["$defs"]
+    assert notifications["NotificationsReadAll"]["additionalProperties"] is False
+    assert set(notifications["NotificationsReadAll"]["properties"]) == {"snapshot_token"}
+    assert notifications["UserNotificationPageMeta"]["properties"]["unread_count"]["minimum"] == 0

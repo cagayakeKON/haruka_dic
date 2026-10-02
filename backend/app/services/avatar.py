@@ -139,6 +139,7 @@ async def read_avatar(session: AsyncSession, scope: ScopeContext) -> bytes:
     if (
         asset is None
         or asset.purpose != "avatar"
+        or asset.content is None
         or asset.retention_state != "referenced"
         or asset.id != extension.avatar_asset_id
     ):
@@ -180,7 +181,12 @@ async def _intent(
             lock_user=False,
         )
         found = await avatar_repository.intent(session, scope.user_id, intent_id, lock=False)
-    if found is None:
+    if (
+        found is None
+        or found.purpose != "avatar"
+        or found.target_kind != "user_extension"
+        or found.target_resource_id != scope.user_id
+    ):
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
     return found
 

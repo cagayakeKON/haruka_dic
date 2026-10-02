@@ -1,8 +1,7 @@
-"""Avatar upload intents and the published private avatar object.
+"""Purpose-restricted upload intents and immutable private source/avatar files.
 
-This slice accepts avatar only. It does not open material upload, presigned
-staging, or the storage reservation ledger. The published JPEG bytes live on
-the file row so the API can read them without the jobs object-storage profile.
+Existing avatar JPEGs keep their inline storage contract. Material sources use
+separate staging capabilities and verified private object-store final keys.
 """
 
 from datetime import datetime
@@ -16,7 +15,9 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
+    Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -35,21 +36,56 @@ _TESTS = "tests/integration/test_profile_avatar.py"
 
 
 class UploadIntent(IdentityMixin, TimestampMixin, Base):
-    """A short-lived owner declaration for one avatar upload."""
+    """A purpose-restricted owner declaration for one temporary upload."""
 
     __tablename__ = "upload_intents"
     __table_args__ = (
-        CheckConstraint("purpose = 'avatar'", name="purpose"),
-        CheckConstraint("target_kind = 'user_extension'", name="target_kind"),
-        CheckConstraint("target_resource_id = user_id", name="target_owner"),
-        CheckConstraint("declared_format IN ('jpeg', 'png', 'webp')", name="declared_format"),
-        CheckConstraint("expected_size_bytes BETWEEN 1 AND 5242880", name="expected_size"),
+        CheckConstraint("purpose IN ('avatar','primary_document')", name="purpose"),
+        CheckConstraint(
+            "(purpose = 'avatar' AND target_kind = 'user_extension') OR (purpose = 'primary_document' AND target_kind = 'material_import')",
+            name="target_kind",
+        ),
+        CheckConstraint("purpose != 'avatar' OR target_resource_id = user_id", name="target_owner"),
+        CheckConstraint(
+            "(purpose = 'avatar' AND declared_format IN ('jpeg','png','webp')) OR (purpose = 'primary_document' AND declared_format IN ('md','epub','pdf','png','jpeg','webp'))",
+            name="declared_format",
+        ),
+        CheckConstraint(
+            "expected_size_bytes > 0 AND (purpose != 'avatar' OR expected_size_bytes <= 5242880)",
+            name="expected_size",
+        ),
         CheckConstraint("octet_length(expected_sha256) = 32", name="expected_sha256"),
-        CheckConstraint("status IN ('pending', 'completed', 'failed')", name="status"),
+        CheckConstraint(
+            "(purpose = 'avatar' AND status IN ('pending','completed','failed')) OR (purpose = 'primary_document' AND status IN ('awaiting_upload','verifying','completed','failed','cancelled','expired'))",
+            name="status",
+        ),
         CheckConstraint(
             "(status = 'completed' AND file_object_id IS NOT NULL AND failure_code IS NULL) OR "
-            "(status IN ('pending', 'failed') AND file_object_id IS NULL)",
+            "(status != 'completed' AND file_object_id IS NULL)",
             name="completion",
+        ),
+        CheckConstraint("revision >= 1 AND completion_generation >= 0", name="versions"),
+        CheckConstraint(
+            "(purpose = 'avatar' AND material_type IS NULL AND storage_reservation_id IS NULL AND staging_object_key IS NULL) OR (purpose = 'primary_document' AND material_type IS NOT NULL AND material_type IN ('novel','textbook','exam') AND storage_reservation_id IS NOT NULL AND staging_object_key IS NOT NULL AND original_filename IS NOT NULL)",
+            name="purpose_source",
+        ),
+        CheckConstraint(
+            "((purpose = 'avatar' OR status != 'verifying') AND completion_lease_token IS NULL AND completion_lease_until_at IS NULL) OR (purpose = 'primary_document' AND status = 'verifying' AND completion_generation > 0 AND completion_lease_token IS NOT NULL AND completion_lease_until_at IS NOT NULL)",
+            name="completion_lease",
+        ),
+        Index(
+            "ix_upload_intents_staging_unique",
+            "staging_object_key",
+            unique=True,
+            postgresql_where=text("staging_object_key IS NOT NULL"),
+            info={"purpose": "private temporary key belongs to one intent"},
+        ),
+        Index(
+            "ix_upload_intents_final_candidate_unique",
+            "candidate_final_object_key",
+            unique=True,
+            postgresql_where=text("candidate_final_object_key IS NOT NULL"),
+            info={"purpose": "fixed input key belongs to one completion generation"},
         ),
         Index(
             "ix_upload_intents_owner_status",
@@ -72,12 +108,24 @@ class UploadIntent(IdentityMixin, TimestampMixin, Base):
                         service="app.services.avatar",
                         tests=_TESTS,
                     ),
+                    {
+                        **business_relation(
+                            "target_resource_id",
+                            "user_extensions.user_id",
+                            parent_lock=_LOCK,
+                            service="app.services.avatar",
+                            tests=_TESTS,
+                        ),
+                        "alternative_targets": {"primary_document": "material_imports.id"},
+                        "state_rule": "purpose avatar resolves user_extensions.user_id; primary_document resolves material_imports.id; owner is checked under each parent lock",
+                    },
                     business_relation(
-                        "target_resource_id",
-                        "user_extensions.user_id",
-                        parent_lock=_LOCK,
-                        service="app.services.avatar",
-                        tests=_TESTS,
+                        "storage_reservation_id",
+                        "user_storage_reservations.id",
+                        nullable=True,
+                        parent_lock="lock users, storage state, reservation, library, import then upload",
+                        service="app.services.material_imports",
+                        tests="tests/integration/test_material_imports.py",
                     ),
                     business_relation(
                         "file_object_id",
@@ -160,30 +208,93 @@ class UploadIntent(IdentityMixin, TimestampMixin, Base):
         comment="失败时的稳定错误码，不含文件内容",
         info=column_info("avatar service"),
     )
+    revision: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("1"),
+        comment="上传意图版本",
+        info=column_info("upload transaction"),
+    )
+    material_type: Mapped[str | None] = mapped_column(
+        String(16), nullable=True, comment="仅主文件为三类之一", info=column_info("import contract")
+    )
+    original_filename: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="仅显示原文件名，不作为对象路径",
+        info=column_info("validated import request", "personal"),
+    )
+    storage_reservation_id: Mapped[UUID | None] = mapped_column(
+        PgUUID,
+        nullable=True,
+        comment="主文件本人容量预留",
+        info=column_info("capacity transaction"),
+    )
+    staging_object_key: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="本人独占临时键", info=column_info("upload service")
+    )
+    completion_generation: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        server_default=text("0"),
+        comment="完成领取代次",
+        info=column_info("upload transaction"),
+    )
+    completion_lease_token: Mapped[UUID | None] = mapped_column(
+        PgUUID, nullable=True, comment="完成租约fence", info=column_info("upload transaction")
+    )
+    completion_lease_until_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="完成租约UTC截止",
+        info=column_info("upload transaction"),
+    )
+    candidate_final_object_key: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="本代次服务端独占固定副本键",
+        info=column_info("immutable source validator"),
+    )
 
 
 class FileObject(IdentityMixin, TimestampMixin, Base):
-    """The immutable avatar published for one completed upload intent."""
+    """An immutable private avatar or source published by a completed upload."""
 
     __tablename__ = "file_objects"
     __table_args__ = (
         UniqueConstraint("upload_intent_id"),
-        CheckConstraint("purpose = 'avatar'", name="purpose"),
-        CheckConstraint("media_type = 'image/jpeg'", name="media_type"),
-        CheckConstraint("format_code = 'jpeg'", name="format_code"),
+        CheckConstraint("purpose IN ('avatar','primary_document')", name="purpose"),
+        CheckConstraint("purpose != 'avatar' OR media_type = 'image/jpeg'", name="media_type"),
         CheckConstraint(
-            "pixel_width = pixel_height AND pixel_width BETWEEN 1 AND 512",
+            "(purpose = 'avatar' AND format_code = 'jpeg') OR (purpose = 'primary_document' AND format_code IN ('md','epub','pdf','png','jpeg','webp'))",
+            name="format_code",
+        ),
+        CheckConstraint(
+            "purpose != 'avatar' OR (pixel_width IS NOT NULL AND pixel_height IS NOT NULL AND pixel_width = pixel_height AND pixel_width BETWEEN 1 AND 512)",
             name="square_pixels",
         ),
         CheckConstraint(
-            "octet_length(sha256) = 32 AND octet_length(content) = size_bytes "
-            "AND size_bytes BETWEEN 1 AND 1048576",
+            "octet_length(sha256) = 32 AND size_bytes > 0 AND "
+            "((purpose = 'avatar' AND content IS NOT NULL AND octet_length(content) = size_bytes AND size_bytes <= 1048576 AND bucket_name IS NULL AND object_key IS NULL) OR "
+            "(purpose = 'primary_document' AND content IS NULL AND bucket_name IS NOT NULL AND object_key IS NOT NULL))",
             name="content_digest",
         ),
         CheckConstraint(
-            "validation_profile = 'avatar-image-v1' "
-            "AND processor_version = 'avatar-jpeg-square-v1'",
+            "(purpose = 'avatar' AND validation_profile = 'avatar-image-v1' AND processor_version = 'avatar-jpeg-square-v1') OR "
+            "(purpose = 'primary_document' AND validation_profile = 'material-source-v1' AND processor_version = 'immutable-source-v1')",
             name="processor",
+        ),
+        CheckConstraint(
+            "(pixel_width IS NULL AND pixel_height IS NULL) OR (pixel_width IS NOT NULL AND pixel_height IS NOT NULL AND pixel_width > 0 AND pixel_height > 0)",
+            name="pixel_pair",
+        ),
+        Index(
+            "ix_file_objects_final_key_unique",
+            "bucket_name",
+            "object_key",
+            unique=True,
+            postgresql_where=text("object_key IS NOT NULL"),
+            info={"purpose": "immutable private source object identity"},
         ),
         CheckConstraint(
             "(retention_state = 'referenced' AND gc_not_before_at IS NULL) OR "
@@ -284,15 +395,15 @@ class FileObject(IdentityMixin, TimestampMixin, Base):
         comment="成品验证完成时间，UTC",
         info=column_info("avatar service"),
     )
-    pixel_width: Mapped[int] = mapped_column(
+    pixel_width: Mapped[int | None] = mapped_column(
         Integer,
-        nullable=False,
+        nullable=True,
         comment="成品正方形边长",
         info=column_info("avatar image processor"),
     )
-    pixel_height: Mapped[int] = mapped_column(
+    pixel_height: Mapped[int | None] = mapped_column(
         Integer,
-        nullable=False,
+        nullable=True,
         comment="成品正方形边长，与宽度相等",
         info=column_info("avatar image processor"),
     )
@@ -308,9 +419,21 @@ class FileObject(IdentityMixin, TimestampMixin, Base):
         comment="解除引用后的最早回收时间，UTC",
         info=column_info("avatar service"),
     )
-    content: Mapped[bytes] = mapped_column(
+    content: Mapped[bytes | None] = mapped_column(
         LargeBinary,
-        nullable=False,
+        nullable=True,
         comment="去元数据后的正方形JPEG，不记录原始文件",
         info=column_info("avatar image processor", "personal"),
+    )
+    bucket_name: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="材料私有bucket，旧头像为空",
+        info=column_info("immutable source publication"),
+    )
+    object_key: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="只有服务端可写的材料final键",
+        info=column_info("immutable source publication"),
     )

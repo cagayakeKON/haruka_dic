@@ -38,6 +38,13 @@ from app.models.learning_reference import (
     NovelChapterBlock,
     SourceResultBinding,
 )
+from app.models.material_imports import (
+    MaterialImport,
+    MaterialImportIssue,
+    MaterialSourceAsset,
+    UserStorageReservation,
+    UserStorageState,
+)
 from app.models.model_tasks import (
     AiRun,
     ExternalCallAttempt,
@@ -48,8 +55,15 @@ from app.models.model_tasks import (
     ModelLimitPolicy,
     ProviderCredential,
 )
+from app.models.user_notifications import UserNotification
 
 __all__ = [
+    "MaterialImport",
+    "MaterialImportIssue",
+    "MaterialSourceAsset",
+    "UserStorageReservation",
+    "UserStorageState",
+    "UserNotification",
     "AiRun",
     "ExternalCallAttempt",
     "InboxEvent",

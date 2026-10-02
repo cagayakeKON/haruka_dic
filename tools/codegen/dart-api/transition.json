@@ -13,6 +13,7 @@
     "frontend/test/learning_contract_test.dart",
     "frontend/test/settings_contract_samples_test.dart",
     "frontend/test/model_contract_samples_test.dart",
-    "frontend/test/admin_model_operations_test.dart"
+    "frontend/test/admin_model_operations_test.dart",
+    "frontend/test/features/library/material_contract_test.dart"
   ]
 }

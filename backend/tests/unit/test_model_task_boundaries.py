@@ -45,6 +45,7 @@ def job_fixture(state: str) -> Job:
     now = datetime.now(UTC)
     return Job(
         id=uuid4(),
+        operation_kind="credential_test",
         run_id=uuid4(),
         credential_id=uuid4(),
         state=state,

@@ -492,6 +492,14 @@
         },
         {
           "audience": "client",
+          "code": "client.notification.read"
+        },
+        {
+          "audience": "client",
+          "code": "client.notification.update"
+        },
+        {
+          "audience": "client",
           "code": "client.practice.answer"
         },
         {
@@ -1316,6 +1324,152 @@
       ],
       "target_language": "ja",
       "type": "word"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_capabilities": {
+    "data": {
+      "capabilities": [
+        {
+          "formats": [
+            "md",
+            "epub",
+            "pdf"
+          ],
+          "languages": [
+            "ja",
+            "en"
+          ],
+          "material_type": "novel",
+          "max_size_bytes": 83886080
+        },
+        {
+          "formats": [
+            "md",
+            "epub",
+            "pdf"
+          ],
+          "languages": [
+            "ja",
+            "en"
+          ],
+          "material_type": "textbook",
+          "max_size_bytes": 83886080
+        },
+        {
+          "formats": [
+            "md",
+            "epub",
+            "pdf",
+            "png",
+            "jpeg",
+            "webp"
+          ],
+          "languages": [
+            "ja",
+            "en"
+          ],
+          "material_type": "exam",
+          "max_size_bytes": 83886080
+        }
+      ],
+      "quota_bytes": 209715200,
+      "reserved_bytes": 0,
+      "schema_version": 1,
+      "upload_ttl_seconds": 600,
+      "used_bytes": 0
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_import_accepted": {
+    "data": {
+      "error_code": null,
+      "expires_at": "2099-01-01T00:00:00Z",
+      "id": "018f1234-5678-7123-8123-123456789abc",
+      "job_id": "018f1234-1234-7123-8123-123456789abc",
+      "language": "ja",
+      "material_id": "018f1234-5678-7123-8123-123456789abc",
+      "material_type": "novel",
+      "revision": 2,
+      "status": "accepted",
+      "upload": null
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_import_pending": {
+    "data": {
+      "error_code": null,
+      "expires_at": "2099-01-01T00:00:00Z",
+      "id": "018f1234-5678-7123-8123-123456789abc",
+      "job_id": null,
+      "language": "ja",
+      "material_id": null,
+      "material_type": "novel",
+      "revision": 1,
+      "status": "awaiting_upload",
+      "upload": {
+        "expires_at": "2099-01-01T00:00:00Z",
+        "headers": {
+          "X-Haruka-Upload-Grant": "SYNTHETIC_SAMPLE_NOT_VALID"
+        },
+        "id": "018f1234-1234-7123-8123-123456789abc",
+        "method": "PUT",
+        "url": "/api/v1/uploads/018f1234-1234-7123-8123-123456789abc/content"
+      }
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_metadata_pending": {
+    "data": {
+      "analysis_status": "not_requested",
+      "created_at": "2026-10-02T00:00:00Z",
+      "delete_generation": 0,
+      "first_chapter_id": null,
+      "id": "018f1234-5678-7123-8123-123456789abc",
+      "job_id": "018f1234-1234-7123-8123-123456789abc",
+      "language": "en",
+      "library_id": "018f1234-1234-7123-8123-123456789abc",
+      "material_type": "exam",
+      "progress_percent": null,
+      "readable": false,
+      "revision": 1,
+      "revision_id": null,
+      "source_format": "pdf",
+      "source_status": "parsing",
+      "title": "合成试卷",
+      "updated_at": "2026-10-02T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_metadata_published": {
+    "data": {
+      "analysis_status": "not_requested",
+      "created_at": "2026-10-02T00:00:00Z",
+      "delete_generation": 0,
+      "first_chapter_id": "018f1234-1234-7123-8123-123456789abc",
+      "id": "018f1234-5678-7123-8123-123456789abc",
+      "job_id": null,
+      "language": "ja",
+      "library_id": "018f1234-1234-7123-8123-123456789abc",
+      "material_type": "novel",
+      "progress_percent": null,
+      "readable": true,
+      "revision": 1,
+      "revision_id": "018f1234-5678-7123-8123-123456789abc",
+      "source_format": null,
+      "source_status": "readable",
+      "title": "既有小说",
+      "updated_at": "2026-10-02T00:00:00Z"
     },
     "meta": {
       "request_id": "018f1234-1234-7123-8123-123456789abc"

@@ -5,16 +5,45 @@ import hashlib
 import json
 from pathlib import Path
 
+from pydantic import BaseModel
+from pydantic.json_schema import models_json_schema
+
 from app.contracts.errors import ERRORS, FIELD_MESSAGES
 from app.contracts.permissions import permission_document
 from app.core.logging import EVENTS
 from app.main import create_app
 from app.models.dictionary import database_document
 from app.schemas.frontend_telemetry import CLIENT_EVENT_ATTRIBUTES, CLIENT_EVENTS
+from app.schemas.material_imports import (
+    MaterialDelete,
+    MaterialImportCapabilitiesRead,
+    MaterialImportCreate,
+    MaterialImportRead,
+    MaterialMetadataRead,
+    MaterialTitlePatch,
+    UploadComplete,
+)
+from app.schemas.user_notifications import (
+    NotificationsReadAll,
+    NotificationsReadAllResult,
+    UserNotificationPage,
+    UserNotificationRead,
+)
 
 
 def canonical_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n"
+
+
+def dto_document(models: tuple[type[BaseModel], ...]) -> dict[str, object]:
+    """Publish DTO definitions separately from the currently implemented HTTP routes."""
+    references, definitions = models_json_schema([(model, "validation") for model in models])
+    return {
+        "schema_version": 1,
+        "scope": "dto-definitions",
+        "models": {model.__name__: references[(model, "validation")] for model in models},
+        **definitions,
+    }
 
 
 def documents() -> dict[str, object]:
@@ -23,6 +52,25 @@ def documents() -> dict[str, object]:
         "permissions.json": permission_document(),
         "database-schema.json": database_document(),
         "openapi.json": create_app(schema_only=True).openapi(),
+        "material-import-contract.json": dto_document(
+            (
+                MaterialImportCreate,
+                MaterialImportRead,
+                UploadComplete,
+                MaterialImportCapabilitiesRead,
+                MaterialMetadataRead,
+                MaterialTitlePatch,
+                MaterialDelete,
+            )
+        ),
+        "user-notification-contract.json": dto_document(
+            (
+                UserNotificationRead,
+                UserNotificationPage,
+                NotificationsReadAll,
+                NotificationsReadAllResult,
+            )
+        ),
         "errors.json": {
             "schema_version": 1,
             "locale": "zh-Hans",

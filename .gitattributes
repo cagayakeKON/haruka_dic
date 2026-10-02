@@ -16,3 +16,9 @@
 *.ttf binary
 *.woff2 binary
 *.pdf binary
+
+# Preserve the manifest-verified bytes of these already applied migrations.
+backend/alembic/versions/0010_model_tasks.py whitespace=cr-at-eol -text
+backend/alembic/versions/0011_model_job_audit.py whitespace=cr-at-eol -text
+backend/alembic/versions/0012_model_runtime_grants.py whitespace=cr-at-eol -text
+backend/alembic/versions/0013_outbox_delivery_lease.py whitespace=cr-at-eol -text

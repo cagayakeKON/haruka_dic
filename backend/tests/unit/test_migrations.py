@@ -2,6 +2,8 @@
 
 import hashlib
 import json
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -162,6 +164,46 @@ def test_bundled_head_is_verified_and_independent_of_working_directory(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     assert bundled_migration_head() == EXPECTED_REVISION
+
+
+@pytest.mark.parametrize("preserve_applied_bytes", [True, False])
+def test_clean_git_export_preserves_reviewed_migration_bytes(
+    tmp_path: Path, preserve_applied_bytes: bool
+) -> None:
+    """Git clean/smudge must retain applied bytes, including historic CRLF bundles."""
+    repo = Path(__file__).resolve().parents[3]
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    shutil.copyfile(repo / ".gitattributes", snapshot / ".gitattributes")
+    if not preserve_applied_bytes:
+        attributes = snapshot / ".gitattributes"
+        lines = attributes.read_text(encoding="utf-8").splitlines()
+        attributes.write_text(
+            "\n".join(line for line in lines if not line.endswith(" -text")) + "\n",
+            encoding="utf-8",
+        )
+    source = repo / "backend/alembic"
+    shutil.copytree(source, snapshot / "backend/alembic")
+    git = shutil.which("git")
+    assert git is not None
+    target = tmp_path / "export"
+    target.mkdir()
+    commands = (
+        [git, "init", "--quiet"],
+        [git, "add", "--", ".gitattributes", "backend/alembic"],
+        [git, "checkout-index", "--all", "--prefix=" + target.as_posix() + "/"],
+    )
+    for command in commands:
+        subprocess.run(command, cwd=snapshot, check=True, capture_output=True)  # noqa: S603 -- fixed git commands in the isolated test repository
+    manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
+    exported = target / "backend/alembic"
+    if not preserve_applied_bytes:
+        with pytest.raises(MigrationError, match="hash"):
+            load_migration_resources(exported)
+        return
+    assert load_migration_resources(exported).head == manifest["head"]
+    for relative, expected in manifest["files"].items():
+        assert hashlib.sha256((exported / relative).read_bytes()).hexdigest() == expected
 
 
 def test_packaged_head_uses_manifest_inside_resource_context(

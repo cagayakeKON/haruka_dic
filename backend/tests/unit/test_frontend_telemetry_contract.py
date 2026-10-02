@@ -97,3 +97,50 @@ def test_client_event_rejects_unregistered_content(changes: dict[str, object], r
         event, anonymous=True, web_transport=True, now=datetime.now(UTC)
     )
     assert actual == reason
+
+
+def test_material_events_accept_registered_owner_categories_and_deny_anonymous() -> None:
+    now = datetime.now(UTC)
+    for event_name in (
+        "material.import.submitted",
+        "material.metadata.updated",
+        "material.deleted",
+    ):
+        for material_type in ("novel", "textbook", "exam"):
+            payload = {
+                "event_id": str(uuid4()),
+                "record_type": "analytics",
+                "event": event_name,
+                "level": "info",
+                "occurred_at": now.isoformat(),
+                "client_platform": "web",
+                "attributes": {"material_type": material_type, "result": "success"},
+            }
+            value, reason = validate_client_event(
+                payload, anonymous=False, web_transport=True, now=now
+            )
+            assert reason is None and value is not None
+            _value, reason = validate_client_event(
+                payload, anonymous=True, web_transport=True, now=now
+            )
+            assert reason == "not_allowed_for_audience"
+
+
+def test_material_events_reject_private_and_unregistered_attributes() -> None:
+    now = datetime.now(UTC)
+    for attributes in (
+        {"material_type": "novel", "result": "success", "title": "private"},
+        {"material_type": "other", "result": "success"},
+        {"material_type": "novel", "result": "success", "duration_ms": 10},
+    ):
+        payload = {
+            "event_id": str(uuid4()),
+            "record_type": "analytics",
+            "event": "material.import.submitted",
+            "level": "info",
+            "occurred_at": now.isoformat(),
+            "client_platform": "web",
+            "attributes": attributes,
+        }
+        value, reason = validate_client_event(payload, anonymous=False, web_transport=True, now=now)
+        assert value is None and reason in {"invalid_attributes", "invalid_record"}

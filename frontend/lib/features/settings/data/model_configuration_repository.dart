@@ -33,7 +33,12 @@ abstract interface class ModelConfigurationRepository {
   Future<JobSocket> connect();
 }
 
-final class HttpModelConfigurationRepository implements ModelConfigurationRepository {
+abstract interface class MaterialJobLanguageRepository {
+  Future<ModelJob> confirmLanguage(ModelJob job, String language, String idempotencyKey);
+}
+
+final class HttpModelConfigurationRepository
+    implements ModelConfigurationRepository, MaterialJobLanguageRepository {
   HttpModelConfigurationRepository(this.auth);
   final AuthController auth;
   ApiClient get api => auth.repository.api;
@@ -104,7 +109,13 @@ final class HttpModelConfigurationRepository implements ModelConfigurationReposi
   @override
   Future<ModelJob> job(String id) => _get('/api/v1/jobs/$id', ModelJob.fromJson);
   @override
-  Future<CredentialTestResult> result(ModelJob job) => testResult(job.credentialId, job.runId);
+  Future<CredentialTestResult> result(ModelJob job) {
+    if (job.sourceImport || job.credentialId == null || job.runId == null) {
+      throw const FormatException('No model result for source job');
+    }
+    return testResult(job.credentialId!, job.runId!);
+  }
+
   @override
   Future<CredentialTestResult> testResult(String credentialId, String runId) => _get(
     '/api/v1/provider-credentials/$credentialId/tests/$runId',
@@ -155,6 +166,34 @@ final class HttpModelConfigurationRepository implements ModelConfigurationReposi
           acceptedStatuses: {200, 202},
         )).data,
       );
+  @override
+  Future<ModelJob> confirmLanguage(ModelJob job, String language, String idempotencyKey) {
+    final issue = job.languageIssue;
+    if (!job.sourceImport ||
+        job.state != 'blocked' ||
+        issue == null ||
+        !const {'ja', 'en'}.contains(language)) {
+      throw const FormatException('No pending language issue');
+    }
+    return auth.authorizedWrite(
+      (headers) async => (await api.postJson(
+        '/api/v1/jobs/${job.id}/retry',
+        {
+          'expected_revision': job.revision,
+          'language_confirmation': {
+            'language': language,
+            'input_digest': issue.inputDigest,
+            'expected_job_generation': job.generation,
+            'expected_issue_revision': issue.revision,
+          },
+        },
+        ModelJob.fromJson,
+        headers: {...headers, 'Idempotency-Key': idempotencyKey},
+        acceptedStatuses: {200, 202},
+      )).data,
+    );
+  }
+
   @override
   Future<ModelUsage> usage(Map<String, String> filters) => _get(
     Uri(

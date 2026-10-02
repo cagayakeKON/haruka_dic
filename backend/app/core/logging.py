@@ -16,6 +16,16 @@ from app.schemas.frontend_telemetry import CLIENT_EVENTS, TelemetryEvent
 EVENTS = frozenset(
     {
         "credential.created",
+        "material.import.created",
+        "material.import.accepted",
+        "material.upload.staged",
+        "material.source.accepted",
+        "material.import.completed",
+        "material.import.failed",
+        "material.import.needs_review",
+        "material.staging.cleanup_pending",
+        "material.metadata.updated",
+        "material.deleted",
         "credential.rotated",
         "credential.deleted",
         "credential.test.accepted",

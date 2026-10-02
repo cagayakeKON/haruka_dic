@@ -1333,6 +1333,11 @@
     "data": {
       "capabilities": [
         {
+          "format_max_size_bytes": {
+            "epub": 33554432,
+            "md": 20000000,
+            "pdf": 33554432
+          },
           "formats": [
             "md",
             "epub",
@@ -1343,9 +1348,14 @@
             "en"
           ],
           "material_type": "novel",
-          "max_size_bytes": 83886080
+          "max_size_bytes": 33554432
         },
         {
+          "format_max_size_bytes": {
+            "epub": 33554432,
+            "md": 20000000,
+            "pdf": 33554432
+          },
           "formats": [
             "md",
             "epub",
@@ -1356,9 +1366,17 @@
             "en"
           ],
           "material_type": "textbook",
-          "max_size_bytes": 83886080
+          "max_size_bytes": 33554432
         },
         {
+          "format_max_size_bytes": {
+            "epub": 33554432,
+            "jpeg": 20000000,
+            "md": 20000000,
+            "pdf": 33554432,
+            "png": 20000000,
+            "webp": 20000000
+          },
           "formats": [
             "md",
             "epub",
@@ -1372,13 +1390,13 @@
             "en"
           ],
           "material_type": "exam",
-          "max_size_bytes": 83886080
+          "max_size_bytes": 33554432
         }
       ],
-      "quota_bytes": 209715200,
+      "quota_bytes": 268435456,
       "reserved_bytes": 0,
       "schema_version": 1,
-      "upload_ttl_seconds": 600,
+      "upload_ttl_seconds": 900,
       "used_bytes": 0
     },
     "meta": {
@@ -1416,7 +1434,7 @@
       "upload": {
         "expires_at": "2099-01-01T00:00:00Z",
         "headers": {
-          "X-Haruka-Upload-Grant": "SYNTHETIC_SAMPLE_NOT_VALID"
+          "X-Haruka-Upload-Capability": "SYNTHETIC_SAMPLE_NOT_VALID"
         },
         "id": "018f1234-1234-7123-8123-123456789abc",
         "method": "PUT",
@@ -1469,6 +1487,66 @@
       "source_format": null,
       "source_status": "readable",
       "title": "既有小说",
+      "updated_at": "2026-10-02T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_source_job_blocked": {
+    "data": {
+      "can_cancel": true,
+      "can_retry": true,
+      "created_at": "2026-10-02T00:00:00Z",
+      "credential_id": null,
+      "error_code": "INPUT_INVALID",
+      "generation": 1,
+      "id": "018f1234-1234-7123-8123-123456789abc",
+      "language_issue": {
+        "declared_language": "en",
+        "id": "018f1234-5678-7123-8123-123456789abc",
+        "input_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "material_revision_id": "018f1234-5678-7123-8123-123456789abc",
+        "revision": 1
+      },
+      "material_id": "018f1234-5678-7123-8123-123456789abc",
+      "material_revision_id": "018f1234-5678-7123-8123-123456789abc",
+      "operation_kind": "material_import",
+      "progress_percent": 50,
+      "requires_new_attempt_confirmation": false,
+      "revision": 3,
+      "run_id": null,
+      "sequence": 2,
+      "source_status": "parsing",
+      "stage": "language_assessment",
+      "state": "blocked",
+      "updated_at": "2026-10-02T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_source_job_queued": {
+    "data": {
+      "can_cancel": true,
+      "can_retry": false,
+      "created_at": "2026-10-02T00:00:00Z",
+      "credential_id": null,
+      "error_code": null,
+      "generation": 1,
+      "id": "018f1234-1234-7123-8123-123456789abc",
+      "language_issue": null,
+      "material_id": "018f1234-5678-7123-8123-123456789abc",
+      "material_revision_id": "018f1234-5678-7123-8123-123456789abc",
+      "operation_kind": "material_import",
+      "progress_percent": 0,
+      "requires_new_attempt_confirmation": false,
+      "revision": 1,
+      "run_id": null,
+      "sequence": 0,
+      "source_status": "parsing",
+      "stage": "source_validation",
+      "state": "queued",
       "updated_at": "2026-10-02T00:00:00Z"
     },
     "meta": {
@@ -1554,12 +1632,16 @@
       "error_code": "EXTERNAL_RESULT_UNKNOWN",
       "generation": 1,
       "id": "018f1234-0000-7000-8000-000000000302",
+      "language_issue": null,
+      "material_id": null,
+      "material_revision_id": null,
       "operation_kind": "credential_test",
       "progress_percent": null,
       "requires_new_attempt_confirmation": true,
       "revision": 3,
       "run_id": "018f1234-0000-7000-8000-000000000303",
       "sequence": 3,
+      "source_status": null,
       "stage": null,
       "state": "blocked",
       "updated_at": "2026-09-30T00:00:00Z"
@@ -1581,12 +1663,16 @@
       "error_code": "EXTERNAL_RESULT_UNKNOWN",
       "generation": 1,
       "id": "018f1234-0000-7000-8000-000000000302",
+      "language_issue": null,
+      "material_id": null,
+      "material_revision_id": null,
       "operation_kind": "credential_test",
       "progress_percent": null,
       "requires_new_attempt_confirmation": true,
       "revision": 3,
       "run_id": "018f1234-0000-7000-8000-000000000303",
       "sequence": 3,
+      "source_status": null,
       "stage": null,
       "state": "blocked",
       "updated_at": "2026-09-30T00:00:00Z"

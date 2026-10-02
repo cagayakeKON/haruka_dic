@@ -11,4 +11,7 @@ class MaterialCatalogScope extends InheritedNotifier<MaterialCatalog> {
     assert(scope != null, 'MaterialCatalogScope is missing');
     return scope!.notifier!;
   }
+
+  static MaterialCatalog? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<MaterialCatalogScope>()?.notifier;
 }

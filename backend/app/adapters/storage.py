@@ -52,6 +52,25 @@ class ObjectStorage:
 
         return await self._lane.call(read)
 
+    async def get_bounded(self, key: str, maximum: int) -> bytes:
+        """Bound both reported length and actual transport bytes before allocation."""
+
+        def read() -> bytes:
+            stat = self._client.stat_object(self.bucket, key)
+            if stat.size is None or not 0 < stat.size <= maximum:
+                raise ValueError("source exceeds bounded transport")
+            response = self._client.get_object(self.bucket, key)
+            try:
+                raw = response.read(maximum + 1)
+                if len(raw) > maximum or len(raw) != stat.size:
+                    raise ValueError("source size changed")
+                return raw
+            finally:
+                response.close()
+                response.release_conn()
+
+        return await self._lane.call(read)
+
     async def remove(self, key: str) -> None:
         await self._lane.call(partial(self._client.remove_object, self.bucket, key))
 

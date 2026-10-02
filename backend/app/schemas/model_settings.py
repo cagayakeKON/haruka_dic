@@ -216,11 +216,23 @@ class TestResult(ApiModel):
     usage: ModelUsage
 
 
+class LanguageIssueRead(ApiModel):
+    id: UUID
+    revision: int = Field(ge=1)
+    input_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+    material_revision_id: UUID
+    declared_language: Literal["ja", "en"]
+
+
 class JobRead(ApiModel):
     id: UUID
-    run_id: UUID
-    credential_id: UUID
-    operation_kind: Literal["credential_test"] = "credential_test"
+    run_id: UUID | None = None
+    credential_id: UUID | None = None
+    operation_kind: Literal["credential_test", "material_import"] = "credential_test"
+    material_id: UUID | None = None
+    material_revision_id: UUID | None = None
+    source_status: Literal["parsing", "readable", "degraded", "failed"] | None = None
+    language_issue: LanguageIssueRead | None = None
     state: str
     revision: int
     generation: int
@@ -233,6 +245,33 @@ class JobRead(ApiModel):
     requires_new_attempt_confirmation: bool
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="after")
+    def operation_references(self) -> "JobRead":
+        if self.operation_kind == "credential_test":
+            if (
+                self.run_id is None
+                or self.credential_id is None
+                or self.material_id is not None
+                or self.material_revision_id is not None
+                or self.source_status is not None
+                or self.language_issue is not None
+            ):
+                raise ValueError("model jobs require credential/run references only")
+        elif (
+            self.run_id is not None
+            or self.credential_id is not None
+            or self.material_id is None
+            or self.material_revision_id is None
+            or self.source_status is None
+            or self.requires_new_attempt_confirmation
+            or (
+                self.language_issue is not None
+                and self.language_issue.material_revision_id != self.material_revision_id
+            )
+        ):
+            raise ValueError("source jobs require owned material/revision references only")
+        return self
 
 
 class JobList(ApiModel):
@@ -261,10 +300,26 @@ class JobCancel(ApiModel):
     expected_revision: int = Field(ge=1)
 
 
+class LanguageConfirmation(ApiModel):
+    language: Literal["ja", "en"]
+    input_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expected_job_generation: int = Field(ge=1)
+    expected_issue_revision: int = Field(ge=1)
+
+
 class JobRetry(ApiModel):
     expected_revision: int = Field(ge=1)
     confirm_new_attempt: bool = False
     credential_id: UUID | None = None
+    language_confirmation: LanguageConfirmation | None = None
+
+    @model_validator(mode="after")
+    def distinct_recovery(self) -> "JobRetry":
+        if self.language_confirmation is not None and (
+            self.confirm_new_attempt or self.credential_id is not None
+        ):
+            raise ValueError("Language confirmation does not invoke a model")
+        return self
 
 
 class JobEvent(ApiModel):

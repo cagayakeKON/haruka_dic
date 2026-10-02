@@ -1,6 +1,6 @@
 # Haruka 后端
 
-阶段1的B0已验收。可安装包、四个正式CLI、资源组装、统一HTTP返回、受控迁移/种子/首管理员和离线契约导出已建立；Windows/Linux干净构建与仓库外运行等证据见 [B0验收记录](../docs/delivery/reviews/2026-09-22-b0-acceptance.md)。当前 B1、B2a、B2b 已交付；B2c 已接入本人凭据与持久模型测试任务，尚待本期验收。以下 B0 描述保留其历史边界，后文记录当前增量。
+阶段1的B0已验收。可安装包、四个正式CLI、资源组装、统一HTTP返回、受控迁移/种子/首管理员和离线契约导出已建立；Windows/Linux干净构建与仓库外运行等证据见 [B0验收记录](../docs/delivery/reviews/2026-09-22-b0-acceptance.md)。阶段1已完成，B1、B2a、B2b、B2c已交付；模型可用性未验证，不再追加真实模型检查。当前按[M1实现方案](../docs/delivery/material-import-implementation.md)实施材料源导入、材料库与持久本人通知。以下 B0 描述保留其历史边界，后文记录当前增量。
 
 2026-09-26 [B0设计对齐](../docs/delivery/reviews/2026-09-26-b0-design-alignment.md)更新12张基础表中的账号/角色/授权结构、发布权限目录和Flutter基础壳；只补充受影响范围的验证，当时 B1/B2 和 NLP/AI/TTS/学习缓存业务尚未实现；不以该历史状态覆盖当前增量。原B0完整矩阵保留其历史候选身份。
 
@@ -19,7 +19,7 @@
 
 `GET /health/live` 只表示应用循环存活；`GET /health/ready` 每次检查PG连接、精确迁移版本与当前profile所需依赖，成功200、失败503，不反射完整表结构。`HARUKA_RESOURCE_PROFILE=core`只要求PG/Redis，默认jobs另检查Kafka/私有Bucket。运行账号必须是对应数据库的专用runtime角色，启动时检查实际连接身份、禁止的DDL/审计修改权限，并完整校验schema一次；失败清理此前资源并停止启动。受控迁移完成仍执行完整结构校验，具体频率与边界见[健康检查](../docs/operations/configuration.md#31-b0健康检查的执行边界)。`backend/.env.example` 是不连接基础设施的离线壳模式，始终不报告ready。基础设施就绪不代表登录或业务授权已实现。
 
-B0 时没有业务API，未注册的 `/api/v1/*` 返回统一404。当前身份与本人模型任务路由已注册，Worker领取模型测试任务，Outbox处理身份和模型事件。`--check-startup` 仍只检查共用资源生命周期，Worker创建并关闭不自动提交offset的Consumer，不消费任务。普通启动不建表、迁移、建Bucket或种子。
+B0 时没有业务API，未注册的 `/api/v1/*` 返回统一404。当前身份、本人模型任务及材料导入路由已注册；同一 Worker 按操作类型领取模型测试或材料源任务，并恢复到期租约，材料源校验不创建模型调用。导入依赖私有对象存储：短期 capability 仅授权临时内容 PUT，最终对象由后端验证后发布，不向客户端开放写入；当前 MD 上限20,000,000字节，EPUB/PDF 上限32MiB，各格式以能力接口为准。材料任务完成只表示源已提交，正文尚未进入可阅读状态。Outbox处理身份、模型和材料事件，已发布的材料通知事件保留，持久通知消费由下一实现单元接入。`--check-startup` 仍只检查共用资源生命周期，Worker创建并关闭不自动提交offset的Consumer，不消费任务。普通启动不建表、迁移、建Bucket或种子。
 
 需要保持进程时使用 `--lifecycle-only`，它要求启用jobs资源，并明确报告 `business_handlers=false`；API/Worker/Outbox支持独立绝对未来文件 `--shutdown-file` 供开发编排请求优雅退出。日常前后端联合启动使用[统一开发入口](../docs/engineering/development.md#当前可运行开发进程编排)，优先选择已登记的备用18080，避免本机8000系统保留段。
 

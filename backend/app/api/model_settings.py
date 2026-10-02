@@ -5,8 +5,9 @@ import logging
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Header, Request, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request as StarletteRequest
 
 from app.api.auth_dependencies import require_runtime, require_scope
@@ -16,6 +17,7 @@ from app.bootstrap import Resources, Runtime
 from app.contracts.errors import ErrorCode
 from app.domain.correlation import current_log_context
 from app.domain.errors import AppError
+from app.domain.scope import ScopeContext
 from app.models import AuthorizationRevision, User
 from app.models.model_tasks import (
     Job,
@@ -56,8 +58,10 @@ from app.schemas.model_settings import (
     UserLimitUpdate,
 )
 from app.schemas.responses import ApiModel, ResponseMeta, SuccessResponse
+from app.services import material_jobs
 from app.services import model_configuration as config
 from app.services import model_tasks as tasks
+from app.services.auth_crypto import AuthCrypto
 from app.services.governance_security import verify_admin_write
 
 logger = logging.getLogger(__name__)
@@ -87,6 +91,13 @@ def resources(runtime: Runtime) -> Resources:
     if runtime.resources is None:
         raise AppError(ErrorCode.SERVICE_UNAVAILABLE)
     return runtime.resources
+
+
+async def job_projection(session: AsyncSession, scope: ScopeContext, identifier: UUID) -> JobRead:
+    row = await tasks.load_job(session, scope.user_id, identifier)
+    if row.operation_kind == "material_import":
+        return await material_jobs.read_job(session, scope, identifier)
+    return await tasks.read_job(session, scope, identifier)
 
 
 @router.get(
@@ -292,10 +303,10 @@ async def usage(
     response_model=SuccessResponse[JobList],
     responses=COMMON,
     operation_id="list_my_jobs",
-    openapi_extra={"x-haruka-permissions": ["client.job.read", "client.credential.read"]},
+    openapi_extra={"x-haruka-permissions": ["client.job.read"]},
 )
 async def jobs(request: Request):
-    runtime, scope = await context(request, ("client.job.read", "client.credential.read"))
+    runtime, scope = await context(request, ("client.job.read",))
     async with resources(runtime).database.sessions() as session:
         rows = await session.scalars(
             select(Job)
@@ -303,7 +314,14 @@ async def jobs(request: Request):
             .order_by(Job.created_at.desc())
             .limit(100)
         )
-        return response(request, JobList(items=[tasks.snapshot(job) for job in rows]))
+        items: list[JobRead] = []
+        for row in rows:
+            try:
+                items.append(await job_projection(session, scope, row.id))
+            except AppError as error:
+                if error.code not in {ErrorCode.PERMISSION_DENIED, ErrorCode.RESOURCE_NOT_FOUND}:
+                    raise
+        return response(request, JobList(items=items))
 
 
 @router.get(
@@ -311,12 +329,12 @@ async def jobs(request: Request):
     response_model=SuccessResponse[JobRead],
     responses=COMMON,
     operation_id="get_my_job",
-    openapi_extra={"x-haruka-permissions": ["client.job.read", "client.credential.read"]},
+    openapi_extra={"x-haruka-permissions": ["client.job.read"]},
 )
 async def job(request: Request, job_id: UUID):
-    runtime, scope = await context(request, ("client.job.read", "client.credential.read"))
+    runtime, scope = await context(request, ("client.job.read",))
     async with resources(runtime).database.sessions() as session:
-        return response(request, await tasks.read_job(session, scope, job_id))
+        return response(request, await job_projection(session, scope, job_id))
 
 
 @router.post(
@@ -324,15 +342,20 @@ async def job(request: Request, job_id: UUID):
     response_model=SuccessResponse[JobRead],
     responses=COMMON,
     operation_id="cancel_my_job",
-    openapi_extra={"x-haruka-permissions": ["client.job.cancel", "client.credential.read"]},
+    openapi_extra={"x-haruka-permissions": ["client.job.cancel"]},
 )
 async def cancel(request: Request, job_id: UUID, payload: JobCancel):
-    runtime, scope = await context(
-        request, ("client.job.cancel", "client.credential.read"), write=True
-    )
+    runtime, scope = await context(request, ("client.job.cancel",), write=True)
     async with resources(runtime).database.sessions() as session, session.begin():
-        result = await tasks.change_job(
-            session, scope, job_id, payload.expected_revision, retry=False
+        row = await tasks.load_job(session, scope.user_id, job_id)
+        result = (
+            await material_jobs.change_job(
+                session, scope, job_id, payload.expected_revision, retry=False
+            )
+            if row.operation_kind == "material_import"
+            else await tasks.change_job(
+                session, scope, job_id, payload.expected_revision, retry=False
+            )
         )
     return response(request, result)
 
@@ -345,27 +368,54 @@ async def cancel(request: Request, job_id: UUID, payload: JobCancel):
     openapi_extra={
         "x-haruka-permissions": [
             "client.job.retry",
-            "client.credential.read",
-            "client.credential.test",
         ]
     },
 )
-async def retry(request: Request, job_id: UUID, payload: JobRetry):
+async def retry(
+    request: Request,
+    job_id: UUID,
+    payload: JobRetry,
+    idempotency_key: str | None = Header(default=None, min_length=1, max_length=128),
+):
     runtime, scope = await context(
         request,
-        ("client.job.retry", "client.credential.read", "client.credential.test"),
+        ("client.job.retry",),
         write=True,
     )
     async with resources(runtime).database.sessions() as session, session.begin():
-        result = await tasks.change_job(
-            session,
-            scope,
-            job_id,
-            payload.expected_revision,
-            retry=True,
-            confirm_new_attempt=payload.confirm_new_attempt,
-            credential_id=payload.credential_id,
-        )
+        row = await tasks.load_job(session, scope.user_id, job_id)
+        if row.operation_kind == "material_import":
+            if (
+                payload.confirm_new_attempt
+                or payload.credential_id is not None
+                or (payload.language_confirmation is not None and idempotency_key is None)
+            ):
+                raise AppError(ErrorCode.INPUT_INVALID)
+            result = await material_jobs.change_job(
+                session,
+                scope,
+                job_id,
+                payload.expected_revision,
+                retry=True,
+                confirmation=payload.language_confirmation,
+                idempotency_digest=AuthCrypto.from_settings(runtime.settings).digest(
+                    "material-language-resolution", idempotency_key
+                )
+                if idempotency_key is not None
+                else None,
+            )
+        else:
+            if payload.language_confirmation is not None:
+                raise AppError(ErrorCode.INPUT_INVALID)
+            result = await tasks.change_job(
+                session,
+                scope,
+                job_id,
+                payload.expected_revision,
+                retry=True,
+                confirm_new_attempt=payload.confirm_new_attempt,
+                credential_id=payload.credential_id,
+            )
     return response(request, result)
 
 
@@ -387,9 +437,7 @@ async def events(socket: WebSocket):
     subscriptions: dict[UUID, tuple[int, int]] = {}
 
     async def identity():
-        return await require_scope(
-            request, audience="client", permissions=("client.job.read", "client.credential.read")
-        )
+        return await require_scope(request, audience="client", permissions=("client.job.read",))
 
     try:
         await identity()
@@ -411,14 +459,14 @@ async def events(socket: WebSocket):
                             raise AppError(ErrorCode.QUOTA_EXCEEDED)
                         # Whole subscription authorization before delivering any.
                         for identifier in requested:
-                            await tasks.load_job(session, scope.user_id, identifier)
+                            await job_projection(session, scope, identifier)
                     subscriptions.update({identifier: (-1, -1) for identifier in requested})
             except TimeoutError:
                 pass
             for identifier, cursor in list(subscriptions.items()):
                 scope = await identity()
                 async with resources(runtime).database.sessions() as session:
-                    value = await tasks.read_job(session, scope, identifier)
+                    value = await job_projection(session, scope, identifier)
                 if (value.generation, value.sequence) != cursor:
                     kind = (
                         "snapshot"
@@ -648,8 +696,9 @@ def admin_snapshot(job: Job) -> AdminJobRead:
         generation=job.generation,
         sequence=job.progress_seq,
         error_code=job.error_code,
-        can_cancel=job.state in tasks.ACTIVE,
-        can_retry=job.state == "blocked",
+        can_cancel=job.state in tasks.ACTIVE
+        or (job.operation_kind == "material_import" and job.state == "blocked"),
+        can_retry=job.operation_kind == "credential_test" and job.state == "blocked",
         created_at=job.created_at,
         updated_at=job.updated_at,
     )
@@ -716,6 +765,8 @@ async def admin_job_action(
             raise AppError(ErrorCode.RESOURCE_NOT_FOUND)
         config.require_revision(row.revision, revision)
         if retry:
+            if row.operation_kind != "credential_test":
+                raise AppError(ErrorCode.STATE_CONFLICT)
             stage = await session.scalar(
                 select(JobStage).where(
                     JobStage.job_id == job_id, JobStage.job_generation == row.generation
@@ -730,13 +781,23 @@ async def admin_job_action(
                 raise AppError(ErrorCode.STATE_CONFLICT)
             row.state = "queued"
         else:
-            if row.state not in tasks.ACTIVE:
+            if row.state not in tasks.ACTIVE and not (
+                row.operation_kind == "material_import" and row.state == "blocked"
+            ):
                 raise AppError(ErrorCode.STATE_CONFLICT)
             row.state = "cancel_requested" if row.state == "running" else "cancelled"
         row.revision += 1
         row.progress_seq += 1
         row.updated_at = datetime.now(UTC)
-        await tasks.emit(session, row, "model.job.accepted" if retry else "model.job.updated")
+        await tasks.emit(
+            session,
+            row,
+            "model.job.accepted"
+            if retry
+            else "material.job.updated"
+            if row.operation_kind == "material_import"
+            else "model.job.updated",
+        )
         await config.audit(
             session, scope, "model_job.retried" if retry else "model_job.cancelled", row.id
         )

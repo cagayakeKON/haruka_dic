@@ -132,6 +132,69 @@ Future<(AuthController, HttpModelConfigurationRepository)> _fixture(
 }
 
 void main() {
+  test(
+    'material language confirmation retries the same job with the complete issue fence',
+    () async {
+      const revisionId = '018f1234-0000-7000-8000-0000000000aa';
+      const issueId = '018f1234-0000-7000-8000-0000000000bb';
+      final digest = List.filled(64, 'a').join();
+      final source = <String, Object?>{
+        ...(_sampleData('model_job') as Map).cast<String, Object?>(),
+        'operation_kind': 'material_import',
+        'run_id': null,
+        'credential_id': null,
+        'material_id': issueId,
+        'material_revision_id': revisionId,
+        'source_status': 'parsing',
+        'state': 'blocked',
+        'revision': 4,
+        'generation': 2,
+        'language_issue': {
+          'id': issueId,
+          'revision': 3,
+          'input_digest': digest,
+          'material_revision_id': revisionId,
+          'declared_language': 'ja',
+        },
+      };
+      final requests = <RequestOptions>[];
+      final (_, repository) = await _fixture((request) async {
+        requests.add(request);
+        expect(request.uri.path, '/api/v1/jobs/${_job().id}/retry');
+        return _response(
+          _success({...source, 'state': 'queued', 'language_issue': null}),
+          status: 202,
+        );
+      });
+      final job = ModelJob.fromJson(source);
+      final confirmed = await repository.confirmLanguage(job, 'en', issueId);
+      expect(confirmed.sourceImport, isTrue);
+      expect(confirmed.sourceStatus, 'parsing');
+      expect(confirmed.runId, isNull);
+      expect(requests.single.headers['Idempotency-Key'], issueId);
+      expect(requests.single.method, 'POST');
+      expect(requests.single.data, {
+        'expected_revision': 4,
+        'language_confirmation': {
+          'language': 'en',
+          'input_digest': digest,
+          'expected_job_generation': 2,
+          'expected_issue_revision': 3,
+        },
+      });
+      expect(() => repository.result(job), throwsFormatException);
+      expect(() => repository.confirmLanguage(job, 'zh', issueId), throwsFormatException);
+      expect(() => ModelJob.fromJson({...source, 'run_id': issueId}), throwsFormatException);
+      expect(
+        () => ModelJob.fromJson({
+          ...source,
+          'language_issue': {...(source['language_issue'] as Map), 'material_revision_id': issueId},
+        }),
+        throwsFormatException,
+      );
+      expect(requests, hasLength(1));
+    },
+  );
   test('credential creation and rotation carry only current mutation fields and CAS', () async {
     final mutations = <RequestOptions>[];
     final (_, repository) = await _fixture((request) async {

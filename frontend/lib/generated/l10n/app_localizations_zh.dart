@@ -4562,4 +4562,82 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authActivationApprovalTitle => '注册申请待审批';
+
+  @override
+  String get materialTitle => '材料标题';
+
+  @override
+  String get materialLanguage => '材料语言';
+
+  @override
+  String get materialFormats => '支持格式';
+
+  @override
+  String get materialSourceOnly => '原件已受理，正文尚未就绪。当前任务仅验证来源，不进行 OCR 或 AI 解析。';
+
+  @override
+  String get materialImportSourceBoundary => '本次仅验证原件；正文尚未就绪，不进行 OCR/AI 解析。';
+
+  @override
+  String get materialRename => '修改标题';
+
+  @override
+  String get materialReuse => '以另一类型重新导入';
+
+  @override
+  String get materialSourceFormat => '原件格式';
+
+  @override
+  String get materialMore => '加载更多';
+
+  @override
+  String get materialAllLanguages => '全部语言';
+
+  @override
+  String get materialUploadBusy => '正在上传与验证原件…';
+
+  @override
+  String get materialImportObserve => '查看受理结果';
+
+  @override
+  String get materialImportRetryUpload => '重试上传';
+
+  @override
+  String get materialImportVerifying => '正在确认受理结果，请查看状态。不会重复创建材料。';
+
+  @override
+  String get materialImportUnknown => '提交结果尚未确认，请先查看原意图状态。';
+
+  @override
+  String get materialImportExpired => '导入意图已过期，请重新选择文件。';
+
+  @override
+  String get materialImportCancelled => '导入已取消';
+
+  @override
+  String get materialImportRejected => '原件验证未通过';
+
+  @override
+  String get materialCapacity => '可用空间';
+
+  @override
+  String get materialImportCancel => '取消当前导入';
+
+  @override
+  String get materialImportNew => '重新选择文件';
+
+  @override
+  String get materialJobSource => '材料来源验证';
+
+  @override
+  String get materialLanguageConfirm => '确认材料语言';
+
+  @override
+  String get materialLanguageReview => '语言需要本人确认。仅恢复来源验证，不会自动解析正文。';
+
+  @override
+  String get materialReuseUnavailable => '这份材料没有可复用的原件。';
+
+  @override
+  String get materialRenameConflict => '材料版本已变化，请重新打开详情后修改。';
 }

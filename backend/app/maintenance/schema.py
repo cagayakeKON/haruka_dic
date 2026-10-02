@@ -14,7 +14,7 @@ from sqlalchemy.schema import SchemaItem
 
 from app.models import Base
 
-EXPECTED_REVISION = "0014_material_sources"
+EXPECTED_REVISION = "0016_source_candidate_retirement"
 
 
 class SchemaMismatchError(RuntimeError):
@@ -25,7 +25,7 @@ class ConstraintBaseline(BaseModel):
     """Reviewed PostgreSQL canonical expressions, paired with their exact model sources."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
-    revision: Literal["0014_material_sources"]
+    revision: Literal["0016_source_candidate_retirement"]
     model_checks: dict[str, dict[str, str]]
     database_checks: dict[str, dict[str, str]]
 

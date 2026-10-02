@@ -234,6 +234,10 @@ void main() {
         expect(options.contentType, 'application/octet-stream');
         expect(await stream!.expand((chunk) => chunk).toList(), bytes);
       }
+      if (options.method == 'DELETE') {
+        expect(options.contentType, 'application/json');
+        expect(options.data, isNull);
+      }
       return ResponseBody.fromString('', 204);
     });
     final api = ApiClient(config, adapter: adapter);

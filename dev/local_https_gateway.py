@@ -6,6 +6,7 @@ import argparse
 import contextlib
 import http.client
 import os
+import re
 import select
 import shutil
 import socket
@@ -121,7 +122,16 @@ class LocalProxy(BaseHTTPRequestHandler):
         connection: http.client.HTTPConnection | None = None
         try:
             length = int(raw_length)
-            if length < 0 or length > 2_097_152:
+            limit = (
+                32 * 1024 * 1024
+                if self.command == "PUT"
+                and re.fullmatch(
+                    r"/api/v1/uploads/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/content",
+                    self.path,
+                )
+                else 2_097_152
+            )
+            if length < 0 or length > limit:
                 raise ValueError
             body = self.rfile.read(length) if length else None
             connection = http.client.HTTPConnection(

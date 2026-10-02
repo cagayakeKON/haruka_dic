@@ -205,8 +205,38 @@ final class ModelJob {
   ModelJob.fromJson(Object? value) {
     final j = wireObject(value);
     id = wireUuid(j['id']);
-    runId = wireUuid(j['run_id']);
-    credentialId = wireUuid(j['credential_id']);
+    operationKind = j['operation_kind'] == null
+        ? 'credential_test'
+        : wireString(j['operation_kind']);
+    runId = j['run_id'] == null ? null : wireUuid(j['run_id']);
+    credentialId = j['credential_id'] == null ? null : wireUuid(j['credential_id']);
+    materialId = j['material_id'] == null ? null : wireUuid(j['material_id']);
+    materialRevisionId = j['material_revision_id'] == null
+        ? null
+        : wireUuid(j['material_revision_id']);
+    sourceStatus = j['source_status'] == null ? null : wireString(j['source_status']);
+    languageIssue = j['language_issue'] == null
+        ? null
+        : MaterialLanguageIssue.fromJson(j['language_issue']);
+    if ((operationKind != 'credential_test' && operationKind != 'material_import') ||
+        (operationKind == 'credential_test' &&
+            (runId == null ||
+                credentialId == null ||
+                materialId != null ||
+                materialRevisionId != null ||
+                sourceStatus != null ||
+                languageIssue != null)) ||
+        (operationKind == 'material_import' &&
+            (runId != null ||
+                credentialId != null ||
+                materialId == null ||
+                materialRevisionId == null ||
+                sourceStatus == null)) ||
+        (sourceStatus != null &&
+            !const {'parsing', 'readable', 'degraded', 'failed'}.contains(sourceStatus)) ||
+        (languageIssue != null && languageIssue!.materialRevisionId != materialRevisionId)) {
+      throw const FormatException('Invalid job source');
+    }
     state = wireString(j['state']);
     revision = modelInt(j['revision']);
     generation = modelInt(j['generation']);
@@ -217,8 +247,14 @@ final class ModelJob {
     canCancel = modelBool(j['can_cancel']);
     canRetry = modelBool(j['can_retry']);
     requiresConfirmation = modelBool(j['requires_new_attempt_confirmation']);
+    if (sourceImport && requiresConfirmation) {
+      throw const FormatException('A source job cannot confirm a model attempt');
+    }
   }
-  late final String id, runId, credentialId, state;
+  late final String id, state, operationKind;
+  late final String? runId, credentialId, materialId, materialRevisionId, sourceStatus;
+  late final MaterialLanguageIssue? languageIssue;
+  bool get sourceImport => operationKind == 'material_import';
   late final int revision, generation, sequence;
   late final int? progress;
   late final String? stage, errorCode;
@@ -236,6 +272,24 @@ final class ModelJob {
   bool newerThan(ModelJob previous) =>
       generation > previous.generation ||
       (generation == previous.generation && sequence > previous.sequence);
+}
+
+final class MaterialLanguageIssue {
+  MaterialLanguageIssue.fromJson(Object? value) {
+    final j = wireObject(value);
+    id = wireUuid(j['id']);
+    revision = modelInt(j['revision']);
+    inputDigest = wireString(j['input_digest']);
+    materialRevisionId = wireUuid(j['material_revision_id']);
+    declaredLanguage = wireString(j['declared_language']);
+    if (revision < 1 ||
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(inputDigest) ||
+        !const {'ja', 'en'}.contains(declaredLanguage)) {
+      throw const FormatException('Invalid language issue');
+    }
+  }
+  late final String id, inputDigest, materialRevisionId, declaredLanguage;
+  late final int revision;
 }
 
 final class CredentialTestResult {

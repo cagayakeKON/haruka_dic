@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.maintenance.migrations import load_migration_resources, locked_connection, upgrade_database
-from app.maintenance.schema import check_schema_connection
+from app.maintenance.schema import EXPECTED_REVISION, check_schema_connection
 from app.maintenance.settings import (
     MaintenanceSettings,
     create_maintenance_engine,
@@ -146,7 +146,7 @@ async def test_locked_source_upgrade_preserves_legacy_rows_and_rejects_invalid_j
         )
         await connection.commit()
     result = await upgrade_database(target, MIGRATIONS)
-    assert result.compatible and result.current_revision == "0014_material_sources"
+    assert result.compatible and result.current_revision == EXPECTED_REVISION
     async with locked_connection(target) as (connection, _ownership):
         await connection.run_sync(check_schema_connection, target.database_schema)
         for table_name in (

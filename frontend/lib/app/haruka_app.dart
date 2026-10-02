@@ -20,6 +20,10 @@ import '../dev/preview/settings_cache_adapter.dart';
 import '../features/collections/reference_controller.dart';
 import '../features/collections/reference_feature_scope.dart';
 import '../features/collections/reference_repository.dart';
+import '../features/library/data/http_material_catalog.dart';
+import '../features/library/data/material_import_repository.dart';
+import '../features/library/data/material_repository.dart';
+import '../features/library/presentation/material_catalog_scope.dart';
 import '../features/settings/data/cached_settings_repository.dart';
 import '../features/settings/data/http_settings_source.dart';
 import '../features/settings/data/language_capabilities.dart';
@@ -72,6 +76,8 @@ class _HarukaAppState extends State<HarukaApp> {
   late final ModelConfigurationController _modelConfiguration;
   late final CacheCoordinator _cache;
   late final CacheSessionBinding _cacheBinding;
+  late final HttpMaterialImportRepository _materialImports;
+  late final HttpMaterialCatalog _materialCatalog;
   late final PreviewFixtureStore _settingsDraft;
   late final PreviewSettingsCacheAdapter _settingsCache;
   late final CachedSettingsRepository _settingsRepository;
@@ -119,6 +125,14 @@ class _HarukaAppState extends State<HarukaApp> {
       _cache,
       endpoint: () => _api.endpoint,
       instanceId: () => _api.instanceId,
+    );
+    _materialImports = HttpMaterialImportRepository(_auth);
+    _materialCatalog = HttpMaterialCatalog(
+      onEvent: (event, attributes) => _telemetry.track(event, attributes: attributes),
+      auth: _auth,
+      cache: _cache,
+      repository: HttpMaterialRepository(_auth),
+      imports: _materialImports,
     );
     _serviceEndpoints = ServiceEndpointController(
       canSwitch: widget.config.platform != AppPlatform.web,
@@ -216,6 +230,8 @@ class _HarukaAppState extends State<HarukaApp> {
     }
     _serviceEndpoints.dispose();
     _modelConfiguration.dispose();
+    _materialCatalog.dispose();
+    _materialImports.dispose();
     _auth.removeListener(_onAuthChanged);
     _settingsRepository.removeListener(_onSettingsChanged);
     _settingsRepository.dispose();
@@ -420,21 +436,24 @@ class _HarukaAppState extends State<HarukaApp> {
                                     child: IgnorePointer(
                                       ignoring: revalidating,
                                       child: _auth.isAuthenticated && !_auth.admin
-                                          ? ReferenceFeatureScope(
-                                              controller: _referenceController!,
-                                              // The persistent shell is outside the router Navigator;
-                                              // its tooltips need their own overlay ancestor.
-                                              child: Overlay.wrap(
-                                                child: PreviewPersistentShell(
-                                                  location: _activeLocation,
-                                                  onNavigate: _router.go,
-                                                  onBack: () => _router.canPop()
-                                                      ? _router.pop()
-                                                      : _router.go(AppRoutes.materials),
-                                                  onOpenNotifications: () =>
-                                                      _router.go(AppRoutes.notifications),
-                                                  actions: _shellActions,
-                                                  child: child,
+                                          ? MaterialCatalogScope(
+                                              catalog: _materialCatalog,
+                                              child: ReferenceFeatureScope(
+                                                controller: _referenceController!,
+                                                // The persistent shell is outside the router Navigator;
+                                                // its tooltips need their own overlay ancestor.
+                                                child: Overlay.wrap(
+                                                  child: PreviewPersistentShell(
+                                                    location: _activeLocation,
+                                                    onNavigate: _router.go,
+                                                    onBack: () => _router.canPop()
+                                                        ? _router.pop()
+                                                        : _router.go(AppRoutes.materials),
+                                                    onOpenNotifications: () =>
+                                                        _router.go(AppRoutes.notifications),
+                                                    actions: _shellActions,
+                                                    child: child,
+                                                  ),
                                                 ),
                                               ),
                                             )

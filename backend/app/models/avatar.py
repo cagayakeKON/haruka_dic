@@ -19,6 +19,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,6 +41,10 @@ class UploadIntent(IdentityMixin, TimestampMixin, Base):
 
     __tablename__ = "upload_intents"
     __table_args__ = (
+        CheckConstraint(
+            "jsonb_typeof(retired_final_candidates) = 'array' AND jsonb_array_length(retired_final_candidates) <= 16 AND (purpose = 'primary_document' OR (retired_final_candidates = '[]'::jsonb AND candidate_cleanup_due_at IS NULL))",
+            name="candidate_retirement",
+        ),
         CheckConstraint("purpose IN ('avatar','primary_document')", name="purpose"),
         CheckConstraint(
             "(purpose = 'avatar' AND target_kind = 'user_extension') OR (purpose = 'primary_document' AND target_kind = 'material_import')",
@@ -254,6 +259,19 @@ class UploadIntent(IdentityMixin, TimestampMixin, Base):
         nullable=True,
         comment="本代次服务端独占固定副本键",
         info=column_info("immutable source validator"),
+    )
+    retired_final_candidates: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'[]'::jsonb"),
+        comment="服务端退休候选键账本，持续可复查，不含已发布副本",
+        info=column_info("source completion fence"),
+    )
+    candidate_cleanup_due_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="退休副本下一次有界复查UTC时间",
+        info=column_info("source garbage collection"),
     )
 
 

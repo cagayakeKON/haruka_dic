@@ -58,6 +58,8 @@ final class ModelConfigurationController extends ChangeNotifier {
     'client.job.read',
     'client.job.cancel',
     'client.job.retry',
+    'client.material.read',
+    'client.exam.read',
   ].map((p) => allows(p)).join(':');
   Future<void>? _loadFlight, _jobsFlight;
   JobSocket? _socket;
@@ -391,16 +393,18 @@ final class ModelConfigurationController extends ChangeNotifier {
   }
 
   Future<void> _loadResult(ModelJob job) async {
-    if (!allows('client.credential.read') ||
+    if (job.sourceImport ||
+        job.runId == null ||
+        !allows('client.credential.read') ||
         results.containsKey(job.runId) ||
-        !_resultFlights.add(job.runId)) {
+        !_resultFlights.add(job.runId!)) {
       return;
     }
     final generation = _generation;
     try {
       final result = await repository.result(job);
       if (_current(generation)) {
-        results[job.runId] = result;
+        results[job.runId!] = result;
         usage = null;
         _notify();
       }
@@ -417,6 +421,18 @@ final class ModelConfigurationController extends ChangeNotifier {
   Future<void> cancel(ModelJob job) async => _jobWrite(() => repository.cancel(job));
   Future<void> retry(ModelJob job, bool confirmation) async =>
       _jobWrite(() => repository.retry(job, confirmation, newRequestId()));
+  Future<void> confirmLanguage(ModelJob job, String language) async {
+    final transport = repository;
+    if (transport is! MaterialJobLanguageRepository) return;
+    await _jobWrite(
+      () => (transport as MaterialJobLanguageRepository).confirmLanguage(
+        job,
+        language,
+        newRequestId(),
+      ),
+    );
+  }
+
   Future<void> _jobWrite(Future<ModelJob> Function() action) async {
     if (submitting) return;
     final generation = _generation;

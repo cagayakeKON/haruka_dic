@@ -71,6 +71,8 @@ abstract final class AppRoutes {
   static const accountSessions = '/account/sessions';
   static const materials = '/reference/materials';
   static const material = '/material/:id';
+  static const materialImport = '/materials/import';
+  static const materialDetails = '/material/:id/details';
   static const collections = '/collections';
   static const query = '/query';
   static const exercise = '/exercise';
@@ -119,6 +121,7 @@ abstract final class AppRoutes {
 
   static String mockMaterialPath(String id) => '/mock/material/$id';
   static String materialPath(String id) => '/material/$id';
+  static String materialDetailsPath(String id) => '/material/$id/details';
   static String mockMaterialDetailsPath(String id) => '/mock/material/$id/details';
   static String mockCollectionPath(String id) => '/mock/collection/$id';
   static String mockWordPath(String id) => '$mockWordPrefix$id';
@@ -833,6 +836,32 @@ GoRouter createRouter(
         auth,
         () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.material.read')
             ? MaterialEntryPage(materialId: state.pathParameters['id']!)
+            : StatusPage(
+                id: UiTestIds.notFoundPage,
+                title: AppLocalizations.of(context).apiPermissionDenied,
+                description: AppLocalizations.of(context).authBackToLogin,
+              ),
+      ),
+    ),
+    _appRoute(
+      path: AppRoutes.materialImport,
+      builder: (context, state) => _watchAuth(
+        auth,
+        () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.material.import')
+            ? ImportPage(sourceMaterialId: state.uri.queryParameters['source_material_id'])
+            : StatusPage(
+                id: UiTestIds.notFoundPage,
+                title: AppLocalizations.of(context).apiPermissionDenied,
+                description: AppLocalizations.of(context).authBackToLogin,
+              ),
+      ),
+    ),
+    _appRoute(
+      path: AppRoutes.materialDetails,
+      builder: (context, state) => _watchAuth(
+        auth,
+        () => auth.isAuthenticated && !auth.admin && auth.access!.allows('client.material.read')
+            ? MaterialDetailsPage(materialId: state.pathParameters['id']!)
             : StatusPage(
                 id: UiTestIds.notFoundPage,
                 title: AppLocalizations.of(context).apiPermissionDenied,

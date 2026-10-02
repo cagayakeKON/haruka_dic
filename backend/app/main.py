@@ -20,6 +20,7 @@ from app.api.exception_handlers import install_exception_handlers
 from app.api.frontend_telemetry import router as frontend_telemetry_router
 from app.api.health import router
 from app.api.learning_reference import router as learning_reference_router
+from app.api.material_imports import router as material_imports_router
 from app.api.menu_governance import router as menu_governance_router
 from app.api.model_settings import router as model_settings_router
 from app.api.profile import router as profile_router
@@ -74,6 +75,7 @@ def create_app(settings: Settings | None = None, *, schema_only: bool = False) -
     application.include_router(router)
     application.include_router(authentication_router)
     application.include_router(learning_reference_router)
+    application.include_router(material_imports_router)
     application.include_router(profile_router)
     application.include_router(audit_governance_router)
     application.include_router(menu_governance_router)
@@ -90,7 +92,7 @@ def create_app(settings: Settings | None = None, *, schema_only: bool = False) -
         CORSMiddleware,
         allow_origins=list(settings.allowed_origins) if settings else [],
         allow_credentials=True,
-        allow_methods=["GET", "HEAD", "OPTIONS", "POST", "PATCH", "DELETE"],
+        allow_methods=["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=[
             "Content-Type",
             "Authorization",
@@ -99,6 +101,7 @@ def create_app(settings: Settings | None = None, *, schema_only: bool = False) -
             "X-Client-Request-ID",
             "X-Operation-ID",
             "X-Haruka-Expected-Session",
+            "X-Haruka-Upload-Capability",
         ],
         expose_headers=["X-Request-ID", "X-Haruka-Instance-ID", "X-Haruka-Session-Ref"],
     )

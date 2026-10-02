@@ -177,7 +177,7 @@ void main() {
           ),
           named: 'query',
         ),
-        force: true,
+        force: false,
         preserveCurrent: false,
       ),
     ).called(1);
@@ -387,7 +387,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('slow periodic refresh stays visible and does not start another request', (
+  testWidgets('idle time and app resume keep rows mounted without a business refresh', (
     tester,
   ) async {
     final catalog = MockMaterialCatalog();
@@ -423,12 +423,21 @@ void main() {
     expect(find.text('ready'), findsOneWidget);
     await tester.pump(const Duration(seconds: 30));
     expect(find.text('ready'), findsOneWidget);
-    verify(catalog.refresh(query: anyNamed('query'), force: true, preserveCurrent: true)).called(1);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    verifyNever(
+      catalog.refresh(
+        query: anyNamed('query'),
+        force: anyNamed('force'),
+        preserveCurrent: anyNamed('preserveCurrent'),
+      ),
+    );
     pending.complete();
     await tester.pump();
   });
 
-  testWidgets('returning to the material list gates old rows until access is rechecked', (
+  testWidgets('returning to unchanged material rows preserves their element with zero reads', (
     tester,
   ) async {
     final catalog = MockMaterialCatalog();
@@ -483,42 +492,20 @@ void main() {
       ),
     ).thenAnswer((_) => pending.future);
 
+    final row = tester.element(find.text('private material rows', skipOffstage: false));
     await tester.pageBack();
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.text('private material rows'), findsNothing);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    verify(catalog.refresh(query: anyNamed('query'), force: true, preserveCurrent: false))
-        .called(1);
-    pending.complete();
     await tester.pumpAndSettle();
     expect(find.text('private material rows'), findsOneWidget);
-
-    clearInteractions(catalog);
-    final periodicPending = Completer<void>();
-    final returnPending = Completer<void>();
-    var refreshCalls = 0;
-    when(
+    expect(tester.element(find.text('private material rows')), same(row));
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    verifyNever(
       catalog.refresh(
         query: anyNamed('query'),
         force: anyNamed('force'),
         preserveCurrent: anyNamed('preserveCurrent'),
       ),
-    ).thenAnswer((_) => ++refreshCalls == 1 ? periodicPending.future : returnPending.future);
-    await tester.pump(const Duration(seconds: 30));
-    expect(find.text('private material rows'), findsOneWidget);
-    await tester.tap(find.text('open detail'));
-    await tester.pumpAndSettle();
-    await tester.pageBack();
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(refreshCalls, 1);
-    expect(find.text('private material rows'), findsNothing);
-    periodicPending.complete();
-    await tester.pump();
-    expect(refreshCalls, 2);
-    expect(find.text('private material rows'), findsNothing);
-    returnPending.complete();
-    await tester.pumpAndSettle();
-    expect(find.text('private material rows'), findsOneWidget);
+    );
+    pending.complete();
   });
 
   testWidgets('phone list restores its scroll position after material route return', (
@@ -598,8 +585,7 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         final catalog = MockMaterialCatalog();
         final materials = List.generate(12, _scrollMaterial);
-        final returnPending = Completer<void>();
-        var holdReturn = false;
+        final publishChange = _catalogChanges(catalog);
         when(catalog.status).thenReturn(MaterialCatalogStatus.ready);
         when(catalog.filterMaterials(any)).thenAnswer((_) => List.of(materials));
         when(catalog.findById(any)).thenAnswer(
@@ -613,7 +599,7 @@ void main() {
             force: anyNamed('force'),
             preserveCurrent: anyNamed('preserveCurrent'),
           ),
-        ).thenAnswer((_) => holdReturn ? returnPending.future : Future<void>.value());
+        ).thenAnswer((_) async {});
         await tester.pumpWidget(buildTestPreviewApp(materialCatalog: catalog));
         await tester.pumpAndSettle();
         final view = desktop ? find.byType(DesktopLibraryResults) : find.byType(MobileLibraryView);
@@ -637,17 +623,24 @@ void main() {
         }
         await tester.pumpAndSettle();
 
-        holdReturn = true;
+        clearInteractions(catalog);
         if (insertAhead) {
           materials.insert(0, _scrollMaterial(99));
         } else {
           materials.removeAt(0);
         }
+        publishChange();
         await tester.binding.handlePopRoute();
         await tester.pump(const Duration(seconds: 1));
         await tester.pump();
-        expect(find.byType(desktop ? DesktopLibraryResults : MobileLibraryResults), findsNothing);
-        returnPending.complete();
+        expect(find.byType(desktop ? DesktopLibraryResults : MobileLibraryResults), findsOneWidget);
+        verifyNever(
+          catalog.refresh(
+            query: anyNamed('query'),
+            force: anyNamed('force'),
+            preserveCurrent: anyNamed('preserveCurrent'),
+          ),
+        );
         await tester.pumpAndSettle();
         final restoredCard = find.ancestor(of: find.text('滚动小说 5'), matching: find.byType(Card));
         expect(restoredCard, findsOneWidget);
@@ -656,6 +649,7 @@ void main() {
           await tester.tap(find.text('滚动小说 5'));
           await tester.pumpAndSettle();
           materials.insert(0, _scrollMaterial(98));
+          publishChange();
           await tester.binding.handlePopRoute();
           await tester.pumpAndSettle();
           final secondCard = find.ancestor(of: find.text('滚动小说 5'), matching: find.byType(Card));
@@ -821,6 +815,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final catalog = MockMaterialCatalog();
+      final publishChange = _catalogChanges(catalog);
       const materialId = '11111111-1111-4111-8111-111111111111';
       final material = MaterialSummary(
         id: materialId,
@@ -847,12 +842,23 @@ void main() {
         await tester.tap(find.text('删除前的小说'));
       }
       await tester.pumpAndSettle();
+      clearInteractions(catalog);
       available = false;
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
       expect(find.text(desktop ? '材料已删除' : '材料已删除或不可读取'), findsNothing);
       await tester.pump(const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+      expect(find.text(desktop ? '材料已删除' : '材料已删除或不可读取'), findsNothing);
+      verifyNever(
+        catalog.refresh(
+          query: anyNamed('query'),
+          force: anyNamed('force'),
+          preserveCurrent: anyNamed('preserveCurrent'),
+        ),
+      );
+      publishChange();
       await tester.pumpAndSettle();
       expect(find.text(desktop ? '材料已删除' : '材料已删除或不可读取'), findsOneWidget);
       if (desktop) {
@@ -906,3 +912,19 @@ MaterialSummary _scrollMaterial(int index) => MaterialSummary(
   cover: '书',
   sectionCount: 2,
 );
+
+/// A real mutation signal replaces the obsolete timer/route-refresh assumption.
+VoidCallback _catalogChanges(MockMaterialCatalog catalog) {
+  final listeners = <VoidCallback>{};
+  when(catalog.addListener(any)).thenAnswer((invocation) {
+    listeners.add(invocation.positionalArguments.single as VoidCallback);
+  });
+  when(catalog.removeListener(any)).thenAnswer((invocation) {
+    listeners.remove(invocation.positionalArguments.single as VoidCallback);
+  });
+  return () {
+    for (final listener in List.of(listeners)) {
+      listener();
+    }
+  };
+}

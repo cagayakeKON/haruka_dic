@@ -349,6 +349,7 @@ final class ApiClient {
     final response = await _request(
       path,
       method: 'DELETE',
+      contentType: 'application/json',
       cancelToken: cancelToken,
       headers: headers,
     );

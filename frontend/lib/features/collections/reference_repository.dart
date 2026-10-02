@@ -1,6 +1,7 @@
 import '../../core/api/api_client.dart';
 import '../../core/api/learning_models.dart';
 import '../../core/api/responses.dart';
+import '../../core/api/wire.dart';
 
 /// Explanation language of the currently published reference-card flow.
 /// It is not the interface locale or a user-editable preference.
@@ -14,11 +15,25 @@ final class ReferenceRepository {
   Future<PageResponse<MaterialSummary>> materials(
     Map<String, String> headers, {
     String? cursor,
-  }) => api.getPage(
-    '/api/v1/materials?limit=20${cursor == null ? '' : '&cursor=${Uri.encodeQueryComponent(cursor)}'}',
-    MaterialSummary.fromJson,
-    headers: headers,
-  );
+  }) async {
+    final page = await api.getPage(
+      '/api/v1/materials?limit=20${cursor == null ? '' : '&cursor=${Uri.encodeQueryComponent(cursor)}'}',
+      wireObject,
+      headers: headers,
+    );
+    return PageResponse(
+      data: [
+        for (final row in page.data)
+          if (row['material_type'] == 'novel' &&
+              row['readable'] != false &&
+              row['revision_id'] != null &&
+              row['first_chapter_id'] != null)
+            MaterialSummary.fromJson(row),
+      ],
+      meta: page.meta,
+      nextCursor: page.nextCursor,
+    );
+  }
 
   Future<NovelChapter> chapter(MaterialSummary material, Map<String, String> headers) async {
     final result = await api.getJson(

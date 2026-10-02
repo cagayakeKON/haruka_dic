@@ -88,7 +88,7 @@ final class HttpMaterialImportRepository implements MaterialImportRepository {
         !capability.formats.contains(format) ||
         !capability.languages.contains(language) ||
         size < 1 ||
-        size > capability.maxSizeBytes ||
+        size > capability.limitFor(format) ||
         size > limits.availableBytes) {
       throw const ApiFailure(code: 'INPUT_INVALID');
     }

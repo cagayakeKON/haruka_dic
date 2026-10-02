@@ -24,6 +24,8 @@ import 'package:haruka/generated/ui_test_ids.dart';
 import 'package:haruka/shared/identified.dart';
 
 import 'published_novel_reader.dart';
+import '../../../core/api/learning_models.dart' as published;
+import 'material_management_controls.dart';
 
 void _unused() {}
 void _unusedBool(bool _) {}
@@ -193,6 +195,27 @@ class _MaterialEntryPageState extends State<MaterialEntryPage> {
   @override
   Widget build(BuildContext context) {
     final reference = ReferenceFeatureScope.maybeOf(context);
+    final live = liveMaterialCatalog(context);
+    if (live != null) {
+      return LiveMaterialDetailsPage(
+        materialId: widget.materialId,
+        catalog: live,
+        reader: reference == null
+            ? null
+            : (row) => PublishedNovelReader(
+                materialId: widget.materialId,
+                reference: reference,
+                available: published.MaterialSummary(
+                  id: row.id,
+                  libraryId: row.libraryId,
+                  revisionId: row.contentRevisionId!,
+                  firstChapterId: row.firstChapterId!,
+                  title: row.title,
+                  language: row.language!,
+                ),
+              ),
+      );
+    }
     if (reference != null) {
       return PublishedNovelReader(materialId: widget.materialId, reference: reference);
     }
@@ -241,79 +264,85 @@ class MaterialDetailsPage extends StatelessWidget {
   final String materialId;
 
   @override
-  Widget build(BuildContext context) => MaterialCatalogAccess(
-    builder: (context, catalog) {
-      final item = catalog.findById(materialId);
-      if (item == null) {
-        final l10n = AppLocalizations.of(context);
-        return PreviewPageFrame(
-          location: AppRoutes.mockLibrary,
-          title: l10n.mockMaterialUnavailableTitle,
-          detail: true,
-          desktopBackLabel: l10n.mockLibraryTitle,
-          onBack: () => _returnToLibrary(context),
-          mobile: Center(child: Text(l10n.mockMaterialDeletedMessage)),
-          desktop: Center(child: Text(l10n.mockMaterialDeletedMessage)),
-        );
-      }
-      final content = HarukaSurface(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(item.title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            Text(item.description),
-            const SizedBox(height: 15),
-            Text(
-              AppLocalizations.of(context)
-                  .mockMaterialTypeDetail(materialTypeLabel(context, item.type)),
-            ),
-            Text(
-              AppLocalizations.of(context).mockMaterialLanguageDetail(
-                item.language == 'ja'
-                    ? AppLocalizations.of(context).mockMaterialJapanese
-                    : AppLocalizations.of(context).mockMaterialEnglish,
+  Widget build(BuildContext context) {
+    final live = liveMaterialCatalog(context);
+    if (live != null) return LiveMaterialDetailsPage(materialId: materialId, catalog: live);
+    return MaterialCatalogAccess(
+      builder: (context, catalog) {
+        final item = catalog.findById(materialId);
+        if (item == null) {
+          final l10n = AppLocalizations.of(context);
+          return PreviewPageFrame(
+            location: AppRoutes.mockLibrary,
+            title: l10n.mockMaterialUnavailableTitle,
+            detail: true,
+            desktopBackLabel: l10n.mockLibraryTitle,
+            onBack: () => _returnToLibrary(context),
+            mobile: Center(child: Text(l10n.mockMaterialDeletedMessage)),
+            desktop: Center(child: Text(l10n.mockMaterialDeletedMessage)),
+          );
+        }
+        final content = HarukaSurface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Text(item.description),
+              const SizedBox(height: 15),
+              Text(
+                AppLocalizations.of(context)
+                    .mockMaterialTypeDetail(materialTypeLabel(context, item.type)),
               ),
-            ),
-            Text(
-              AppLocalizations.of(context)
-                  .mockMaterialStatusDetail(materialStatusLabel(context, item)),
-            ),
-            Text(AppLocalizations.of(context).mockMaterialCurrentRevision(item.revision)),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: () => context.push(AppRoutes.mockMaterialPath(item.id)),
-              child: Text(switch (item.type) {
-                LearningMaterialType.novel => AppLocalizations.of(context).mockMaterialStartReading,
-                LearningMaterialType.textbook => AppLocalizations.of(
-                  context,
-                ).mockMaterialStartLearning,
-                LearningMaterialType.exam => AppLocalizations.of(
-                  context,
-                ).mockMaterialViewExamPreparation,
-              }),
-            ),
-          ],
-        ),
-      );
-      return PreviewPageFrame(
-        location: AppRoutes.mockMaterialDetailsPath(item.id),
-        title: AppLocalizations.of(context).mockMaterialDetailsTitle,
-        detail: true,
-        mobile: ListView(padding: const EdgeInsets.all(20), children: [content]),
-        desktop: ListView(
-          children: [
-            Text(
-              AppLocalizations.of(context).mockMaterialDetailsTitle,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 20),
-            content,
-          ],
-        ),
-      );
-    },
-  );
+              Text(
+                AppLocalizations.of(context).mockMaterialLanguageDetail(
+                  item.language == 'ja'
+                      ? AppLocalizations.of(context).mockMaterialJapanese
+                      : AppLocalizations.of(context).mockMaterialEnglish,
+                ),
+              ),
+              Text(
+                AppLocalizations.of(context)
+                    .mockMaterialStatusDetail(materialStatusLabel(context, item)),
+              ),
+              Text(AppLocalizations.of(context).mockMaterialCurrentRevision(item.revision)),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => context.push(AppRoutes.mockMaterialPath(item.id)),
+                child: Text(switch (item.type) {
+                  LearningMaterialType.novel => AppLocalizations.of(
+                    context,
+                  ).mockMaterialStartReading,
+                  LearningMaterialType.textbook => AppLocalizations.of(
+                    context,
+                  ).mockMaterialStartLearning,
+                  LearningMaterialType.exam => AppLocalizations.of(
+                    context,
+                  ).mockMaterialViewExamPreparation,
+                }),
+              ),
+            ],
+          ),
+        );
+        return PreviewPageFrame(
+          location: AppRoutes.mockMaterialDetailsPath(item.id),
+          title: AppLocalizations.of(context).mockMaterialDetailsTitle,
+          detail: true,
+          mobile: ListView(padding: const EdgeInsets.all(20), children: [content]),
+          desktop: ListView(
+            children: [
+              Text(
+                AppLocalizations.of(context).mockMaterialDetailsTitle,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 20),
+              content,
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 void _returnToLibrary(BuildContext context) {

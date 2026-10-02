@@ -128,6 +128,7 @@ class MaterialImportCapability(ApiModel):
     formats: list[SourceFormat]
     languages: list[MaterialLanguage]
     max_size_bytes: int = Field(gt=0)
+    format_max_size_bytes: dict[SourceFormat, int] = Field(default_factory=dict[SourceFormat, int])
 
 
 class MaterialImportCapabilitiesRead(ApiModel):

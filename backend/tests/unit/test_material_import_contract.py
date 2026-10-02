@@ -13,9 +13,62 @@ from app.schemas.material_imports import (
     MaterialImportRead,
     MaterialTitlePatch,
 )
+from app.schemas.model_settings import JobRead, JobRetry
 from app.services.model_tasks import model_references
 
 pytestmark = pytest.mark.unit
+
+
+def test_mixed_jobs_require_distinct_source_or_model_references() -> None:
+    now = datetime.now(UTC)
+    common = {
+        "id": uuid4(),
+        "state": "queued",
+        "revision": 1,
+        "generation": 1,
+        "sequence": 0,
+        "can_cancel": True,
+        "can_retry": False,
+        "requires_new_attempt_confirmation": False,
+        "created_at": now,
+        "updated_at": now,
+    }
+    model = JobRead.model_validate({**common, "run_id": uuid4(), "credential_id": uuid4()})
+    source = {
+        **common,
+        "operation_kind": "material_import",
+        "material_id": uuid4(),
+        "material_revision_id": uuid4(),
+        "source_status": "parsing",
+    }
+    assert model.operation_kind == "credential_test"
+    assert JobRead.model_validate(source).run_id is None
+    for invalid in (
+        {**source, "credential_id": uuid4()},
+        {**source, "material_revision_id": None},
+        {**source, "requires_new_attempt_confirmation": True},
+        {**common, "run_id": None, "credential_id": None},
+    ):
+        with pytest.raises(ValidationError):
+            JobRead.model_validate(invalid)
+    confirmation = {
+        "language": "en",
+        "input_digest": "a" * 64,
+        "expected_job_generation": 1,
+        "expected_issue_revision": 1,
+    }
+    assert JobRetry.model_validate(
+        {"expected_revision": 1, "language_confirmation": confirmation}
+    ).language_confirmation
+    for extra in (
+        {"credential_id": uuid4()},
+        {"confirm_new_attempt": True},
+        {"provider": "openrouter"},
+    ):
+        with pytest.raises(ValidationError):
+            JobRetry.model_validate(
+                {"expected_revision": 1, "language_confirmation": confirmation, **extra}
+            )
 
 
 def file_request() -> dict[str, object]:

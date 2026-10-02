@@ -1,4 +1,4 @@
-// GENERATED from config/ui_test_ids.json; sha256:4641149e6716cbf991ea1bce3d698f1b3536d8aedf4c3add18ecc9670d440483. Do not edit.
+// GENERATED from config/ui_test_ids.json; sha256:59350f34b337db45f162f0ce19f6068b217673172057faeb4cd0bdaf8c3ae6ca. Do not edit.
 abstract final class UiTestIds {
   static const accountChangePassword = "client.account.password.submit";
   static const accountConfirmPassword = "client.account.password.confirm";
@@ -73,6 +73,29 @@ abstract final class UiTestIds {
   static const loginRecoveryLink = "client.auth.login.recovery_link";
   static const loginRegisterLink = "client.auth.login.register_link";
   static const loginSubmit = "client.auth.login.submit";
+  static const materialDeleteConfirm = "client.material.metadata.delete_confirm";
+  static const materialDetailsDialog = "client.material.metadata.dialog";
+  static const materialDetailsPage = "client.material.metadata.page";
+  static const materialImportExam = "client.material.import.exam";
+  static const materialImportFile = "client.material.import.file";
+  static const materialImportLanguage = "client.material.import.language";
+  static const materialImportNext = "client.material.import.next";
+  static const materialImportNovel = "client.material.import.novel";
+  static const materialImportPage = "client.material.import.page";
+  static const materialImportState = "client.material.import.state";
+  static const materialImportTextbook = "client.material.import.textbook";
+  static const materialImportTitle = "client.material.import.title";
+  static const materialJobLanguage = "client.material.job.language";
+  static const materialJobLanguageConfirm = "client.material.job.language_confirm";
+  static const materialJobLanguageDialog = "client.material.job.language_dialog";
+  static const materialLanguageFilter = "client.material.catalog.language";
+  static const materialLibraryPage = "client.material.catalog.page";
+  static const materialMore = "client.material.catalog.more";
+  static const materialRename = "client.material.metadata.rename";
+  static const materialRenameSave = "client.material.metadata.rename_save";
+  static const materialRenameTitle = "client.material.metadata.rename_title";
+  static const materialReuse = "client.material.metadata.reuse";
+  static const materialSearch = "client.material.catalog.search";
   static const modelBindingsSave = "client.model.bindings.save";
   static const modelCredentialAdd = "client.model.credential.add";
   static const modelCredentialKey = "client.model.credential.key";

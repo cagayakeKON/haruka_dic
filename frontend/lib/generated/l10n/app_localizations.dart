@@ -8827,6 +8827,162 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'注册申请待审批'**
   String get authActivationApprovalTitle;
+
+  /// No description provided for @materialTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'材料标题'**
+  String get materialTitle;
+
+  /// No description provided for @materialLanguage.
+  ///
+  /// In zh, this message translates to:
+  /// **'材料语言'**
+  String get materialLanguage;
+
+  /// No description provided for @materialFormats.
+  ///
+  /// In zh, this message translates to:
+  /// **'支持格式'**
+  String get materialFormats;
+
+  /// No description provided for @materialSourceOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'原件已受理，正文尚未就绪。当前任务仅验证来源，不进行 OCR 或 AI 解析。'**
+  String get materialSourceOnly;
+
+  /// No description provided for @materialImportSourceBoundary.
+  ///
+  /// In zh, this message translates to:
+  /// **'本次仅验证原件；正文尚未就绪，不进行 OCR/AI 解析。'**
+  String get materialImportSourceBoundary;
+
+  /// No description provided for @materialRename.
+  ///
+  /// In zh, this message translates to:
+  /// **'修改标题'**
+  String get materialRename;
+
+  /// No description provided for @materialReuse.
+  ///
+  /// In zh, this message translates to:
+  /// **'以另一类型重新导入'**
+  String get materialReuse;
+
+  /// No description provided for @materialSourceFormat.
+  ///
+  /// In zh, this message translates to:
+  /// **'原件格式'**
+  String get materialSourceFormat;
+
+  /// No description provided for @materialMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载更多'**
+  String get materialMore;
+
+  /// No description provided for @materialAllLanguages.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部语言'**
+  String get materialAllLanguages;
+
+  /// No description provided for @materialUploadBusy.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在上传与验证原件…'**
+  String get materialUploadBusy;
+
+  /// No description provided for @materialImportObserve.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看受理结果'**
+  String get materialImportObserve;
+
+  /// No description provided for @materialImportRetryUpload.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试上传'**
+  String get materialImportRetryUpload;
+
+  /// No description provided for @materialImportVerifying.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在确认受理结果，请查看状态。不会重复创建材料。'**
+  String get materialImportVerifying;
+
+  /// No description provided for @materialImportUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'提交结果尚未确认，请先查看原意图状态。'**
+  String get materialImportUnknown;
+
+  /// No description provided for @materialImportExpired.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入意图已过期，请重新选择文件。'**
+  String get materialImportExpired;
+
+  /// No description provided for @materialImportCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入已取消'**
+  String get materialImportCancelled;
+
+  /// No description provided for @materialImportRejected.
+  ///
+  /// In zh, this message translates to:
+  /// **'原件验证未通过'**
+  String get materialImportRejected;
+
+  /// No description provided for @materialCapacity.
+  ///
+  /// In zh, this message translates to:
+  /// **'可用空间'**
+  String get materialCapacity;
+
+  /// No description provided for @materialImportCancel.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消当前导入'**
+  String get materialImportCancel;
+
+  /// No description provided for @materialImportNew.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新选择文件'**
+  String get materialImportNew;
+
+  /// No description provided for @materialJobSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'材料来源验证'**
+  String get materialJobSource;
+
+  /// No description provided for @materialLanguageConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认材料语言'**
+  String get materialLanguageConfirm;
+
+  /// No description provided for @materialLanguageReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'语言需要本人确认。仅恢复来源验证，不会自动解析正文。'**
+  String get materialLanguageReview;
+
+  /// No description provided for @materialReuseUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'这份材料没有可复用的原件。'**
+  String get materialReuseUnavailable;
+
+  /// No description provided for @materialRenameConflict.
+  ///
+  /// In zh, this message translates to:
+  /// **'材料版本已变化，请重新打开详情后修改。'**
+  String get materialRenameConflict;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

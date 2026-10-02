@@ -2,10 +2,10 @@
   "excluded_internal_tables": [
     "alembic_version"
   ],
-  "migration_revision": "0014_material_sources",
+  "migration_revision": "0016_source_candidate_retirement",
   "schema_version": 1,
   "source": "backend/app/models",
-  "source_sha256": "b45bca193777059e757fbf9042f247d981b5b7cd1f07940caef77ea456c775a9",
+  "source_sha256": "c1d34a480e2205c03988e4a6fd8ac3943180699eb62f8013adeaa1d0f63f9284",
   "tables": [
     {
       "columns": [
@@ -6965,12 +6965,12 @@
       "comment": "授权与身份变更的持久通知及受控投递状态",
       "constraints": [
         {
-          "definition": "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR (event_type LIKE 'model.%' AND authorization_revision IS NULL AND audit_event_id IS NULL)",
+          "definition": "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR ((event_type LIKE 'model.%' OR event_type LIKE 'material.%') AND authorization_revision IS NULL AND audit_event_id IS NULL)",
           "kind": "check",
           "name": "ck_outbox_events_authorization_revision_positive"
         },
         {
-          "definition": "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated')",
+          "definition": "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated', 'material.job.accepted', 'material.job.updated', 'material.import.completed', 'material.import.failed', 'material.import.needs_review')",
           "kind": "check",
           "name": "ck_outbox_events_event_type"
         },
@@ -8928,6 +8928,30 @@
           "type": "TEXT"
         },
         {
+          "comment": "服务端退休候选键账本，持续可复查，不含已发布副本",
+          "default": "'[]'::jsonb",
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source completion fence"
+          },
+          "name": "retired_final_candidates",
+          "nullable": false,
+          "primary_key": false,
+          "type": "JSONB"
+        },
+        {
+          "comment": "退休副本下一次有界复查UTC时间",
+          "default": null,
+          "metadata": {
+            "sensitivity": "internal",
+            "source": "source garbage collection"
+          },
+          "name": "candidate_cleanup_due_at",
+          "nullable": true,
+          "primary_key": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
           "comment": "服务端生成的稳定标识",
           "default": null,
           "metadata": {
@@ -8966,6 +8990,11 @@
       ],
       "comment": "本人头像的临时上传声明；完成前没有可读取对象",
       "constraints": [
+        {
+          "definition": "jsonb_typeof(retired_final_candidates) = 'array' AND jsonb_array_length(retired_final_candidates) <= 16 AND (purpose = 'primary_document' OR (retired_final_candidates = '[]'::jsonb AND candidate_cleanup_due_at IS NULL))",
+          "kind": "check",
+          "name": "ck_upload_intents_candidate_retirement"
+        },
         {
           "definition": "(status = 'completed' AND file_object_id IS NOT NULL AND failure_code IS NULL) OR (status != 'completed' AND file_object_id IS NULL)",
           "kind": "check",

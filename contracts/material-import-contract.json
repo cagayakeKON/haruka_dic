@@ -65,6 +65,23 @@
     "MaterialImportCapability": {
       "additionalProperties": false,
       "properties": {
+        "format_max_size_bytes": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "enum": [
+              "md",
+              "epub",
+              "pdf",
+              "png",
+              "jpeg",
+              "webp"
+            ]
+          },
+          "title": "Format Max Size Bytes",
+          "type": "object"
+        },
         "formats": {
           "items": {
             "enum": [

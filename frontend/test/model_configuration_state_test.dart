@@ -83,6 +83,7 @@ final class FixtureRepository implements ModelConfigurationRepository {
   MemorySocket get socket => sockets.last;
   int individualJobReads = 0;
   Completer<ModelJob>? pendingJob;
+  List<ModelJob>? jobsOverride;
   @override
   Future<List<ProviderCredential>> credentials() async {
     reads++;
@@ -100,7 +101,7 @@ final class FixtureRepository implements ModelConfigurationRepository {
   @override
   Future<List<ModelJob>> jobs() async {
     jobReads++;
-    return [ModelJob.fromJson(jobData())];
+    return jobsOverride ?? [ModelJob.fromJson(jobData())];
   }
 
   @override
@@ -142,6 +143,53 @@ final class FixtureRepository implements ModelConfigurationRepository {
 }
 
 void main() {
+  test(
+    'source jobs preserve nullable model refs and accept only newer material progress',
+    () async {
+      Map<String, Object?> source({int sequence = 1, String state = 'running'}) => {
+        ...jobData(sequence: sequence, state: state),
+        'operation_kind': 'material_import',
+        'run_id': null,
+        'credential_id': null,
+        'material_id': credentialId,
+        'material_revision_id': runId,
+        'source_status': 'parsing',
+        'requires_new_attempt_confirmation': false,
+        'progress_percent': state == 'succeeded' ? 100 : 50,
+      };
+      final repository = FixtureRepository()..jobsOverride = [ModelJob.fromJson(source())];
+      final controller = ModelConfigurationController(repository: repository, allows: (_) => true);
+      addTearDown(controller.dispose);
+      await controller.ensureJobs();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.jobs[jobId]!.sourceImport, isTrue);
+      expect(controller.jobs[jobId]!.runId, isNull);
+      expect(controller.jobs[jobId]!.credentialId, isNull);
+      void event(int sequence, String state) => repository.socket.input.add(
+        jsonEncode({
+          'schema_version': 1,
+          'job_id': jobId,
+          'generation': 1,
+          'sequence': sequence,
+          'type': 'progress',
+          'payload': source(sequence: sequence, state: state),
+        }),
+      );
+      repository.pendingJob = Completer<ModelJob>()
+        ..complete(ModelJob.fromJson(source(sequence: 3, state: 'succeeded')));
+      event(3, 'succeeded');
+      await Future<void>.delayed(Duration.zero);
+      event(2, 'running');
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.jobs[jobId]!.state, 'succeeded');
+      expect(repository.individualJobReads, 1);
+      expect(controller.jobs[jobId]!.sourceStatus, 'parsing');
+      expect(controller.results, isEmpty);
+      expect(controller.jobsErrorCode, isNull); // Any provider-result access would fail this fake.
+      expect(repository.tests, 0);
+      expect(() => ModelJob.fromJson({...source(), 'run_id': runId}), throwsFormatException);
+    },
+  );
   testWidgets('simulated results and usage never imply real provider success', (tester) async {
     Map<String, Object?> group(bool simulated, int count) => {
       'provider': 'openrouter',

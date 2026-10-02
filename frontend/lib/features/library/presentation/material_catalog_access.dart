@@ -9,8 +9,8 @@ import 'package:haruka/app/lifecycle_visibility.dart';
 import '../data/material_catalog.dart';
 import 'material_catalog_scope.dart';
 
-/// Rechecks access before showing a private list or detail route. The visible
-/// page also checks again after foreground return and at the list interval.
+/// Requests missing/query-changed data. Authorization is checked separately by
+/// the shared auth/cache scope; menus and route return do not invalidate data.
 class MaterialCatalogAccess extends StatefulWidget {
   const MaterialCatalogAccess({
     required this.builder,
@@ -33,7 +33,6 @@ class _MaterialCatalogAccessState extends State<MaterialCatalogAccess> with Widg
     onReturned: _onPageReturned,
   );
   MaterialCatalog? _catalog;
-  Timer? _timer;
   Timer? _queryTimer;
   bool _entered = false;
   bool _refreshFailed = false;
@@ -48,7 +47,6 @@ class _MaterialCatalogAccessState extends State<MaterialCatalogAccess> with Widg
   void _onPageReturned() {
     if (!mounted) return;
     _routeCurrent = true;
-    setState(() => _entered = false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_visible) _requestVisibleRefresh();
     });
@@ -58,11 +56,6 @@ class _MaterialCatalogAccessState extends State<MaterialCatalogAccess> with Widg
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (_visible && _inFlightGeneration == null) {
-        unawaited(_refresh(gate: false, preserveCurrent: true));
-      }
-    });
   }
 
   @override
@@ -93,7 +86,7 @@ class _MaterialCatalogAccessState extends State<MaterialCatalogAccess> with Widg
     _routeCurrent = routeCurrent;
     if (!catalogChanged && !becameVisible) return;
     if (catalogChanged) _catalog = catalog;
-    _entered = false;
+    if (catalogChanged) _entered = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_visible && identical(_catalog, catalog)) _requestVisibleRefresh();
     });
@@ -101,6 +94,11 @@ class _MaterialCatalogAccessState extends State<MaterialCatalogAccess> with Widg
 
   void _requestVisibleRefresh() {
     if (!_visible) return;
+    if (_entered &&
+        (_catalog?.status == MaterialCatalogStatus.ready ||
+            _catalog?.status == MaterialCatalogStatus.stale)) {
+      return;
+    }
     _queryTimer?.cancel();
     if (_inFlightGeneration != null) {
       _needsVisibleRecheck = true;
@@ -124,7 +122,7 @@ class _MaterialCatalogAccessState extends State<MaterialCatalogAccess> with Widg
     }
     var failed = false;
     try {
-      await catalog.refresh(query: widget.query, force: true, preserveCurrent: preserveCurrent);
+      await catalog.refresh(query: widget.query, preserveCurrent: preserveCurrent);
     } on Object {
       failed = true;
     }
@@ -151,7 +149,6 @@ class _MaterialCatalogAccessState extends State<MaterialCatalogAccess> with Widg
   @override
   void dispose() {
     _generation++;
-    _timer?.cancel();
     _queryTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageActivity.dispose();

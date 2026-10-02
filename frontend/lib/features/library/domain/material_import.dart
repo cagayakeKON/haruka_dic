@@ -8,11 +8,17 @@ final class MaterialImportCapability {
     required this.formats,
     required this.languages,
     required this.maxSizeBytes,
+    this.formatMaxSizeBytes = const {},
   });
   final LearningMaterialType type;
   final List<String> formats;
   final List<String> languages;
   final int maxSizeBytes;
+  final Map<String, int> formatMaxSizeBytes;
+  int limitFor(String format) {
+    final limit = formatMaxSizeBytes[format];
+    return limit != null && limit < maxSizeBytes ? limit : maxSizeBytes;
+  }
 
   factory MaterialImportCapability.fromJson(Object? value) {
     final json = wireObject(value);
@@ -29,6 +35,12 @@ final class MaterialImportCapability {
       formats: formats,
       languages: languages,
       maxSizeBytes: _integer(json['max_size_bytes'], minimum: 1),
+      formatMaxSizeBytes: json['format_max_size_bytes'] == null
+          ? const {}
+          : Map.unmodifiable(
+              wireObject(json['format_max_size_bytes'])
+                  .map((format, limit) => MapEntry(format, _integer(limit, minimum: 1))),
+            ),
     );
   }
 }

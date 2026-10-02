@@ -79,6 +79,18 @@
       "retry_count",
       "status_code"
     ],
+    "material.deleted": [
+      "material_type",
+      "result"
+    ],
+    "material.import.submitted": [
+      "material_type",
+      "result"
+    ],
+    "material.metadata.updated": [
+      "material_type",
+      "result"
+    ],
     "profile.avatar.deleted": [],
     "profile.avatar.updated": [],
     "profile.updated": [],
@@ -125,6 +137,9 @@
     "explanation.requested",
     "http.completed",
     "http.failed",
+    "material.deleted",
+    "material.import.submitted",
+    "material.metadata.updated",
     "profile.avatar.deleted",
     "profile.avatar.updated",
     "profile.updated",
@@ -190,6 +205,17 @@
     "mail.delivery.retry_or_failed",
     "mail.delivery.sent",
     "mail.worker.unavailable",
+    "material.deleted",
+    "material.import.accepted",
+    "material.import.completed",
+    "material.import.created",
+    "material.import.failed",
+    "material.import.needs_review",
+    "material.import.submitted",
+    "material.metadata.updated",
+    "material.source.accepted",
+    "material.staging.cleanup_pending",
+    "material.upload.staged",
     "model.attempt.completed",
     "model.attempt.failed",
     "model.attempt.started",

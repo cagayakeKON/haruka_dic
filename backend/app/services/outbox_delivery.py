@@ -38,7 +38,11 @@ async def deliver_outbox_one(runtime: Runtime) -> bool:
         async with resources.database.sessions() as session, session.begin():
             event = await session.scalar(
                 select(OutboxEvent)
-                .where(OutboxEvent.status == "pending", ~OutboxEvent.event_type.like("model.%"))
+                .where(
+                    OutboxEvent.status == "pending",
+                    ~OutboxEvent.event_type.like("model.%"),
+                    ~OutboxEvent.event_type.like("material.%"),
+                )
                 .order_by(OutboxEvent.created_at, OutboxEvent.id)
                 .limit(1)
                 .with_for_update(skip_locked=True)
@@ -120,7 +124,10 @@ async def deliver_model_event(runtime: Runtime) -> bool:
             select(OutboxEvent)
             .where(
                 OutboxEvent.status == "pending",
-                OutboxEvent.event_type.like("model.%"),
+                or_(
+                    OutboxEvent.event_type.like("model.%"),
+                    OutboxEvent.event_type.like("material.%"),
+                ),
                 or_(
                     OutboxEvent.delivery_lease_until.is_(None),
                     OutboxEvent.delivery_lease_until <= now,

@@ -37,6 +37,9 @@ CLIENT_EVENTS = frozenset(
         "access.snapshot.updated",
         "authz.denied",
         "reading.chapter.opened",
+        "material.import.submitted",
+        "material.metadata.updated",
+        "material.deleted",
         "explanation.requested",
         "collection.saved",
         "profile.updated",
@@ -83,6 +86,9 @@ CLIENT_EVENT_ATTRIBUTES: dict[str, frozenset[str]] = {
     "access.snapshot.updated": frozenset({"result"}),
     "authz.denied": frozenset({"error_category"}),
     "reading.chapter.opened": frozenset({"material_type", "duration_ms"}),
+    "material.import.submitted": frozenset({"material_type", "result"}),
+    "material.metadata.updated": frozenset({"material_type", "result"}),
+    "material.deleted": frozenset({"material_type", "result"}),
     "explanation.requested": frozenset({"target_kind", "duration_ms"}),
     "collection.saved": frozenset({"card_type", "result", "duration_ms"}),
     "profile.updated": frozenset(),
@@ -172,7 +178,7 @@ class TelemetryAttributes(ApiModel):
         | None
     ) = None
     transport: Literal["web", "native"] | None = None
-    material_type: Literal["novel"] | None = None
+    material_type: Literal["novel", "textbook", "exam"] | None = None
     target_kind: Literal["material_content"] | None = None
     card_type: Literal["word"] | None = None
     status_code: int | None = Field(default=None, ge=100, le=599)

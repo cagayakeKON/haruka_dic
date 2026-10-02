@@ -63,7 +63,7 @@ class _LiveJobsPageState extends State<_LiveJobsPage> {
     animation: widget.controller,
     builder: (context, _) => ListView(
       key: PageStorageKey('model-jobs-${wide ? 'wide' : 'compact'}'),
-      padding: wide ? EdgeInsets.zero : const EdgeInsets.fromLTRB(20, 30, 20, 30),
+      padding: wide ? EdgeInsets.zero : const EdgeInsets.fromLTRB(20, 42, 20, 20),
       children: [
         if (wide) ...[
           Text('任务进度', style: Theme.of(context).textTheme.headlineMedium),

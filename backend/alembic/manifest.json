@@ -14,8 +14,10 @@
     "versions/0011_model_job_audit.py": "8625a044d4a0b4199cf9409a8d9e2941aa9f65757011c32d3fb855eb2ce9b51d",
     "versions/0012_model_runtime_grants.py": "32bb8f772858b038438d61341f87db101c616453b8734d365a4214de46f84b0e",
     "versions/0013_outbox_delivery_lease.py": "7e05d9f95019ffe2711decdd991e4d0265d97eddf447376085c5593a910a65c3",
-    "versions/0014_material_sources.py": "5fdbb2e84a81e6a4498b061aa74aedc110f344bf45b2321c16b4e16dac82dc41"
+    "versions/0014_material_sources.py": "5fdbb2e84a81e6a4498b061aa74aedc110f344bf45b2321c16b4e16dac82dc41",
+    "versions/0015_material_source_events.py": "d3ae49000940723a33345899ab8887c4dd49f329c97b145ad462865331edb1cd",
+    "versions/0016_source_candidate_retirement.py": "0ed0468c1a7580e2d069fd328f2c6d843e62f527bcdb3c11a62ff94914d18a42"
   },
-  "head": "0014_material_sources",
+  "head": "0016_source_candidate_retirement",
   "schema_version": 1
 }

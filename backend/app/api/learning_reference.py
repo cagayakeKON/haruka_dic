@@ -25,13 +25,6 @@ router = APIRouter(prefix="/api/v1", tags=["learning-reference"])
 COMMON = error_responses(400, 401, 403, 404, 409, 422, 429, 500, 503)
 
 
-@router.get(
-    "/materials",
-    operation_id="list_materials",
-    response_model=PageResponse[MaterialSummary],
-    responses=COMMON,
-    openapi_extra={"x-haruka-permissions": ["client.material.list"]},
-)
 async def materials(
     request: Request, limit: int = Query(default=20, ge=1, le=100), cursor: str | None = None
 ) -> PageResponse[MaterialSummary]:

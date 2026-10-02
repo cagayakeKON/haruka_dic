@@ -43,6 +43,7 @@ final class ReferenceController extends ChangeNotifier {
   ApiFailure? materialError;
   ApiFailure? collectionError;
   final List<MaterialSummary> materials = [];
+  final Set<String> _retiredMaterials = {};
   bool materialsLoaded = false;
   String? materialCursor;
   MaterialSummary? material;
@@ -82,15 +83,44 @@ final class ReferenceController extends ChangeNotifier {
     if (_active && !materialsLoaded) await loadMaterials();
   }
 
+  /// A committed tombstone retires only this source. Historic collection
+  /// associations remain subject to their own current source authorization.
+  void retireMaterial(String id) {
+    if (!_active) return;
+    materials.removeWhere((row) => row.id == id);
+    _retiredMaterials.add(id);
+    if (material?.id == id) {
+      _selectionGeneration++;
+      material = null;
+      chapter = null;
+      selectedSelection = null;
+      resolved = null;
+      saved = null;
+      _saveKey = null;
+      busy = false;
+    }
+    _publish();
+  }
+
   /// A source link is an explicit navigation request. Find its published
   /// summary in the authorized list without turning every detail open into a
   /// full-library refresh.
-  Future<MaterialSummary?> ensureMaterial(String id) async {
+  Future<MaterialSummary?> ensureMaterial(String id, {MaterialSummary? available}) async {
     if (!_active ||
         auth.access?.allows('client.material.list') != true ||
         auth.access?.allows('client.material.read') != true) {
       if (_active) _failure(const ApiFailure(code: 'PERMISSION_DENIED'));
       return null;
+    }
+    if (_retiredMaterials.contains(id)) return null;
+    if (available != null && available.id == id) {
+      final index = materials.indexWhere((row) => row.id == id);
+      if (index == -1) {
+        materials.add(available);
+      } else {
+        materials[index] = available;
+      }
+      return available;
     }
     final retryingError = materialError != null;
     if (_materialsRequest != null) await _materialsRequest;
@@ -101,7 +131,9 @@ final class ReferenceController extends ChangeNotifier {
     }
     final seenCursors = <String>{};
     while (_active && materialError == null) {
-      final found = materials.where((item) => item.id == id).firstOrNull;
+      final found = materials
+          .where((item) => item.id == id && !_retiredMaterials.contains(item.id))
+          .firstOrNull;
       if (found != null) return found;
       final cursor = materialCursor;
       if (cursor == null || !seenCursors.add(cursor)) break;
@@ -144,10 +176,12 @@ final class ReferenceController extends ChangeNotifier {
       if (!more) {
         materials
           ..clear()
-          ..addAll(page.data);
+          ..addAll(page.data.where((row) => !_retiredMaterials.contains(row.id)));
       } else {
         final seen = materials.map((item) => item.id).toSet();
-        materials.addAll(page.data.where((item) => seen.add(item.id)));
+        materials.addAll(
+          page.data.where((item) => !_retiredMaterials.contains(item.id) && seen.add(item.id)),
+        );
       }
       materialCursor = page.nextCursor;
       materialsLoaded = true;
@@ -161,7 +195,7 @@ final class ReferenceController extends ChangeNotifier {
   }
 
   Future<void> openMaterial(MaterialSummary next) async {
-    if (!_active) return;
+    if (!_active || _retiredMaterials.contains(next.id)) return;
     if (material?.id == next.id && material?.revisionId == next.revisionId && chapter != null) {
       return;
     }

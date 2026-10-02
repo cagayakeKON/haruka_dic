@@ -12,7 +12,9 @@ from sqlalchemy import select
 from app.bootstrap import Runtime
 from app.contracts.errors import ErrorCode
 from app.domain.errors import AppError
+from app.maintenance.material_source_gc import collect_source_garbage
 from app.models.model_tasks import InboxEvent, Job
+from app.services.material_jobs import execute_source_job
 from app.services.model_tasks import execute_job
 
 logger = logging.getLogger(__name__)
@@ -47,6 +49,13 @@ async def run_worker(runtime: Runtime, stop: asyncio.Event, *, once: bool = Fals
                         worker,
                         inbox=(event_id, payload_digest),
                     )
+                elif envelope["event_type"] == "material.job.accepted":
+                    await execute_source_job(
+                        runtime,
+                        UUID(envelope["payload"]["job_id"]),
+                        worker,
+                        inbox=(event_id, payload_digest),
+                    )
                 async with resources.database.sessions() as session, session.begin():
                     # Unique event identity is committed before broker ACK.
                     old = await session.scalar(
@@ -67,16 +76,22 @@ async def run_worker(runtime: Runtime, stop: asyncio.Event, *, once: bool = Fals
             await consumer.acknowledge(record)
         async with resources.database.sessions() as session:
             due = list(
-                await session.scalars(
-                    select(Job.id)
-                    .where(
-                        Job.state.in_(("running", "cancel_requested")),
-                        Job.lease_expires_at <= datetime.now(UTC),
+                (
+                    await session.execute(
+                        select(Job.id, Job.operation_kind)
+                        .where(
+                            Job.state.in_(("running", "cancel_requested")),
+                            Job.lease_expires_at <= datetime.now(UTC),
+                        )
+                        .limit(4)
                     )
-                    .limit(4)
-                )
+                ).all()
             )
-        for identifier in due:
-            await execute_job(runtime, identifier, worker)
+        for identifier, operation in due:
+            if operation == "material_import":
+                await execute_source_job(runtime, identifier, worker)
+            elif operation == "credential_test":
+                await execute_job(runtime, identifier, worker)
+        await collect_source_garbage(runtime)
         if once:
             return

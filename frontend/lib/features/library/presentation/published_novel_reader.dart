@@ -20,10 +20,16 @@ import 'material_pages.dart';
 /// A state/data adapter for the confirmed Flutter reader views. Published
 /// metadata stays in its own DTO; unsupported preview actions are not faked.
 class PublishedNovelReader extends StatefulWidget {
-  const PublishedNovelReader({required this.materialId, required this.reference, super.key});
+  const PublishedNovelReader({
+    required this.materialId,
+    required this.reference,
+    this.available,
+    super.key,
+  });
 
   final String materialId;
   final ReferenceController reference;
+  final published.MaterialSummary? available;
 
   @override
   State<PublishedNovelReader> createState() => _PublishedNovelReaderState();
@@ -44,7 +50,7 @@ class _PublishedNovelReaderState extends State<PublishedNovelReader> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.reference != reference || widget.materialId != materialId) return;
       unawaited(() async {
-        await reference.ensureMaterial(materialId);
+        await reference.ensureMaterial(materialId, available: widget.available);
         if (mounted &&
             widget.reference == reference &&
             widget.materialId == materialId &&
@@ -65,7 +71,9 @@ class _PublishedNovelReaderState extends State<PublishedNovelReader> {
   @override
   void didUpdateWidget(covariant PublishedNovelReader oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.reference != widget.reference || oldWidget.materialId != widget.materialId) {
+    if (oldWidget.reference != widget.reference ||
+        oldWidget.materialId != widget.materialId ||
+        oldWidget.available?.revisionId != widget.available?.revisionId) {
       _openingScope = referenceScope(widget.reference.auth, 'reference');
       _requestedChapterKey = null;
       _selectedIndex = null;

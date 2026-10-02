@@ -48,6 +48,9 @@ const _allowedAttributes = <String, Set<String>>{
   'settings.updated': {},
   'profile.avatar.updated': {},
   'profile.avatar.deleted': {},
+  'material.import.submitted': {'material_type', 'result'},
+  'material.metadata.updated': {'material_type', 'result'},
+  'material.deleted': {'material_type', 'result'},
 };
 const _anonymousEvents = {
   'app.started',
@@ -107,7 +110,7 @@ const _enumAttributes = <String, Set<String>>{
     'other',
   },
   'transport': {'web', 'native'},
-  'material_type': {'novel'},
+  'material_type': {'novel', 'textbook', 'exam'},
   'target_kind': {'material_content'},
   'card_type': {'word'},
   'drop_reason': {

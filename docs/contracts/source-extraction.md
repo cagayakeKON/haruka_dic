@@ -18,6 +18,8 @@ DESIGN24材料上传暂限日语/英语。直接提取和视觉OCR都须在正�
 
 EPUB的包清单/spine与内容文档结构依据[W3C EPUB 3.3](https://www.w3.org/TR/epub-33/)。实现按接受的EPUB版本/样本锁定适配，不从ZIP文件名排序猜阅读顺序。限制解压总量/比率/层数和路径，禁实体外部访问、脚本执行及自动抓取远程资源；保留原件，不把原HTML直接当应用可执行页面。
 
+M1的EPUB源准入要求容器、包清单和被检查的XHTML可严格按UTF-8解码，允许UTF-8 BOM，拒绝NUL及UTF-16/UTF-32等字节输入。先严格解码再检查DTD/实体声明，避免替代编码绕过声明禁用。该源层限制与校验不代表正文结构提取或原书ruby发布已经完成。
+
 ## 2. 原书注音结构
 
 `canonical_text`只保存基础文字。源块的`presentation_payload.source_ruby`保存版本化数组；HTML的`rt`为注音，`rp`为兼容展示，不能把它们混入基础文字偏移。[HTML ruby规范](https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-ruby-element)区分基础文字与注音；下面的范围/校验字段是Haruka自己的协议。

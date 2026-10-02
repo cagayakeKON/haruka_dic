@@ -1,6 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/routes.dart';
+import '../../../generated/l10n/app_localizations.dart';
+import '../../library/presentation/library_pages.dart';
 
 import '../../../generated/ui_test_ids.dart';
 import '../../../shared/identified.dart';
@@ -713,25 +718,44 @@ class ModelJobCards extends StatelessWidget {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         if (c.jobs.isEmpty && !c.jobsLoading)
-          const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('暂无能力测试任务。')),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('暂无任务。')),
         for (final job in c.jobs.values) ...[
-          const SizedBox(height: 14),
-          HarukaSurface(
+          SizedBox(height: job.sourceImport && compact ? 36 : 14),
+          _JobSurface(
+            compact: compact && job.sourceImport,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (job.sourceImport) ...[
+                  Text(
+                    AppLocalizations.of(context).materialJobSource,
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    liveMaterialCatalog(context)?.metadata(job.materialId!)?.title ??
+                        AppLocalizations.of(context).materialJobSource,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 Text(
-                  '${c.results[job.runId]?.usage.groups.isNotEmpty == true && c.results[job.runId]!.usage.groups.every((group) => group.simulated) ? '模拟能力测试' : '模型能力测试'} · ${modelStateTitle(job.state)}',
+                  '${job.sourceImport
+                      ? AppLocalizations.of(context).materialJobSource
+                      : c.results[job.runId]?.usage.groups.isNotEmpty == true && c.results[job.runId]!.usage.groups.every((group) => group.simulated)
+                      ? '模拟能力测试'
+                      : '模型能力测试'} · ${modelStateTitle(job.state)}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                Text(job.id, style: Theme.of(context).textTheme.bodySmall),
+                if (!job.sourceImport) Text(job.id, style: Theme.of(context).textTheme.bodySmall),
                 if (job.stage != null) Text('当前阶段：${job.stage}'),
                 if (job.progress != null) ...[
                   const SizedBox(height: 10),
                   LinearProgressIndicator(value: job.progress! / 100),
                 ],
                 if (job.errorCode != null) Text(modelErrorTitle(job.errorCode)),
+                if (job.sourceImport) Text(AppLocalizations.of(context).materialSourceOnly),
                 if (job.state == 'unknown') const Text('请求可能已到达供应商；不会自动再次调用。请核对持久结果。'),
                 if (c.results[job.runId] case final result?) ...[
                   const SizedBox(height: 10),
@@ -753,6 +777,14 @@ class ModelJobCards extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 8,
                   children: [
+                    if (job.sourceImport &&
+                        job.materialId != null &&
+                        c.allows('client.material.read'))
+                      OutlinedButton(
+                        onPressed: () =>
+                            context.push(AppRoutes.materialDetailsPath(job.materialId!)),
+                        child: Text(AppLocalizations.of(context).mockMaterialDetailsTitle),
+                      ),
                     OutlinedButton(
                       onPressed: c.submitting ? null : () => c.refreshJob(job.id),
                       child: const Text('查看最新状态'),
@@ -762,10 +794,19 @@ class ModelJobCards extends StatelessWidget {
                         onPressed: c.submitting ? null : () => _cancel(context, c, job),
                         child: const Text('取消任务'),
                       ),
-                    if (job.canRetry && c.allows('client.job.retry'))
+                    if (job.canRetry && job.languageIssue == null && c.allows('client.job.retry'))
                       TextButton(
                         onPressed: c.submitting ? null : () => _retry(context, c, job),
                         child: const Text('重试可恢复阶段'),
+                      ),
+                    if (job.sourceImport &&
+                        job.state == 'blocked' &&
+                        job.canRetry &&
+                        job.languageIssue != null &&
+                        c.allows('client.job.retry'))
+                      TextButton(
+                        onPressed: c.submitting ? null : () => _confirmLanguage(context, c, job),
+                        child: Text(AppLocalizations.of(context).materialLanguageConfirm),
                       ),
                   ],
                 ),
@@ -783,7 +824,7 @@ class ModelJobCards extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('取消任务'),
-        content: const Text('取消将在执行边界生效；已发出的供应商请求可能仍会完成。'),
+        content: Text(job.sourceImport ? '取消将在来源验证执行边界生效，保留已提交原件。' : '取消将在执行边界生效；已发出的供应商请求可能仍会完成。'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('返回')),
           FilledButton(
@@ -831,4 +872,78 @@ class ModelJobCards extends StatelessWidget {
       } catch (_) {}
     }
   }
+
+  Future<void> _confirmLanguage(
+    BuildContext context,
+    ModelConfigurationController c,
+    ModelJob job,
+  ) async {
+    final epoch = c.auth?.actionEpoch;
+    final issue = job.languageIssue!;
+    final l10n = AppLocalizations.of(context);
+    var language = issue.declaredLanguage;
+    final confirmed = await showHarukaDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => Identified(
+          id: UiTestIds.materialJobLanguageDialog,
+          child: HarukaDialogSurface(
+            title: l10n.materialLanguageConfirm,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(l10n.mockLibraryCancel),
+              ),
+              Identified(
+                id: UiTestIds.materialJobLanguageConfirm,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: Text(l10n.materialLanguageConfirm),
+                ),
+              ),
+            ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.materialLanguageReview),
+                Identified(
+                  id: UiTestIds.materialJobLanguage,
+                  child: DropdownButton<String>(
+                    value: language,
+                    items: [
+                      DropdownMenuItem(value: 'ja', child: Text(l10n.mockLibraryJapanese)),
+                      DropdownMenuItem(value: 'en', child: Text(l10n.mockLibraryEnglish)),
+                    ],
+                    onChanged: (value) => setDialogState(() => language = value!),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final current = c.jobs[job.id];
+    if (confirmed == true &&
+        context.mounted &&
+        epoch == c.auth?.actionEpoch &&
+        c.allows('client.job.retry') &&
+        current?.generation == job.generation &&
+        current?.languageIssue?.revision == issue.revision &&
+        current?.languageIssue?.inputDigest == issue.inputDigest) {
+      try {
+        await c.confirmLanguage(job, language);
+      } on Object {
+        /* Controller publishes a safe error code. */
+      }
+    }
+  }
+}
+
+class _JobSurface extends StatelessWidget {
+  const _JobSurface({required this.compact, required this.child});
+  final bool compact;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => compact ? child : HarukaSurface(child: child);
 }

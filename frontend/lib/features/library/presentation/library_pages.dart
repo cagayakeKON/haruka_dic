@@ -19,8 +19,55 @@ import 'package:haruka/generated/ui_test_ids.dart';
 import 'package:haruka/shared/identified.dart';
 
 import '../data/material_catalog.dart';
+import '../data/http_material_catalog.dart';
+import '../data/material_import_repository.dart' show sourceFormat;
+import '../domain/material_import.dart';
+import '../domain/material_metadata.dart';
+import '../../../core/api/request_ids.dart';
+import '../../../core/api/responses.dart';
+import 'material_management_controls.dart';
 import 'material_catalog_scope.dart';
 import 'material_catalog_access.dart';
+
+HttpMaterialCatalog? liveMaterialCatalog(BuildContext context) =>
+    switch (MaterialCatalogScope.maybeOf(context)) {
+      final HttpMaterialCatalog catalog => catalog,
+      _ => null,
+    };
+String materialLibraryPath(BuildContext context) =>
+    liveMaterialCatalog(context) == null ? AppRoutes.mockLibrary : AppRoutes.materials;
+String materialImportPath(BuildContext context) =>
+    liveMaterialCatalog(context) == null ? AppRoutes.mockImport : AppRoutes.materialImport;
+String materialOpenPath(BuildContext context, String id) => liveMaterialCatalog(context) == null
+    ? AppRoutes.mockMaterialPath(id)
+    : AppRoutes.materialPath(id);
+String materialDetailsPath(BuildContext context, String id) => liveMaterialCatalog(context) == null
+    ? AppRoutes.mockMaterialDetailsPath(id)
+    : AppRoutes.materialDetailsPath(id);
+Widget _identifiedMaterialSearch(BuildContext context, Widget child) =>
+    liveMaterialCatalog(context) == null
+    ? child
+    : Identified(id: UiTestIds.materialSearch, child: child);
+
+bool materialCanOpen(BuildContext context, MaterialSummary item) {
+  final catalog = liveMaterialCatalog(context);
+  if (catalog == null) return item.status != 'processing';
+  final row = catalog.metadata(item.id);
+  return catalog.allows('client.material.read') &&
+      row?.readable == true &&
+      row?.sourceStatus == 'readable' &&
+      const {'ja', 'en'}.contains(row?.language) &&
+      row?.type == LearningMaterialType.novel &&
+      row?.contentRevisionId != null &&
+      row?.firstChapterId != null;
+}
+
+bool materialCanDelete(BuildContext context, MaterialSummary item) {
+  final catalog = liveMaterialCatalog(context);
+  if (catalog == null) return true;
+  final row = catalog.metadata(item.id);
+  return row != null && materialMutationAllowed(catalog, row, 'client.material.delete');
+}
 
 String materialTypeLabel(BuildContext context, LearningMaterialType type) => switch (type) {
   LearningMaterialType.novel => AppLocalizations.of(context).mockLibraryNovel,
@@ -73,6 +120,7 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   LearningMaterialType? type;
+  String? language;
   String query = '';
   bool searchOpen = false;
   final searchController = TextEditingController();
@@ -86,6 +134,7 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (liveMaterialCatalog(context) != null) return;
     final reference = ReferenceFeatureScope.maybeOf(context);
     if (reference != null && !identical(reference, _reference)) {
       _reference = reference;
@@ -110,6 +159,7 @@ class _LibraryPageState extends State<LibraryPage> {
     setState(() {
       type = null;
       query = '';
+      language = null;
     });
   }
 
@@ -140,8 +190,10 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     final reference = ReferenceFeatureScope.maybeOf(context);
-    if (reference != null) return _buildPublishedFrame(context, reference);
-    final listQuery = MaterialCatalogQuery(type: type, search: query);
+    if (reference != null && liveMaterialCatalog(context) == null) {
+      return _buildPublishedFrame(context, reference);
+    }
+    final listQuery = MaterialCatalogQuery(type: type, search: query, language: language);
     return MaterialCatalogAccess(
       query: listQuery,
       loadingBuilder: (context) => _buildFrame(context, null),
@@ -229,8 +281,54 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _buildFrame(BuildContext context, List<MaterialSummary>? items) {
     final l10n = AppLocalizations.of(context);
+    final live = liveMaterialCatalog(context);
+    final languageFilter = live == null
+        ? null
+        : SizedBox(
+            width: 125,
+            child: Identified(
+              id: UiTestIds.materialLanguageFilter,
+              child: DropdownButtonFormField<String>(
+                key: ValueKey('material-language-$language'),
+                initialValue: language ?? '',
+                decoration: InputDecoration(labelText: l10n.materialLanguage, isDense: true),
+                items: [
+                  DropdownMenuItem(value: '', child: Text(l10n.materialAllLanguages)),
+                  DropdownMenuItem(value: 'ja', child: Text(l10n.mockLibraryJapanese)),
+                  DropdownMenuItem(value: 'en', child: Text(l10n.mockLibraryEnglish)),
+                ],
+                onChanged: (value) {
+                  _clearViewportAnchors();
+                  setState(() => language = value == '' ? null : value);
+                },
+              ),
+            ),
+          );
+    final continuation = live == null
+        ? null
+        : Column(
+            children: [
+              if (live.failure != null)
+                TextButton(
+                  onPressed: () => live.refresh(
+                    query: MaterialCatalogQuery(type: type, search: query, language: language),
+                    force: true,
+                    preserveCurrent: true,
+                  ),
+                  child: Text(l10n.authRetry),
+                ),
+              if (live.hasMore)
+                Identified(
+                  id: UiTestIds.materialMore,
+                  child: TextButton(
+                    onPressed: live.loadingMore ? null : live.more,
+                    child: Text(l10n.materialMore),
+                  ),
+                ),
+            ],
+          );
     return PreviewPageFrame(
-      location: AppRoutes.mockLibrary,
+      location: materialLibraryPath(context),
       title: l10n.mockLibraryTitle,
       mobileHeader: searchOpen
           ? Row(
@@ -242,27 +340,30 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: TextField(
-                    controller: searchController,
-                    autofocus: true,
-                    onChanged: _setQuery,
-                    decoration: InputDecoration(
-                      isDense: true,
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: l10n.mockLibrarySearchMaterials,
-                      suffixIcon: query.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: l10n.mockLibraryResetFilters,
-                              onPressed: () {
-                                searchController.clear();
-                                _setQuery('');
-                              },
-                              icon: const Icon(Icons.close),
-                            ),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  child: _identifiedMaterialSearch(
+                    context,
+                    TextField(
+                      controller: searchController,
+                      autofocus: true,
+                      onChanged: _setQuery,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l10n.mockLibrarySearchMaterials,
+                        suffixIcon: query.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: l10n.mockLibraryResetFilters,
+                                onPressed: () {
+                                  searchController.clear();
+                                  _setQuery('');
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ),
                 ),
@@ -278,6 +379,8 @@ class _LibraryPageState extends State<LibraryPage> {
           ),
       ],
       mobile: MobileLibraryView(
+        extraFilters: languageFilter,
+        allowImport: live == null || live.allows('client.material.import'),
         type: type,
         searchOpen: searchOpen,
         onType: _setType,
@@ -289,9 +392,12 @@ class _LibraryPageState extends State<LibraryPage> {
                 type: type,
                 query: query,
                 onReset: resetFilters,
+                continuation: continuation,
               ),
       ),
       desktop: DesktopLibraryView(
+        extraFilters: languageFilter,
+        allowImport: live == null || live.allows('client.material.import'),
         type: type,
         searchController: searchController,
         searchFocusNode: desktopSearchFocusNode,
@@ -305,6 +411,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 type: type,
                 query: query,
                 onReset: resetFilters,
+                continuation: continuation,
               ),
       ),
     );
@@ -661,6 +768,7 @@ class MobileLibraryView extends StatelessWidget {
     required this.results,
     this.allowImport = true,
     this.availableTypes,
+    this.extraFilters,
     super.key,
   });
 
@@ -670,6 +778,7 @@ class MobileLibraryView extends StatelessWidget {
   final Widget results;
   final bool allowImport;
   final List<LearningMaterialType>? availableTypes;
+  final Widget? extraFilters;
 
   @override
   Widget build(BuildContext context) {
@@ -713,6 +822,11 @@ class MobileLibraryView extends StatelessWidget {
                 ),
               ),
             ),
+            if (extraFilters != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Align(alignment: Alignment.centerRight, child: extraFilters),
+              ),
             Expanded(child: results),
           ],
         ),
@@ -721,7 +835,7 @@ class MobileLibraryView extends StatelessWidget {
             right: 22,
             bottom: 22,
             child: FloatingActionButton.extended(
-              onPressed: () => context.push(AppRoutes.mockImport),
+              onPressed: () => context.push(materialImportPath(context)),
               icon: const Icon(Icons.add),
               label: Text(l10n.mockLibraryImport),
             ),
@@ -738,6 +852,7 @@ class MobileLibraryResults extends StatelessWidget {
     required this.type,
     required this.query,
     required this.onReset,
+    this.continuation,
     super.key,
   });
 
@@ -746,13 +861,14 @@ class MobileLibraryResults extends StatelessWidget {
   final LearningMaterialType? type;
   final String query;
   final VoidCallback onReset;
+  final Widget? continuation;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final reduceMotion = HarukaMotion.reduced(
       context,
-      reducedMotion: PreviewStoreScope.of(context).reducedMotion,
+      reducedMotion: _libraryReducedMotion(context),
     );
     final queryKey = '${type?.name ?? 'all'}-$query';
     return _RestoringMaterialList(
@@ -793,6 +909,7 @@ class MobileLibraryResults extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
+          ?continuation,
         ],
       ),
     );
@@ -883,65 +1000,71 @@ class MobileMaterialCard extends StatelessWidget {
       LearningMaterialType.textbook => Color.lerp(roles.bookGreen, scheme.surface, .48)!,
       LearningMaterialType.exam => roles.bookPeach,
     };
-    return Card.outlined(
-      key: viewportAnchor.keyFor(item.id),
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      color: scheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: scheme.outline.withValues(alpha: .7)),
-      ),
-      child: InkWell(
-        onTap: item.status == 'processing'
-            ? null
-            : () {
-                viewportAnchor.capture(item.id, queryKey, items);
-                unawaited(context.push(AppRoutes.mockMaterialPath(item.id)));
-              },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _MaterialCover(label: item.cover, color: coverColor, width: 58, height: 76),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      _mobileMaterialMetadata(context, item),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-                    ),
-                    const SizedBox(height: 11),
-                    _MaterialStatus(item: item, compact: true, showProgress: false),
-                  ],
-                ),
-              ),
-              _MobileMaterialMenu(
-                title: item.title,
-                onOpen: () => viewportAnchor.capture(item.id, queryKey, items, pending: false),
-                onDetails: () => unawaited(
-                  _showMobileMaterialDetails(
-                    context,
-                    item,
-                    query: catalogQuery,
-                    onOpenMaterial: () => viewportAnchor.activate(item.id),
+    return _identifiedMaterialRow(
+      context,
+      item.id,
+      Card.outlined(
+        key: viewportAnchor.keyFor(item.id),
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        color: scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: scheme.outline.withValues(alpha: .7)),
+        ),
+        child: InkWell(
+          onTap: !materialCanOpen(context, item)
+              ? null
+              : () {
+                  viewportAnchor.capture(item.id, queryKey, items);
+                  unawaited(context.push(materialOpenPath(context, item.id)));
+                },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _MaterialCover(label: item.cover, color: coverColor, width: 58, height: 76),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _mobileMaterialMetadata(context, item),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                      ),
+                      const SizedBox(height: 11),
+                      _MaterialStatus(item: item, compact: true, showProgress: false),
+                    ],
                   ),
                 ),
-                onDelete: () => unawaited(_confirmDelete(context, item)),
-              ),
-            ],
+                _MobileMaterialMenu(
+                  title: item.title,
+                  onOpen: () => viewportAnchor.capture(item.id, queryKey, items, pending: false),
+                  onDetails: () => unawaited(
+                    _showMobileMaterialDetails(
+                      context,
+                      item,
+                      query: catalogQuery,
+                      onOpenMaterial: () => viewportAnchor.activate(item.id),
+                    ),
+                  ),
+                  onDelete: !materialCanDelete(context, item)
+                      ? null
+                      : () => unawaited(_confirmDelete(context, item)),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1033,6 +1156,19 @@ Future<void> _showMobileMaterialDetails(
   required MaterialCatalogQuery query,
   required VoidCallback onOpenMaterial,
 }) async {
+  final live = liveMaterialCatalog(context);
+  if (live != null) {
+    await showLiveMaterialDialog(
+      context,
+      live,
+      selected.id,
+      onOpenMaterial: () {
+        onOpenMaterial();
+        unawaited(context.push(materialOpenPath(context, selected.id)));
+      },
+    );
+    return;
+  }
   final pageContext = Navigator.of(context).context;
   final messenger = ScaffoldMessenger.of(context);
   final catalog = MaterialCatalogScope.of(context);
@@ -1103,6 +1239,7 @@ class DesktopLibraryView extends StatelessWidget {
     required this.results,
     this.allowImport = true,
     this.availableTypes,
+    this.extraFilters,
     super.key,
   });
   final LearningMaterialType? type;
@@ -1113,6 +1250,7 @@ class DesktopLibraryView extends StatelessWidget {
   final Widget results;
   final bool allowImport;
   final List<LearningMaterialType>? availableTypes;
+  final Widget? extraFilters;
 
   @override
   Widget build(BuildContext context) {
@@ -1128,7 +1266,7 @@ class DesktopLibraryView extends StatelessWidget {
             ),
             if (allowImport)
               FilledButton.icon(
-                onPressed: () => context.push(AppRoutes.mockImport),
+                onPressed: () => context.push(materialImportPath(context)),
                 icon: const Icon(Icons.add),
                 label: Text(l10n.mockLibraryImport),
               ),
@@ -1150,19 +1288,25 @@ class DesktopLibraryView extends StatelessWidget {
                   onTap: () => onType(value),
                 ),
             ];
-            final search = TextField(
-              controller: searchController,
-              focusNode: searchFocusNode,
-              onChanged: onQuery,
-              decoration: InputDecoration(
-                isDense: true,
-                filled: true,
-                fillColor: scheme.surface,
-                prefixIcon: const Icon(Icons.search),
-                hintText: l10n.mockLibrarySearchHint,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(13),
-                  borderSide: BorderSide(color: scheme.outline.withValues(alpha: .7)),
+            if (extraFilters != null) {
+              filters.add(Padding(padding: const EdgeInsets.only(left: 12), child: extraFilters));
+            }
+            final search = _identifiedMaterialSearch(
+              context,
+              TextField(
+                controller: searchController,
+                focusNode: searchFocusNode,
+                onChanged: onQuery,
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: true,
+                  fillColor: scheme.surface,
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: l10n.mockLibrarySearchHint,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(13),
+                    borderSide: BorderSide(color: scheme.outline.withValues(alpha: .7)),
+                  ),
                 ),
               ),
             );
@@ -1199,6 +1343,7 @@ class DesktopLibraryResults extends StatelessWidget {
     required this.type,
     required this.query,
     required this.onReset,
+    this.continuation,
     super.key,
   });
 
@@ -1207,6 +1352,7 @@ class DesktopLibraryResults extends StatelessWidget {
   final LearningMaterialType? type;
   final String query;
   final VoidCallback onReset;
+  final Widget? continuation;
 
   @override
   Widget build(BuildContext context) {
@@ -1246,6 +1392,7 @@ class DesktopLibraryResults extends StatelessWidget {
                 items: items,
               ),
             ),
+          ?continuation,
         ],
       ),
     );
@@ -1270,98 +1417,115 @@ class DesktopMaterialRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final roles = HarukaColors.of(context);
     final scheme = Theme.of(context).colorScheme;
-    return Card.outlined(
-      key: viewportAnchor.keyFor(item.id),
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      color: scheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: scheme.outline.withValues(alpha: .7)),
-      ),
-      child: InkWell(
-        onTap: item.status == 'processing'
-            ? null
-            : () {
-                viewportAnchor.capture(item.id, queryKey, items);
-                unawaited(context.push(AppRoutes.mockMaterialPath(item.id)));
-              },
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 15, 12, 15),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final statusOnRight = constraints.maxWidth >= 700;
-              return Row(
-                children: [
-                  _MaterialCover(
-                    label: item.cover,
-                    color: switch (item.type) {
-                      LearningMaterialType.novel => roles.bookBlue,
-                      LearningMaterialType.textbook => roles.bookGreen,
-                      LearningMaterialType.exam => roles.bookPeach,
-                    },
-                    width: 64,
-                    height: 76,
-                  ),
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
-                        ),
-                        const SizedBox(height: 7),
-                        Text(
-                          _mobileMaterialMetadata(context, item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
-                        ),
-                        if (!statusOnRight) ...[
-                          const SizedBox(height: 8),
-                          _MaterialStatus(item: item),
+    return _identifiedMaterialRow(
+      context,
+      item.id,
+      Card.outlined(
+        key: viewportAnchor.keyFor(item.id),
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        color: scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: scheme.outline.withValues(alpha: .7)),
+        ),
+        child: InkWell(
+          onTap: !materialCanOpen(context, item)
+              ? null
+              : () {
+                  viewportAnchor.capture(item.id, queryKey, items);
+                  unawaited(context.push(materialOpenPath(context, item.id)));
+                },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 15, 12, 15),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final statusOnRight = constraints.maxWidth >= 700;
+                return Row(
+                  children: [
+                    _MaterialCover(
+                      label: item.cover,
+                      color: switch (item.type) {
+                        LearningMaterialType.novel => roles.bookBlue,
+                        LearningMaterialType.textbook => roles.bookGreen,
+                        LearningMaterialType.exam => roles.bookPeach,
+                      },
+                      width: 64,
+                      height: 76,
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            _mobileMaterialMetadata(context, item),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
+                          ),
+                          if (!statusOnRight) ...[
+                            const SizedBox(height: 8),
+                            _MaterialStatus(
+                              item: item,
+                              showProgress: liveMaterialCatalog(context) == null,
+                            ),
+                          ],
                         ],
+                      ),
+                    ),
+                    if (statusOnRight) ...[
+                      const SizedBox(width: 24),
+                      SizedBox(
+                        width: 190,
+                        child: _MaterialStatus(
+                          item: item,
+                          showProgress: liveMaterialCatalog(context) == null,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(width: 12),
+                    PopupMenuButton<String>(
+                      useRootNavigator: true,
+                      tooltip: l10n.mockLibraryMoreActions(item.title),
+                      onSelected: (value) {
+                        if (value == 'detail') {
+                          viewportAnchor.capture(item.id, queryKey, items);
+                          unawaited(context.push(materialDetailsPath(context, item.id)));
+                        } else {
+                          unawaited(_confirmDelete(context, item));
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(value: 'detail', child: Text(l10n.mockLibraryViewDetails)),
+                        if (materialCanDelete(context, item))
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text(l10n.mockLibraryDeleteMaterial),
+                          ),
                       ],
                     ),
-                  ),
-                  if (statusOnRight) ...[
-                    const SizedBox(width: 24),
-                    SizedBox(width: 190, child: _MaterialStatus(item: item)),
+                    IconButton(
+                      tooltip: l10n.mockLibraryViewMaterial(item.title),
+                      onPressed: !materialCanOpen(context, item)
+                          ? null
+                          : () {
+                              viewportAnchor.capture(item.id, queryKey, items);
+                              unawaited(context.push(materialOpenPath(context, item.id)));
+                            },
+                      icon: const Icon(Icons.chevron_right),
+                    ),
                   ],
-                  const SizedBox(width: 12),
-                  PopupMenuButton<String>(
-                    useRootNavigator: true,
-                    tooltip: l10n.mockLibraryMoreActions(item.title),
-                    onSelected: (value) {
-                      if (value == 'detail') {
-                        viewportAnchor.capture(item.id, queryKey, items);
-                        unawaited(context.push(AppRoutes.mockMaterialDetailsPath(item.id)));
-                      } else {
-                        unawaited(_confirmDelete(context, item));
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(value: 'detail', child: Text(l10n.mockLibraryViewDetails)),
-                      PopupMenuItem(value: 'delete', child: Text(l10n.mockLibraryDeleteMaterial)),
-                    ],
-                  ),
-                  IconButton(
-                    tooltip: l10n.mockLibraryViewMaterial(item.title),
-                    onPressed: item.status == 'processing'
-                        ? null
-                        : () {
-                            viewportAnchor.capture(item.id, queryKey, items);
-                            unawaited(context.push(AppRoutes.mockMaterialPath(item.id)));
-                          },
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -1471,13 +1635,19 @@ class _MaterialStatus extends StatelessWidget {
 }
 
 Future<void> _confirmDelete(BuildContext context, MaterialSummary item) async {
+  final live = liveMaterialCatalog(context);
+  if (live != null) {
+    final row = live.metadata(item.id);
+    if (row != null) await deleteLiveMaterial(context, live, row);
+    return;
+  }
   final l10n = AppLocalizations.of(context);
   final store = MaterialCatalogScope.of(context);
   final confirmed = await showHarukaDialog<bool>(
     context: context,
     animationStyle: HarukaMotion.dialogStyle(
       context,
-      reducedMotion: PreviewStoreScope.of(context).reducedMotion,
+      reducedMotion: _libraryReducedMotion(context),
     ),
     builder: (dialogContext) => HarukaDialogSurface(
       title: l10n.mockLibraryDeleteConfirmTitle,
@@ -1498,10 +1668,12 @@ Future<void> _confirmDelete(BuildContext context, MaterialSummary item) async {
 }
 
 class ImportPage extends StatefulWidget {
-  const ImportPage({this.pickFileName, super.key});
+  const ImportPage({this.pickFileName, this.pickFile, this.sourceMaterialId, super.key});
 
   /// Selects a local file name; no file bytes enter the mock store.
   final Future<String?> Function()? pickFileName;
+  final Future<XFile?> Function()? pickFile;
+  final String? sourceMaterialId;
 
   @override
   State<ImportPage> createState() => _ImportPageState();
@@ -1512,8 +1684,116 @@ class _ImportPageState extends State<ImportPage> {
   LearningMaterialType type = LearningMaterialType.novel;
   String? fileName;
   bool aiStructure = false;
+  XFile? _file;
+  final _title = TextEditingController();
+  String _language = 'ja';
+  String _key = newRequestId();
+  HttpMaterialCatalog? _live;
+  Object? _scope;
+  MaterialImportCapabilities? _capabilities;
+  MaterialMetadata? _source;
+  MaterialImport? _intent;
+  MaterialImportDraft? _draft;
+  bool _busy = false;
+  bool _unknown = false;
+  Object? _error;
+  bool get _current => mounted && _live?.isCurrent(_scope!) == true;
+  bool get _canSubmit =>
+      _live != null &&
+      _title.text.trim().runes.length <= 200 &&
+      materialImportTypeAllowed(_live!, type) &&
+      (widget.sourceMaterialId == null ||
+          (_source != null && materialReuseAllowed(_live!, _source!)));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final live = liveMaterialCatalog(context);
+    if (live == null) return;
+    if (_scope == live.scopeIdentity) {
+      _restoreDraft(live.importDraft);
+      return;
+    }
+    _live = live;
+    _scope = live.scopeIdentity;
+    _file = null;
+    fileName = null;
+    _intent = null;
+    _capabilities = null;
+    _source = null;
+    _title.clear();
+    _key = newRequestId();
+    _busy = false;
+    _unknown = false;
+    _error = null;
+    step = 0;
+    _draft = null;
+    _restoreDraft(live.importDraft);
+    final scope = _scope;
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_loadCapabilities(scope)));
+  }
+
+  void _restoreDraft(MaterialImportDraft? draft) {
+    if (draft == null) return;
+    if (!identical(_draft, draft) && !draft.busy && draft.intent != null) draft.unknown = true;
+    _draft = draft;
+    _file = draft.file;
+    fileName = draft.file?.name ?? draft.source?.title ?? draft.title;
+    _source = draft.source;
+    type = draft.type;
+    _language = draft.language;
+    _title.text = draft.title;
+    _key = draft.key;
+    _intent = draft.intent;
+    _busy = draft.busy;
+    _unknown = draft.unknown;
+    _error = draft.error;
+    step = 2;
+  }
+
+  Future<void> _loadCapabilities(Object? scope) async {
+    try {
+      final caps = await _live!.imports.capabilities();
+      if (!mounted || _scope != scope || !_current) return;
+      final source = widget.sourceMaterialId == null
+          ? null
+          : await _live!.detail(widget.sourceMaterialId!);
+      if (!mounted || _scope != scope || !_current) return;
+      setState(() {
+        _capabilities = caps;
+        if (_draft == null) _source = source;
+        if (source != null && _draft == null) {
+          fileName = source.title;
+          _title.text = source.title;
+          _language = source.language ?? 'ja';
+        }
+      });
+    } on Object catch (error) {
+      if (mounted && _scope == scope) setState(() => _error = error);
+    }
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
 
   Future<void> selectFile() async {
+    if (_live != null) {
+      if (_busy || _draft != null || widget.sourceMaterialId != null) return;
+      final scope = _scope;
+      final selected = await (widget.pickFile?.call() ?? openFile());
+      if (!mounted || !_current || _scope != scope || selected == null) return;
+      setState(() {
+        _file = selected;
+        fileName = selected.name;
+        _key = newRequestId();
+        _title.text = selected.name.replaceFirst(RegExp(r'\.[^.]+$'), '').trim();
+        _error = null;
+      });
+      return;
+    }
     final selected = await (widget.pickFileName?.call() ?? _chooseFileName());
     if (!mounted || selected == null || selected.trim().isEmpty) return;
     setState(() => fileName = selected.trim());
@@ -1522,6 +1802,10 @@ class _ImportPageState extends State<ImportPage> {
   Future<String?> _chooseFileName() async => (await openFile())?.name;
 
   Future<void> next() async {
+    if (_live != null) {
+      await _nextLive();
+      return;
+    }
     if (step == 1 && fileName == null) return;
     if (step < 2) {
       setState(() => step++);
@@ -1534,54 +1818,362 @@ class _ImportPageState extends State<ImportPage> {
     context.go(AppRoutes.mockLibrary);
   }
 
+  Future<void> _nextLive() async {
+    final live = _live!;
+    if (!_current || !_canSubmit || _busy || _capabilities == null) return;
+    if (step < 2) {
+      if (step == 1 && fileName == null) return;
+      setState(() => step++);
+      return;
+    }
+    final scope = _scope!;
+    final draft =
+        _draft ??
+        MaterialImportDraft(
+          scope: scope,
+          key: _key,
+          type: type,
+          language: _language,
+          title: _title.text,
+          file: _file,
+          source: _source,
+        );
+    _draft = draft;
+    draft.busy = true;
+    draft.error = null;
+    live.retainImport(draft);
+    try {
+      var intent = draft.intent;
+      if (intent == null) {
+        intent = draft.source == null
+            ? await live.imports.create(
+                file: draft.file!,
+                type: draft.type,
+                language: draft.language,
+                title: draft.title,
+                idempotencyKey: draft.key,
+              )
+            : await live.imports.reimportExisting(
+                sourceId: draft.source!.id,
+                targetType: draft.type,
+                language: draft.language,
+                title: draft.title,
+                idempotencyKey: draft.key,
+              );
+        if (!live.isCurrent(scope)) return;
+        draft.intent = intent;
+        live.retainImport(draft);
+      }
+      if (draft.unknown ||
+          intent.status == 'verifying' ||
+          (intent.status == 'awaiting_upload' && draft.file == null)) {
+        intent = await live.imports.find(intent.id);
+        if (!live.isCurrent(scope)) return;
+        draft.intent = intent;
+        draft.unknown = false;
+        live.retainImport(draft);
+      } else if (intent.status == 'awaiting_upload') {
+        draft.unknown = true;
+        live.retainImport(draft);
+        intent = await live.imports.uploadAndComplete(intent, draft.file!);
+        if (!live.isCurrent(scope)) return;
+        draft.intent = intent;
+        draft.unknown = false;
+        live.retainImport(draft);
+      }
+      if (intent.accepted) {
+        live.record('material.import.submitted', draft.type, 'success');
+        live.clearImport(draft);
+        await live.acceptedImport();
+        if (mounted && _scope == scope && _current) context.go(AppRoutes.materials);
+      }
+    } on Object catch (error) {
+      if (live.isCurrent(scope)) {
+        draft.error = error;
+        if (draft.intent == null && error is ApiFailure && error.code == 'INPUT_INVALID') {
+          live.clearImport(draft);
+          if (mounted && _scope == scope) {
+            _draft = null;
+            setState(() {
+              _busy = false;
+              _error = error;
+            });
+          }
+        }
+        if (!draft.unknown) {
+          live.record(
+            'material.import.submitted',
+            draft.type,
+            error is ApiFailure && error.code == 'PERMISSION_DENIED' ? 'denied' : 'failure',
+          );
+        }
+      }
+    } finally {
+      draft.busy = false;
+      if (live.isCurrent(scope) &&
+          identical(live.importDraft, draft) &&
+          draft.intent?.accepted != true) {
+        live.retainImport(draft);
+      }
+      if (mounted && _scope == scope) {
+        setState(() {
+          _busy = false;
+          _restoreDraft(live.importDraft);
+        });
+      }
+    }
+  }
+
+  Future<void> _cancelIntent() async {
+    final intent = _intent;
+    if (intent == null || _busy || !_current) return;
+    final scope = _scope;
+    setState(() => _busy = true);
+    if (_draft case final draft?) {
+      draft.busy = true;
+      _live!.retainImport(draft);
+    }
+    try {
+      await _live!.imports.cancel(intent);
+      if (!mounted || _scope != scope || !_current) return;
+      _live!.record('material.import.submitted', type, 'cancelled');
+      if (_draft case final draft?) _live!.clearImport(draft);
+      setState(() {
+        _intent = null;
+        _draft = null;
+        _file = null;
+        fileName = null;
+        _unknown = false;
+        _key = newRequestId();
+        step = 1;
+      });
+    } on Object catch (error) {
+      if (mounted && _scope == scope) setState(() => _error = error);
+    } finally {
+      if (_draft case final draft?) {
+        draft.busy = false;
+        if (_live!.isCurrent(scope!) && identical(_live!.importDraft, draft)) {
+          _live!.retainImport(draft);
+        }
+      }
+      if (mounted && _scope == scope) setState(() => _busy = false);
+    }
+  }
+
+  void _restartTerminal() {
+    if (_busy ||
+        !_current ||
+        !const {'expired', 'cancelled', 'rejected'}.contains(_intent?.status)) {
+      return;
+    }
+    if (_draft case final draft?) _live!.clearImport(draft);
+    setState(() {
+      _draft = null;
+      _intent = null;
+      _file = null;
+      fileName = _source?.title;
+      _unknown = false;
+      _error = null;
+      _key = newRequestId();
+      step = 1;
+    });
+  }
+
   void back() {
+    if (_busy || _intent != null) return;
     if (step > 0) {
       setState(() => step--);
     } else if (context.canPop()) {
       context.pop();
     } else {
-      context.go(AppRoutes.mockLibrary);
+      context.go(materialLibraryPath(context));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return PreviewPageFrame(
-      location: AppRoutes.mockImport,
-      title: l10n.mockLibraryImport,
-      detail: true,
-      detailNotifications: false,
-      mobileHeader: Row(
-        children: [
-          IconButton(
-            tooltip: l10n.mockShellBack,
-            onPressed: back,
-            icon: const Icon(Icons.arrow_back_ios_new, size: 19),
-          ),
-          Text(l10n.mockLibraryImport, style: Theme.of(context).textTheme.titleMedium),
-        ],
-      ),
-      mobile: MobileImportView(
-        step: step,
-        type: type,
-        fileName: fileName,
-        aiStructure: aiStructure,
-        onType: (value) => setState(() => type = value),
-        onAiStructure: (value) => setState(() => aiStructure = value),
-        onFile: selectFile,
-        onNext: next,
-      ),
-      desktop: DesktopImportView(
-        step: step,
-        type: type,
-        fileName: fileName,
-        aiStructure: aiStructure,
-        onType: (value) => setState(() => type = value),
-        onAiStructure: (value) => setState(() => aiStructure = value),
-        onFile: selectFile,
-        onNext: next,
-        onBack: back,
+    final formal = _live != null;
+    final capability = _capabilities?.forType(type);
+    final extra = !formal
+        ? null
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_capabilities == null && _error == null) const LinearProgressIndicator(),
+              if (step == 1) ...[
+                const SizedBox(height: 16),
+                Identified(
+                  id: UiTestIds.materialImportTitle,
+                  child: TextField(
+                    controller: _title,
+                    enabled: !_busy && _draft == null,
+                    maxLength: 200,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(labelText: l10n.materialTitle),
+                  ),
+                ),
+                Identified(
+                  id: UiTestIds.materialImportLanguage,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _language,
+                    decoration: InputDecoration(labelText: l10n.materialLanguage),
+                    items: [
+                      for (final lang in capability?.languages ?? const ['ja', 'en'])
+                        DropdownMenuItem(
+                          value: lang,
+                          child: Text(
+                            lang == 'ja' ? l10n.mockLibraryJapanese : l10n.mockLibraryEnglish,
+                          ),
+                        ),
+                    ],
+                    onChanged: _busy || _draft != null
+                        ? null
+                        : (value) => setState(() {
+                            _language = value!;
+                            _key = newRequestId();
+                          }),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '${l10n.materialFormats}：${capability?.formats.map((f) => '${f.toUpperCase()} ≤ ${((capability.limitFor(f)) / 1000000).toStringAsFixed(1)} MB').join(' · ') ?? '—'}',
+                ),
+                Text(
+                  '${l10n.materialCapacity}：${((_capabilities?.availableBytes ?? 0) / 1000000).toStringAsFixed(1)} MB',
+                ),
+              ],
+              if (step == 2) ...[
+                const SizedBox(height: 16),
+                Text(_title.text),
+                Text(_language == 'ja' ? l10n.mockLibraryJapanese : l10n.mockLibraryEnglish),
+              ],
+              if (_busy) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+                Text(l10n.materialUploadBusy),
+              ],
+              if (_intent != null && !_intent!.accepted)
+                Identified(
+                  id: UiTestIds.materialImportState,
+                  child: Text(
+                    _unknown
+                        ? l10n.materialImportUnknown
+                        : switch (_intent!.status) {
+                            'verifying' => l10n.materialImportVerifying,
+                            'expired' => l10n.materialImportExpired,
+                            'cancelled' => l10n.materialImportCancelled,
+                            'rejected' => l10n.materialImportRejected,
+                            _ => l10n.mockLibraryConfirmImport,
+                          },
+                  ),
+                ),
+              if (_error != null)
+                Text(
+                  l10n.apiUnknownError,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              if (_intent != null &&
+                  !_intent!.accepted &&
+                  !const {'cancelled', 'expired', 'rejected'}.contains(_intent!.status))
+                TextButton(
+                  onPressed: _busy ? null : _cancelIntent,
+                  child: Text(l10n.materialImportCancel),
+                ),
+              if (const {'cancelled', 'expired', 'rejected'}.contains(_intent?.status))
+                TextButton(onPressed: _busy ? null : _restartTerminal, child: Text(l10n.authRetry)),
+              if (_capabilities == null && _error != null)
+                TextButton(
+                  onPressed: () => unawaited(_loadCapabilities(_scope)),
+                  child: Text(l10n.authRetry),
+                ),
+            ],
+          );
+    final canNext =
+        !formal ||
+        (_current &&
+            _canSubmit &&
+            !_busy &&
+            capability != null &&
+            !const {'cancelled', 'expired', 'rejected'}.contains(_intent?.status) &&
+            (_source == null || type != _source!.type));
+    final nextLabel = formal && (_unknown || _intent?.status == 'verifying')
+        ? l10n.materialImportObserve
+        : formal && _intent?.status == 'awaiting_upload'
+        ? l10n.materialImportRetryUpload
+        : null;
+    return Identified(
+      id: UiTestIds.materialImportPage,
+      child: PreviewPageFrame(
+        location: materialImportPath(context),
+        title: l10n.mockLibraryImport,
+        detail: true,
+        detailNotifications: false,
+        mobileHeader: Row(
+          children: [
+            IconButton(
+              tooltip: l10n.mockShellBack,
+              onPressed: back,
+              icon: const Icon(Icons.arrow_back_ios_new, size: 19),
+            ),
+            Text(l10n.mockLibraryImport, style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+        mobile: MobileImportView(
+          extra: extra,
+          formal: formal,
+          allowedTypes: formal
+              ? LearningMaterialType.values
+                    .where((value) => materialImportTypeAllowed(_live!, value))
+                    .toList()
+              : null,
+          fileFormat: _source?.sourceFormat ?? (_file == null ? null : sourceFormat(_file!.name)),
+          allowNext: canNext,
+          nextLabel: nextLabel,
+          step: step,
+          type: type,
+          fileName: fileName,
+          aiStructure: aiStructure,
+          onType: (value) {
+            if (!_busy && _draft == null) {
+              setState(() {
+                type = value;
+                _key = newRequestId();
+              });
+            }
+          },
+          onAiStructure: (value) => setState(() => aiStructure = value),
+          onFile: selectFile,
+          onNext: next,
+        ),
+        desktop: DesktopImportView(
+          extra: extra,
+          formal: formal,
+          allowedTypes: formal
+              ? LearningMaterialType.values
+                    .where((value) => materialImportTypeAllowed(_live!, value))
+                    .toList()
+              : null,
+          fileFormat: _source?.sourceFormat ?? (_file == null ? null : sourceFormat(_file!.name)),
+          allowNext: canNext,
+          nextLabel: nextLabel,
+          step: step,
+          type: type,
+          fileName: fileName,
+          aiStructure: aiStructure,
+          onType: (value) {
+            if (!_busy && _draft == null) {
+              setState(() {
+                type = value;
+                _key = newRequestId();
+              });
+            }
+          },
+          onAiStructure: (value) => setState(() => aiStructure = value),
+          onFile: selectFile,
+          onNext: next,
+          onBack: back,
+        ),
       ),
     );
   }
@@ -1609,9 +2201,20 @@ class MobileImportView extends StatelessWidget {
     required this.onAiStructure,
     required this.onFile,
     required this.onNext,
+    this.extra,
+    this.formal = false,
+    this.fileFormat,
+    this.allowedTypes,
+    this.allowNext = true,
+    this.nextLabel,
     super.key,
   });
 
+  final Widget? extra;
+  final bool formal, allowNext;
+  final String? fileFormat;
+  final List<LearningMaterialType>? allowedTypes;
+  final String? nextLabel;
   final int step;
   final LearningMaterialType type;
   final String? fileName;
@@ -1652,7 +2255,7 @@ class MobileImportView extends StatelessWidget {
                         duration:
                             HarukaMotion.reduced(
                               context,
-                              reducedMotion: PreviewStoreScope.of(context).reducedMotion,
+                              reducedMotion: _libraryReducedMotion(context),
                             )
                             ? Duration.zero
                             : const Duration(milliseconds: 220),
@@ -1670,7 +2273,7 @@ class MobileImportView extends StatelessWidget {
               ),
               const SizedBox(height: 28),
               if (step == 0)
-                for (final candidate in LearningMaterialType.values)
+                for (final candidate in allowedTypes ?? LearningMaterialType.values)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Card.outlined(
@@ -1685,53 +2288,56 @@ class MobileImportView extends StatelessWidget {
                               : scheme.outline.withValues(alpha: .12),
                         ),
                       ),
-                      child: InkWell(
-                        onTap: () => onType(candidate),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 26),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: roles.selected,
-                                  borderRadius: BorderRadius.circular(12),
+                      child: Identified(
+                        id: _importTypeId(candidate),
+                        child: InkWell(
+                          onTap: () => onType(candidate),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 26),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: roles.selected,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    _importTypeIcon(candidate),
+                                    color: scheme.primary,
+                                    size: 23,
+                                  ),
                                 ),
-                                child: Icon(
-                                  _importTypeIcon(candidate),
-                                  color: scheme.primary,
-                                  size: 23,
-                                ),
-                              ),
-                              const SizedBox(width: 17),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      materialTypeLabel(context, candidate),
-                                      style: Theme.of(context).textTheme.titleMedium,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _importTypeDescription(l10n, candidate),
-                                      style: TextStyle(
-                                        color: scheme.onSurfaceVariant,
-                                        fontSize: 12,
+                                const SizedBox(width: 17),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        materialTypeLabel(context, candidate),
+                                        style: Theme.of(context).textTheme.titleMedium,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _importTypeDescription(l10n, candidate),
+                                        style: TextStyle(
+                                          color: scheme.onSurfaceVariant,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Icon(
-                                type == candidate
-                                    ? Icons.check_circle
-                                    : Icons.radio_button_unchecked,
-                                color: type == candidate
-                                    ? scheme.primary
-                                    : scheme.outline.withValues(alpha: .3),
-                              ),
-                            ],
+                                Icon(
+                                  type == candidate
+                                      ? Icons.check_circle
+                                      : Icons.radio_button_unchecked,
+                                  color: type == candidate
+                                      ? scheme.primary
+                                      : scheme.outline.withValues(alpha: .3),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1749,10 +2355,13 @@ class MobileImportView extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: onFile,
-                        icon: const Icon(Icons.folder_open_outlined),
-                        label: Text(l10n.mockLibraryChooseMaterialFile),
+                      Identified(
+                        id: UiTestIds.materialImportFile,
+                        child: OutlinedButton.icon(
+                          onPressed: onFile,
+                          icon: const Icon(Icons.folder_open_outlined),
+                          label: Text(l10n.mockLibraryChooseMaterialFile),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -1762,14 +2371,19 @@ class MobileImportView extends StatelessWidget {
                         style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
                       ),
                       const SizedBox(height: 55),
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: aiStructure,
-                        onChanged: (value) => onAiStructure(value ?? false),
-                        title: Text(l10n.mockLibraryAiStructureSuggestion),
-                        subtitle: Text(l10n.mockLibraryAiStructureDescription),
-                      ),
+                      if (!formal)
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: aiStructure,
+                          onChanged: (value) => onAiStructure(value ?? false),
+                          title: Text(
+                            formal
+                                ? l10n.materialSourceFormat
+                                : l10n.mockLibraryAiStructureSuggestion,
+                          ),
+                          subtitle: Text(l10n.mockLibraryAiStructureDescription),
+                        ),
                     ],
                   ),
                 )
@@ -1794,17 +2408,24 @@ class MobileImportView extends StatelessWidget {
                       Text(fileName ?? '', style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 18),
                       Text(
-                        l10n.mockLibraryAiStructureSuggestion,
+                        formal ? l10n.materialSourceFormat : l10n.mockLibraryAiStructureSuggestion,
                         style: TextStyle(color: scheme.onSurfaceVariant),
                       ),
                       Text(
-                        aiStructure
+                        formal
+                            ? fileFormat?.toUpperCase() ?? '—'
+                            : aiStructure
                             ? l10n.mockLibraryAiStructureEnabled
                             : l10n.mockLibraryAiStructureDisabled,
                       ),
+                      if (formal) ...[
+                        const SizedBox(height: 12),
+                        Text(l10n.materialImportSourceBoundary),
+                      ],
                     ],
                   ),
                 ),
+              ?extra,
             ],
           ),
         ),
@@ -1815,19 +2436,24 @@ class MobileImportView extends StatelessWidget {
             border: Border(top: BorderSide(color: scheme.outline.withValues(alpha: .2))),
           ),
           padding: const EdgeInsets.fromLTRB(20, 13, 20, 15),
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              disabledBackgroundColor: scheme.primary.withValues(alpha: .5),
-              disabledForegroundColor: scheme.onPrimary,
-            ),
-            onPressed: step == 1 && fileName == null ? null : onNext,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(step == 2 ? l10n.mockLibraryConfirmImport : l10n.mockLibraryNext),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward, size: 18),
-              ],
+          child: Identified(
+            id: UiTestIds.materialImportNext,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                disabledBackgroundColor: scheme.primary.withValues(alpha: .5),
+                disabledForegroundColor: scheme.onPrimary,
+              ),
+              onPressed: !allowNext || (step == 1 && fileName == null) ? null : onNext,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    nextLabel ?? (step == 2 ? l10n.mockLibraryConfirmImport : l10n.mockLibraryNext),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 18),
+                ],
+              ),
             ),
           ),
         ),
@@ -1847,9 +2473,20 @@ class DesktopImportView extends StatelessWidget {
     required this.onFile,
     required this.onNext,
     required this.onBack,
+    this.extra,
+    this.formal = false,
+    this.fileFormat,
+    this.allowedTypes,
+    this.allowNext = true,
+    this.nextLabel,
     super.key,
   });
 
+  final Widget? extra;
+  final bool formal, allowNext;
+  final String? fileFormat;
+  final List<LearningMaterialType>? allowedTypes;
+  final String? nextLabel;
   final int step;
   final LearningMaterialType type;
   final String? fileName;
@@ -1927,7 +2564,7 @@ class DesktopImportView extends StatelessWidget {
             if (step == 0)
               Row(
                 children: [
-                  for (final candidate in LearningMaterialType.values) ...[
+                  for (final candidate in allowedTypes ?? LearningMaterialType.values) ...[
                     if (candidate != LearningMaterialType.novel) const SizedBox(width: 12),
                     Expanded(
                       child: Card.outlined(
@@ -1942,34 +2579,37 @@ class DesktopImportView extends StatelessWidget {
                                 : scheme.outline.withValues(alpha: .15),
                           ),
                         ),
-                        child: InkWell(
-                          onTap: () => onType(candidate),
-                          child: SizedBox(
-                            height: 160,
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        _importTypeIcon(candidate),
-                                        color: candidate == type
-                                            ? scheme.primary
-                                            : scheme.onSurface,
-                                      ),
-                                      const Spacer(),
-                                      if (candidate == type)
-                                        Icon(Icons.check, size: 18, color: scheme.primary),
-                                    ],
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    materialTypeLabel(context, candidate),
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                ],
+                        child: Identified(
+                          id: _importTypeId(candidate),
+                          child: InkWell(
+                            onTap: () => onType(candidate),
+                            child: SizedBox(
+                              height: 160,
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          _importTypeIcon(candidate),
+                                          color: candidate == type
+                                              ? scheme.primary
+                                              : scheme.onSurface,
+                                        ),
+                                        const Spacer(),
+                                        if (candidate == type)
+                                          Icon(Icons.check, size: 18, color: scheme.primary),
+                                      ],
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      materialTypeLabel(context, candidate),
+                                      style: Theme.of(context).textTheme.titleMedium,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -1995,10 +2635,13 @@ class DesktopImportView extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 15),
-                    OutlinedButton.icon(
-                      onPressed: onFile,
-                      icon: const Icon(Icons.folder_open_outlined),
-                      label: Text(l10n.mockLibraryChooseMaterialFile),
+                    Identified(
+                      id: UiTestIds.materialImportFile,
+                      child: OutlinedButton.icon(
+                        onPressed: onFile,
+                        icon: const Icon(Icons.folder_open_outlined),
+                        label: Text(l10n.mockLibraryChooseMaterialFile),
+                      ),
                     ),
                     const SizedBox(height: 7),
                     Text(
@@ -2008,14 +2651,19 @@ class DesktopImportView extends StatelessWidget {
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 25),
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: aiStructure,
-                      onChanged: (value) => onAiStructure(value ?? false),
-                      title: Text(l10n.mockLibraryAiStructureSuggestion),
-                      subtitle: Text(l10n.mockLibraryAiStructureDescription),
-                    ),
+                    if (!formal)
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: aiStructure,
+                        onChanged: (value) => onAiStructure(value ?? false),
+                        title: Text(
+                          formal
+                              ? l10n.materialSourceFormat
+                              : l10n.mockLibraryAiStructureSuggestion,
+                        ),
+                        subtitle: Text(l10n.mockLibraryAiStructureDescription),
+                      ),
                   ],
                 ),
               )
@@ -2033,15 +2681,24 @@ class DesktopImportView extends StatelessWidget {
                     Text(l10n.mockLibraryChooseFile),
                     Text(fileName ?? '', style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 16),
-                    Text(l10n.mockLibraryAiStructureSuggestion),
                     Text(
-                      aiStructure
+                      formal ? l10n.materialSourceFormat : l10n.mockLibraryAiStructureSuggestion,
+                    ),
+                    Text(
+                      formal
+                          ? fileFormat?.toUpperCase() ?? '—'
+                          : aiStructure
                           ? l10n.mockLibraryAiStructureEnabled
                           : l10n.mockLibraryAiStructureDisabled,
                     ),
+                    if (formal) ...[
+                      const SizedBox(height: 12),
+                      Text(l10n.materialImportSourceBoundary),
+                    ],
                   ],
                 ),
               ),
+            ?extra,
             const SizedBox(height: 34),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -2052,13 +2709,19 @@ class DesktopImportView extends StatelessWidget {
                 ],
                 SizedBox(
                   width: 180,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      disabledBackgroundColor: scheme.primary.withValues(alpha: .5),
-                      disabledForegroundColor: scheme.onPrimary,
+                  child: Identified(
+                    id: UiTestIds.materialImportNext,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        disabledBackgroundColor: scheme.primary.withValues(alpha: .5),
+                        disabledForegroundColor: scheme.onPrimary,
+                      ),
+                      onPressed: !allowNext || (step == 1 && fileName == null) ? null : onNext,
+                      child: Text(
+                        nextLabel ??
+                            (step == 2 ? l10n.mockLibraryConfirmImport : l10n.mockLibraryNext),
+                      ),
                     ),
-                    onPressed: step == 1 && fileName == null ? null : onNext,
-                    child: Text(step == 2 ? l10n.mockLibraryConfirmImport : l10n.mockLibraryNext),
                   ),
                 ),
               ],
@@ -2074,3 +2737,13 @@ bool _libraryReducedMotion(BuildContext context) =>
     ShellPresentationScope.maybeOf(context)?.reducedMotion ??
     PreviewStoreScope.maybeOf(context)?.reducedMotion ??
     false;
+
+String _importTypeId(LearningMaterialType type) => switch (type) {
+  LearningMaterialType.novel => UiTestIds.materialImportNovel,
+  LearningMaterialType.textbook => UiTestIds.materialImportTextbook,
+  LearningMaterialType.exam => UiTestIds.materialImportExam,
+};
+Widget _identifiedMaterialRow(BuildContext context, String id, Widget child) =>
+    liveMaterialCatalog(context) == null
+    ? child
+    : Identified(id: UiTestIds.referenceMaterialRow(id), child: child);

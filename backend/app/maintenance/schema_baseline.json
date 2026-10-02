@@ -124,8 +124,8 @@
       "ck_novel_chapters_learning_ordinal_positive": "ordinal >= 1"
     },
     "outbox_events": {
-      "ck_outbox_events_authorization_revision_positive": "(event_type::text = ANY (ARRAY['authorization.changed'::character varying, 'identity.security'::character varying]::text[])) AND authorization_revision >= 1 AND audit_event_id IS NOT NULL OR event_type::text ~~ 'model.%'::text AND authorization_revision IS NULL AND audit_event_id IS NULL",
-      "ck_outbox_events_event_type": "event_type::text = ANY (ARRAY['authorization.changed'::character varying, 'identity.security'::character varying, 'model.job.accepted'::character varying, 'model.job.updated'::character varying, 'model.usage.updated'::character varying]::text[])",
+      "ck_outbox_events_authorization_revision_positive": "(event_type::text = ANY (ARRAY['authorization.changed'::character varying, 'identity.security'::character varying]::text[])) AND authorization_revision >= 1 AND audit_event_id IS NOT NULL OR (event_type::text ~~ 'model.%'::text OR event_type::text ~~ 'material.%'::text) AND authorization_revision IS NULL AND audit_event_id IS NULL",
+      "ck_outbox_events_event_type": "event_type::text = ANY (ARRAY['authorization.changed'::character varying, 'identity.security'::character varying, 'model.job.accepted'::character varying, 'model.job.updated'::character varying, 'model.usage.updated'::character varying, 'material.job.accepted'::character varying, 'material.job.updated'::character varying, 'material.import.completed'::character varying, 'material.import.failed'::character varying, 'material.import.needs_review'::character varying]::text[])",
       "ck_outbox_events_status": "status::text = ANY (ARRAY['pending'::character varying, 'published'::character varying]::text[])"
     },
     "permission_catalog": {
@@ -163,6 +163,7 @@
       "ck_source_result_bindings_learning_span": "start_scalar >= 0 AND end_scalar > start_scalar"
     },
     "upload_intents": {
+      "ck_upload_intents_candidate_retirement": "jsonb_typeof(retired_final_candidates) = 'array'::text AND jsonb_array_length(retired_final_candidates) <= 16 AND (purpose::text = 'primary_document'::text OR retired_final_candidates = '[]'::jsonb AND candidate_cleanup_due_at IS NULL)",
       "ck_upload_intents_completion": "status::text = 'completed'::text AND file_object_id IS NOT NULL AND failure_code IS NULL OR status::text <> 'completed'::text AND file_object_id IS NULL",
       "ck_upload_intents_completion_lease": "(purpose::text = 'avatar'::text OR status::text <> 'verifying'::text) AND completion_lease_token IS NULL AND completion_lease_until_at IS NULL OR purpose::text = 'primary_document'::text AND status::text = 'verifying'::text AND completion_generation > 0 AND completion_lease_token IS NOT NULL AND completion_lease_until_at IS NOT NULL",
       "ck_upload_intents_declared_format": "purpose::text = 'avatar'::text AND (declared_format::text = ANY (ARRAY['jpeg'::character varying, 'png'::character varying, 'webp'::character varying]::text[])) OR purpose::text = 'primary_document'::text AND (declared_format::text = ANY (ARRAY['md'::character varying, 'epub'::character varying, 'pdf'::character varying, 'png'::character varying, 'jpeg'::character varying, 'webp'::character varying]::text[]))",
@@ -384,8 +385,8 @@
       "ck_novel_chapters_learning_ordinal_positive": "ordinal >= 1"
     },
     "outbox_events": {
-      "ck_outbox_events_authorization_revision_positive": "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR (event_type LIKE 'model.%' AND authorization_revision IS NULL AND audit_event_id IS NULL)",
-      "ck_outbox_events_event_type": "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated')",
+      "ck_outbox_events_authorization_revision_positive": "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR ((event_type LIKE 'model.%' OR event_type LIKE 'material.%') AND authorization_revision IS NULL AND audit_event_id IS NULL)",
+      "ck_outbox_events_event_type": "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated', 'material.job.accepted', 'material.job.updated', 'material.import.completed', 'material.import.failed', 'material.import.needs_review')",
       "ck_outbox_events_status": "status IN ('pending', 'published')"
     },
     "permission_catalog": {
@@ -423,6 +424,7 @@
       "ck_source_result_bindings_learning_span": "start_scalar >= 0 AND end_scalar > start_scalar"
     },
     "upload_intents": {
+      "ck_upload_intents_candidate_retirement": "jsonb_typeof(retired_final_candidates) = 'array' AND jsonb_array_length(retired_final_candidates) <= 16 AND (purpose = 'primary_document' OR (retired_final_candidates = '[]'::jsonb AND candidate_cleanup_due_at IS NULL))",
       "ck_upload_intents_completion": "(status = 'completed' AND file_object_id IS NOT NULL AND failure_code IS NULL) OR (status != 'completed' AND file_object_id IS NULL)",
       "ck_upload_intents_completion_lease": "((purpose = 'avatar' OR status != 'verifying') AND completion_lease_token IS NULL AND completion_lease_until_at IS NULL) OR (purpose = 'primary_document' AND status = 'verifying' AND completion_generation > 0 AND completion_lease_token IS NOT NULL AND completion_lease_until_at IS NOT NULL)",
       "ck_upload_intents_declared_format": "(purpose = 'avatar' AND declared_format IN ('jpeg','png','webp')) OR (purpose = 'primary_document' AND declared_format IN ('md','epub','pdf','png','jpeg','webp'))",
@@ -519,5 +521,5 @@
     },
     "voice_catalog_entries": {}
   },
-  "revision": "0014_material_sources"
+  "revision": "0016_source_candidate_retirement"
 }

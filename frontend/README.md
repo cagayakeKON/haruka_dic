@@ -1,6 +1,6 @@
 # Haruka 前端
 
-单个 Flutter 工程包含 Windows、Web、Android 宿主、紧凑/宽屏布局、公开配置校验和中文 ARB 本地化。环境页可显式检查真实后端就绪状态。阶段1已实现账号与收藏、本人资料/头像/设置、身份治理、本人模型凭据和任务；当前正在完成[阶段1收口检查](../docs/delivery/reviews/2026-10-01-foundation-stage-closure.md)。真实模型测试三次 `KEY_REJECTED` 已获用户接受，不再验证模型，模型可用性仍未验证。正式业务按Web和Android必要路径验收，找回密码和前端日志只验Web，不安排Windows原生运行测试。完整材料阅读、导入、NLP、AI生成和TTS继续按后续切片交付；现有mock与参考学习流程不代表这些能力已实现。
+单个 Flutter 工程包含 Windows、Web、Android 宿主、紧凑/宽屏布局、公开配置校验和中文 ARB 本地化。环境页可显式检查真实后端就绪状态。阶段1已完成，包含账号与收藏、本人资料/头像/设置、身份治理、本人模型凭据和任务；当前按[M1实现方案](../docs/delivery/material-import-implementation.md)接入真实材料导入、材料库与通知。真实模型测试三次 `KEY_REJECTED` 已获用户接受，不再验证模型，模型可用性仍未验证。正式业务按Web和Android必要路径验收，找回密码和前端日志只验Web，不安排Windows原生运行测试。完整材料阅读、导入、NLP、AI生成和TTS继续按后续切片交付；现有mock与参考学习流程不代表这些能力已实现。
 
 2026-09-26 [B0设计对齐](../docs/delivery/reviews/2026-09-26-b0-design-alignment.md)记录当时的账号/角色/授权结构、权限目录与基础壳验收；原 B0 完整矩阵保留历史候选身份，不代替当前切片的最终验收。
 

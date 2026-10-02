@@ -837,12 +837,12 @@ class OutboxEvent(IdentityMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("audit_event_id"),
         CheckConstraint(
-            "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated')",
+            "event_type IN ('authorization.changed', 'identity.security', 'model.job.accepted', 'model.job.updated', 'model.usage.updated', 'material.job.accepted', 'material.job.updated', 'material.import.completed', 'material.import.failed', 'material.import.needs_review')",
             name="event_type",
         ),
         CheckConstraint("status IN ('pending', 'published')", name="status"),
         CheckConstraint(
-            "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR (event_type LIKE 'model.%' AND authorization_revision IS NULL AND audit_event_id IS NULL)",
+            "(event_type IN ('authorization.changed','identity.security') AND authorization_revision >= 1 AND audit_event_id IS NOT NULL) OR ((event_type LIKE 'model.%' OR event_type LIKE 'material.%') AND authorization_revision IS NULL AND audit_event_id IS NULL)",
             name="authorization_revision_positive",
         ),
         {

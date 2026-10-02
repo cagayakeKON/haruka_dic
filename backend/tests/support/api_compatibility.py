@@ -350,6 +350,7 @@ def _material_import_samples() -> dict[str, object]:
         MaterialMetadataRead,
         StagingUploadRead,
     )
+    from app.schemas.model_settings import JobRead, LanguageIssueRead
 
     at = datetime(2026, 10, 2, tzinfo=UTC)
     expires = datetime(2099, 1, 1, tzinfo=UTC)
@@ -368,7 +369,7 @@ def _material_import_samples() -> dict[str, object]:
         upload=StagingUploadRead(
             id=REQUEST_ID,
             url=f"/api/v1/uploads/{REQUEST_ID}/content",
-            headers={"X-Haruka-Upload-Grant": SAMPLE_NON_CREDENTIAL},
+            headers={"X-Haruka-Upload-Capability": SAMPLE_NON_CREDENTIAL},
             expires_at=expires,
         ),
     )
@@ -418,11 +419,57 @@ def _material_import_samples() -> dict[str, object]:
         created_at=at,
         updated_at=at,
     )
+    queued = JobRead(
+        id=REQUEST_ID,
+        operation_kind="material_import",
+        material_id=RESOURCE_ID,
+        material_revision_id=RESOURCE_ID,
+        source_status="parsing",
+        state="queued",
+        revision=1,
+        generation=1,
+        sequence=0,
+        stage="source_validation",
+        progress_percent=0,
+        can_cancel=True,
+        can_retry=False,
+        requires_new_attempt_confirmation=False,
+        created_at=at,
+        updated_at=at,
+    )
+    blocked = JobRead(
+        id=REQUEST_ID,
+        operation_kind="material_import",
+        material_id=RESOURCE_ID,
+        material_revision_id=RESOURCE_ID,
+        source_status="parsing",
+        language_issue=LanguageIssueRead(
+            id=RESOURCE_ID,
+            revision=1,
+            input_digest="a" * 64,
+            material_revision_id=RESOURCE_ID,
+            declared_language="en",
+        ),
+        state="blocked",
+        revision=3,
+        generation=1,
+        sequence=2,
+        stage="language_assessment",
+        progress_percent=50,
+        error_code="INPUT_INVALID",
+        can_cancel=True,
+        can_retry=True,
+        requires_new_attempt_confirmation=False,
+        created_at=at,
+        updated_at=at,
+    )
     return {
         "material_import_pending": wrapped(pending),
         "material_import_accepted": wrapped(accepted),
         "material_metadata_pending": wrapped(source_only),
         "material_metadata_published": wrapped(published),
+        "material_source_job_queued": wrapped(queued),
+        "material_source_job_blocked": wrapped(blocked),
         "material_capabilities": wrapped(
             MaterialImportCapabilitiesRead(
                 capabilities=[
@@ -430,25 +477,43 @@ def _material_import_samples() -> dict[str, object]:
                         material_type="novel",
                         formats=["md", "epub", "pdf"],
                         languages=["ja", "en"],
-                        max_size_bytes=80 * 1024 * 1024,
+                        max_size_bytes=32 * 1024 * 1024,
+                        format_max_size_bytes={
+                            "md": 20_000_000,
+                            "epub": 32 * 1024 * 1024,
+                            "pdf": 32 * 1024 * 1024,
+                        },
                     ),
                     MaterialImportCapability(
                         material_type="textbook",
                         formats=["md", "epub", "pdf"],
                         languages=["ja", "en"],
-                        max_size_bytes=80 * 1024 * 1024,
+                        max_size_bytes=32 * 1024 * 1024,
+                        format_max_size_bytes={
+                            "md": 20_000_000,
+                            "epub": 32 * 1024 * 1024,
+                            "pdf": 32 * 1024 * 1024,
+                        },
                     ),
                     MaterialImportCapability(
                         material_type="exam",
                         formats=["md", "epub", "pdf", "png", "jpeg", "webp"],
                         languages=["ja", "en"],
-                        max_size_bytes=80 * 1024 * 1024,
-                    )
+                        max_size_bytes=32 * 1024 * 1024,
+                        format_max_size_bytes={
+                            "md": 20_000_000,
+                            "epub": 32 * 1024 * 1024,
+                            "pdf": 32 * 1024 * 1024,
+                            "png": 20_000_000,
+                            "jpeg": 20_000_000,
+                            "webp": 20_000_000,
+                        },
+                    ),
                 ],
-                quota_bytes=200 * 1024 * 1024,
+                quota_bytes=256 * 1024 * 1024,
                 used_bytes=0,
                 reserved_bytes=0,
-                upload_ttl_seconds=600,
+                upload_ttl_seconds=900,
             )
         ),
     }

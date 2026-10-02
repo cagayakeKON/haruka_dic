@@ -1,4 +1,4 @@
-// GENERATED from config/ui_test_ids.json; sha256:59350f34b337db45f162f0ce19f6068b217673172057faeb4cd0bdaf8c3ae6ca. Do not edit.
+// GENERATED from config/ui_test_ids.json; sha256:4e06561105444d1988001c0ebabe64e8607baa727ca271f9193078cb088fc1bf. Do not edit.
 abstract final class UiTestIds {
   static const accountChangePassword = "client.account.password.submit";
   static const accountConfirmPassword = "client.account.password.confirm";
@@ -106,6 +106,11 @@ abstract final class UiTestIds {
   static const modelUsageApply = "client.model.usage.apply";
   static const modelUsageModelFilter = "client.model.usage.model_filter";
   static const notFoundPage = "client.shell.not_found.page";
+  static const notificationsMore = "client.notifications.list.more";
+  static const notificationsPage = "client.notifications.list.page";
+  static const notificationsReadAll = "client.notifications.list.read_all";
+  static const notificationsRefresh = "client.notifications.list.refresh";
+  static const notificationsUnreadFilter = "client.notifications.list.unread_filter";
   static const recoveryAcceptedResetLink = "client.auth.result.reset_link";
   static const recoveryCompleteConfirm = "client.auth.recovery_complete.confirm";
   static const recoveryCompletePage = "client.auth.recovery_complete.page";
@@ -146,6 +151,14 @@ abstract final class UiTestIds {
   static const verificationPage = "client.auth.verification.page";
   static const verificationSubmit = "client.auth.verification.submit";
   static const verificationToken = "client.auth.verification.token";
+  static String notificationRow(String notificationId) {
+    if (!RegExp(r'^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')
+        .hasMatch(notificationId)) {
+      throw ArgumentError.value(notificationId, "notificationId", 'Expected UUID');
+    }
+    return "client.notifications.row." + notificationId.toLowerCase();
+  }
+
   static String referenceBlock(String blockId) {
     if (!RegExp(r'^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$').hasMatch(blockId)) {
       throw ArgumentError.value(blockId, "blockId", 'Expected UUID');

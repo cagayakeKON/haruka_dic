@@ -21,6 +21,7 @@ final class MaterialMetadata {
     this.firstChapterId,
     this.jobId,
     this.progressPercent,
+    this.sourceRevisionNumber,
   });
   final String id;
   final String libraryId;
@@ -36,6 +37,7 @@ final class MaterialMetadata {
   final String? firstChapterId;
   final String? jobId;
   final int? progressPercent;
+  final int? sourceRevisionNumber;
   final bool readable;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -50,6 +52,7 @@ final class MaterialMetadata {
     final revision = json['revision'];
     final generation = json['delete_generation'];
     final progress = json['progress_percent'];
+    final sourceRevision = json['source_revision_number'];
     if (!LearningMaterialType.values.any((candidate) => candidate.name == type) ||
         !const {'parsing', 'readable', 'degraded', 'failed'}.contains(status) ||
         !const {'not_requested', 'pending', 'ready', 'failed'}.contains(analysis) ||
@@ -59,7 +62,8 @@ final class MaterialMetadata {
         revision < 1 ||
         generation is! int ||
         generation < 0 ||
-        (progress != null && (progress is! int || progress < 0 || progress > 100))) {
+        (progress != null && (progress is! int || progress < 0 || progress > 100)) ||
+        (sourceRevision != null && (sourceRevision is! int || sourceRevision < 1))) {
       throw const FormatException('Invalid material metadata');
     }
     return MaterialMetadata(
@@ -77,6 +81,7 @@ final class MaterialMetadata {
       firstChapterId: json['first_chapter_id'] == null ? null : wireUuid(json['first_chapter_id']),
       jobId: json['job_id'] == null ? null : wireUuid(json['job_id']),
       progressPercent: progress as int?,
+      sourceRevisionNumber: sourceRevision as int?,
       readable: readable,
       createdAt: wireUtc(json['created_at']),
       updatedAt: wireUtc(json['updated_at']),

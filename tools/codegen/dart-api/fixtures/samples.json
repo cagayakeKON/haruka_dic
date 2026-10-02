@@ -1461,6 +1461,7 @@
       "revision": 1,
       "revision_id": null,
       "source_format": "pdf",
+      "source_revision_number": 1,
       "source_status": "parsing",
       "title": "合成试卷",
       "updated_at": "2026-10-02T00:00:00Z"
@@ -1485,8 +1486,34 @@
       "revision": 1,
       "revision_id": "018f1234-5678-7123-8123-123456789abc",
       "source_format": null,
+      "source_revision_number": null,
       "source_status": "readable",
       "title": "既有小说",
+      "updated_at": "2026-10-02T00:00:00Z"
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "material_metadata_renamed": {
+    "data": {
+      "analysis_status": "not_requested",
+      "created_at": "2026-10-02T00:00:00Z",
+      "delete_generation": 0,
+      "first_chapter_id": null,
+      "id": "018f1234-5678-7123-8123-123456789abc",
+      "job_id": "018f1234-1234-7123-8123-123456789abc",
+      "language": "en",
+      "library_id": "018f1234-1234-7123-8123-123456789abc",
+      "material_type": "exam",
+      "progress_percent": null,
+      "readable": false,
+      "revision": 2,
+      "revision_id": null,
+      "source_format": "pdf",
+      "source_revision_number": 1,
+      "source_status": "parsing",
+      "title": "合成试卷",
       "updated_at": "2026-10-02T00:00:00Z"
     },
     "meta": {
@@ -1889,6 +1916,81 @@
           "unknown_count": 1
         }
       ]
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "notification_mark_read": {},
+  "notification_page": {
+    "data": [
+      {
+        "created_at": "2026-10-02T00:00:00Z",
+        "id": "018f1234-1234-7123-8123-123456789abc",
+        "job_id": "018f1234-1234-7123-8123-123456789abc",
+        "message_code": "material.import.needs_review",
+        "notification_kind": "needs_review",
+        "read_at": null,
+        "resource_available": true,
+        "resource_id": "018f1234-5678-7123-8123-123456789abc",
+        "resource_kind": "material",
+        "resource_version": 1,
+        "route_key": "material",
+        "safe_parameters": {},
+        "schema_version": 1
+      },
+      {
+        "created_at": "2026-10-02T00:00:00Z",
+        "id": "018f1234-5678-7123-8123-123456789abc",
+        "job_id": "018f1234-1234-7123-8123-123456789abc",
+        "message_code": "notification.resource_unavailable",
+        "notification_kind": "completed",
+        "read_at": "2026-10-02T00:00:00Z",
+        "resource_available": false,
+        "resource_id": null,
+        "resource_kind": "material",
+        "resource_version": null,
+        "route_key": null,
+        "safe_parameters": {},
+        "schema_version": 1
+      }
+    ],
+    "meta": {
+      "has_more": true,
+      "next_cursor": "SYNTHETIC_SAMPLE_NOT_VALID_CURSOR",
+      "request_id": "018f1234-1234-7123-8123-123456789abc",
+      "snapshot_expires_at": "2026-10-02T00:15:00Z",
+      "snapshot_token": "SYNTHETIC_SAMPLE_NOT_VALID_SNAPSHOT",
+      "unread_count": 1
+    }
+  },
+  "notification_read": {
+    "data": {
+      "created_at": "2026-10-02T00:00:00Z",
+      "id": "018f1234-1234-7123-8123-123456789abc",
+      "job_id": "018f1234-1234-7123-8123-123456789abc",
+      "message_code": "material.import.needs_review",
+      "notification_kind": "needs_review",
+      "read_at": "2026-10-02T00:00:00Z",
+      "resource_available": true,
+      "resource_id": "018f1234-5678-7123-8123-123456789abc",
+      "resource_kind": "material",
+      "resource_version": 1,
+      "route_key": "material",
+      "safe_parameters": {},
+      "schema_version": 1
+    },
+    "meta": {
+      "request_id": "018f1234-1234-7123-8123-123456789abc"
+    }
+  },
+  "notification_read_all": {
+    "snapshot_token": "SYNTHETIC_SAMPLE_NOT_VALID_SNAPSHOT"
+  },
+  "notification_read_all_result": {
+    "data": {
+      "changed_count": 1,
+      "unread_count": 1
     },
     "meta": {
       "request_id": "018f1234-1234-7123-8123-123456789abc"

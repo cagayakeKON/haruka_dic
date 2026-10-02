@@ -3,25 +3,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:haruka/app/routes.dart';
-import 'package:haruka/app/page_route_activity.dart';
-import 'package:haruka/app/lifecycle_visibility.dart';
 import 'package:haruka/app/theme.dart';
 import 'package:haruka/generated/l10n/app_localizations.dart';
 import 'package:haruka/shared/presentation/components.dart';
 import 'package:haruka/app/preview_shell.dart';
-import 'package:haruka/features/library/data/material_catalog.dart';
 import 'package:haruka/features/library/presentation/material_catalog_scope.dart';
 
+import '../../../generated/ui_test_ids.dart';
+import '../../../shared/identified.dart';
+
 import '../data/notification_repository.dart';
+import '../data/cached_notification_repository.dart';
+import '../../../core/api/responses.dart';
+import '../../library/data/http_material_catalog.dart';
+import '../../library/domain/material_summary.dart';
+import '../../library/presentation/library_pages.dart';
+import '../../library/presentation/material_management_controls.dart';
 import '../domain/notification_record.dart';
 import '../domain/notification_target.dart';
 import 'notification_repository_scope.dart';
-
-EdgeInsets _desktopContentInset(BuildContext context, double maxWidth) {
-  final contentWidth = MediaQuery.sizeOf(context).width - 324;
-  final inset = ((contentWidth - maxWidth) / 2).clamp(0.0, double.infinity);
-  return EdgeInsets.symmetric(horizontal: inset);
-}
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -30,100 +30,24 @@ class NotificationsPage extends StatefulWidget {
   State<NotificationsPage> createState() => _NotificationsPageState();
 }
 
-class _NotificationsPageState extends State<NotificationsPage> with WidgetsBindingObserver {
-  late final PageRouteActivity _pageActivity = PageRouteActivity(
-    onCovered: () => _routeCurrent = false,
-    onReturned: _onPageReturned,
-  );
+class _NotificationsPageState extends State<NotificationsPage> {
   NotificationRepository? _repository;
-  Timer? _visibleRefresh;
-  bool _foreground = true;
-  bool _routeCurrent = false;
-  bool _refreshing = false;
-  bool _refreshQueued = false;
-  bool _revalidationGate = false;
-  int _visibilityEpoch = 0;
-
-  void _onPageReturned() {
-    if (!mounted) return;
-    _routeCurrent = true;
-    _visibilityEpoch++;
-    setState(() => _revalidationGate = true);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _foreground && _routeCurrent) _refresh(queueIfBusy: true);
-    });
-  }
-
-  void _refresh({bool preserveCurrent = false, bool queueIfBusy = false}) {
-    final repository = _repository;
-    if (repository == null || !mounted || !_foreground || !_routeCurrent) return;
-    if (_refreshing) {
-      if (queueIfBusy) _refreshQueued = true;
-      return;
-    }
-    _refreshing = true;
-    final epoch = _visibilityEpoch;
-    unawaited(() async {
-      try {
-        await repository.refresh(force: true, preserveCurrent: preserveCurrent);
-      } on Object {
-        // The repository exposes its own failed/blocked state to the page.
-      } finally {
-        _refreshing = false;
-        if (_refreshQueued) {
-          _refreshQueued = false;
-          _refresh();
-        } else if (mounted && _revalidationGate && epoch == _visibilityEpoch) {
-          setState(() => _revalidationGate = false);
-        }
-      }
-    }());
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _visibleRefresh = Timer.periodic(const Duration(seconds: 30), (_) {
-      _refresh(preserveCurrent: true);
-    });
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    _foreground = foregroundAfterLifecycle(state, wasForeground: _foreground);
-  }
-
-  @override
-  void dispose() {
-    _visibleRefresh?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    _pageActivity.dispose();
-    super.dispose();
-  }
+  bool _opening = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final repository = NotificationRepositoryScope.of(context);
-    _pageActivity.bind(context);
-    final routeCurrent = _pageActivity.isCurrent;
-    final becameVisible = !_routeCurrent && routeCurrent;
-    _routeCurrent = routeCurrent;
-    if (!identical(_repository, repository)) {
-      _repository = repository;
-      _visibilityEpoch++;
-      _revalidationGate = true;
+    if (identical(_repository, repository)) return;
+    _repository = repository;
+    // Navigation, dialogs and foreground transitions have no read semantics.
+    if (repository.status == NotificationListStatus.initial) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _foreground && _routeCurrent && identical(_repository, repository)) {
-          _refresh(preserveCurrent: false, queueIfBusy: true);
+        if (mounted &&
+            identical(_repository, repository) &&
+            repository.status == NotificationListStatus.initial) {
+          unawaited(repository.refresh());
         }
-      });
-    } else if (becameVisible && _foreground) {
-      _visibilityEpoch++;
-      _revalidationGate = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _foreground && _routeCurrent) _refresh(queueIfBusy: true);
       });
     }
   }
@@ -137,36 +61,82 @@ class _NotificationsPageState extends State<NotificationsPage> with WidgetsBindi
 
   Future<void> _open(NotificationRecord item) async {
     final repository = _repository;
-    if (repository == null || repository.busy) return;
+    if (repository == null || repository.busy || _opening) return;
+    final cached = repository is CachedNotificationRepository ? repository : null;
+    final scope = cached?.scopeIdentity;
+    bool owned() =>
+        mounted &&
+        identical(_repository, repository) &&
+        (cached == null || cached.isCurrent(scope!));
+    setState(() => _opening = true);
     try {
-      await repository.markRead(item.id);
+      if (item.readAt == null && (cached?.canUpdate ?? true)) {
+        await repository.markRead(item.id);
+      }
+      if (!mounted || !owned()) return;
+      final resourceId = item.resourceId;
+      if (resourceId == null || item.resourceRevision == null) {
+        _showUnavailable();
+        return;
+      }
+      final catalog = MaterialCatalogScope.of(context);
+      if (item.serverRecord) {
+        if (catalog is! HttpMaterialCatalog ||
+            item.route != 'material' ||
+            !catalog.allows('client.material.read')) {
+          _showUnavailable();
+          return;
+        }
+        final catalogScope = catalog.scopeIdentity;
+        final row = await (() async {
+          try {
+            return await catalog.detail(resourceId, fresh: true);
+          } on ApiFailure catch (error) {
+            if (const {'RESOURCE_NOT_FOUND', 'PERMISSION_DENIED'}.contains(error.code)) {
+              if (owned() && catalog.isCurrent(catalogScope)) _showUnavailable();
+              return null;
+            }
+            rethrow;
+          }
+        })();
+        if (row == null) return;
+        if (!mounted || !owned() || !catalog.isCurrent(catalogScope)) return;
+        if (!notificationMetadataTargetMatches(item, row) ||
+            (row.type == LearningMaterialType.exam && !catalog.allows('client.exam.read'))) {
+          _showUnavailable();
+          return;
+        }
+        final summary = catalog.findById(resourceId)!;
+        if (materialCanOpen(context, summary)) {
+          await context.push(AppRoutes.materialPath(resourceId));
+        } else if (MediaQuery.sizeOf(context).width < 600) {
+          await showLiveMaterialDialog(
+            context,
+            catalog,
+            resourceId,
+            onOpenMaterial: () {
+              if (context.mounted && catalog.isCurrent(catalogScope)) {
+                unawaited(context.push(AppRoutes.materialPath(resourceId)));
+              }
+            },
+          );
+        } else {
+          await context.push(AppRoutes.materialDetailsPath(resourceId));
+        }
+      } else {
+        // Preview pointers retain their original type-specific mock routes.
+        final target = catalog.findById(resourceId);
+        if (target == null || !notificationTargetMatches(item, target)) {
+          _showUnavailable();
+          return;
+        }
+        context.go(AppRoutes.mockMaterialPath(resourceId));
+      }
     } on Object {
-      _showFailure();
-      return;
+      if (owned()) _showFailure();
+    } finally {
+      if (mounted) setState(() => _opening = false);
     }
-    if (!mounted || !identical(_repository, repository)) return;
-    final targetType = notificationMaterialType(item.route);
-    final resourceId = item.resourceId;
-    if (targetType == null || resourceId == null) {
-      _showUnavailable();
-      return;
-    }
-    final catalog = MaterialCatalogScope.of(context);
-    try {
-      await catalog.refresh(force: true);
-    } on Object {
-      _showUnavailable();
-      return;
-    }
-    if (!mounted || !identical(_repository, repository)) return;
-    final target = catalog.status == MaterialCatalogStatus.ready
-        ? catalog.findById(resourceId)
-        : null;
-    if (target == null || !notificationTargetMatches(item, target)) {
-      _showUnavailable();
-      return;
-    }
-    context.go(AppRoutes.mockMaterialPath(resourceId));
   }
 
   void _showUnavailable() {
@@ -185,30 +155,81 @@ class _NotificationsPageState extends State<NotificationsPage> with WidgetsBindi
     }
   }
 
+  Widget? _tools(NotificationRepository repository) {
+    if (liveMaterialCatalog(context) == null || repository is! CachedNotificationRepository) {
+      return null;
+    }
+    final strings = AppLocalizations.of(context);
+    return Wrap(
+      spacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Identified(
+          id: UiTestIds.notificationsUnreadFilter,
+          child: FilterChip(
+            label: Text(strings.notificationUnreadOnly),
+            selected: repository.activeQuery.unreadOnly,
+            onSelected: repository.busy
+                ? null
+                : (selected) =>
+                      repository.refresh(query: NotificationListQuery(unreadOnly: selected)),
+          ),
+        ),
+        Identified(
+          id: UiTestIds.notificationsRefresh,
+          child: TextButton(
+            onPressed: repository.busy
+                ? null
+                : () => repository.refresh(
+                    query: NotificationListQuery(unreadOnly: repository.activeQuery.unreadOnly),
+                    force: true,
+                    preserveCurrent: true,
+                  ),
+            child: Text(strings.notificationRefresh),
+          ),
+        ),
+        if (repository.nextCursor != null)
+          Identified(
+            id: UiTestIds.notificationsMore,
+            child: TextButton(
+              onPressed: repository.busy
+                  ? null
+                  : () async {
+                      try {
+                        await repository.loadMore();
+                      } on Object {
+                        _showFailure();
+                      }
+                    },
+              child: Text(strings.materialMore),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = NotificationRepositoryScope.of(context);
     final strings = AppLocalizations.of(context);
-    final content = _revalidationGate
-        ? const Center(child: CircularProgressIndicator())
-        : switch (repository.status) {
-            NotificationListStatus.initial ||
-            NotificationListStatus.loading => const Center(child: CircularProgressIndicator()),
-            NotificationListStatus.blocked || NotificationListStatus.failed => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(strings.apiUnknownError),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => repository.refresh(force: true),
-                    child: Text(strings.authRetry),
-                  ),
-                ],
-              ),
+    final content = switch (repository.status) {
+      NotificationListStatus.initial ||
+      NotificationListStatus.loading => const Center(child: CircularProgressIndicator()),
+      NotificationListStatus.blocked || NotificationListStatus.failed => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(strings.apiUnknownError),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => repository.refresh(force: true),
+              child: Text(strings.authRetry),
             ),
-            NotificationListStatus.ready || NotificationListStatus.stale => null,
-          };
+          ],
+        ),
+      ),
+      NotificationListStatus.ready || NotificationListStatus.stale => null,
+    };
 
     Widget readOnlyIfStale(Widget child) {
       return Stack(
@@ -235,36 +256,46 @@ class _NotificationsPageState extends State<NotificationsPage> with WidgetsBindi
       );
     }
 
-    return PreviewPageFrame(
-      location: AppRoutes.mockNotifications,
-      title: AppLocalizations.of(context).mockSupportNotificationsTitle,
-      detail: true,
-      detailNotifications: false,
-      mobile:
-          content ??
-          readOnlyIfStale(
-            MobileNotificationsView(
-              items: repository.items,
-              unreadCount: repository.unreadCount,
-              busy: repository.busy,
-              onReadAll: _readAll,
-              onOpen: _open,
-            ),
+    return Identified(
+      id: UiTestIds.notificationsPage,
+      child: PreviewPageFrame(
+        location: liveMaterialCatalog(context) == null
+            ? AppRoutes.mockNotifications
+            : AppRoutes.notifications,
+        title: AppLocalizations.of(context).mockSupportNotificationsTitle,
+        detail: true,
+        detailNotifications: false,
+        mobile: readOnlyIfStale(
+          MobileNotificationsView(
+            items: repository.items,
+            unreadCount: repository.unreadCount,
+            busy: repository.busy || _opening,
+            canUpdate: repository is! CachedNotificationRepository || repository.canUpdate,
+            tools: _tools(repository),
+            listState: content,
+            onReadAll: _readAll,
+            onOpen: _open,
           ),
-      desktop:
-          content ??
-          readOnlyIfStale(
-            DesktopNotificationsView(
-              items: repository.items,
-              unreadCount: repository.unreadCount,
-              busy: repository.busy,
-              onReadAll: _readAll,
-              onOpen: _open,
-            ),
+        ),
+        desktop: readOnlyIfStale(
+          DesktopNotificationsView(
+            items: repository.items,
+            unreadCount: repository.unreadCount,
+            busy: repository.busy || _opening,
+            canUpdate: repository is! CachedNotificationRepository || repository.canUpdate,
+            tools: _tools(repository),
+            listState: content,
+            onReadAll: _readAll,
+            onOpen: _open,
           ),
+        ),
+      ),
     );
   }
 }
+
+Widget _notificationIdentified(NotificationRecord item, Widget child) =>
+    item.serverRecord ? Identified(id: UiTestIds.notificationRow(item.id), child: child) : child;
 
 String _notificationTime(BuildContext context, NotificationRecord item) {
   final strings = AppLocalizations.of(context);
@@ -285,16 +316,24 @@ String _notificationTime(BuildContext context, NotificationRecord item) {
 bool _materialTargetUnavailable(NotificationRecord item) =>
     item.resourceId == null ||
     item.resourceRevision == null ||
-    notificationMaterialType(item.route) == null;
+    (item.serverRecord ? item.route != 'material' : notificationMaterialType(item.route) == null);
 
 String _notificationTitle(BuildContext context, NotificationRecord item) =>
     _materialTargetUnavailable(item)
     ? AppLocalizations.of(context).mockMaterialUnavailableTitle
+    : item.serverRecord
+    ? switch (item.messageCode) {
+        'material.import.completed' => AppLocalizations.of(context).notificationImportCompleted,
+        'material.import.failed' => AppLocalizations.of(context).notificationImportFailed,
+        _ => AppLocalizations.of(context).notificationImportNeedsReview,
+      }
     : item.title;
 
 String _notificationDetail(BuildContext context, NotificationRecord item) =>
     _materialTargetUnavailable(item)
     ? AppLocalizations.of(context).mockMaterialUnavailableMessage
+    : item.serverRecord
+    ? AppLocalizations.of(context).notificationSourceBoundary
     : item.detail;
 
 class MobileNotificationsView extends StatelessWidget {
@@ -304,11 +343,17 @@ class MobileNotificationsView extends StatelessWidget {
     required this.busy,
     required this.onReadAll,
     required this.onOpen,
+    this.canUpdate = true,
+    this.tools,
+    this.listState,
     super.key,
   });
   final List<NotificationRecord> items;
   final int unreadCount;
   final bool busy;
+  final bool canUpdate;
+  final Widget? tools;
+  final Widget? listState;
   final VoidCallback onReadAll;
   final ValueChanged<NotificationRecord> onOpen;
 
@@ -332,14 +377,20 @@ class MobileNotificationsView extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
-            TextButton(
-              onPressed: unreadCount > 0 && !busy ? onReadAll : null,
-              child: Text(strings.mockSupportNotificationsMarkAllRead),
-            ),
+            if (canUpdate)
+              Identified(
+                id: UiTestIds.notificationsReadAll,
+                child: TextButton(
+                  onPressed: unreadCount > 0 && !busy ? onReadAll : null,
+                  child: Text(strings.mockSupportNotificationsMarkAllRead),
+                ),
+              ),
           ],
         ),
+        ?tools,
         const SizedBox(height: 18),
-        if (items.isEmpty)
+        ?listState,
+        if (items.isEmpty && listState == null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 36),
             child: Center(child: Text(strings.mockSupportNotificationsEmpty)),
@@ -347,55 +398,58 @@ class MobileNotificationsView extends StatelessWidget {
         for (final item in items)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: HarukaSurface(
-              padding: EdgeInsets.zero,
-              child: InkWell(
-                onTap: busy ? null : () => onOpen(item),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (item.readAt == null) ...[
-                            Container(
-                              width: 20,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: HarukaColors.of(context).signal,
-                                borderRadius: BorderRadius.circular(3),
+            child: _notificationIdentified(
+              item,
+              HarukaSurface(
+                padding: EdgeInsets.zero,
+                child: InkWell(
+                  onTap: busy ? null : () => onOpen(item),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (item.readAt == null) ...[
+                              Container(
+                                width: 20,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: HarukaColors.of(context).signal,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Expanded(
+                              child: Text(
+                                item.readAt == null
+                                    ? strings.mockSupportUnread
+                                    : strings.mockSupportRead,
+                                style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                          ],
-                          Expanded(
-                            child: Text(
-                              item.readAt == null
-                                  ? strings.mockSupportUnread
-                                  : strings.mockSupportRead,
+                            Text(
+                              _notificationTime(context, item),
                               style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
                             ),
-                          ),
-                          Text(
-                            _notificationTime(context, item),
-                            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _notificationTitle(context, item),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: item.readAt == null ? colors.primary : colors.onSurface,
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        _notificationDetail(context, item),
-                        style: TextStyle(color: colors.onSurfaceVariant),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Text(
+                          _notificationTitle(context, item),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: item.readAt == null ? colors.primary : colors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          _notificationDetail(context, item),
+                          style: TextStyle(color: colors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -413,11 +467,17 @@ class DesktopNotificationsView extends StatelessWidget {
     required this.busy,
     required this.onReadAll,
     required this.onOpen,
+    this.canUpdate = true,
+    this.tools,
+    this.listState,
     super.key,
   });
   final List<NotificationRecord> items;
   final int unreadCount;
   final bool busy;
+  final bool canUpdate;
+  final Widget? tools;
+  final Widget? listState;
   final VoidCallback onReadAll;
   final ValueChanged<NotificationRecord> onOpen;
 
@@ -426,7 +486,7 @@ class DesktopNotificationsView extends StatelessWidget {
     final strings = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
     return ListView(
-      padding: _desktopContentInset(context, 1320),
+      padding: EdgeInsets.zero,
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1320),
@@ -450,67 +510,76 @@ class DesktopNotificationsView extends StatelessWidget {
                     style: TextStyle(color: colors.onSurfaceVariant),
                   ),
                   const Spacer(),
-                  TextButton(
-                    onPressed: unreadCount > 0 && !busy ? onReadAll : null,
-                    child: Text(strings.mockSupportNotificationsMarkAllRead),
-                  ),
+                  if (canUpdate)
+                    Identified(
+                      id: UiTestIds.notificationsReadAll,
+                      child: TextButton(
+                        onPressed: unreadCount > 0 && !busy ? onReadAll : null,
+                        child: Text(strings.mockSupportNotificationsMarkAllRead),
+                      ),
+                    ),
                 ],
               ),
+              ?tools,
               const SizedBox(height: 14),
               HarukaSurface(
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    if (items.isEmpty)
+                    ?listState,
+                    if (items.isEmpty && listState == null)
                       Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(strings.mockSupportNotificationsEmpty),
                       ),
                     for (var i = 0; i < items.length; i++) ...[
-                      InkWell(
-                        onTap: busy ? null : () => onOpen(items[i]),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 21,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: items[i].readAt == null
-                                      ? HarukaColors.of(context).signal
-                                      : HarukaColors.of(context).selected,
-                                  borderRadius: BorderRadius.circular(3),
+                      _notificationIdentified(
+                        items[i],
+                        InkWell(
+                          onTap: busy ? null : () => onOpen(items[i]),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 21,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: items[i].readAt == null
+                                        ? HarukaColors.of(context).signal
+                                        : HarukaColors.of(context).selected,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 17),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _notificationTitle(context, items[i]),
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        color: items[i].readAt == null
-                                            ? colors.primary
-                                            : colors.onSurface,
+                                const SizedBox(width: 17),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _notificationTitle(context, items[i]),
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: items[i].readAt == null
+                                              ? colors.primary
+                                              : colors.onSurface,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      _notificationDetail(context, items[i]),
-                                      style: TextStyle(color: colors.onSurfaceVariant),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        _notificationDetail(context, items[i]),
+                                        style: TextStyle(color: colors.onSurfaceVariant),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                _notificationTime(context, items[i]),
-                                style: TextStyle(color: colors.onSurfaceVariant),
-                              ),
-                              const SizedBox(width: 16),
-                              const Icon(Icons.chevron_right),
-                            ],
+                                Text(
+                                  _notificationTime(context, items[i]),
+                                  style: TextStyle(color: colors.onSurfaceVariant),
+                                ),
+                                const SizedBox(width: 16),
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
                           ),
                         ),
                       ),

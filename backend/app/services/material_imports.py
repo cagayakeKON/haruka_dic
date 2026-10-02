@@ -860,6 +860,7 @@ async def metadata(
     readable = (
         revision is not None and revision.structure_status == "readable" and chapter_id is not None
     )
+    source = await repository.source_revision(session, scope, material)
     return MaterialMetadataRead.model_validate(
         {
             "id": material.id,
@@ -879,6 +880,7 @@ async def metadata(
             "revision_id": revision.id
             if revision is not None and revision.status == "published"
             else None,
+            "source_revision_number": source.revision_number if source is not None else None,
             "first_chapter_id": chapter_id,
             "job_id": material.initial_job_id,
             "readable": readable,

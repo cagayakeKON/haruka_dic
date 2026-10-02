@@ -69,7 +69,7 @@ final class NotificationShadeController {
   bool _refreshing = false;
   bool _refreshQueued = false;
 
-  Future<void> start() async {
+  Future<void> start({bool refresh = true}) async {
     shade.setOpenHandler(onOpen);
     repository.addListener(_onRepositoryChanged);
     try {
@@ -80,7 +80,7 @@ final class NotificationShadeController {
     } on PlatformException {
       // The in-app message page remains available when the native surface fails.
     }
-    await synchronize();
+    await synchronize(refresh: refresh);
   }
 
   void _onRepositoryChanged() {

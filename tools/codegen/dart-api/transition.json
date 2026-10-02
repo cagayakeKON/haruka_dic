@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "reviewed-handwritten-contract",
-  "reviewed_schemas_sha256": "b9bf085ff0a28a5baccc868c2ff7c541c702dc02f674cd74ea6ccb88b57d568e",
+  "reviewed_schemas_sha256": "da657d712c62b00e06e689526a9a207ef2d9490d99632f77bfe5bf9941f3f4b5",
   "consumer": "frontend/lib/core/api",
   "compatibility_fixture": "tools/codegen/dart-api/fixtures",
   "decision_date": "2026-09-30",
@@ -14,6 +14,7 @@
     "frontend/test/settings_contract_samples_test.dart",
     "frontend/test/model_contract_samples_test.dart",
     "frontend/test/admin_model_operations_test.dart",
-    "frontend/test/features/library/material_contract_test.dart"
+    "frontend/test/features/library/material_contract_test.dart",
+    "frontend/test/features/notifications/persistent_notifications_test.dart"
   ]
 }

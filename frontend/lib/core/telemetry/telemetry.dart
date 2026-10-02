@@ -51,6 +51,9 @@ const _allowedAttributes = <String, Set<String>>{
   'material.import.submitted': {'material_type', 'result'},
   'material.metadata.updated': {'material_type', 'result'},
   'material.deleted': {'material_type', 'result'},
+  'notification.list.loaded': {'result'},
+  'notification.read.updated': {'result'},
+  'notification.read_all.updated': {'result'},
 };
 const _anonymousEvents = {
   'app.started',
@@ -353,6 +356,11 @@ final class Telemetry {
   }
 
   bool _validAttributes(String event, Map<String, Object?> attributes) {
+    if (event.startsWith('notification.') &&
+        (attributes.length != 1 ||
+            !const {'success', 'failure', 'denied'}.contains(attributes['result']))) {
+      return false;
+    }
     final allowed = _allowedAttributes[event];
     if (allowed == null || attributes.keys.any((key) => !allowed.contains(key))) return false;
     for (final entry in attributes.entries) {

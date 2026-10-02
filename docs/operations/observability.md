@@ -134,6 +134,8 @@ Loki 索引标签限定为低基数字段，例如 project、environment、servi
 
 材料库前端使用 `material.import.submitted`、`material.metadata.updated` 和 `material.deleted`，只允许 `material_type` 与 `result` 分类字段，经当前账号认证上送。导入仅在服务端确认源已接受后记录成功，改名和删除仅在服务端确认提交后记录成功；提交结果未知、取消弹窗和开关菜单不记成功。材料标题、文件名、上传授权和资源 ID 不进入这些前端事件，正文就绪仍以对应材料业务状态为准。
 
+本人消息前端使用 `notification.list.loaded`、`notification.read.updated`、`notification.read_all.updated`，仅允许 `result` 分类字段，由接收端绑定当前账号；消息ID、资源标题、游标和快照令牌不进入埋点。后端列表/标读使用同名正常事件，消费者使用 `notification.created`、`notification.delivery.failed`，从已经核验的源Job恢复request/operation/user/job关联并在结束时清理，不记录Outbox负载或消息正文；通知不是新的模型调用，ai_run关联为空。
+
 退出和改密会撤销当前会话，前端在提交前以`auth.logout.requested`/`auth.password.change.submitted`记录意图并尽力发送，不能提前声明成功或等待遥测发送成功才执行业务。对应完成事件由服务端在事务提交后输出，并以持久审计为准。前端失败事件只在原会话仍有效且作用域未变时补传；会话撤销后按下述规则清除旧队列，不改走匿名入口补传旧账号事件，提交结果未知也不记作成功。
 
 业务库继续承担已提交学习数据和业务统计的权威来源。埋点用于使用路径、成功率和性能分析；客户端事件可重试、缺失或被伪造，不能直接用作权限、模型用量记录或评分依据。PRD 的学习活跃与导入后转化指标需结合服务端记录计算。

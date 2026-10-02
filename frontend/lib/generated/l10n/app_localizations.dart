@@ -8983,6 +8983,48 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'材料版本已变化，请重新打开详情后修改。'**
   String get materialRenameConflict;
+
+  /// No description provided for @materialSourceRevision.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前源版本'**
+  String get materialSourceRevision;
+
+  /// No description provided for @notificationImportCompleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'材料来源验证已完成'**
+  String get notificationImportCompleted;
+
+  /// No description provided for @notificationImportFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'材料来源验证未通过'**
+  String get notificationImportFailed;
+
+  /// No description provided for @notificationImportNeedsReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'材料来源需要本人确认'**
+  String get notificationImportNeedsReview;
+
+  /// No description provided for @notificationSourceBoundary.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看材料当前状态。来源验证完成不代表学习正文已经就绪。'**
+  String get notificationSourceBoundary;
+
+  /// No description provided for @notificationUnreadOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅未读'**
+  String get notificationUnreadOnly;
+
+  /// No description provided for @notificationRefresh.
+  ///
+  /// In zh, this message translates to:
+  /// **'刷新消息'**
+  String get notificationRefresh;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

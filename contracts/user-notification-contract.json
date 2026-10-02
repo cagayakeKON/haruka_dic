@@ -1,5 +1,12 @@
 {
   "$defs": {
+    "NotificationMarkRead": {
+      "additionalProperties": false,
+      "description": "Explicit empty command: owner and timestamps come from current context.",
+      "properties": {},
+      "title": "NotificationMarkRead",
+      "type": "object"
+    },
     "NotificationsReadAll": {
       "additionalProperties": false,
       "properties": {
@@ -243,6 +250,9 @@
     }
   },
   "models": {
+    "NotificationMarkRead": {
+      "$ref": "#/$defs/NotificationMarkRead"
+    },
     "NotificationsReadAll": {
       "$ref": "#/$defs/NotificationsReadAll"
     },

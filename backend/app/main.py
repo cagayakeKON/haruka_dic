@@ -27,6 +27,7 @@ from app.api.profile import router as profile_router
 from app.api.responses import error_responses
 from app.api.role_governance import router as role_governance_router
 from app.api.user_governance import router as user_governance_router
+from app.api.user_notifications import router as user_notifications_router
 from app.bootstrap import bootstrap
 from app.core.settings import Settings, load_settings
 
@@ -76,6 +77,7 @@ def create_app(settings: Settings | None = None, *, schema_only: bool = False) -
     application.include_router(authentication_router)
     application.include_router(learning_reference_router)
     application.include_router(material_imports_router)
+    application.include_router(user_notifications_router)
     application.include_router(profile_router)
     application.include_router(audit_governance_router)
     application.include_router(menu_governance_router)

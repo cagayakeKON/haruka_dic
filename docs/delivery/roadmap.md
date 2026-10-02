@@ -1,6 +1,6 @@
 # 实施计划与验收
 
-状态：2026-10-01，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在撤回旧错误视觉结论、改用已确认Flutter mock为唯一主界面并完成Web/Android复核后，按当期范围重新验收通过。[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；[B2c凭据与模型任务](reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，2026-10-01用户确认该结果并要求不再验证模型，B2c按此范围验收通过，模型可用性未验证，阶段1已完成，当前进入M1材料导入、材料库与通知实现。
+状态：2026-10-03，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在撤回旧错误视觉结论、改用已确认Flutter mock为唯一主界面并完成Web/Android复核后，按当期范围重新验收通过。[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；[B2c凭据与模型任务](reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，2026-10-01用户确认该结果并要求不再验证模型，B2c按此范围验收通过，模型可用性未验证，阶段1已完成，M1材料导入、材料库与持久通知已完成；下一开发单元为M2小说专用处理，M3/M4及阶段3～6仍待实施。
 
 用户确认当前手机/电脑原型所有功能均纳入当前v0.1。逐项操作、首交付、跨阶段收口由[原型功能清单UI-01～35](prototype-scope.md)维护；现有文档全部P0继续由[覆盖索引](coverage.md)维护。两份清单取并集，不能用原型没画、只有模拟或待决方案排除已承诺功能。实际原型走查、独立review和本次文档证据见[PLAN2记录](reviews/2026-09-26-prototype-implementation-plan.md)。
 
@@ -45,7 +45,7 @@ B1账号、激活/恢复通知与最小收藏合同保持原样，完整SCF-B1-0
 
 | 小阶段 | 交付范围 | 完成边界 |
 | --- | --- | --- |
-| [M1（实施中）](material-import-implementation.md) | 三步导入，三类MD/EPUB/PDF及试卷图片源文件、不可变final文件/版本、类型分派、列表/筛选/搜索/更多/详情/确认删除、任务WebSocket；站内消息列表/未读/全部已读/资源跳转 | 上传/容量/删除代次和授权先成立；消息按[NTF](../contracts/notifications.md)形成正式API/权限/持久已读，进度不等于通知 |
+| [M1（已完成）](material-import-implementation.md) | 三步导入，三类MD/EPUB/PDF及试卷图片源文件、不可变final文件/版本、类型分派、列表/筛选/搜索/更多/详情/确认删除、任务WebSocket；站内消息列表/未读/全部已读/资源跳转 | 上传/容量/删除代次和授权先成立；消息按[NTF](../contracts/notifications.md)形成正式API/权限/持久已读，进度不等于通知 |
 | M2 | 小说MD/EPUB/PDF专用处理、章段/对话、全书逐句基础NLP、原书ruby/读音保留、阅读/解析模式、目录/书签/位置/排版主题、长按/词气泡/可纠错范围、桌面panel/手机dialog | PDF可靠文本层直接提取，扫描范围使用本人视觉模型；SRC、NLP材料字段、出处/Unicode及跨端重排先通过，真实详解/音频在L2/L4/L5接入 |
 | M3 | 课本MD/EPUB/PDF专用处理、教材单元树、八类内容/原始顺序与关系、词表/语法/例句/原文对照、独立学习页及题目预览 | PDF可靠文本层直接提取，扫描范围使用本人视觉模型；结构不换皮小说，题目版本/隐藏依据可供P1真实逐题作答 |
 | M4 | 试卷专用解析、题组/小题/五类交互结构、分值/总分/答案依据校对、文字听力稿上传与正文/已发布视觉转写候选、AI听力类型证据及脚本匹配/人工改绑拒绝 | 无听力且全部通过可ready；含听力缺冻结音频保持needs_audio；L5完成音频后才ready，E1再交付开考 |

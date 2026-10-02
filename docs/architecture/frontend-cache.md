@@ -45,7 +45,7 @@ CacheCoordinator只管理通用生命周期、并发和存储；领域repository
 
 开发预览将虚构来源适配器放在 `frontend/lib/dev/preview/`，页面通过 `frontend/lib/features/library/data/material_catalog.dart` 与 `frontend/lib/features/agent/data/query_result_repository.dart` 等领域接口访问数据，由各自缓存仓储接入同一个 `CacheCoordinator`。材料目录的 `memoryOnly` 策略使每次刷新从模拟来源取得可变列表，不写持久 `cache_entries`。完整查询卡先按规范化文本、上下文、目标语言、解释语言组成的身份向来源执行 resolve；只有缺失时才调用预览生成器，随后以 `validatedText` 按结果身份和版本校验、复用或重新取回，允许写入预览身份专用的 Drift 分区。开发预览默认尝试平台持久后端；测试可注入内存后端。模拟来源不能充当正式 API 权限响应，也不签发离线授权；Mockito 仅用于测试边界替身。正式 API 接入时替换来源适配器，不把模拟来源或测试旁路放进业务契约。
 
-站内通知预览也通过领域仓储读取，列表使用 `memoryOnly`，读取动作是 `client.notification.read`。单条已读和批量已读在模拟来源提交后按通知列表依赖失效并重取；批量操作使用本次可见快照中的 ID，后续新到消息不被旧操作吞掉。仓储对迟到读取作代次判断，页面显示加载、空、阻断或失败状态。预览来源的快照令牌与权限判定仅用于开发；正式接入须由服务端签发并验证快照及本人动作权限。
+站内通知通过领域仓储读取，列表使用 `memoryOnly`，读取动作是 `client.notification.read`。正式来源接本人通知API，分页及全部已读使用服务端签发、绑定当前作用域和提交序列的[快照](../contracts/notifications.md)；单条和全部已读仅在服务端提交确认后使通知列表依赖失效并重取。结果未知时保留原快照用于重试，明确过期后解除旧待重试命令，再由用户主动刷新和重新提交，不自动扩大标读范围。读取及修改均冻结起始账号/存储代次，clearScope后旧完成不能失效或刷新新代次。开发预览仍使用虚构来源及可见ID快照，不能作为正式授权或持久已读事实。
 
 收藏与词本目录由同一领域仓储维护筛选列表、未筛选详情快照和词本计数；读取动作分别为 `collection.read`、`vocabulary_notebook.read`，三种可变列表均只驻内存。查询键包含类型、词本和规范化搜索词；新增、编辑、删本、归本和收藏写入经模拟来源确认后定向失效并重取，迟到列表不能覆盖新查询。详情、每日单词和 CSV 导出取未筛选快照，避免当前筛选把资源误判为不存在。CSV 导入经过同一仓储和模拟来源，在提交时重新判断重复项、目标词本及所需动作权限，再由夹具原子写入并返回行级结果；提交后即使列表重读失败，当前账号仍保留已提交结果并把列表显示为不可用。正式 API 需替换模拟来源的权限与事务边界。
 
@@ -57,7 +57,7 @@ CacheCoordinator只管理通用生命周期、并发和存储；领域repository
 
 返回给UI的CacheView至少区分data、source（network/memory/disk）、freshness（validated/refreshing/offline/stale/blocked）、serverSaved、本机ready、lastValidatedAt及error。旧数据刷新失败不伪装成最新；明确拒绝立即移除可见私有内容。模型结果只在服务端确认完整提交后才能标serverSaved，流式半成品只在本次run内存中预览。
 
-当前协调器的 `read(preserveCurrent: true, onView: ...)` 可发布 refreshing、stale 与 error；只读传输错误最多重试两次，ApiClient 保留本地可重试类型，证书/协议/取消/身份错误不重试，写入及生成不走该入口。设置仓储同账号失效时自动刷新并保留表单子树，身份或授权阻断仍立即隐藏。通知周期刷新保留现有列表，只依赖 notification:list；材料变化不会无条件触发通知重取，下一次通知读取仍校验来源并隐藏失效标题。
+当前协调器的 `read(preserveCurrent: true, onView: ...)` 可发布 refreshing、stale 与 error；只读传输错误最多重试两次，ApiClient 保留本地可重试类型，证书/协议/取消/身份错误不重试，写入及生成不走该入口。设置仓储同账号失效时自动刷新并保留表单子树，身份或授权阻断仍立即隐藏。通知不做周期、普通页面返回、dialog进出或切回应用刷新；首次缺数据、实际查询/失效、成功修改或用户主动刷新驱动读取，只依赖 notification:list。材料变化不会无条件触发通知重取，下一次实际通知读取和资源打开时校验来源可用性，不能借旧通知展示失权内容。
 
 已提交查询结果另有 `readSaved(id)`，直接进入缓存读取，不先 resolve/generate；调用期间持文本共享锁。当前页面实际挂载的卡片按精确成品版本持共享pin，离开页面、替换版本、失权或卸载时释放；仅切后台保留当前页面pin，暂停业务周期读取，回到前台不因此重新请求。未显示的历史不永久占用配额。新查询仍需联网。普通广播只携带登记的公开类别标签，不提升账号代次；每次读取及回到前台重新检查持久 storage_epoch，发现清理后采用新代次并退休旧请求。Windows host 按安装身份使用命名互斥量，把第二次启动转交已有窗口；本轮只有静态审查证据。
 

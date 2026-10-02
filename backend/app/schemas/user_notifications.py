@@ -69,6 +69,10 @@ class NotificationsReadAll(ApiModel):
     snapshot_token: str = Field(min_length=1, max_length=2048)
 
 
+class NotificationMarkRead(ApiModel):
+    """Explicit empty command: owner and timestamps come from current context."""
+
+
 class NotificationsReadAllResult(ApiModel):
     changed_count: int = Field(ge=0)
     unread_count: int = Field(ge=0)

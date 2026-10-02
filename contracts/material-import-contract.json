@@ -450,6 +450,19 @@
           ],
           "title": "Source Format"
         },
+        "source_revision_number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Revision Number"
+        },
         "source_status": {
           "enum": [
             "parsing",

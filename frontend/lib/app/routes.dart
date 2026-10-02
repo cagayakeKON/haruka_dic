@@ -979,10 +979,25 @@ GoRouter createRouter(
               ),
       ),
     ),
+    _appRoute(
+      path: AppRoutes.notifications,
+      builder: (context, state) => _watchAuth(
+        auth,
+        () =>
+            auth.isAuthenticated &&
+                !auth.admin &&
+                (auth.access?.allows('client.notification.read') ?? false)
+            ? const NotificationsPage()
+            : StatusPage(
+                id: UiTestIds.notFoundPage,
+                title: AppLocalizations.of(context).apiPermissionDenied,
+                description: AppLocalizations.of(context).authBackToLogin,
+              ),
+      ),
+    ),
     for (final destination in <(String, String, IconData)>[
       (AppRoutes.query, '查询', Icons.chat_bubble_outline),
       (AppRoutes.exercise, '练习', Icons.auto_awesome_outlined),
-      (AppRoutes.notifications, '站内消息', Icons.notifications_none),
     ])
       _appRoute(
         path: destination.$1,

@@ -1,5 +1,13 @@
 import '../../library/domain/material_summary.dart';
+import '../../library/domain/material_metadata.dart';
 import 'notification_record.dart';
+
+bool notificationMetadataTargetMatches(NotificationRecord item, MaterialMetadata material) =>
+    item.serverRecord &&
+    item.route == 'material' &&
+    item.resourceId == material.id &&
+    item.resourceRevision != null &&
+    item.resourceRevision == material.sourceRevisionNumber;
 
 LearningMaterialType? notificationMaterialType(String route) => switch (route) {
   'novel' => LearningMaterialType.novel,

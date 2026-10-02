@@ -4640,4 +4640,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get materialRenameConflict => '材料版本已变化，请重新打开详情后修改。';
+
+  @override
+  String get materialSourceRevision => '当前源版本';
+
+  @override
+  String get notificationImportCompleted => '材料来源验证已完成';
+
+  @override
+  String get notificationImportFailed => '材料来源验证未通过';
+
+  @override
+  String get notificationImportNeedsReview => '材料来源需要本人确认';
+
+  @override
+  String get notificationSourceBoundary => '查看材料当前状态。来源验证完成不代表学习正文已经就绪。';
+
+  @override
+  String get notificationUnreadOnly => '仅未读';
+
+  @override
+  String get notificationRefresh => '刷新消息';
 }

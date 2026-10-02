@@ -70,6 +70,107 @@ final class _NoSync implements AuthSync {
 }
 
 void main() {
+  test('notification events require signed-in result-only success failure or denied', () async {
+    final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
+    final config = AppConfig.parse(
+      platform: AppPlatform.web,
+      environment: 'dev',
+      instanceId: 'haruka-test-0123456789abcdef0123456789abcdef',
+      apiBaseUrl: 'http://localhost:18443',
+    );
+    final received = <Map<String, dynamic>>[];
+    ResponseBody body(Object data) => ResponseBody.fromString(
+      jsonEncode(data),
+      200,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+    Object envelope(Object data) => {
+      'data': data,
+      'meta': {'request_id': '018f1234-1234-7123-8123-123456789abc'},
+    };
+    final api = ApiClient(
+      config,
+      adapter: SampleAdapter((request, stream) async {
+        switch (request.path) {
+          case '/api/v1/meta':
+            return body(
+              envelope({'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'}),
+            );
+          case '/api/v1/auth/login':
+            return body(samples['auth_web_authenticated'] as Object);
+          case '/api/v1/auth/csrf':
+            return body(
+              envelope({
+                'session_ref': '018f1234-0000-7000-8000-000000000002',
+                'csrf_token': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+              }),
+            );
+          case '/api/v1/me/access':
+            return body(samples['auth_client_access_login_only'] as Object);
+          case '/api/v1/auth/logout':
+            return ResponseBody.fromString('', 204);
+          case '/api/v1/frontend-logs':
+            final payload = jsonDecode(
+              utf8.decode((await stream!.toList()).expand((part) => part).toList()),
+            ) as Map;
+            final events = (payload['events'] as List).cast<Map<String, dynamic>>();
+            received.addAll(events);
+            return body(
+              envelope({
+                'results': [
+                  for (var i = 0; i < events.length; i++)
+                    {'index': i, 'event_id': events[i]['event_id'], 'status': 'accepted'},
+                ],
+              }),
+            );
+        }
+        throw StateError('Unexpected synthetic endpoint');
+      }),
+    );
+    final auth = AuthController(
+      AuthRepository(api, config),
+      config,
+      vault: _EmptyVault(),
+      sync: _NoSync(),
+    );
+    expect(await auth.login('fixture@example.test', 'synthetic-password'), isTrue);
+    final telemetry = Telemetry(config, api, auth, store: _MemoryStore());
+    addTearDown(() async {
+      await telemetry.dispose();
+      auth.dispose();
+      api.close();
+    });
+    const events = [
+      'notification.list.loaded',
+      'notification.read.updated',
+      'notification.read_all.updated',
+    ];
+    const results = ['success', 'failure', 'denied'];
+    for (var i = 0; i < events.length; i++) {
+      telemetry.track(events[i], attributes: {'result': results[i]});
+      telemetry.track(
+        events[i],
+        attributes: {'result': results[i], 'title': 'private synthetic title'},
+      );
+      telemetry.track(events[i], attributes: {'result': 'cancelled'});
+    }
+    await telemetry.flush();
+    final notificationEvents = received.where((e) => events.contains(e['event'])).toList();
+    expect(notificationEvents, hasLength(3));
+    for (var i = 0; i < events.length; i++) {
+      expect(notificationEvents[i]['event'], events[i]);
+      expect(notificationEvents[i]['attributes'], {'result': results[i]});
+    }
+    await auth.logout();
+    for (final event in events) {
+      telemetry.track(event, attributes: {'result': 'success'});
+    }
+    await telemetry.flush();
+    expect(received.where((e) => events.contains(e['event'])), hasLength(3));
+    expect(telemetry.queuedCount, 0);
+  });
   test('material events admit only signed-in safe type and result attributes', () async {
     final samples = jsonDecode(apiCompatibilitySamplesJson) as Map<String, dynamic>;
     final config = AppConfig.parse(

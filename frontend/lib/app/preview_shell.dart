@@ -13,6 +13,8 @@ import 'package:haruka/dev/preview/fixture_store.dart';
 import 'package:haruka/core/api/auth_models.dart';
 import 'package:haruka/shared/presentation/navigation_icons.dart';
 
+import '../features/notifications/presentation/notification_repository_scope.dart';
+
 class PreviewStoreScope extends InheritedNotifier<PreviewFixtureStore> {
   const PreviewStoreScope({required PreviewFixtureStore store, required super.child, super.key})
     : super(notifier: store);
@@ -170,7 +172,7 @@ bool _shellReducedMotion(BuildContext context) =>
 
 int _shellUnreadCount(BuildContext context) => ShellPresentationScope.maybeOf(context) == null
     ? PreviewStoreScope.maybeOf(context)?.unreadCount ?? 0
-    : 0;
+    : NotificationRepositoryScope.maybeOf(context)?.unreadCount ?? 0;
 
 bool _formalShell(BuildContext context) =>
     ShellPresentationScope.maybeOf(context) != null || PreviewStoreScope.maybeOf(context) == null;

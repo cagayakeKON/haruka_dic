@@ -24,6 +24,11 @@ import '../features/library/data/http_material_catalog.dart';
 import '../features/library/data/material_import_repository.dart';
 import '../features/library/data/material_repository.dart';
 import '../features/library/presentation/material_catalog_scope.dart';
+import '../features/notifications/data/cached_notification_repository.dart';
+import '../features/notifications/data/http_notification_source.dart';
+import '../features/notifications/data/notification_repository.dart';
+import '../features/notifications/presentation/notification_repository_scope.dart';
+import '../features/notifications/platform/notification_shade.dart';
 import '../features/settings/data/cached_settings_repository.dart';
 import '../features/settings/data/http_settings_source.dart';
 import '../features/settings/data/language_capabilities.dart';
@@ -78,6 +83,15 @@ class _HarukaAppState extends State<HarukaApp> {
   late final CacheSessionBinding _cacheBinding;
   late final HttpMaterialImportRepository _materialImports;
   late final HttpMaterialCatalog _materialCatalog;
+  late final CachedNotificationRepository _notifications;
+  NotificationShadeController? _notificationShade;
+  StreamSubscription<void>? _notificationScopeChanges;
+  String? _observedNotificationBinding;
+
+  String? _notificationBinding() =>
+      _cache.accessReady && (_auth.access?.allows('client.notification.read') ?? false)
+      ? '${_cache.scope?.binding}:${_cache.accountGeneration}'
+      : null;
   late final PreviewFixtureStore _settingsDraft;
   late final PreviewSettingsCacheAdapter _settingsCache;
   late final CachedSettingsRepository _settingsRepository;
@@ -134,6 +148,43 @@ class _HarukaAppState extends State<HarukaApp> {
       repository: HttpMaterialRepository(_auth),
       imports: _materialImports,
     );
+    final notificationSource = HttpNotificationSource(
+      _auth,
+      onEvent: (event, attributes) => _telemetry.track(event, attributes: attributes),
+    );
+    _notifications = CachedNotificationRepository(
+      cache: _cache,
+      remote: notificationSource,
+      readSource: notificationSource.markRead,
+      readAllSource: notificationSource.markAllRead,
+      waitForReadiness: () => _cacheBinding.settled,
+      allows: notificationSource.allows,
+    );
+    if (widget.config.platform == AppPlatform.android) {
+      _notificationShade = NotificationShadeController(
+        repository: _notifications,
+        shade: AndroidNotificationShade(),
+        currentBinding: _notificationBinding,
+        onOpen: () => _router.go(AppRoutes.notifications),
+      );
+    }
+    _notificationScopeChanges = _cache.changes.listen((_) {
+      final binding = _notificationBinding();
+      if (binding == _observedNotificationBinding) return;
+      _observedNotificationBinding = binding;
+      if (_notificationShade case final shade?) unawaited(shade.synchronize(refresh: false));
+      if (binding != null && _notifications.status == NotificationListStatus.initial) {
+        unawaited(_notifications.refresh());
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_notificationShade case final shade?) unawaited(shade.start(refresh: false));
+      if (_notificationBinding() != null &&
+          _notifications.status == NotificationListStatus.initial) {
+        unawaited(_notifications.refresh());
+      }
+    });
     _serviceEndpoints = ServiceEndpointController(
       canSwitch: widget.config.platform != AppPlatform.web,
       allowDevelopmentHttp: widget.config.environment == 'dev',
@@ -231,6 +282,9 @@ class _HarukaAppState extends State<HarukaApp> {
     _serviceEndpoints.dispose();
     _modelConfiguration.dispose();
     _materialCatalog.dispose();
+    unawaited(_notificationScopeChanges?.cancel());
+    _notificationShade?.dispose();
+    _notifications.dispose();
     _materialImports.dispose();
     _auth.removeListener(_onAuthChanged);
     _settingsRepository.removeListener(_onSettingsChanged);
@@ -436,23 +490,26 @@ class _HarukaAppState extends State<HarukaApp> {
                                     child: IgnorePointer(
                                       ignoring: revalidating,
                                       child: _auth.isAuthenticated && !_auth.admin
-                                          ? MaterialCatalogScope(
-                                              catalog: _materialCatalog,
-                                              child: ReferenceFeatureScope(
-                                                controller: _referenceController!,
-                                                // The persistent shell is outside the router Navigator;
-                                                // its tooltips need their own overlay ancestor.
-                                                child: Overlay.wrap(
-                                                  child: PreviewPersistentShell(
-                                                    location: _activeLocation,
-                                                    onNavigate: _router.go,
-                                                    onBack: () => _router.canPop()
-                                                        ? _router.pop()
-                                                        : _router.go(AppRoutes.materials),
-                                                    onOpenNotifications: () =>
-                                                        _router.go(AppRoutes.notifications),
-                                                    actions: _shellActions,
-                                                    child: child,
+                                          ? NotificationRepositoryScope(
+                                              repository: _notifications,
+                                              child: MaterialCatalogScope(
+                                                catalog: _materialCatalog,
+                                                child: ReferenceFeatureScope(
+                                                  controller: _referenceController!,
+                                                  // The persistent shell is outside the router Navigator;
+                                                  // its tooltips need their own overlay ancestor.
+                                                  child: Overlay.wrap(
+                                                    child: PreviewPersistentShell(
+                                                      location: _activeLocation,
+                                                      onNavigate: _router.go,
+                                                      onBack: () => _router.canPop()
+                                                          ? _router.pop()
+                                                          : _router.go(AppRoutes.materials),
+                                                      onOpenNotifications: () =>
+                                                          _router.go(AppRoutes.notifications),
+                                                      actions: _shellActions,
+                                                      child: child,
+                                                    ),
                                                   ),
                                                 ),
                                               ),

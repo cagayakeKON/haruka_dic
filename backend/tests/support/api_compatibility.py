@@ -338,6 +338,7 @@ def compatibility_samples() -> dict[str, object]:
         **_model_review_samples(),
         **_governance_samples(),
         **_material_import_samples(),
+        **_notification_samples(),
     }
 
 
@@ -395,6 +396,7 @@ def _material_import_samples() -> dict[str, object]:
         revision=1,
         delete_generation=0,
         revision_id=None,
+        source_revision_number=1,
         first_chapter_id=None,
         job_id=REQUEST_ID,
         readable=False,
@@ -467,6 +469,7 @@ def _material_import_samples() -> dict[str, object]:
         "material_import_pending": wrapped(pending),
         "material_import_accepted": wrapped(accepted),
         "material_metadata_pending": wrapped(source_only),
+        "material_metadata_renamed": wrapped(source_only.model_copy(update={"revision": 2})),
         "material_metadata_published": wrapped(published),
         "material_source_job_queued": wrapped(queued),
         "material_source_job_blocked": wrapped(blocked),
@@ -516,6 +519,69 @@ def _material_import_samples() -> dict[str, object]:
                 upload_ttl_seconds=900,
             )
         ),
+    }
+
+
+def _notification_samples() -> dict[str, object]:
+    """Committed safe projections and opaque test-only snapshot transport."""
+    from app.schemas.user_notifications import (
+        NotificationMarkRead,
+        NotificationsReadAll,
+        NotificationsReadAllResult,
+        UserNotificationPage,
+        UserNotificationPageMeta,
+        UserNotificationRead,
+    )
+
+    at = datetime(2026, 10, 2, tzinfo=UTC)
+    available = UserNotificationRead(
+        id=REQUEST_ID,
+        notification_kind="needs_review",
+        message_code="material.import.needs_review",
+        job_id=REQUEST_ID,
+        resource_id=RESOURCE_ID,
+        resource_version=1,
+        resource_available=True,
+        route_key="material",
+        created_at=at,
+        read_at=None,
+    )
+    unavailable = UserNotificationRead(
+        id=RESOURCE_ID,
+        notification_kind="completed",
+        message_code="notification.resource_unavailable",
+        job_id=REQUEST_ID,
+        resource_id=None,
+        resource_version=None,
+        resource_available=False,
+        route_key=None,
+        created_at=at,
+        read_at=at,
+    )
+    page = UserNotificationPage(
+        data=[available, unavailable],
+        meta=UserNotificationPageMeta(
+            request_id=REQUEST_ID,
+            has_more=True,
+            next_cursor=SAMPLE_NON_CREDENTIAL + "_CURSOR",
+            unread_count=1,
+            snapshot_token=SAMPLE_NON_CREDENTIAL + "_SNAPSHOT",
+            snapshot_expires_at=datetime(2026, 10, 2, 0, 15, tzinfo=UTC),
+        ),
+    )
+    meta = ResponseMeta(request_id=REQUEST_ID)
+    return {
+        "notification_page": page.model_dump(mode="json"),
+        "notification_mark_read": NotificationMarkRead().model_dump(mode="json"),
+        "notification_read": SuccessResponse[UserNotificationRead](
+            data=available.model_copy(update={"read_at": at}), meta=meta
+        ).model_dump(mode="json"),
+        "notification_read_all": NotificationsReadAll(
+            snapshot_token=page.meta.snapshot_token
+        ).model_dump(mode="json"),
+        "notification_read_all_result": SuccessResponse[NotificationsReadAllResult](
+            data=NotificationsReadAllResult(changed_count=1, unread_count=1), meta=meta
+        ).model_dump(mode="json"),
     }
 
 

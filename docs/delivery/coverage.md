@@ -1,6 +1,6 @@
 # 功能与验收追踪
 
-状态：2026-10-01，PLAN2实施映射；B1账号与最小收藏已按[用户最终决定](reviews/2026-09-26-b1-implementation.md)验收通过，[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在旧错误视觉结论撤回、同一Flutter mock主界面完成接线与双端复核后按当期范围重新验收通过；[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已有代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；[B2c凭据与模型任务](reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，2026-10-01用户确认该结果并要求不再验证模型，B2c按此范围验收通过，模型可用性未验证，后续业务未实现，阶段1未完成。产品范围由[产品总览](../product/overview.md)维护，阶段/状态见[路线图](roadmap.md)，当前手机/电脑所有操作见[UI-01～35清单](prototype-scope.md)。两份覆盖取并集；原型未画出的既有P0也必须实现。
+状态：PLAN2实施映射；B1账号与最小收藏已按[用户最终决定](reviews/2026-09-26-b1-implementation.md)验收通过，[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在旧错误视觉结论撤回、同一Flutter mock主界面完成接线与双端复核后按当期范围重新验收通过；[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已有代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；[B2c凭据与模型任务](reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，2026-10-01用户确认该结果并要求不再验证模型，B2c按此范围验收通过，模型可用性未验证。阶段1已完成；M1按[实现方案](material-import-implementation.md)完成真实源导入、材料库与持久本人通知，必要局部验证、正式Web/Android实操及独立复核通过；其他业务按后续切片实现。产品范围由[产品总览](../product/overview.md)维护，阶段/状态见[路线图](roadmap.md)，当前手机/电脑所有操作见[UI-01～35清单](prototype-scope.md)。两份覆盖取并集；原型未画出的既有P0也必须实现。
 
 ## 1. 功能与阶段
 

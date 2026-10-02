@@ -102,55 +102,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('notification refresh runs only while its route and app are visible', (tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
-    try {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final repository = _CountingNotificationRepository();
-      addTearDown(repository.dispose);
-      await tester.pumpWidget(buildTestPreviewApp(notificationRepository: repository));
-      await tester.pumpAndSettle();
-      final router = GoRouter.of(tester.element(find.byType(PreviewPageFrame).first));
-      router.go(AppRoutes.mockNotifications);
-      await tester.pumpAndSettle();
-      expect(repository.refreshCount, 1);
-
-      await tester.pump(const Duration(seconds: 30));
-      expect(repository.refreshCount, 2);
-      expect(repository.status, NotificationListStatus.ready);
-
-      unawaited(router.push<void>(AppRoutes.mockJobs));
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 30));
-      expect(repository.refreshCount, 2);
-      expect(
-        repository.status,
-        NotificationListStatus.ready,
-        reason: 'A slow periodic update keeps the current list visible',
-      );
-
-      router.pop();
-      await tester.pumpAndSettle();
-      expect(repository.refreshCount, 3);
-
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump(const Duration(seconds: 30));
-      expect(repository.refreshCount, 3);
-
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pump();
-      expect(repository.refreshCount, 3);
-      await tester.pump(const Duration(seconds: 30));
-      expect(repository.refreshCount, 4);
-    } finally {
-      debugDefaultTargetPlatformOverride = null;
-    }
-  });
-
-  testWidgets('a slow refresh is not restarted by the timer and route return queues one recheck', (
+  testWidgets('ready notifications retain widgets across timer, resize, route return and resume', (
     tester,
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;
@@ -159,50 +111,12 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final repository = _CountingNotificationRepository();
-      addTearDown(repository.dispose);
-      await tester.pumpWidget(buildTestPreviewApp(notificationRepository: repository));
-      await tester.pumpAndSettle();
-      final router = GoRouter.of(tester.element(find.byType(PreviewPageFrame).first));
-      router.go(AppRoutes.mockNotifications);
-      await tester.pumpAndSettle();
-      expect(repository.refreshCount, 1);
-
-      final pending = Completer<void>();
-      repository.pendingRefresh = pending;
-      await tester.pump(const Duration(seconds: 30));
-      expect(repository.refreshCount, 2);
-      await tester.pump(const Duration(seconds: 30));
-      expect(repository.refreshCount, 2);
-
-      unawaited(router.push<void>(AppRoutes.mockJobs));
-      await tester.pumpAndSettle();
-      router.pop();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(repository.refreshCount, 2);
-
-      repository.pendingRefresh = null;
-      pending.complete();
-      await tester.pump();
-      expect(repository.refreshCount, 3);
-    } finally {
-      debugDefaultTargetPlatformOverride = null;
-    }
-  });
-
-  testWidgets(
-    'foreground return preserves private notifications until periodic data revalidation',
-    (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
       final repository = _CountingNotificationRepository()
         ..visibleItems = [
           NotificationRecord(
-            id: 'private-notice',
-            title: 'Old private title',
-            detail: 'Old private detail',
+            id: 'visible-notice',
+            title: 'Retained notice',
+            detail: 'Safe detail',
             route: 'novel',
             resourceId: 'material-1',
             resourceRevision: 1,
@@ -215,72 +129,63 @@ void main() {
       final router = GoRouter.of(tester.element(find.byType(PreviewPageFrame).first));
       router.go(AppRoutes.mockNotifications);
       await tester.pumpAndSettle();
-      expect(find.text('Old private title'), findsOneWidget);
-
-      final pending = Completer<void>();
-      repository.pendingRefresh = pending;
-      repository.clearOnRefresh = false;
+      final notice = tester.element(find.text('Retained notice'));
+      expect(repository.refreshCount, 0);
+      await tester.pump(const Duration(seconds: 60));
+      expect(repository.refreshCount, 0);
+      tester.view.physicalSize = const Size(410, 844);
+      await tester.pumpAndSettle();
+      expect(tester.element(find.text('Retained notice')), same(notice));
+      unawaited(router.push<void>(AppRoutes.mockJobs));
+      await tester.pumpAndSettle();
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(tester.element(find.text('Retained notice')), same(notice));
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pump();
-      expect(find.text('Old private title'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 60));
+      expect(repository.refreshCount, 0);
+      expect(tester.element(find.text('Retained notice')), same(notice));
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(repository.refreshCount, 1);
-      await tester.pump(const Duration(seconds: 30));
-      expect(
-        repository.refreshCount,
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.android ? 3 : 2,
-        reason: 'The page has one periodic read; only native Android adds the notification badge',
-      );
+      expect(tester.takeException(), isNull);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
 
-      repository.visibleItems = const [];
-      pending.complete();
-      await tester.pumpAndSettle();
-      expect(find.text('Old private title'), findsNothing);
-      expect(find.text('暂无消息'), findsOneWidget);
+  testWidgets(
+    'missing notifications load once and navigation does not duplicate an in-flight read',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        final repository = _CountingNotificationRepository()
+          ..visibleStatus = NotificationListStatus.initial;
+        final pending = Completer<void>();
+        repository.pendingRefresh = pending;
+        addTearDown(repository.dispose);
+        await tester.pumpWidget(buildTestPreviewApp(notificationRepository: repository));
+        await tester.pumpAndSettle();
+        final router = GoRouter.of(tester.element(find.byType(PreviewPageFrame).first));
+        router.go(AppRoutes.mockNotifications);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(repository.refreshCount, 1);
+        await tester.pump(const Duration(seconds: 60));
+        expect(repository.refreshCount, 1);
+        unawaited(router.push<void>(AppRoutes.mockJobs));
+        await tester.pump(const Duration(milliseconds: 400));
+        router.pop();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(repository.refreshCount, 1);
+        repository.pendingRefresh = null;
+        pending.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('暂无消息'), findsOneWidget);
+        expect(repository.refreshCount, 1);
+        expect(tester.takeException(), isNull);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     },
   );
-
-  testWidgets('returning to the notification route gates stale details during revalidation', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final repository = _CountingNotificationRepository()
-      ..visibleItems = [
-        NotificationRecord(
-          id: 'private-notice',
-          title: 'Old private title',
-          detail: 'Old private detail',
-          route: 'novel',
-          resourceId: 'material-1',
-          resourceRevision: 1,
-          createdAt: DateTime.utc(2026, 9, 27),
-        ),
-      ];
-    addTearDown(repository.dispose);
-    await tester.pumpWidget(buildTestPreviewApp(notificationRepository: repository));
-    await tester.pumpAndSettle();
-    final router = GoRouter.of(tester.element(find.byType(PreviewPageFrame).first));
-    router.go(AppRoutes.mockNotifications);
-    await tester.pumpAndSettle();
-    expect(find.text('Old private title'), findsOneWidget);
-
-    unawaited(router.push<void>(AppRoutes.mockJobs));
-    await tester.pumpAndSettle();
-    final pending = Completer<void>();
-    repository.pendingRefresh = pending;
-    repository.clearOnRefresh = false;
-    router.pop();
-    await tester.pump();
-    expect(find.text('Old private title'), findsNothing);
-
-    repository.visibleItems = const [];
-    pending.complete();
-    await tester.pumpAndSettle();
-    expect(find.text('Old private title'), findsNothing);
-    expect(find.text('暂无消息'), findsOneWidget);
-  });
 }

@@ -24,6 +24,7 @@ from app.schemas.material_imports import (
     UploadComplete,
 )
 from app.schemas.user_notifications import (
+    NotificationMarkRead,
     NotificationsReadAll,
     NotificationsReadAllResult,
     UserNotificationPage,
@@ -65,6 +66,7 @@ def documents() -> dict[str, object]:
         ),
         "user-notification-contract.json": dto_document(
             (
+                NotificationMarkRead,
                 UserNotificationRead,
                 UserNotificationPage,
                 NotificationsReadAll,

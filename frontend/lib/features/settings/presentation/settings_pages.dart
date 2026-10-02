@@ -341,6 +341,8 @@ class MobileSettingsView extends StatelessWidget {
             settingsUsePreviewAvatar(context)
                 ? ['notifications', 'jobs', 'security']
                 : [
+                    if (sessionAuth(context)?.access?.allows('client.notification.read') ?? false)
+                      'notifications',
                     if (sessionAuth(context)?.access?.allows('client.job.read') ?? false) 'jobs',
                     'security',
                   ],
@@ -389,7 +391,9 @@ Widget _settingRow(BuildContext context, String key) {
     trailing: const Icon(Icons.chevron_right, size: 18),
     onTap: () => context.push(
       key == 'notifications'
-          ? AppRoutes.mockNotifications
+          ? settingsUsePreviewAvatar(context)
+                ? AppRoutes.mockNotifications
+                : AppRoutes.notifications
           : key == 'jobs'
           ? settingsUsePreviewAvatar(context)
                 ? AppRoutes.mockJobs

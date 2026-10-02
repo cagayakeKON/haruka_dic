@@ -14,4 +14,7 @@ class NotificationRepositoryScope extends InheritedNotifier<NotificationReposito
     assert(scope != null, 'NotificationRepositoryScope is missing');
     return scope!.notifier!;
   }
+
+  static NotificationRepository? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<NotificationRepositoryScope>()?.notifier;
 }

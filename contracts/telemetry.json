@@ -91,6 +91,15 @@
       "material_type",
       "result"
     ],
+    "notification.list.loaded": [
+      "result"
+    ],
+    "notification.read.updated": [
+      "result"
+    ],
+    "notification.read_all.updated": [
+      "result"
+    ],
     "profile.avatar.deleted": [],
     "profile.avatar.updated": [],
     "profile.updated": [],
@@ -140,6 +149,9 @@
     "material.deleted",
     "material.import.submitted",
     "material.metadata.updated",
+    "notification.list.loaded",
+    "notification.read.updated",
+    "notification.read_all.updated",
     "profile.avatar.deleted",
     "profile.avatar.updated",
     "profile.updated",
@@ -224,6 +236,11 @@
     "model.job.claimed",
     "model.job.retry.accepted",
     "model.worker.unavailable",
+    "notification.created",
+    "notification.delivery.failed",
+    "notification.list.loaded",
+    "notification.read.updated",
+    "notification.read_all.updated",
     "outbox.identity.published",
     "outbox.model.published",
     "outbox.worker.unavailable",

@@ -17,6 +17,43 @@ void main() {
   );
 
   for (final compact in [true, false]) {
+    testWidgets(
+      '${compact ? 'mobile' : 'desktop'} read-only controls hide writes but keep navigation',
+      (tester) async {
+        var opens = 0, writes = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: HarukaTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: compact
+                  ? MobileNotificationsView(
+                      items: [item],
+                      unreadCount: 1,
+                      busy: false,
+                      canUpdate: false,
+                      onReadAll: () => writes++,
+                      onOpen: (_) => opens++,
+                    )
+                  : DesktopNotificationsView(
+                      items: [item],
+                      unreadCount: 1,
+                      busy: false,
+                      canUpdate: false,
+                      onReadAll: () => writes++,
+                      onOpen: (_) => opens++,
+                    ),
+            ),
+          ),
+        );
+        expect(find.text('全部标为已读'), findsNothing);
+        await tester.tap(find.text('Ready'));
+        expect(opens, 1);
+        expect(writes, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
     testWidgets('${compact ? 'mobile' : 'desktop'} read controls disable during mutation', (
       tester,
     ) async {

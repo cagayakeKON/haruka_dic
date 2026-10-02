@@ -1,8 +1,8 @@
 {
   "dart_fixture": {
-    "sha256": "040e0e83390059ff27f0ee64d43195d73b3d23d4d227bb36527b9a36fdb79692",
+    "sha256": "3734bae29e0d5a18105b1ba4c61795edb2795d23fedb9a8aff2bdff2fa76ece9",
     "source": "samples.json",
-    "source_sha256": "f03ebb5159b378622cb17082eb53de54eea2affbba28dac5fec0036988042af4",
+    "source_sha256": "0dee2de2707ac97d49fbb2c091d1040f87d096e5159e154a734c7a7ed6e6e01b",
     "target": "frontend/test/support/generated/api_compatibility_samples.dart",
     "test_only": true
   },
@@ -10,7 +10,7 @@
   "schema_version": 1,
   "sha256": {
     "openapi.json": "3ad89b83ca86b6d571c8a24fc8c600b1cbc26adf73be5645b94852f3619be1e2",
-    "samples.json": "f03ebb5159b378622cb17082eb53de54eea2affbba28dac5fec0036988042af4"
+    "samples.json": "0dee2de2707ac97d49fbb2c091d1040f87d096e5159e154a734c7a7ed6e6e01b"
   },
   "source": "backend/tests/support/api_compatibility.py",
   "test_only": true

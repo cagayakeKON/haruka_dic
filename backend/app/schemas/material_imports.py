@@ -152,6 +152,7 @@ class MaterialMetadataRead(ApiModel):
     revision: int = Field(ge=1)
     delete_generation: int = Field(ge=0)
     revision_id: UUID | None
+    source_revision_number: int | None = Field(default=None, ge=1)
     first_chapter_id: UUID | None
     job_id: UUID | None
     progress_percent: int | None = Field(default=None, ge=0, le=100)

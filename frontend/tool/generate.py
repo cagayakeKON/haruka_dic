@@ -91,6 +91,7 @@ def validate_ids(registry: dict[str, object]) -> dict[str, str]:
         "referenceBlock": ("blockId", "client.reference.chapter.block."),
         "referenceCollectionRow": ("collectionId", "client.reference.collections.row."),
         "sessionRevoke": ("sessionId", "client.account.sessions.revoke."),
+        "notificationRow": ("notificationId", "client.notifications.row."),
     }
     for key, value in json_object(registry["templates"]).items():
         expected = allowed_templates.get(key)
@@ -238,6 +239,7 @@ def generate_ui_identifiers(directory: Path) -> None:
         "referenceBlock": "blockId",
         "referenceCollectionRow": "collectionId",
         "sessionRevoke": "sessionId",
+        "notificationRow": "notificationId",
     }
     for key, value in sorted(templates.items()):
         if not isinstance(value, str):

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/cache/cache_coordinator.dart';
 import '../../../core/cache/cache_models.dart';
 import '../../../core/cache/cache_read_retry.dart';
+import '../../../core/api/responses.dart';
 import 'notification_repository.dart';
 import '../domain/notification_record.dart';
 
@@ -27,7 +28,10 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
     required this.readSource,
     required this.readAllSource,
     required this.waitForReadiness,
-  }) : _cache = cache {
+    this.allows,
+    DateTime Function()? now,
+  }) : _cache = cache,
+       _now = now ?? DateTime.now {
     cache.register(
       CachePolicy<NotificationListSnapshot>(
         kind: 'notification_list',
@@ -65,6 +69,7 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
         _publishedInvalidationGeneration = cache.invalidationGeneration;
       }
       final discarded = _discardForeignSnapshot();
+      if (scopeChanged) _pendingReadAll = null;
       if (discarded) notifyListeners();
       final needsRefresh =
           cache.accessReady && (scopeChanged || readinessChanged || relevantInvalidation);
@@ -81,18 +86,22 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
         return;
       }
       if (needsRefresh && _status != NotificationListStatus.initial) {
-        unawaited(refresh(force: true));
+        unawaited(refresh(query: activeQuery, force: true, preserveCurrent: true));
       }
     });
   }
 
   final CacheCoordinator _cache;
+  final DateTime Function() _now;
   final CacheRemote<NotificationListSnapshot> remote;
   final Future<void> Function(String) readSource;
   final Future<void> Function(String) readAllSource;
   final Future<void> Function() waitForReadiness;
+  final bool Function(String)? allows;
   late final StreamSubscription<void> _cacheChanges;
   NotificationListSnapshot? _snapshot;
+  NotificationListSnapshot? _pendingReadAll;
+  Object? _pendingReadAllScope;
   NotificationListStatus _status = NotificationListStatus.initial;
   Object? _lastError;
   String? _publishedScopeBinding;
@@ -133,6 +142,64 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
 
   @override
   bool get busy => _mutating;
+  bool get canUpdate => allows?.call('client.notification.update') ?? true;
+  String? get nextCursor => _snapshot?.nextCursor;
+  NotificationListQuery get activeQuery => NotificationListQuery.fromKey(_activeQueryKey);
+  Object get scopeIdentity => (_cache.scope?.binding, _cache.accountGeneration);
+  bool isCurrent(Object scope) => !_disposed && _cache.accessReady && scopeIdentity == scope;
+
+  Future<void> loadMore() async {
+    _discardForeignSnapshot();
+    final previous = _snapshot;
+    final cursor = previous?.nextCursor;
+    if (_mutating ||
+        _status != NotificationListStatus.ready ||
+        previous == null ||
+        cursor == null) {
+      return;
+    }
+    final binding = _cache.scope?.binding;
+    final account = _cache.accountGeneration;
+    final revision = _cache.dependencyRevision(notificationListDependency);
+    final generation = ++_requestGeneration;
+    _mutating = true;
+    notifyListeners();
+    try {
+      await waitForReadiness();
+      final page = await _cache.read<NotificationListSnapshot>(
+        resource: notificationListResourceFor(
+          NotificationListQuery(unreadOnly: activeQuery.unreadOnly, cursor: cursor),
+        ),
+        remote: remote,
+      );
+      if (_disposed ||
+          generation != _requestGeneration ||
+          !_cache.accessReady ||
+          binding != _cache.scope?.binding ||
+          account != _cache.accountGeneration ||
+          revision != _cache.dependencyRevision(notificationListDependency)) {
+        return;
+      }
+      final next = page.data;
+      if (next == null || page.freshness != CacheFreshness.validated) {
+        throw const CacheBlocked('page_unavailable');
+      }
+      final ids = previous.items.map((item) => item.id).toSet();
+      _publish(
+        NotificationListSnapshot(
+          items: [...previous.items, ...next.items.where((item) => !ids.contains(item.id))],
+          unreadCount: next.unreadCount,
+          snapshotToken: previous.snapshotToken,
+          snapshotExpiresAt: previous.snapshotExpiresAt,
+          nextCursor: next.nextCursor,
+        ),
+        NotificationListStatus.ready,
+      );
+    } finally {
+      _finishMutation();
+    }
+  }
+
   @override
   Object? get lastError => _lastError;
 
@@ -155,14 +222,17 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
     return true;
   }
 
-  void _finishMutation() {
+  void _finishMutation({Object? scope}) {
     _mutating = false;
     if (_disposed) return;
     notifyListeners();
     final refreshNeeded = _refreshAfterMutation;
     _refreshAfterMutation = false;
-    if (refreshNeeded && _cache.accessReady) {
-      unawaited(refresh(force: true));
+    if (refreshNeeded &&
+        (scope == null || isCurrent(scope)) &&
+        _cache.accessReady &&
+        !_publicationCurrent) {
+      unawaited(refresh(query: activeQuery, force: true, preserveCurrent: true));
     }
   }
 
@@ -257,6 +327,7 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
 
   @override
   Future<void> markRead(String id) async {
+    if (!canUpdate) throw const CacheBlocked('forbidden');
     if (_mutating) throw const CacheBlocked('mutation_in_progress');
     if (!_cache.dependenciesSafe({notificationListDependency})) {
       throw const CacheBlocked('invalidation_not_durable');
@@ -269,44 +340,84 @@ final class CachedNotificationRepository extends ChangeNotifier implements Notif
     }
     _mutating = true;
     notifyListeners();
+    final mutationScope = scopeIdentity;
     try {
       await waitForReadiness();
-      if (!_publicationCurrent || !_cache.dependenciesSafe({notificationListDependency})) {
+      if (!isCurrent(mutationScope) ||
+          !_publicationCurrent ||
+          !_cache.dependenciesSafe({notificationListDependency})) {
         throw const CacheBlocked('scope_changed');
       }
       await readSource(id);
-      if (!_publicationCurrent) throw const CacheBlocked('scope_changed');
+      if (!isCurrent(mutationScope) || !_publicationCurrent) {
+        throw const CacheBlocked('scope_changed');
+      }
       await _invalidateCommittedList();
-      await refresh(force: true);
+      if (!isCurrent(mutationScope)) {
+        throw const CacheBlocked('scope_changed');
+      }
+      await refresh(query: activeQuery, force: true, preserveCurrent: true);
     } finally {
-      _finishMutation();
+      _finishMutation(scope: mutationScope);
     }
   }
 
   @override
   Future<void> markAllRead() async {
+    if (!canUpdate) throw const CacheBlocked('forbidden');
     if (_mutating) throw const CacheBlocked('mutation_in_progress');
     if (!_cache.dependenciesSafe({notificationListDependency})) {
       throw const CacheBlocked('invalidation_not_durable');
     }
     _discardForeignSnapshot();
-    final snapshot = _snapshot;
+    if (_pendingReadAllScope != scopeIdentity) _pendingReadAll = null;
+    final snapshot = _pendingReadAll ?? _snapshot;
     if (_status != NotificationListStatus.ready || snapshot == null) {
       throw const CacheBlocked('notification_snapshot_unavailable');
     }
+    if (!(snapshot.snapshotExpiresAt?.isAfter(_now().toUtc()) ?? true)) {
+      // Report this original attempt's expiry; only a subsequent user action
+      // may choose the explicitly refreshed snapshot.
+      _pendingReadAll = null;
+      _pendingReadAllScope = null;
+      throw const CacheBlocked('notification_snapshot_expired');
+    }
     _mutating = true;
     notifyListeners();
+    final mutationScope = scopeIdentity;
     try {
       await waitForReadiness();
-      if (!_publicationCurrent || !_cache.dependenciesSafe({notificationListDependency})) {
+      if (!isCurrent(mutationScope) ||
+          !_publicationCurrent ||
+          !_cache.dependenciesSafe({notificationListDependency})) {
         throw const CacheBlocked('scope_changed');
       }
-      await readAllSource(snapshot.snapshotToken);
-      if (!_publicationCurrent) throw const CacheBlocked('scope_changed');
+      _pendingReadAll = snapshot;
+      _pendingReadAllScope = scopeIdentity;
+      try {
+        await readAllSource(snapshot.snapshotToken);
+      } on ApiFailure catch (error) {
+        // A definite rejection can be replaced by an explicit refreshed list.
+        // Transport/response uncertainty must retry the ORIGINAL snapshot.
+        if (isCurrent(mutationScope) &&
+            !error.retryableTransport &&
+            error.statusCode != null &&
+            error.statusCode! < 500) {
+          _pendingReadAll = null;
+        }
+        rethrow;
+      }
+      if (!isCurrent(mutationScope) || !_publicationCurrent) {
+        throw const CacheBlocked('scope_changed');
+      }
+      _pendingReadAll = null;
       await _invalidateCommittedList();
-      await refresh(force: true);
+      if (!isCurrent(mutationScope)) {
+        throw const CacheBlocked('scope_changed');
+      }
+      await refresh(query: activeQuery, force: true, preserveCurrent: true);
     } finally {
-      _finishMutation();
+      _finishMutation(scope: mutationScope);
     }
   }
 

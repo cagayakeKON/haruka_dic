@@ -4,10 +4,10 @@
   "sha256": {
     "database-schema.json": "62f972e7fc86e1f51beb753254c05a4779af4385da84445037f7b2317b5a1276",
     "errors.json": "bb97cb0cc9b0a08f1ce9f5cc5f4c670efba72cfdcba95f47fd9a75f78122c1e9",
-    "material-import-contract.json": "7767c898b931ab22ba01c76d8b39a2c630685df02604e4222d51e69c865cbda7",
-    "openapi.json": "bfb6750c8cc7f84aa8186639730b62bc0a48f8d4b9c172f2e582037146f36a7c",
+    "material-import-contract.json": "2f6b42c2e26704c61d8849bfb66b07e9ac37b253f78b7064bae30f952f107027",
+    "openapi.json": "eaf09f6c0e672c814560e77d6b1a06b7314ce6537ff7097c187c18791589f80c",
     "permissions.json": "cae5338603f7ddd6ded39d69a0b925b039135298a03f393fa3125a0357e7c4c4",
-    "telemetry.json": "81fd4995d33460c933faf19e2d34299344c94e3e7f888a173d5e919ed8193502",
-    "user-notification-contract.json": "8dcecbf8002f28f3829f4a50a9c362d65107f67915a8195370485620a50bd306"
+    "telemetry.json": "cfc8a42f44f8cb592d6f4c9aa9e998b13884e88ee32b2305cc0a4cc4048027fa",
+    "user-notification-contract.json": "d04d91af83c02c505c29681637e362e9623586de131425aa916ce1d2cd5f4b0a"
   }
 }

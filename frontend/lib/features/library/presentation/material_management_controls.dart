@@ -142,7 +142,7 @@ class MaterialMetadataContent extends StatelessWidget {
         ),
         Text('${l10n.materialSourceFormat}：${row.sourceFormat?.toUpperCase() ?? '—'}'),
         Text(l10n.mockMaterialStatusDetail(materialStatusLabel(context, item))),
-        Text(l10n.mockMaterialCurrentRevision(row.revision)),
+        Text('${l10n.materialSourceRevision}：${row.sourceRevisionNumber ?? '—'}'),
         if (!materialCanOpen(context, item)) ...[
           const SizedBox(height: 16),
           Text(l10n.materialSourceOnly),

@@ -2156,5 +2156,12 @@
   "materialLanguageConfirm": "确认材料语言",
   "materialLanguageReview": "语言需要本人确认。仅恢复来源验证，不会自动解析正文。",
   "materialReuseUnavailable": "这份材料没有可复用的原件。",
-  "materialRenameConflict": "材料版本已变化，请重新打开详情后修改。"
+  "materialRenameConflict": "材料版本已变化，请重新打开详情后修改。",
+  "materialSourceRevision": "当前源版本",
+  "notificationImportCompleted": "材料来源验证已完成",
+  "notificationImportFailed": "材料来源验证未通过",
+  "notificationImportNeedsReview": "材料来源需要本人确认",
+  "notificationSourceBoundary": "查看材料当前状态。来源验证完成不代表学习正文已经就绪。",
+  "notificationUnreadOnly": "仅未读",
+  "notificationRefresh": "刷新消息"
 }

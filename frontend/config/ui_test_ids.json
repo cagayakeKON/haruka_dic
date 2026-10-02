@@ -146,12 +146,18 @@
     "materialJobLanguageConfirm": "client.material.job.language_confirm",
     "materialImportNovel": "client.material.import.novel",
     "materialImportTextbook": "client.material.import.textbook",
-    "materialImportExam": "client.material.import.exam"
+    "materialImportExam": "client.material.import.exam",
+    "notificationsPage": "client.notifications.list.page",
+    "notificationsReadAll": "client.notifications.list.read_all",
+    "notificationsUnreadFilter": "client.notifications.list.unread_filter",
+    "notificationsRefresh": "client.notifications.list.refresh",
+    "notificationsMore": "client.notifications.list.more"
   },
   "templates": {
     "referenceMaterialRow": "client.reference.materials.row.{materialId}",
     "referenceBlock": "client.reference.chapter.block.{blockId}",
     "referenceCollectionRow": "client.reference.collections.row.{collectionId}",
-    "sessionRevoke": "client.account.sessions.revoke.{sessionId}"
+    "sessionRevoke": "client.account.sessions.revoke.{sessionId}",
+    "notificationRow": "client.notifications.row.{notificationId}"
   }
 }

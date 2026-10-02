@@ -327,9 +327,9 @@ final class HttpMaterialCatalog extends ChangeNotifier implements MaterialCatalo
     }
   }
 
-  Future<MaterialMetadata> detail(String id) async {
+  Future<MaterialMetadata> detail(String id, {bool fresh = false}) async {
     final present = metadata(id);
-    if (present != null) return present;
+    if (present != null && !fresh) return present;
     final scope = _scopeStamp;
     final epoch = _materialEpochs[id] ?? 0;
     final result = await repository.find(id);

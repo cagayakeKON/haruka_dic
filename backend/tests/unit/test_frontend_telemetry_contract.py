@@ -144,3 +144,40 @@ def test_material_events_reject_private_and_unregistered_attributes() -> None:
         }
         value, reason = validate_client_event(payload, anonymous=False, web_transport=True, now=now)
         assert value is None and reason in {"invalid_attributes", "invalid_record"}
+
+
+def test_notification_events_accept_only_safe_registered_attributes_and_current_account() -> None:
+    now = datetime.now(UTC)
+    for name in (
+        "notification.list.loaded",
+        "notification.read.updated",
+        "notification.read_all.updated",
+    ):
+        payload = {
+            "event_id": str(uuid4()),
+            "record_type": "analytics",
+            "event": name,
+            "level": "info",
+            "occurred_at": now.isoformat(),
+            "client_platform": "web",
+            "attributes": {"result": "success"},
+        }
+        value, reason = validate_client_event(payload, anonymous=False, web_transport=True, now=now)
+        assert value is not None and reason is None
+        assert (
+            validate_client_event(payload, anonymous=True, web_transport=True, now=now)[1]
+            == "not_allowed_for_audience"
+        )
+        for private in (
+            {"resource_id": str(uuid4())},
+            {"snapshot_token": "synthetic"},
+            {"title": "private"},
+            {"duration_ms": 1},
+        ):
+            value, reason = validate_client_event(
+                payload | {"attributes": {"result": "success", **private}},
+                anonymous=False,
+                web_transport=True,
+                now=now,
+            )
+            assert value is None and reason in {"invalid_attributes", "invalid_record"}

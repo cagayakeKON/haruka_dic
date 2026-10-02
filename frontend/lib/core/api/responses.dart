@@ -20,7 +20,12 @@ final class SuccessResponse<T> {
 }
 
 final class PageResponse<T> {
-  const PageResponse({required this.data, required this.meta, required this.nextCursor});
+  const PageResponse({
+    required this.data,
+    required this.meta,
+    required this.nextCursor,
+    this.pageMetadata = const {},
+  });
   factory PageResponse.fromJson(Object? value, T Function(Object?) decode) {
     final json = wireObject(value);
     final meta = wireObject(json['meta']);
@@ -38,11 +43,15 @@ final class PageResponse<T> {
       data: List<T>.unmodifiable(items.map(decode)),
       meta: ResponseMeta.fromJson(meta),
       nextCursor: cursor as String?,
+      pageMetadata: Map.unmodifiable(meta),
     );
   }
   final List<T> data;
   final ResponseMeta meta;
   final String? nextCursor;
+
+  /// Specialized page contracts validate their additional metadata fields.
+  final Map<String, Object?> pageMetadata;
   bool get hasMore => nextCursor != null;
 }
 

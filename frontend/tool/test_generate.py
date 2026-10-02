@@ -57,6 +57,7 @@ class RegistryTests(unittest.TestCase):
             "referenceBlock": "client.reference.chapter.block.{blockId}",
             "referenceCollectionRow": "client.reference.collections.row.{collectionId}",
             "sessionRevoke": "client.account.sessions.revoke.{sessionId}",
+            "notificationRow": "client.notifications.row.{notificationId}",
         }
         validate_ids(self.registry)
         self.registry["templates"]["referenceBlock"] = "client.reference.chapter.block.{index}"

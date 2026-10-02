@@ -231,16 +231,16 @@ void main() {
     expect(find.text('正常'), findsOneWidget);
 
     await tester.tap(find.text('预览'));
-    await tester.pumpAndSettle();
+    await _settleRequests(tester);
     await _until(tester, find.text('可分配角色'));
     expect(roleReads, 1);
     expect(boundaryReads, 1);
     expect(find.text('运维摘要'), findsOneWidget);
 
     await tester.tap(find.text('关闭'));
-    await tester.pumpAndSettle();
+    await _settleRequests(tester);
     await tester.tap(find.text('预览'));
-    await tester.pumpAndSettle();
+    await _settleRequests(tester);
     await _until(tester, find.text('可分配角色'));
     expect(boundaryReads, 1);
     expect(roleReads, 1);
@@ -253,16 +253,17 @@ void main() {
     expect(renamed, {'expected_revision': 2, 'name': '学习者甲', 'description': null});
 
     await tester.tap(find.text('关闭'));
-    await tester.pumpAndSettle();
+    await _settleRequests(tester);
     expect(find.text('学习者甲'), findsOneWidget);
     expect(roleReads, 1);
 
     await tester.tap(find.text('创建角色'));
-    await tester.pumpAndSettle();
+    await _settleRequests(tester);
     await tester.enterText(find.byType(TextField).at(0), 'desk');
     await tester.enterText(find.byType(TextField).at(1), '服务台');
     await tester.tap(find.widgetWithText(FilledButton, '创建角色').last);
     for (var attempt = 0; attempt < 12 && created == null; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
       await tester.pump(const Duration(milliseconds: 500));
     }
     expect(roleReads, 1);
@@ -289,6 +290,7 @@ Object? _body(RequestOptions options) {
 
 Future<void> _until(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 12 && finder.evaluate().isEmpty; attempt++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump(const Duration(milliseconds: 500));
   }
   expect(
@@ -300,4 +302,14 @@ Future<void> _until(WidgetTester tester, Finder finder) async {
         .whereType<String>()
         .join(' | '),
   );
+}
+
+// Bound both real request tasks and fake-clock animations before asserting.
+Future<void> _settleRequests(WidgetTester tester) async {
+  for (var attempt = 0; attempt < 12; attempt++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pump(const Duration(milliseconds: 500));
+    if (!tester.binding.hasScheduledFrame) return;
+  }
+  expect(tester.binding.hasScheduledFrame, isFalse, reason: 'Request or animation did not settle');
 }

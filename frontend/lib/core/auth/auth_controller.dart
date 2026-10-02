@@ -105,6 +105,7 @@ final class AuthController extends ChangeNotifier {
   AccessRead? get access => _access;
   Stopwatch? _accessValidationAge;
   Timer? _accessDeadline;
+  int _accessCheckGeneration = 0;
   bool get admin => _admin;
   bool get isAuthenticated => _phase == AuthPhase.authenticated && _access != null;
   int get actionEpoch => _epoch;
@@ -259,15 +260,25 @@ final class AuthController extends ChangeNotifier {
     if (current != _epoch || _disposed) throw const ApiFailure(code: 'SESSION_INVALID');
     var clearedByRecovery = false;
     if (session != null && isAuthenticated) {
+      final user = _access!.userId;
+      final check = ++_accessCheckGeneration;
+      bool currentCheck() =>
+          !_disposed &&
+          current == _epoch &&
+          check == _accessCheckGeneration &&
+          _sessionRef == session &&
+          _access?.userId == user;
       try {
         final active = await repository.access(admin: admin, headers: _readHeaders());
-        if (current == _epoch && active.sessionRef == session && active.userId == _access?.userId) {
-          _acceptAccess(active, admin: admin);
-        } else if (current == _epoch) {
-          clearedByRecovery = await _clearIfCurrent(current, session);
+        if (currentCheck()) {
+          if (active.sessionRef == session && active.userId == user) {
+            _acceptAccess(active, admin: admin);
+          } else {
+            clearedByRecovery = await _clearIfCurrent(current, session);
+          }
         }
       } on Object {
-        clearedByRecovery = await _clearIfCurrent(current, session);
+        if (currentCheck()) clearedByRecovery = await _clearIfCurrent(current, session);
       }
     }
     if (_disposed || (current != _epoch && !(clearedByRecovery && _epoch == current + 1))) {
@@ -400,11 +411,22 @@ final class AuthController extends ChangeNotifier {
     'ACCESS_EXPIRED',
   }.contains(error.code);
 
-  void _acceptAccess(AccessRead access, {required bool admin}) {
+  bool _acceptAccess(AccessRead access, {required bool admin}) {
     if (access.instanceId != _boundInstanceId ||
         access.audience != (admin ? 'admin' : 'client') ||
         (_sessionRef != null && _sessionRef != access.sessionRef)) {
       throw const ApiFailure(code: 'INSTANCE_MISMATCH');
+    }
+    final latest = _access;
+    if (latest != null &&
+        access.userId == latest.userId &&
+        access.sessionRef == latest.sessionRef &&
+        (access.authzVersion.user < latest.authzVersion.user ||
+            access.authzVersion.policy < latest.authzVersion.policy ||
+            (access.securityEpoch != null &&
+                latest.securityEpoch != null &&
+                access.securityEpoch! < latest.securityEpoch!))) {
+      return false;
     }
     _access = access;
     _accessValidationAge = Stopwatch()..start();
@@ -416,6 +438,7 @@ final class AuthController extends ChangeNotifier {
     _admin = admin;
     repository.api.bindConfirmedAccess(access);
     _setPhase(AuthPhase.authenticated);
+    return true;
   }
 
   /// Periodic foreground identity check. A missing successful check for thirty
@@ -425,17 +448,25 @@ final class AuthController extends ChangeNotifier {
     final session = _sessionRef;
     final captured = _epoch;
     if (prior == null || session == null || _disposed) return false;
+    final check = ++_accessCheckGeneration;
+    bool currentCheck() =>
+        !_disposed &&
+        captured == _epoch &&
+        check == _accessCheckGeneration &&
+        _sessionRef == session &&
+        _access?.userId == prior.userId;
     try {
       late AccessRead active;
       try {
         active = await repository.access(admin: _admin, headers: _readHeaders());
       } on ApiFailure catch (error) {
+        if (!currentCheck()) return false;
         if (error.code != 'ACCESS_EXPIRED' || config.platform == AppPlatform.web) rethrow;
         await _refreshNativeSingleFlight();
-        if (_disposed || captured != _epoch) return false;
+        if (!currentCheck()) return false;
         active = await repository.access(admin: _admin, headers: _readHeaders());
       }
-      if (_disposed || captured != _epoch) return false;
+      if (!currentCheck()) return false;
       if (active.sessionRef != session || active.userId != prior.userId) {
         final wasAdmin = _admin;
         _clearMemory();
@@ -443,11 +474,9 @@ final class AuthController extends ChangeNotifier {
         unawaited(start(admin: wasAdmin));
         return false;
       }
-      _acceptAccess(active, admin: _admin);
-      return true;
+      return _acceptAccess(active, admin: _admin);
     } on ApiFailure catch (error) {
-      if (!_disposed &&
-          captured == _epoch &&
+      if (currentCheck() &&
           const {
             'AUTH_REQUIRED',
             'ACCESS_EXPIRED',
@@ -465,8 +494,7 @@ final class AuthController extends ChangeNotifier {
       }
       return false;
     } on Object {
-      if (!_disposed &&
-          captured == _epoch &&
+      if (currentCheck() &&
           (_accessValidationAge?.elapsed ?? Duration.zero) >= const Duration(seconds: 30)) {
         _setPhase(AuthPhase.unavailable);
       }

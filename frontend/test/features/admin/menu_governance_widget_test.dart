@@ -228,6 +228,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('保存'));
     for (var attempt = 0; attempt < 12 && layout == null; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
       await tester.pump(const Duration(milliseconds: 500));
     }
     final body = layout! as Map<String, Object?>;
@@ -254,6 +255,7 @@ Object? _body(RequestOptions options) {
 
 Future<void> _until(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 12 && finder.evaluate().isEmpty; attempt++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump(const Duration(milliseconds: 500));
   }
   expect(finder, findsWidgets);

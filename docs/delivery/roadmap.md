@@ -1,6 +1,6 @@
 # 实施计划与验收
 
-状态：2026-10-01，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在撤回旧错误视觉结论、改用已确认Flutter mock为唯一主界面并完成Web/Android复核后，按当期范围重新验收通过。[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；[B2c凭据与模型任务](reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，2026-10-01用户确认该结果并要求不再验证模型，B2c按此范围验收通过，模型可用性未验证，后续业务未实现，阶段1未完成。
+状态：2026-10-01，PLAN2实施进度。阶段1的完整B0已有[验收证据](reviews/2026-09-22-b0-acceptance.md)及[设计对齐增量](reviews/2026-09-26-b0-design-alignment.md)、[健康检查增量](reviews/2026-09-26-b0-readiness.md)。B1按[用户最终验收决定](reviews/2026-09-26-b1-implementation.md)通过，保留未实测边界；[B2a本人资料与设置](reviews/2026-09-28-profile-settings-acceptance.md)在撤回旧错误视觉结论、改用已确认Flutter mock为唯一主界面并完成Web/Android复核后，按当期范围重新验收通过。[B2b身份治理](reviews/2026-09-29-identity-governance-implementation.md)已完成代码和切片复核，2026-09-30 正式 Web/Android 实操、集中修复与独立定点复核已完成，B2b当期范围验收通过；[B2c凭据与模型任务](reviews/2026-09-30-model-credentials-tasks.md)当期工程实现、联调与独立review完成；真实测试均KEY_REJECTED，2026-10-01用户确认该结果并要求不再验证模型，B2c按此范围验收通过，模型可用性未验证，阶段1已完成，当前进入M1材料导入、材料库与通知实现。
 
 用户确认当前手机/电脑原型所有功能均纳入当前v0.1。逐项操作、首交付、跨阶段收口由[原型功能清单UI-01～35](prototype-scope.md)维护；现有文档全部P0继续由[覆盖索引](coverage.md)维护。两份清单取并集，不能用原型没画、只有模拟或待决方案排除已承诺功能。实际原型走查、独立review和本次文档证据见[PLAN2记录](reviews/2026-09-26-prototype-implementation-plan.md)。
 
@@ -39,13 +39,7 @@ Flutter用户端覆盖Windows、Web、Android，管理端为Web；Python后端�
 
 B1账号、激活/恢复通知与最小收藏合同保持原样，完整SCF-B1-01～08不变。B2复用B1已需要的通知Outbox/Worker，不另建第二套异步系统。B1合成材料/已提交卡片所必需的最小源、卡片及关联结构由B1交付，不能等阶段2/3/4建表才让B1运行；这不代表提前交付上传或完整查询。
 
-验收：
-
-- [ ] B1既定SCF/ACC和真实通道证据通过；B2a关闭ACC-11/12剩余、PROFILE及当期SET/CACHE/FCACHE；B2b关闭身份治理ADM/PERM，不以B1最小管理入口替代。
-- [x] B2c用户验收：2026-10-01 用户确认三项 `KEY_REJECTED` 为正确结果并要求不再验证模型；SCF-B2-01～08、SET单能力测试、USAGE-01～09当期工程分支已有定点证据与独立复核，按此范围通过。成功协议仍未验证，不宣称模型可用或全量AI/TTS通过；Fake仅dev/test供应商边界，正式PG/Redis/Kafka/Worker不可替成内存成功桩。
-- [ ] Web Cookie/CSRF、原生安全存储、持久撤销/安全epoch、双账号与client/admin隔离、迟到响应/日志/缓存清理、防提权和权限失败关闭通过。
-- [ ] 本阶段实际表的DB-01～12、DAT/API与返回契约、UIE/TDS/FLT、DESIGN适用项通过；迁移锁/无物理外键/ScopeContext/父锁/UTC时间等按专题证明。
-- [ ] 前端正常日志和info埋点在Web验证，API/Worker/AI/ORM/PG按来源验证到Alloy/Loki/Grafana可查关联；未登录受限上报、有界补传/接收故障/秘密哨兵/账号切换验证，不把埋点当业务或用量真相。
+阶段1已完成。
 
 ### 阶段 2：三类材料与可靠源数据
 

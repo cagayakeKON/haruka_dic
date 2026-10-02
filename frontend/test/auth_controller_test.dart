@@ -107,6 +107,297 @@ void main() {
   );
   final requestId = '018f1234-1234-7123-8123-123456789abc';
 
+  test('a delayed same-session access result cannot restore a newer revoked permission', () async {
+    const permission = 'client.profile.read';
+    final original =
+        jsonDecode(jsonEncode(samples['auth_client_access_login_only'])) as Map<String, dynamic>;
+    final old = jsonDecode(jsonEncode(original)) as Map<String, dynamic>;
+    final oldData = old['data'] as Map<String, dynamic>;
+    final grants = oldData['permissions'] as List<dynamic>;
+    grants.add({'code': permission, 'data_scope': (grants.first as Map)['data_scope']});
+    (oldData['authz_version'] as Map<String, dynamic>)['policy'] = 2;
+    final current = jsonDecode(jsonEncode(original)) as Map<String, dynamic>;
+    ((current['data'] as Map<String, dynamic>)['authz_version'] as Map<String, dynamic>)['policy'] =
+        3;
+    final requestedOld = Completer<void>();
+    final releaseOld = Completer<void>();
+    var accessCalls = 0;
+    final adapter = SampleAdapter((options, _) async {
+      switch (options.path) {
+        case '/api/v1/meta':
+          return jsonBody({
+            'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+            'meta': {'request_id': requestId},
+          });
+        case '/api/v1/auth/native/login':
+          return jsonBody(samples['auth_native_authenticated'] as Object);
+        case '/api/v1/me/access':
+          final order = ++accessCalls;
+          if (order == 2) {
+            final response = jsonBody(old);
+            requestedOld.complete();
+            await releaseOld.future;
+            return response;
+          }
+          return jsonBody(order == 1 ? old : current);
+      }
+      throw StateError('Unexpected isolated access-order path');
+    });
+    final api = ApiClient(config, adapter: adapter);
+    final controller = AuthController(
+      AuthRepository(api, config),
+      config,
+      vault: _MemoryVault(),
+      sync: _NoSync(),
+    );
+    addTearDown(() {
+      controller.dispose();
+      api.close();
+    });
+    final timeline = <Map<String, Object?>>[];
+    controller.addListener(() {
+      timeline.add({
+        'phase': controller.phase.name,
+        'action_epoch': controller.actionEpoch,
+        'policy_version': controller.access?.authzVersion.policy,
+        'user_version': controller.access?.authzVersion.user,
+        'allowed': controller.access?.allows(permission),
+      });
+    });
+    expect(await controller.login('user@example.test', 'valid-test-password'), isTrue);
+    controller.pauseAccessDeadline();
+    expect(controller.access!.allows(permission), isTrue);
+    final late = controller.verifyCurrentAccess();
+    await requestedOld.future.timeout(const Duration(seconds: 5));
+    expect(await controller.verifyCurrentAccess(), isTrue);
+    controller.pauseAccessDeadline();
+    expect(controller.access!.authzVersion.policy, 3);
+    expect(controller.access!.allows(permission), isFalse);
+    final currentBinding = api.sessionBinding;
+    releaseOld.complete();
+    final lateAccepted = await late;
+    controller.pauseAccessDeadline();
+    // Safe synthetic metadata only; no wire body, credential or identity value.
+    print(
+      jsonEncode({
+        'access_order': [1, 2, 3],
+        'late_accepted': lateAccepted,
+        'timeline': timeline,
+      }),
+    );
+    expect(accessCalls, 3);
+    expect(controller.phase, AuthPhase.authenticated);
+    expect(controller.access!.authzVersion.policy, 3);
+    expect(controller.access!.allows(permission), isFalse);
+    expect(identical(api.sessionBinding, currentBinding), isTrue);
+    expect(lateAccepted, isFalse);
+  });
+
+  for (final code in [
+    'AUTH_REQUIRED',
+    'SESSION_REVOKED',
+    'PERMISSION_DENIED',
+    'AUTH_SCOPE_CHANGED',
+    'SESSION_INVALID',
+    'ACCESS_EXPIRED',
+  ]) {
+    test('a late $code access failure cannot close a newer confirmed snapshot', () async {
+      final requestedOld = Completer<void>();
+      final releaseOld = Completer<void>();
+      var accessCalls = 0;
+      var refreshCalls = 0;
+      final adapter = SampleAdapter((options, _) async {
+        switch (options.path) {
+          case '/api/v1/meta':
+            return jsonBody({
+              'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+              'meta': {'request_id': requestId},
+            });
+          case '/api/v1/auth/native/login':
+            return jsonBody(samples['auth_native_authenticated'] as Object);
+          case '/api/v1/auth/native/refresh':
+            refreshCalls++;
+            return jsonBody(samples['auth_native_authenticated'] as Object);
+          case '/api/v1/me/access':
+            if (++accessCalls == 2) {
+              requestedOld.complete();
+              await releaseOld.future;
+              return jsonBody(
+                {
+                  'error': {'code': code, 'message': 'safe', 'retryable': false},
+                  'meta': {'request_id': requestId},
+                },
+                code == 'PERMISSION_DENIED'
+                    ? 403
+                    : code == 'AUTH_SCOPE_CHANGED'
+                    ? 409
+                    : 401,
+              );
+            }
+            return jsonBody(samples['auth_client_access_login_only'] as Object);
+        }
+        throw StateError('Unexpected isolated access-failure path');
+      });
+      final api = ApiClient(config, adapter: adapter);
+      final controller = AuthController(
+        AuthRepository(api, config),
+        config,
+        vault: _MemoryVault(),
+        sync: _NoSync(),
+      );
+      addTearDown(() {
+        controller.dispose();
+        api.close();
+      });
+      expect(await controller.login('user@example.test', 'valid-test-password'), isTrue);
+      controller.pauseAccessDeadline();
+      final late = controller.verifyCurrentAccess();
+      await requestedOld.future.timeout(const Duration(seconds: 5));
+      expect(await controller.verifyCurrentAccess(), isTrue);
+      controller.pauseAccessDeadline();
+      final accepted = controller.access;
+      final binding = api.sessionBinding;
+      final epoch = controller.actionEpoch;
+      releaseOld.complete();
+      expect(await late, isFalse);
+      expect(controller.phase, AuthPhase.authenticated);
+      expect(identical(controller.access, accepted), isTrue);
+      expect(identical(api.sessionBinding, binding), isTrue);
+      expect(controller.actionEpoch, epoch);
+      expect(accessCalls, 3);
+      expect(refreshCalls, 0);
+    });
+  }
+
+  for (final outcome in ['success', 'SESSION_REVOKED']) {
+    test('a delayed recovery $outcome recheck cannot replace a newer access snapshot', () async {
+      final old =
+          jsonDecode(jsonEncode(samples['auth_client_access_login_only'])) as Map<String, dynamic>;
+      ((old['data'] as Map<String, dynamic>)['authz_version'] as Map<String, dynamic>)['policy'] =
+          2;
+      final current = jsonDecode(jsonEncode(old)) as Map<String, dynamic>;
+      ((current['data'] as Map<String, dynamic>)['authz_version']
+              as Map<String, dynamic>)['policy'] =
+          3;
+      final requestedOld = Completer<void>();
+      final releaseOld = Completer<void>();
+      var accessCalls = 0;
+      final adapter = SampleAdapter((options, _) async {
+        switch (options.path) {
+          case '/api/v1/meta':
+            return jsonBody({
+              'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+              'meta': {'request_id': requestId},
+            });
+          case '/api/v1/auth/native/login':
+            return jsonBody(samples['auth_native_authenticated'] as Object);
+          case '/api/v1/auth/recovery/complete':
+            return ResponseBody.fromString('', 204);
+          case '/api/v1/me/access':
+            final order = ++accessCalls;
+            if (order == 2) {
+              final response = outcome == 'success'
+                  ? jsonBody(old)
+                  : jsonBody({
+                      'error': {'code': outcome, 'message': 'safe', 'retryable': false},
+                      'meta': {'request_id': requestId},
+                    }, 401);
+              requestedOld.complete();
+              await releaseOld.future;
+              return response;
+            }
+            return jsonBody(order == 1 ? old : current);
+        }
+        throw StateError('Unexpected isolated recovery-order path');
+      });
+      final api = ApiClient(config, adapter: adapter);
+      final controller = AuthController(
+        AuthRepository(api, config),
+        config,
+        vault: _MemoryVault(),
+        sync: _NoSync(),
+      );
+      addTearDown(() {
+        controller.dispose();
+        api.close();
+      });
+      expect(await controller.login('user@example.test', 'valid-test-password'), isTrue);
+      controller.pauseAccessDeadline();
+      final recovery = controller.completeRecovery('A' * 43, 'new-valid-password');
+      await requestedOld.future.timeout(const Duration(seconds: 5));
+      expect(await controller.verifyCurrentAccess(), isTrue);
+      controller.pauseAccessDeadline();
+      final accepted = controller.access;
+      final binding = api.sessionBinding;
+      final epoch = controller.actionEpoch;
+      releaseOld.complete();
+      expect(await recovery, isTrue);
+      controller.pauseAccessDeadline();
+      expect(controller.phase, AuthPhase.authenticated);
+      expect(identical(controller.access, accepted), isTrue);
+      expect(identical(api.sessionBinding, binding), isTrue);
+      expect(controller.actionEpoch, epoch);
+      expect(controller.access!.authzVersion.policy, 3);
+      expect(accessCalls, 3);
+    });
+  }
+
+  for (final regressed in ['user', 'policy', 'security_epoch']) {
+    test('a current access request rejects a regressed $regressed component', () async {
+      final accepted =
+          jsonDecode(jsonEncode(samples['auth_client_access_login_only'])) as Map<String, dynamic>;
+      final data = accepted['data'] as Map<String, dynamic>;
+      data['authz_version'] = {'user': 3, 'policy': 3};
+      data['security_epoch'] = 3;
+      final lower = jsonDecode(jsonEncode(accepted)) as Map<String, dynamic>;
+      final lowerData = lower['data'] as Map<String, dynamic>;
+      if (regressed == 'security_epoch') {
+        lowerData['security_epoch'] = 2;
+        lowerData['authz_version'] = {'user': 4, 'policy': 4};
+      } else {
+        lowerData['authz_version'] = {
+          'user': regressed == 'user' ? 2 : 4,
+          'policy': regressed == 'policy' ? 2 : 4,
+        };
+      }
+      var accessCalls = 0;
+      final adapter = SampleAdapter((options, _) async {
+        switch (options.path) {
+          case '/api/v1/meta':
+            return jsonBody({
+              'data': {'instance_id': config.instanceId, 'api_version': 'v1', 'release': 'test'},
+              'meta': {'request_id': requestId},
+            });
+          case '/api/v1/auth/native/login':
+            return jsonBody(samples['auth_native_authenticated'] as Object);
+          case '/api/v1/me/access':
+            return jsonBody(++accessCalls == 1 ? accepted : lower);
+        }
+        throw StateError('Unexpected isolated access-version path');
+      });
+      final api = ApiClient(config, adapter: adapter);
+      final controller = AuthController(
+        AuthRepository(api, config),
+        config,
+        vault: _MemoryVault(),
+        sync: _NoSync(),
+      );
+      addTearDown(() {
+        controller.dispose();
+        api.close();
+      });
+      expect(await controller.login('user@example.test', 'valid-test-password'), isTrue);
+      controller.pauseAccessDeadline();
+      final prior = controller.access;
+      final binding = api.sessionBinding;
+      expect(await controller.verifyCurrentAccess(), isFalse);
+      expect(identical(controller.access, prior), isTrue);
+      expect(identical(api.sessionBinding, binding), isTrue);
+      expect(controller.phase, AuthPhase.authenticated);
+      expect(accessCalls, 2);
+    });
+  }
+
   test('session pages reuse complete data, invalidate after revoke and reject a late old identity read', () async {
     var reads = 0;
     var block = false;

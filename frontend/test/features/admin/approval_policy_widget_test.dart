@@ -176,6 +176,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('应用策略'));
     for (var attempt = 0; attempt < 12 && update == null; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
       await tester.pump(const Duration(milliseconds: 500));
     }
     final body = update! as Map<String, Object?>;
@@ -195,6 +196,7 @@ Object? _body(RequestOptions options) {
 
 Future<void> _until(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 12 && finder.evaluate().isEmpty; attempt++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump(const Duration(milliseconds: 500));
   }
   expect(finder, findsWidgets);

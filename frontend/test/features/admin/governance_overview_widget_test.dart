@@ -192,6 +192,7 @@ void main() {
     }
     expect(auditReads, 1);
     await tester.tap(find.text('筛选'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump(const Duration(milliseconds: 500));
     await _until(tester, find.text('user.updated'));
     expect(query, containsPair('action', 'user.updated'));
@@ -211,8 +212,12 @@ void main() {
     expect(find.text('status: disabled'), findsNothing);
     expect(find.text('user.updated'), findsNothing);
     expect(auditReads, 2);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pump(Duration.zero);
     await tester.pumpWidget(const SizedBox.shrink());
     auth.dispose();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pump(Duration.zero);
   });
 
   testWidgets('a late audit page cannot overwrite a newer result filter', (tester) async {
@@ -322,6 +327,7 @@ void main() {
     await tester.tap(find.text('已拒绝').last);
     await _until(tester, find.text('auth.login.denied'));
     moreGate.complete();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('auth.login.denied'), findsOneWidget);
     expect(find.text('role.updated'), findsNothing);
@@ -473,7 +479,16 @@ ResponseBody _auditPage(
 
 Future<void> _until(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 12 && finder.evaluate().isEmpty; attempt++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump(const Duration(milliseconds: 500));
   }
-  expect(finder, findsWidgets);
+  expect(
+    finder,
+    findsWidgets,
+    reason: tester
+        .widgetList<Text>(find.byType(Text))
+        .map((item) => item.data)
+        .whereType<String>()
+        .join(' | '),
+  );
 }
